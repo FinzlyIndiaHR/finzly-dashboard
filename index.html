@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Finzly · People Pulse · Q1 2026</title>
-<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -459,24 +459,31 @@ const CONFIG = {
 
 const IS_DEMO = CONFIG.CLIENT_ID === "REPLACE_WITH_YOUR_CLIENT_ID";
 
-// MSAL setup
-const msalConfig = {
-  auth: {
-    clientId: IS_DEMO ? "00000000-0000-0000-0000-000000000000" : CONFIG.CLIENT_ID,
-    authority: `https://login.microsoftonline.com/${IS_DEMO ? "common" : CONFIG.TENANT_ID}`,
-    redirectUri: "https://finzlyindiahr.github.io/finzly-dashboard/",
-  },
-  cache: { cacheLocation: "sessionStorage" }
-};
-
 let msalInstance, currentAccount;
-try { msalInstance = new msal.PublicClientApplication(msalConfig); } catch(e) {}
-
 const SCOPES = ["Files.Read", "User.Read"];
+
+// Only load MSAL when Azure is configured
+async function initMsal() {
+  if (IS_DEMO) return;
+  const script = document.createElement('script');
+  script.src = "https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js";
+  document.head.appendChild(script);
+  await new Promise(r => script.onload = r);
+  const msalConfig = {
+    auth: {
+      clientId: CONFIG.CLIENT_ID,
+      authority: `https://login.microsoftonline.com/${CONFIG.TENANT_ID}`,
+      redirectUri: "https://finzlyindiahr.github.io/finzly-dashboard/",
+    },
+    cache: { cacheLocation: "sessionStorage" }
+  };
+  msalInstance = new msal.PublicClientApplication(msalConfig);
+}
 
 async function signIn() {
   if (IS_DEMO) { loadDemoData(); return; }
   try {
+    await initMsal();
     const resp = await msalInstance.loginPopup({ scopes: SCOPES });
     currentAccount = resp.account;
     showScreen('loading');
