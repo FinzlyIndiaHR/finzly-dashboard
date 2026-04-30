@@ -480,8 +480,11 @@ async function initMsal() {
   msalInstance = new msal.PublicClientApplication(msalConfig);
 }
 
-async function signIn() {
+function signIn() {
   if (IS_DEMO) { loadDemoData(); return; }
+  _signInAsync();
+}
+async function _signInAsync() {
   try {
     await initMsal();
     const resp = await msalInstance.loginPopup({ scopes: SCOPES });
@@ -888,12 +891,14 @@ function showTab(id) {
   event.currentTarget.classList.add('active');
 }
 
-// Boot
-if (IS_DEMO) {
-  showScreen('login');
-} else {
-  handleRedirect();
-}
+// Boot — wait for DOM
+window.addEventListener('DOMContentLoaded', function() {
+  if (IS_DEMO) {
+    showScreen('login');
+  } else {
+    handleRedirect();
+  }
+});
 </script>
 </body>
 </html>
