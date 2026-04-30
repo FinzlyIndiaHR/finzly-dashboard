@@ -464,7 +464,7 @@ const msalConfig = {
   auth: {
     clientId: IS_DEMO ? "00000000-0000-0000-0000-000000000000" : CONFIG.CLIENT_ID,
     authority: `https://login.microsoftonline.com/${IS_DEMO ? "common" : CONFIG.TENANT_ID}`,
-    redirectUri: window.location.href.split('?')[0],
+    redirectUri: "https://finzlyindiahr.github.io/finzly-dashboard/",
   },
   cache: { cacheLocation: "sessionStorage" }
 };
