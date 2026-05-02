@@ -214,7 +214,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
 // ── CONFIG ──
 const CLIENT_ID = "d893026d-d1c9-4285-947a-0a672018b8d1";
 const TENANT_ID = "4d4c58f7-6978-4a93-ba72-f1d987c46c89";
-const FILE_PATH = "/personal/vishwata_mayekar_finzly_com/Documents/One on One Discussion- 2026.xlsx";
+const FILE_PATH = "/One on One Discussion- 2026.xlsx";
 const SHEET    = "Sheet1";
 
 const msalConfig = {
@@ -228,7 +228,7 @@ const msalConfig = {
 
 let msalApp, account;
 
-const SCOPES = ["Files.Read","User.Read"];
+const SCOPES = ["Files.Read.All","User.Read"];
 
 async function signIn(){
   try {
@@ -269,10 +269,16 @@ async function loadData(){
     const me = await fetch("https://graph.microsoft.com/v1.0/me",{headers:H}).then(r=>r.json());
     document.getElementById('uname').textContent = me.displayName || me.mail || "Leadership";
 
-    // Get Excel data
-    const url = "https://graph.microsoft.com/v1.0/me/drive/root:" + encodeURIComponent(FILE_PATH) + ":/workbook/worksheets('" + SHEET + "')/usedRange";
-    const res = await fetch(url,{headers:H});
-    if(!res.ok) throw new Error("Cannot read Excel file (" + res.status + "). Check file path.");
+    // Access file directly by ID via the file owner's drive
+    const FILE_ID   = "DD1F5741-CCA4-442E-8FA4-27E9157C936C";
+    const OWNER_UPN = "vishwata.mayekar@finzly.com";
+    
+    const url = "https://graph.microsoft.com/v1.0/users/" + OWNER_UPN 
+              + "/drive/items/" + FILE_ID 
+              + "/workbook/worksheets('" + SHEET + "')/usedRange";
+    
+    const res = await fetch(url, {headers:H});
+    if(!res.ok) throw new Error("Cannot read Excel file (" + res.status + "). Ensure vishwata.mayekar@finzly.com has shared this file with you.");
     const data = await res.json();
     render(data.values);
 
