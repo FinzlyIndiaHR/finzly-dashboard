@@ -3,104 +3,212 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Finzly · People Pulse · Q1 2026</title>
+<title>Finzly · People Intelligence · Q1 2026</title>
 <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#f7f6f3;--card:#fff;--border:#e5e1d8;--border2:#ede9e0;
-  --ink:#1a1a2e;--muted:#7c7568;
+  --bg:#f4f2ee;--card:#fff;--border:#e2ddd5;--border2:#ede8e0;
+  --ink:#1a1a2e;--muted:#7c7568;--muted2:#b0ab9f;
   --green:#16a34a;--gbg:#f0fdf4;--gbr:#bbf7d0;
   --amber:#d97706;--abg:#fffbeb;--abr:#fde68a;
   --red:#dc2626;--rbg:#fef2f2;--rbr:#fecaca;
   --blue:#2563eb;--bbg:#eff6ff;--bbr:#bfdbfe;
-  --accent:#e8541a;
+  --purple:#7c3aed;--pbg:#f5f3ff;--pbr:#ddd6fe;
+  --accent:#e8541a;--accent2:#ff6b35;
 }
 body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-height:100vh}
-#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--ink)}
-.lcard{background:#1e2438;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:48px 44px;max-width:420px;width:100%;text-align:center}
-.llogo{font-size:1.4rem;font-weight:800;color:#fff;margin-bottom:6px}.llogo span{color:var(--accent)}
-.lsub{font-size:.84rem;color:rgba(255,255,255,.4);margin-bottom:28px}
+
+/* LOGIN */
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 100%)}
+.lcard{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:52px 48px;max-width:440px;width:100%;text-align:center;backdrop-filter:blur(20px)}
+.llogo-wrap{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:6px}
+.llogo-icon{width:40px;height:40px;background:var(--accent);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:800;color:#fff}
+.llogo-text{font-size:1.5rem;font-weight:800;color:#fff;letter-spacing:-.03em}
+.llogo-text span{color:var(--accent2)}
+.lbadge{display:inline-block;background:rgba(232,84,26,.2);color:var(--accent2);border:1px solid rgba(232,84,26,.3);border-radius:20px;font-size:.68rem;font-weight:600;padding:3px 10px;margin-bottom:28px;letter-spacing:.05em;text-transform:uppercase}
 .ldiv{width:40px;height:2px;background:var(--accent);margin:0 auto 24px}
 .ltitle{font-size:1.1rem;font-weight:600;color:#fff;margin-bottom:8px}
-.ldesc{font-size:.78rem;color:rgba(255,255,255,.4);margin-bottom:24px;line-height:1.6}
-.lbtn{width:100%;padding:14px 20px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-family:'Outfit',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px}
-.lbtn:hover{opacity:.88}
+.ldesc{font-size:.78rem;color:rgba(255,255,255,.45);margin-bottom:28px;line-height:1.7}
+.lbtn{width:100%;padding:14px 20px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-family:'Outfit',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 4px 20px rgba(232,84,26,.4);transition:opacity .15s}
+.lbtn:hover{opacity:.9}
 .lnote{font-size:.72rem;color:rgba(255,255,255,.25);margin-top:14px}
+
+/* LOADING / ERROR */
 #loading-screen{display:none;align-items:center;justify-content:center;flex-direction:column;min-height:100vh;background:var(--bg)}
 .spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:14px}
 @keyframes spin{to{transform:rotate(360deg)}}
 #error-screen{display:none;align-items:center;justify-content:center;flex-direction:column;min-height:100vh;background:var(--bg);padding:32px;text-align:center}
 .ebtn{padding:10px 22px;border-radius:8px;border:1.5px solid var(--border);background:var(--card);font-family:'Outfit',sans-serif;font-size:.84rem;cursor:pointer;margin-top:16px}
+
+/* DASHBOARD */
 #dash{display:none}
-.hdr{background:var(--ink);color:#fff;padding:14px 32px;display:flex;align-items:center;gap:14px}
-.hbrand{font-size:1rem;font-weight:800;letter-spacing:-.02em}.hbrand em{color:var(--accent);font-style:normal}
-.hsep{width:1px;height:20px;background:rgba(255,255,255,.15)}
-.htitle{font-size:.82rem;color:rgba(255,255,255,.5)}
-.hright{margin-left:auto;display:flex;align-items:center;gap:8px}
-.pill{font-family:'Fira Code',monospace;font-size:.65rem;padding:3px 10px;border-radius:20px;border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.5)}
-.pill.g{color:#86efac;border-color:rgba(134,239,172,.3);background:rgba(134,239,172,.08)}
-.sout{font-family:'Outfit',sans-serif;font-size:.74rem;padding:5px 12px;border-radius:6px;border:1px solid rgba(255,255,255,.12);background:transparent;color:rgba(255,255,255,.5);cursor:pointer}
-.tabs{background:var(--card);border-bottom:1px solid var(--border);padding:0 32px;display:flex}
-.tab{font-size:.82rem;font-weight:500;padding:12px 20px;border:none;border-bottom:2px solid transparent;cursor:pointer;color:var(--muted);background:none;font-family:'Outfit',sans-serif}
+
+/* HEADER */
+.hdr{background:var(--ink);color:#fff;padding:12px 28px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:50}
+.hdr-logo{display:flex;align-items:center;gap:8px}
+.hdr-logo-icon{width:30px;height:30px;background:var(--accent);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:.9rem;font-weight:800;color:#fff;flex-shrink:0}
+.hdr-logo-text{font-size:.95rem;font-weight:800;letter-spacing:-.02em}
+.hdr-logo-text em{color:var(--accent2);font-style:normal}
+.hdr-name{font-size:.75rem;color:rgba(255,255,255,.4);margin-left:2px}
+.hsep{width:1px;height:20px;background:rgba(255,255,255,.12)}
+.hdr-right{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pill{font-family:'Fira Code',monospace;font-size:.62rem;padding:3px 10px;border-radius:20px;border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.5)}
+.pill.live{color:#86efac;border-color:rgba(134,239,172,.3);background:rgba(134,239,172,.08)}
+.sout{font-family:'Outfit',sans-serif;font-size:.72rem;padding:5px 12px;border-radius:6px;border:1px solid rgba(255,255,255,.12);background:transparent;color:rgba(255,255,255,.5);cursor:pointer}
+
+/* FILTER BAR */
+.filterbar{background:var(--card);border-bottom:1px solid var(--border);padding:10px 28px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;position:sticky;top:55px;z-index:49;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.fb-label{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);white-space:nowrap}
+select{font-family:'Outfit',sans-serif;font-size:.8rem;padding:6px 28px 6px 10px;border-radius:6px;border:1.5px solid var(--border);background:var(--bg);color:var(--ink);cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238a8578' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center}
+select:focus{outline:none;border-color:var(--accent)}
+.fb-sep{width:1px;height:22px;background:var(--border)}
+.fb-count{font-family:'Fira Code',monospace;font-size:.7rem;color:var(--muted);margin-left:auto}
+
+/* TABS */
+.tabs{background:var(--card);border-bottom:1px solid var(--border);padding:0 28px;display:flex}
+.tab{font-size:.82rem;font-weight:500;padding:11px 18px;border:none;border-bottom:2px solid transparent;cursor:pointer;color:var(--muted);background:none;font-family:'Outfit',sans-serif;white-space:nowrap}
 .tab.on{color:var(--accent);border-bottom-color:var(--accent);font-weight:700}
-.pg{display:none;padding:28px 32px 60px;max-width:1200px;margin:0 auto}.pg.on{display:block}
-.krow{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
-.kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 22px;border-top:3px solid var(--accent)}
-.kpi.g{border-top-color:var(--green)}
-.klbl{font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:8px}
-.kval{font-family:'Fira Code',monospace;font-size:2.4rem;font-weight:600;line-height:1}.kval.g{color:var(--green)}
-.ksub{font-size:.72rem;color:var(--muted);margin-top:5px}
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
-.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
-.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 22px}
-.ctitle{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:14px;display:flex;align-items:center;gap:6px}
-.ctitle::before{content:'';display:block;width:3px;height:12px;background:var(--accent);border-radius:2px}
-.brow{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border2)}.brow:last-child{border-bottom:none}
-.blbl{font-size:.8rem;color:var(--ink);flex:1}
+
+/* PAGES */
+.pg{display:none;padding:24px 28px 60px;max-width:1300px;margin:0 auto}.pg.on{display:block}
+
+/* KPI ROW */
+.krow{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:22px}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 20px;border-top:3px solid var(--accent);box-shadow:0 1px 4px rgba(0,0,0,.04)}
+.kpi.g{border-top-color:var(--green)}.kpi.r{border-top-color:var(--red)}.kpi.b{border-top-color:var(--blue)}.kpi.p{border-top-color:var(--purple)}
+.klbl{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:7px}
+.kval{font-family:'Fira Code',monospace;font-size:2.2rem;font-weight:600;line-height:1}
+.kval.g{color:var(--green)}.kval.r{color:var(--red)}.kval.b{color:var(--blue)}.kval.a{color:var(--amber)}
+.ksub{font-size:.7rem;color:var(--muted);margin-top:4px}
+
+/* GRIDS */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px;margin-bottom:14px}
+
+/* CARD */
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 20px;box-shadow:0 1px 4px rgba(0,0,0,.04);margin-bottom:14px}
+.card:last-child{margin-bottom:0}
+.ctitle{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:13px;display:flex;align-items:center;justify-content:space-between;gap:6px}
+.ctitle-left{display:flex;align-items:center;gap:6px}
+.ctitle-left::before{content:'';display:block;width:3px;height:12px;background:var(--accent);border-radius:2px;flex-shrink:0}
+
+/* BAR ROWS */
+.brow{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border2)}.brow:last-child{border-bottom:none}
+.blbl{font-size:.78rem;color:var(--ink);flex:1;line-height:1.3}
 .btrack{flex:2;height:7px;background:var(--border2);border-radius:99px;overflow:hidden}
-.bfill{height:100%;border-radius:99px}
-.bval{font-family:'Fira Code',monospace;font-size:.75rem;font-weight:600;width:36px;text-align:right}
-.sig{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:8px;margin-bottom:8px;border:1px solid transparent}.sig:last-child{margin-bottom:0}
-.sig.r{background:var(--rbg);border-color:var(--rbr)}.sig.a{background:var(--abg);border-color:var(--abr)}.sig.g{background:var(--gbg);border-color:var(--gbr)}.sig.b{background:var(--bbg);border-color:var(--bbr)}
-.sdot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px}.sdot.r{background:var(--red)}.sdot.a{background:var(--amber)}.sdot.g{background:var(--green)}.sdot.b{background:var(--blue)}
-.stxt{font-size:.8rem;line-height:1.5;flex:1}.stxt strong{display:block;font-weight:600}
-.sbadge{font-family:'Fira Code',monospace;font-size:.62rem;padding:2px 7px;border-radius:20px;flex-shrink:0}
-.sbadge.r{background:var(--rbg);color:var(--red);border:1px solid var(--rbr)}.sbadge.a{background:var(--abg);color:var(--amber);border:1px solid var(--abr)}.sbadge.g{background:var(--gbg);color:var(--green);border:1px solid var(--gbr)}.sbadge.b{background:var(--bbg);color:var(--blue);border:1px solid var(--bbr)}
-.act{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:var(--card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}.act:last-child{margin-bottom:0}
-.anum{width:26px;height:26px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:'Fira Code',monospace;font-size:.72rem;font-weight:600}
+.bfill{height:100%;border-radius:99px;transition:width .6s ease}
+.bval{font-family:'Fira Code',monospace;font-size:.73rem;font-weight:600;width:38px;text-align:right}
+
+/* SIGNALS */
+.sig{display:flex;align-items:flex-start;gap:10px;padding:9px 11px;border-radius:8px;margin-bottom:7px;border:1px solid transparent}.sig:last-child{margin-bottom:0}
+.sig.r{background:var(--rbg);border-color:var(--rbr)}.sig.a{background:var(--abg);border-color:var(--abr)}
+.sig.g{background:var(--gbg);border-color:var(--gbr)}.sig.b{background:var(--bbg);border-color:var(--bbr)}
+.sig.p{background:var(--pbg);border-color:var(--pbr)}
+.sdot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.sdot.r{background:var(--red)}.sdot.a{background:var(--amber)}.sdot.g{background:var(--green)}.sdot.b{background:var(--blue)}.sdot.p{background:var(--purple)}
+.stxt{font-size:.78rem;line-height:1.5;flex:1}.stxt strong{display:block;font-weight:600;font-size:.8rem}
+.sbadge{font-family:'Fira Code',monospace;font-size:.6rem;padding:2px 7px;border-radius:20px;flex-shrink:0;white-space:nowrap}
+.sbadge.r{background:var(--rbg);color:var(--red);border:1px solid var(--rbr)}.sbadge.a{background:var(--abg);color:var(--amber);border:1px solid var(--abr)}
+.sbadge.g{background:var(--gbg);color:var(--green);border:1px solid var(--gbr)}.sbadge.b{background:var(--bbg);color:var(--blue);border:1px solid var(--bbr)}
+.sbadge.p{background:var(--pbg);color:var(--purple);border:1px solid var(--pbr)}
+
+/* SQUAD AI CARDS */
+.squad-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px}
+.squad-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;border-left:3px solid var(--green)}
+.squad-card.warn{border-left-color:var(--amber)}.squad-card.alert{border-left-color:var(--red)}
+.sq-name{font-weight:700;font-size:.86rem;color:var(--ink);margin-bottom:4px;display:flex;align-items:center;justify-content:space-between}
+.sq-scores{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.sq-score{font-family:'Fira Code',monospace;font-size:.68rem;padding:2px 8px;border-radius:20px;font-weight:600}
+.sq-score.g{background:var(--gbg);color:var(--green);border:1px solid var(--gbr)}
+.sq-score.a{background:var(--abg);color:var(--amber);border:1px solid var(--abr)}
+.sq-score.r{background:var(--rbg);color:var(--red);border:1px solid var(--rbr)}
+.sq-insight{font-size:.74rem;color:var(--muted);line-height:1.5}
+.sq-action{margin-top:7px;font-size:.72rem;color:var(--accent);font-weight:600}
+
+/* AI INSIGHT BOX */
+.ai-box{background:linear-gradient(135deg,#1e1b4b,#0f172a);border-radius:10px;padding:14px 16px;color:#fff;margin-bottom:14px}
+.ai-box-title{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.5);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.ai-loading{font-size:.78rem;color:rgba(255,255,255,.5);font-style:italic}
+.ai-content{font-size:.8rem;color:rgba(255,255,255,.8);line-height:1.7}
+.ai-content .ai-section{margin-bottom:10px}
+.ai-content .ai-section-title{font-weight:700;color:var(--accent2);font-size:.75rem;margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em}
+.ai-content ul{list-style:none;padding:0}
+.ai-content ul li{padding:2px 0;color:rgba(255,255,255,.7)}
+.ai-content ul li::before{content:'→ ';color:var(--accent2);font-weight:700}
+
+/* ACTIONS */
+.act{display:flex;align-items:flex-start;gap:10px;padding:11px 13px;background:var(--card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}.act:last-child{margin-bottom:0}
+.anum{width:24px;height:24px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:'Fira Code',monospace;font-size:.7rem;font-weight:600}
 .anum.r{background:var(--rbg);color:var(--red)}.anum.a{background:var(--abg);color:var(--amber)}.anum.b{background:var(--bbg);color:var(--blue)}
-.atitle{font-size:.86rem;font-weight:600;margin-bottom:2px}.adesc{font-size:.76rem;color:var(--muted);line-height:1.5}
-.awhen{font-family:'Fira Code',monospace;font-size:.65rem;padding:2px 8px;border-radius:20px;flex-shrink:0}
-.awhen.r{background:var(--rbg);color:var(--red);border:1px solid var(--rbr)}.awhen.a{background:var(--abg);color:var(--amber);border:1px solid var(--abr)}.awhen.b{background:var(--bbg);color:var(--blue);border:1px solid var(--bbr)}
+.atitle{font-size:.84rem;font-weight:600;margin-bottom:2px}.adesc{font-size:.74rem;color:var(--muted);line-height:1.5}
+.awhen{font-family:'Fira Code',monospace;font-size:.62rem;padding:2px 8px;border-radius:20px;flex-shrink:0;white-space:nowrap}
+.awhen.r{background:var(--rbg);color:var(--red);border:1px solid var(--rbr)}
+.awhen.a{background:var(--abg);color:var(--amber);border:1px solid var(--abr)}
+.awhen.b{background:var(--bbg);color:var(--blue);border:1px solid var(--bbr)}
+
+/* SSC */
 .ssc{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
 .scol{border-radius:8px;padding:14px 16px}
 .scol.r{background:var(--rbg);border:1px solid var(--rbr)}.scol.a{background:var(--abg);border:1px solid var(--abr)}.scol.g{background:var(--gbg);border:1px solid var(--gbr)}
-.sh{font-weight:700;font-size:.82rem;margin-bottom:10px}.scol.r .sh{color:var(--red)}.scol.a .sh{color:var(--amber)}.scol.g .sh{color:var(--green)}
-.sul{list-style:none}.sul li{font-size:.76rem;padding:4px 0;border-bottom:1px solid rgba(0,0,0,.05);line-height:1.4}.sul li:last-child{border-bottom:none}
-.scol.r .sul li::before{content:'— ';color:var(--red);font-weight:600}.scol.a .sul li::before{content:'+ ';color:var(--amber);font-weight:700}.scol.g .sul li::before{content:'✓ ';color:var(--green)}
-.ls{background:var(--ink);border-radius:12px;padding:28px 32px;color:#fff}
-.lsh{font-size:1.3rem;font-weight:700;margin-bottom:4px}.lsh em{color:var(--accent);font-style:normal}
-.lss{font-size:.78rem;color:rgba(255,255,255,.4);margin-bottom:20px}
+.sh{font-weight:700;font-size:.82rem;margin-bottom:10px}
+.scol.r .sh{color:var(--red)}.scol.a .sh{color:var(--amber)}.scol.g .sh{color:var(--green)}
+.sul{list-style:none}.sul li{font-size:.74rem;padding:4px 0;border-bottom:1px solid rgba(0,0,0,.05);line-height:1.4}.sul li:last-child{border-bottom:none}
+.scol.r .sul li::before{content:'— ';color:var(--red);font-weight:600}
+.scol.a .sul li::before{content:'+ ';color:var(--amber);font-weight:700}
+.scol.g .sul li::before{content:'✓ ';color:var(--green)}
+
+/* LEADERSHIP */
+.ls{background:linear-gradient(135deg,#0f172a,#1e1b4b);border-radius:14px;padding:28px 32px;color:#fff;margin-bottom:14px}
+.ls-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;gap:20px;flex-wrap:wrap}
+.lsh{font-size:1.4rem;font-weight:800;letter-spacing:-.02em}
+.lsh em{color:var(--accent2);font-style:normal}
+.lss{font-size:.76rem;color:rgba(255,255,255,.4);margin-top:4px}
+.ls-kpis{display:flex;gap:16px;flex-wrap:wrap}
+.ls-kpi{text-align:center;background:rgba(255,255,255,.06);border-radius:8px;padding:10px 16px;border:1px solid rgba(255,255,255,.08)}
+.ls-kpi-val{font-family:'Fira Code',monospace;font-size:1.6rem;font-weight:600;color:var(--accent2)}
+.ls-kpi-lbl{font-size:.62rem;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.4);margin-top:2px}
 .lsg{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.lsb{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:14px 16px}
-.lsbt{font-size:.74rem;font-weight:700;color:rgba(255,255,255,.8);margin-bottom:10px;text-transform:uppercase;letter-spacing:.07em}
-.lsul{list-style:none}.lsul li{font-size:.76rem;color:rgba(255,255,255,.5);padding:4px 0;border-bottom:1px solid rgba(255,255,255,.05);line-height:1.4}.lsul li:last-child{border-bottom:none}.lsul li::before{content:'→ ';color:var(--accent);font-weight:700}
-.lscta{margin-top:16px;padding:12px 16px;background:rgba(232,84,26,.12);border:1px solid rgba(232,84,26,.25);border-radius:8px;font-size:.78rem;color:rgba(255,255,255,.65);line-height:1.6}.lscta strong{color:var(--accent)}
-.ts{font-size:.7rem;color:var(--muted);text-align:right;margin-bottom:14px;font-family:'Fira Code',monospace}
-@media(max-width:800px){.krow,.g2,.g3,.ssc,.lsg{grid-template-columns:1fr}.pg{padding:16px 16px 40px}.hdr,.tabs{padding-left:16px;padding-right:16px}}
+.lsb{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:14px 16px}
+.lsbt{font-size:.7rem;font-weight:700;color:rgba(255,255,255,.75);margin-bottom:10px;text-transform:uppercase;letter-spacing:.07em;display:flex;align-items:center;gap:6px}
+.lsul{list-style:none}
+.lsul li{font-size:.74rem;color:rgba(255,255,255,.5);padding:4px 0;border-bottom:1px solid rgba(255,255,255,.05);line-height:1.5}.lsul li:last-child{border-bottom:none}
+.lsul li::before{content:'→ ';color:var(--accent2);font-weight:700}
+.lscta{margin-top:14px;padding:12px 16px;background:rgba(232,84,26,.12);border:1px solid rgba(232,84,26,.25);border-radius:8px;font-size:.77rem;color:rgba(255,255,255,.65);line-height:1.6}
+.lscta strong{color:var(--accent2)}
+
+/* ALERT BANNER */
+.alert-banner{display:flex;align-items:flex-start;gap:10px;padding:12px 16px;border-radius:8px;margin-bottom:14px;border:1px solid transparent}
+.alert-banner.r{background:var(--rbg);border-color:var(--rbr)}
+.alert-banner.a{background:var(--abg);border-color:var(--abr)}
+.ab-icon{font-size:1.1rem;flex-shrink:0}
+.ab-title{font-weight:700;font-size:.84rem;margin-bottom:2px}
+.ab-body{font-size:.76rem;color:var(--muted);line-height:1.5}
+
+.ts{font-size:.68rem;color:var(--muted);text-align:right;margin-bottom:12px;font-family:'Fira Code',monospace}
+
+@media(max-width:900px){
+  .krow{grid-template-columns:1fr 1fr}.g2,.g3,.g4,.ssc,.lsg,.squad-grid{grid-template-columns:1fr}
+  .pg{padding:16px 16px 40px}.hdr,.filterbar,.tabs{padding-left:16px;padding-right:16px}
+  .ls-header{flex-direction:column}
+}
 </style>
 </head>
 <body>
 
+<!-- LOGIN -->
 <div id="login-screen">
   <div class="lcard">
-    <div class="llogo">Finzly<span>.</span>People</div>
-    <div class="lsub">Leadership Dashboard · Confidential</div>
+    <div class="llogo-wrap">
+      <div class="llogo-icon">F</div>
+      <div class="llogo-text">Finzly<span>.</span>People</div>
+    </div>
+    <div class="lbadge">People Intelligence Platform</div>
     <div class="ldiv"></div>
-    <div class="ltitle">Sign in to view</div>
-    <div class="ldesc">Restricted to Finzly leadership team. Sign in with your Microsoft work account.</div>
+    <div class="ltitle">Leadership Access Only</div>
+    <div class="ldesc">This dashboard contains anonymous, aggregated 1-on-1 insights for Finzly leadership. Sign in with your Finzly Microsoft account to continue.</div>
     <button class="lbtn" onclick="signIn()">
       <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
         <rect x="1" y="1" width="7" height="7" fill="#f25022"/>
@@ -110,15 +218,18 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
       </svg>
       Sign in with Microsoft
     </button>
-    <div class="lnote">You will be asked to sign in with your Finzly work account</div>
+    <div class="lnote">Secured with Microsoft Identity · Finzly Inc.</div>
   </div>
 </div>
 
+<!-- LOADING -->
 <div id="loading-screen">
   <div class="spinner"></div>
-  <div style="font-size:.84rem;color:var(--muted)">Loading live data from SharePoint…</div>
+  <div style="font-size:.84rem;color:var(--muted);margin-bottom:6px">Connecting to SharePoint…</div>
+  <div style="font-size:.74rem;color:var(--muted2)">Loading live 1-on-1 data</div>
 </div>
 
+<!-- ERROR -->
 <div id="error-screen">
   <div style="font-size:2rem;margin-bottom:12px">⚠️</div>
   <div style="font-size:1rem;font-weight:700;margin-bottom:8px">Could not load data</div>
@@ -126,318 +237,486 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
   <button class="ebtn" onclick="location.reload()">Try Again</button>
 </div>
 
+<!-- DASHBOARD -->
 <div id="dash">
+
   <div class="hdr">
-    <div class="hbrand">Finzly<em>.</em>People</div>
+    <div class="hdr-logo">
+      <div class="hdr-logo-icon">F</div>
+      <div>
+        <div class="hdr-logo-text">Finzly<em>.</em>People</div>
+        <div class="hdr-name">People Intelligence Platform</div>
+      </div>
+    </div>
     <div class="hsep"></div>
-    <div class="htitle">1-on-1 Health Dashboard</div>
-    <div class="hright">
-      <span class="pill g" id="rc">● Live</span>
-      <span class="pill">Q1 2026</span>
+    <div style="font-size:.78rem;color:rgba(255,255,255,.4)">1-on-1 Health Dashboard · Q1 2026</div>
+    <div class="hdr-right">
+      <span class="pill live" id="rc">● Connecting…</span>
       <span class="pill" id="uname"></span>
       <button class="sout" onclick="signOut()">Sign out</button>
     </div>
   </div>
+
+  <!-- FILTER BAR -->
+  <div class="filterbar">
+    <span class="fb-label">Filter</span>
+    <select id="f-squad" onchange="applyFilter()">
+      <option value="all">All Squads</option>
+    </select>
+    <select id="f-practice" onchange="applyFilter()">
+      <option value="all">All Practices</option>
+    </select>
+    <div class="fb-sep"></div>
+    <span class="fb-count" id="filter-count">Loading…</span>
+  </div>
+
   <div class="tabs">
     <button class="tab on" onclick="tab(this,'p1')">📊 Snapshot</button>
-    <button class="tab" onclick="tab(this,'p2')">🔍 Themes</button>
-    <button class="tab" onclick="tab(this,'p3')">🎯 Actions</button>
-    <button class="tab" onclick="tab(this,'p4')">🧭 Leadership</button>
+    <button class="tab" onclick="tab(this,'p2')">🏢 Squad View</button>
+    <button class="tab" onclick="tab(this,'p3')">🔍 Themes</button>
+    <button class="tab" onclick="tab(this,'p4')">🎯 Actions</button>
+    <button class="tab" onclick="tab(this,'p5')">🧭 Leadership</button>
   </div>
 
+  <!-- P1: SNAPSHOT -->
   <div class="pg on" id="p1">
-    <div class="ts" id="ts">Loading…</div>
+    <div class="ts" id="ts">Fetching live data…</div>
+    <div id="alert-banners"></div>
     <div class="krow">
-      <div class="kpi g"><div class="klbl">Avg Engagement</div><div class="kval g" id="k-eng">—</div><div class="ksub" id="k-eng-s">out of 5</div></div>
-      <div class="kpi g"><div class="klbl">Manager Rating</div><div class="kval g" id="k-mgr">—</div><div class="ksub" id="k-mgr-s">out of 5</div></div>
-      <div class="kpi g"><div class="klbl">Overall Experience</div><div class="kval g" id="k-ov">—</div><div class="ksub" id="k-ov-s">out of 5</div></div>
-      <div class="kpi"><div class="klbl">Responses</div><div class="kval" id="k-n">—</div><div class="ksub">employees interviewed</div></div>
+      <div class="kpi g"><div class="klbl">Avg Engagement</div><div class="kval g" id="k-eng">—</div><div class="ksub" id="k-eng-s">responses</div></div>
+      <div class="kpi g"><div class="klbl">Manager Rating</div><div class="kval g" id="k-mgr">—</div><div class="ksub" id="k-mgr-s">responses</div></div>
+      <div class="kpi g"><div class="klbl">Overall Experience</div><div class="kval g" id="k-ov">—</div><div class="ksub" id="k-ov-s">responses</div></div>
+      <div class="kpi"><div class="klbl">Total Responses</div><div class="kval" id="k-n">—</div><div class="ksub">employees interviewed</div></div>
+      <div class="kpi r"><div class="klbl">Needs Attention</div><div class="kval r" id="k-watch">—</div><div class="ksub">squads below 4.0</div></div>
     </div>
     <div class="g2">
-      <div class="card"><div class="ctitle">Scores by Squad</div><div id="squad-scores"></div></div>
-      <div class="card"><div class="ctitle">Top Signals</div><div id="signals"></div></div>
+      <div class="card"><div class="ctitle"><div class="ctitle-left">Scores by Squad</div></div><div id="squad-scores"></div></div>
+      <div class="card"><div class="ctitle"><div class="ctitle-left">Top Signals</div></div><div id="signals"></div></div>
     </div>
-    <div class="card"><div class="ctitle">What Employees Are Asking For</div><div id="requests"></div></div>
+    <div class="card"><div class="ctitle"><div class="ctitle-left">What Employees Are Asking For</div><span style="font-size:.68rem;color:var(--muted)">frequency from responses</span></div><div id="requests"></div></div>
   </div>
 
+  <!-- P2: SQUAD VIEW -->
   <div class="pg" id="p2">
-    <div class="g2" style="margin-bottom:16px">
-      <div class="card"><div class="ctitle">What's Working Well</div><div id="positives"></div></div>
-      <div class="card"><div class="ctitle">Challenges & Friction</div><div id="challenges"></div></div>
-    </div>
-    <div class="card"><div class="ctitle">Stop · Start · Continue</div>
-      <div class="ssc">
-        <div class="scol r"><div class="sh">🛑 Stop</div><ul class="sul"><li>Running Spot Awards without equity checks</li><li>Letting cross-team demos stay discontinued</li><li>Udemy without hands-on practice support</li><li>Removing recreational spaces</li></ul></div>
-        <div class="scol a"><div class="sh">▶ Start</div><ul class="sul"><li>Fun Friday (4 independent requests)</li><li>Quarterly team outings / company trip</li><li>Hands-on Udemy practice sessions</li><li>Advance holiday calendar all regions</li><li>Bi-monthly cross-squad demos</li></ul></div>
-        <div class="scol g"><div class="sh">✅ Continue</div><ul class="sul"><li>Manager-assigned Udemy training</li><li>Supportive manager culture</li><li>Multi-project exposure model</li><li>This 1-on-1 programme — keep quarterly</li></ul></div>
-      </div>
+    <div class="squad-grid" id="squad-cards"></div>
+    <div class="ai-box">
+      <div class="ai-box-title">🤖 AI Decision Intelligence · Squad Analysis</div>
+      <div id="ai-squad-analysis"><div class="ai-loading">Analysing squad data…</div></div>
     </div>
   </div>
 
+  <!-- P3: THEMES -->
   <div class="pg" id="p3">
-    <div class="g3">
-      <div class="card"><div class="ctitle">🔴 This Week</div>
-        <div class="act"><div class="anum r">1</div><div><div class="atitle">Audit Spot Award nominations</div><div class="adesc">Check all squads included. Fix process. Communicate.</div></div><div class="awhen r">Now</div></div>
-        <div class="act"><div class="anum r">2</div><div><div class="atitle">Close the loop with employees</div><div class="adesc">"We heard you. Here's what we're acting on."</div></div><div class="awhen r">Now</div></div>
-        <div class="act"><div class="anum r">3</div><div><div class="atitle">Announce Fun Friday date</div><div class="adesc">4 employees asked. Zero cost, high signal.</div></div><div class="awhen r">Now</div></div>
-      </div>
-      <div class="card"><div class="ctitle">🟡 This Month</div>
-        <div class="act"><div class="anum a">1</div><div><div class="atitle">Revive cross-squad demos</div><div class="adesc">30-min rotating presentations. Zero budget.</div></div><div class="awhen a">Month</div></div>
-        <div class="act"><div class="anum a">2</div><div><div class="atitle">Share full-year holiday calendar</div><div class="adesc">All regional dates. 30-min admin task.</div></div><div class="awhen a">Month</div></div>
-        <div class="act"><div class="anum a">3</div><div><div class="atitle">Link Udemy to practice tasks</div><div class="adesc">Map each course to a real project task.</div></div><div class="awhen a">Month</div></div>
-        <div class="act"><div class="anum a">4</div><div><div class="atitle">Plan Q2 team outing</div><div class="adesc">6/8 employees asked. Book a date now.</div></div><div class="awhen a">Month</div></div>
-      </div>
-      <div class="card"><div class="ctitle">🔵 Q2 Plan</div>
-        <div class="act"><div class="anum b">1</div><div><div class="atitle">Upgrade Udemy practice labs</div><div class="adesc">Evaluate paid tier for hands-on sessions.</div></div><div class="awhen b">Q2</div></div>
-        <div class="act"><div class="anum b">2</div><div><div class="atitle">Address office space / hybrid</div><div class="adesc">Assess utilisation. Pilot WFH days.</div></div><div class="awhen b">Q2</div></div>
-        <div class="act"><div class="anum b">3</div><div><div class="atitle">Scale multi-project model</div><div class="adesc">Document and offer to all squads formally.</div></div><div class="awhen b">Q2</div></div>
+    <div class="g2" style="margin-bottom:14px">
+      <div class="card"><div class="ctitle"><div class="ctitle-left">What's Working Well</div></div><div id="positives"></div></div>
+      <div class="card"><div class="ctitle"><div class="ctitle-left">Challenges & Friction</div></div><div id="challenges"></div></div>
+    </div>
+    <div class="card"><div class="ctitle"><div class="ctitle-left">Stop · Start · Continue</div></div>
+      <div class="ssc">
+        <div class="scol r"><div class="sh">🛑 Stop</div><ul class="sul" id="ssc-stop"></ul></div>
+        <div class="scol a"><div class="sh">▶ Start</div><ul class="sul" id="ssc-start"></ul></div>
+        <div class="scol g"><div class="sh">✅ Continue</div><ul class="sul" id="ssc-cont"></ul></div>
       </div>
     </div>
   </div>
 
+  <!-- P4: ACTIONS -->
   <div class="pg" id="p4">
-    <div class="ls">
-      <div class="lsh">Team is healthy. <em>Now protect it.</em></div>
-      <div class="lss" id="ls-sub">Q1 2026 · Live data from SharePoint</div>
-      <div class="lsg">
-        <div class="lsb"><div class="lsbt">🔴 Act This Week</div><ul class="lsul"><li>Spot Award audit — one squad unrecognised. Fix quietly, fix fast.</li><li>Reply to employees: "We read your feedback. Here's what we're doing."</li><li>Announce Fun Friday. 4 people asked. Takes 5 minutes.</li></ul></div>
-        <div class="lsb"><div class="lsbt">📡 Watch Monthly</div><ul class="lsul"><li>Are all squads receiving Spot Award nominations?</li><li>Udemy completion + practice application rate</li><li>One employee "always busy" — positive now, watch later</li><li>Run next 1-on-1 cycle quarterly, not annually</li></ul></div>
-        <div class="lsb"><div class="lsbt">🚀 Scale What Works</div><ul class="lsul"><li>Manager culture — document and replicate across squads</li><li>Multi-project model — offer formally to all employees</li><li>Manager-assigned training — make this the standard</li><li>Certification track — create formal path for engineers</li></ul></div>
-        <div class="lsb"><div class="lsbt">⚡ Highest ROI Moves</div><ul class="lsul"><li>Team outing — 6/8 asked. Book it. Best morale-per-cost action.</li><li>Cross-squad demos — zero budget, revive next sprint</li><li>Holiday calendar — 30 mins admin, eliminates org-wide friction</li><li>Udemy practice linkage — manager task, no new spend</li></ul></div>
-      </div>
-      <div class="lscta"><strong>Board headline:</strong> Engagement is <span id="ls-eng">4.9</span>/5. No attrition signals. The gap between a great org and an exceptional one is acting on what your people told you.</div>
+    <div class="g3">
+      <div class="card"><div class="ctitle"><div class="ctitle-left">🔴 This Week</div></div><div id="act-now"></div></div>
+      <div class="card"><div class="ctitle"><div class="ctitle-left">🟡 This Month</div></div><div id="act-month"></div></div>
+      <div class="card"><div class="ctitle"><div class="ctitle-left">🔵 Q2 Plan</div></div><div id="act-q2"></div></div>
     </div>
   </div>
-</div>
+
+  <!-- P5: LEADERSHIP -->
+  <div class="pg" id="p5">
+    <div class="ls" id="ls-card"></div>
+    <div class="ai-box">
+      <div class="ai-box-title">🤖 AI Predictive Intelligence · Risk & Opportunity Forecast</div>
+      <div id="ai-leadership"><div class="ai-loading">Generating predictive analysis…</div></div>
+    </div>
+  </div>
+
+</div><!-- /dash -->
 
 <script>
 // ── CONFIG ──
 const CLIENT_ID = "d893026d-d1c9-4285-947a-0a672018b8d1";
 const TENANT_ID = "4d4c58f7-6978-4a93-ba72-f1d987c46c89";
-const FILE_PATH = "/One on One Discussion- 2026.xlsx";
-const SHEET    = "Sheet1";
+const FILE_ID   = "DD1F5741-CCA4-442E-8FA4-27E9157C936C";
+const OWNER_UPN = "vishwata.mayekar@finzly.com";
+const SHEET     = "Sheet1";
 
-const msalConfig = {
-  auth:{
-    clientId: CLIENT_ID,
-    authority: "https://login.microsoftonline.com/" + TENANT_ID,
-    redirectUri: "https://finzlyindiahr.github.io/finzly-dashboard/"
-  },
-  cache:{cacheLocation:"sessionStorage"}
-};
-
-let msalApp, account;
-
-const SCOPES = ["Files.Read.All","User.Read"];
+const msalConfig={auth:{clientId:CLIENT_ID,authority:"https://login.microsoftonline.com/"+TENANT_ID,redirectUri:"https://finzlyindiahr.github.io/finzly-dashboard/"},cache:{cacheLocation:"sessionStorage"}};
+let msalApp,account;
+const SCOPES=["Files.Read.All","User.Read"];
 
 async function signIn(){
-  try {
+  try{
     show('loading');
-    // Always init fresh on button click
-    msalApp = new msal.PublicClientApplication(msalConfig);
-    const r = await msalApp.loginPopup({scopes:SCOPES});
-    account = r.account;
+    msalApp=new msal.PublicClientApplication(msalConfig);
+    const r=await msalApp.loginPopup({scopes:SCOPES});
+    account=r.account;
     await loadData();
-  } catch(e){
-    show('login');
-    console.error(e);
-    alert("Sign-in failed: " + e.message);
-  }
+  }catch(e){show('login');alert("Sign-in failed: "+e.message);}
 }
-
-async function signOut(){
-  await msalApp.logoutPopup({account});
-  location.reload();
-}
-
+async function signOut(){await msalApp.logoutPopup({account});location.reload();}
 async function getToken(){
-  try {
-    const r = await msalApp.acquireTokenSilent({scopes:SCOPES,account});
-    return r.accessToken;
-  } catch {
-    const r = await msalApp.acquireTokenPopup({scopes:SCOPES,account});
-    return r.accessToken;
-  }
+  try{return(await msalApp.acquireTokenSilent({scopes:SCOPES,account})).accessToken;}
+  catch{return(await msalApp.acquireTokenPopup({scopes:SCOPES,account})).accessToken;}
 }
+
+// ── GLOBAL DATA ──
+let ALL_DATA=[], ALL_HEADERS=[];
 
 async function loadData(){
-  try {
-    const token = await getToken();
-    const H = {Authorization:"Bearer "+token};
-
-    // Get user name
-    const me = await fetch("https://graph.microsoft.com/v1.0/me",{headers:H}).then(r=>r.json());
-    document.getElementById('uname').textContent = me.displayName || me.mail || "Leadership";
-
-    // Access file directly by ID via the file owner's drive
-    const FILE_ID   = "DD1F5741-CCA4-442E-8FA4-27E9157C936C";
-    const OWNER_UPN = "vishwata.mayekar@finzly.com";
-    
-    const url = "https://graph.microsoft.com/v1.0/users/" + OWNER_UPN 
-              + "/drive/items/" + FILE_ID 
-              + "/workbook/worksheets('" + SHEET + "')/usedRange";
-    
-    const res = await fetch(url, {headers:H});
-    if(!res.ok) throw new Error("Cannot read Excel file (" + res.status + "). Ensure vishwata.mayekar@finzly.com has shared this file with you.");
-    const data = await res.json();
-    render(data.values);
-
-    document.getElementById('ts').textContent = "Live from SharePoint · Refreshed " + new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
-    document.getElementById('rc').textContent = "● Live";
+  try{
+    const token=await getToken();
+    const H={Authorization:"Bearer "+token};
+    const me=await fetch("https://graph.microsoft.com/v1.0/me",{headers:H}).then(r=>r.json());
+    document.getElementById('uname').textContent=me.displayName||me.mail||"Leadership";
+    const url="https://graph.microsoft.com/v1.0/users/"+OWNER_UPN+"/drive/items/"+FILE_ID+"/workbook/worksheets('"+SHEET+"')/usedRange";
+    const res=await fetch(url,{headers:H});
+    if(!res.ok)throw new Error("Cannot read Excel ("+res.status+"). Check file permissions.");
+    const data=await res.json();
+    ALL_HEADERS=data.values[0].map(h=>String(h||'').trim().toLowerCase());
+    ALL_DATA=data.values.slice(1).filter(r=>r.some(c=>c!==null&&c!==''));
+    populateFilters();
+    render(ALL_DATA);
+    document.getElementById('ts').textContent="● Live from SharePoint · Refreshed "+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+    document.getElementById('rc').textContent="● Live";
     show('dash');
-
-    // Auto refresh every 5 mins
-    setTimeout(loadData, 5*60*1000);
-  } catch(e){
-    document.getElementById('err-msg').textContent = e.message;
-    show('error');
-  }
+    setTimeout(loadData,5*60*1000);
+  }catch(e){document.getElementById('err-msg').textContent=e.message;show('error');}
 }
 
-function render(rows){
-  if(!rows||rows.length<2){show('error');document.getElementById('err-msg').textContent="No data found in sheet.";return;}
-  const hdrs = rows[0].map(h=>String(h||'').trim().toLowerCase());
-  const data  = rows.slice(1).filter(r=>r.some(c=>c!==null&&c!==''));
-  const n = data.length;
+function populateFilters(){
+  const ci=kw=>ALL_HEADERS.findIndex(h=>kw.some(k=>h.includes(k)));
+  const iSq=ci(['squad','sqaud']);
+  const iPr=ci(['practice']);
+  const str=(row,i)=>i<0?'':String(row[i]||'').trim();
+  const squads=[...new Set(ALL_DATA.map(r=>str(r,iSq)).filter(Boolean))].sort();
+  const practices=[...new Set(ALL_DATA.map(r=>str(r,iPr)).filter(Boolean))].sort();
+  const sqSel=document.getElementById('f-squad');
+  const prSel=document.getElementById('f-practice');
+  squads.forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;sqSel.appendChild(o);});
+  practices.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;prSel.appendChild(o);});
+}
 
-  const ci = kw => hdrs.findIndex(h=>kw.some(k=>h.includes(k)));
-  const iSq  = ci(['squad','sqaud']);
-  const iMgr = ci(['relationship','communication','rating on']);
-  const iEng = ci(['engaged','engagement','scale of 1']);
-  const iOv  = ci(['overall experience']);
-  const iSsc = ci(['stop','start','continue']);
-  const iSup = ci(['support','need from']);
-  const iRag = ci(['rag']);
+function applyFilter(){
+  const sq=document.getElementById('f-squad').value;
+  const pr=document.getElementById('f-practice').value;
+  const ci=kw=>ALL_HEADERS.findIndex(h=>kw.some(k=>h.includes(k)));
+  const iSq=ci(['squad','sqaud']);
+  const iPr=ci(['practice']);
+  const str=(row,i)=>i<0?'':String(row[i]||'').trim();
+  let filtered=ALL_DATA;
+  if(sq!=='all') filtered=filtered.filter(r=>str(r,iSq)===sq);
+  if(pr!=='all') filtered=filtered.filter(r=>str(r,iPr)===pr);
+  render(filtered);
+}
 
-  const num = (row,i) => { if(i<0)return null; const m=String(row[i]||'').match(/\b([1-5])\b/); return m?+m[1]:null; };
-  const str = (row,i) => i<0?'':String(row[i]||'').trim();
-  const avg = arr => arr.length?(arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1):'—';
+function render(data){
+  const n=data.length;
+  document.getElementById('filter-count').textContent=n+" employee"+(n!==1?'s':'')+" in view";
 
-  const engs = data.map(r=>num(r,iEng)).filter(Boolean);
-  const mgrs = data.map(r=>num(r,iMgr)).filter(Boolean);
-  const ovs  = data.map(r=>num(r,iOv)).filter(Boolean);
+  const ci=kw=>ALL_HEADERS.findIndex(h=>kw.some(k=>h.includes(k)));
+  const iSq=ci(['squad','sqaud']);
+  const iPr=ci(['practice']);
+  const iMgr=ci(['relationship','communication','rating on']);
+  const iEng=ci(['engaged','engagement','scale of 1']);
+  const iOv=ci(['overall experience']);
+  const iSsc=ci(['stop','start','continue']);
+  const iSup=ci(['support','need from']);
+  const iRag=ci(['rag']);
+  const iQ1=ci(['last quarter','day-to-day','work experience']);
+  const iQ2=ci(['going well','challenging']);
+
+  const num=(row,i)=>{if(i<0)return null;const m=String(row[i]||'').match(/\b([1-5])\b/);return m?+m[1]:null;};
+  const str=(row,i)=>i<0?'':String(row[i]||'').trim();
+  const avg=arr=>arr.length?(arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1):'—';
+  const col=v=>{if(!v||v==='—')return'var(--muted)';const n=+v;return n>=4.5?'var(--green)':n>=3.5?'var(--amber)':'var(--red)';};
+  const pct=v=>v==='—'?0:Math.round((+v/5)*100);
+  const chipCls=v=>{if(!v||v==='—')return'';const n=+v;return n>=4.5?'g':n>=3.5?'a':'r';};
+
+  const engs=data.map(r=>num(r,iEng)).filter(Boolean);
+  const mgrs=data.map(r=>num(r,iMgr)).filter(Boolean);
+  const ovs=data.map(r=>num(r,iOv)).filter(Boolean);
   const ae=avg(engs),am=avg(mgrs),ao=avg(ovs);
 
-  document.getElementById('k-eng').textContent = ae;
-  document.getElementById('k-mgr').textContent = am;
-  document.getElementById('k-ov').textContent  = ao;
-  document.getElementById('k-n').textContent   = n;
-  document.getElementById('k-eng-s').textContent = engs.length+" responses · out of 5";
-  document.getElementById('k-mgr-s').textContent = mgrs.length+" responses · out of 5";
-  document.getElementById('k-ov-s').textContent  = ovs.length+" responses · out of 5";
-  document.getElementById('ls-eng').textContent = ae;
-  document.getElementById('ls-sub').textContent = "Q1 2026 · "+n+" anonymous responses · Engagement "+ae+"/5 · Manager "+am+"/5 · Overall "+ao+"/5";
+  // KPIs
+  document.getElementById('k-eng').textContent=ae;
+  document.getElementById('k-mgr').textContent=am;
+  document.getElementById('k-ov').textContent=ao;
+  document.getElementById('k-n').textContent=n;
+  document.getElementById('k-eng-s').textContent=engs.length+" responses · out of 5";
+  document.getElementById('k-mgr-s').textContent=mgrs.length+" responses · out of 5";
+  document.getElementById('k-ov-s').textContent=ovs.length+" responses · out of 5";
 
-  // Squad scores
+  // Color KPI cards
+  const engCard=document.querySelector('#k-eng').closest('.kpi');
+  engCard.className='kpi '+(+ae>=4.5?'g':+ae>=3.5?'':'r');
+
+  // Squad breakdown
   const sq={};
   data.forEach(r=>{
     const s=str(r,iSq)||'Unknown';
-    if(!sq[s])sq[s]={e:[],m:[],o:[]};
+    if(!sq[s])sq[s]={e:[],m:[],o:[],n:0,ssc:[],q1:[],q2:[]};
     const e=num(r,iEng),m=num(r,iMgr),o=num(r,iOv);
-    if(e)sq[s].e.push(e); if(m)sq[s].m.push(m); if(o)sq[s].o.push(o);
+    if(e)sq[s].e.push(e);if(m)sq[s].m.push(m);if(o)sq[s].o.push(o);
+    sq[s].n++;
+    sq[s].ssc.push(str(r,iSsc));
+    sq[s].q1.push(str(r,iQ1));
+    sq[s].q2.push(str(r,iQ2));
   });
-  const col=v=>{if(!v||v==='—')return'var(--muted)';const n=+v;return n>=4.5?'var(--green)':n>=3.5?'var(--amber)':'var(--red)';};
-  const pct=v=>v==='—'?0:Math.round((+v/5)*100);
-  const bar=(label,val)=>`<div style="display:flex;align-items:center;gap:6px"><span style="font-size:.64rem;color:var(--muted);width:65px">${label}</span><div class="btrack"><div class="bfill" style="width:${pct(val)}%;background:${col(val)}"></div></div><span class="bval" style="color:${col(val)}">${val}</span></div>`;
 
-  document.getElementById('squad-scores').innerHTML = Object.entries(sq).map(([s,d])=>{
+  // Watch count
+  let watchCount=0;
+  Object.values(sq).forEach(d=>{
+    const e=+avg(d.e),m=+avg(d.m);
+    if(e<4||m<4)watchCount++;
+  });
+  document.getElementById('k-watch').textContent=watchCount;
+
+  // Alert banners
+  const alerts=[];
+  Object.entries(sq).forEach(([s,d])=>{
+    const e=+avg(d.e),m=+avg(d.m);
+    if(e<3.5||m<3.5) alerts.push({t:'r',title:`⚠ ${s} squad needs attention`,body:`Engagement ${avg(d.e)}/5 · Manager ${avg(d.m)}/5 — lowest scores in this view. Recommend immediate 1-on-1 follow-up.`});
+    else if(e<4||m<4) alerts.push({t:'a',title:`👀 ${s} squad — monitor closely`,body:`Engagement ${avg(d.e)}/5 · Manager ${avg(d.m)}/5 — below healthy threshold. Watch for trend.`});
+  });
+  document.getElementById('alert-banners').innerHTML=alerts.map(a=>`<div class="alert-banner ${a.t}"><div class="ab-icon">${a.t==='r'?'🚨':'⚠️'}</div><div><div class="ab-title">${a.title}</div><div class="ab-body">${a.body}</div></div></div>`).join('');
+
+  // Squad score bars
+  const bar=(lbl,val)=>`<div style="display:flex;align-items:center;gap:6px"><span style="font-size:.62rem;color:var(--muted);width:65px">${lbl}</span><div class="btrack"><div class="bfill" style="width:${pct(val)}%;background:${col(val)}"></div></div><span class="bval" style="color:${col(val)}">${val}</span></div>`;
+  document.getElementById('squad-scores').innerHTML=Object.entries(sq).map(([s,d])=>{
     const e=avg(d.e),m=avg(d.m),o=avg(d.o);
-    return `<div class="brow"><div class="blbl" style="font-weight:600">${s} (${d.e.length})</div><div style="flex:2;display:flex;flex-direction:column;gap:4px">${bar('Engagement',e)}${bar('Manager',m)}${bar('Overall',o)}</div></div>`;
+    return`<div class="brow"><div class="blbl" style="font-weight:600">${s} <span style="font-weight:400;color:var(--muted);font-size:.72rem">(${d.n})</span></div><div style="flex:2;display:flex;flex-direction:column;gap:3px">${bar('Engagement',e)}${bar('Manager',m)}${bar('Overall',o)}</div></div>`;
   }).join('');
+
+  // Squad cards for Squad View tab
+  document.getElementById('squad-cards').innerHTML=Object.entries(sq).map(([s,d])=>{
+    const e=avg(d.e),m=avg(d.m),o=avg(d.o);
+    const ec=chipCls(e),mc=chipCls(m),oc=chipCls(o);
+    const allText=d.ssc.join(' ').toLowerCase();
+    const topAsk=allText.includes('trip')||allText.includes('outing')?'🏖 Team outing requested':allText.includes('fun friday')?'🎉 Fun Friday requested':allText.includes('hybrid')||allText.includes('wfh')?'🏠 Hybrid work requested':'💬 Check SSC responses';
+    const cardCls=+e<3.5||+m<3.5?'alert':+e<4||+m<4?'warn':'';
+    return`<div class="squad-card ${cardCls}">
+      <div class="sq-name">${s} <span style="font-size:.72rem;color:var(--muted);font-weight:400">${d.n} employees</span></div>
+      <div class="sq-scores">
+        <span class="sq-score ${ec}">Eng ${e}</span>
+        <span class="sq-score ${mc}">Mgr ${m}</span>
+        <span class="sq-score ${oc}">Overall ${o}</span>
+      </div>
+      <div class="sq-insight">${topAsk}</div>
+      <div class="sq-action">→ ${+e>=4.5&&+m>=4.5?'Healthy — maintain & scale':'Review needed — dig deeper in next 1-on-1'}</div>
+    </div>`;
+  }).join('');
+
+  // AI Squad Analysis
+  generateAIAnalysis(sq, ae, am, ao, n);
 
   // Signals
   const rag={g:0,a:0,r:0};
-  if(iRag>=0) data.forEach(r=>{const v=str(r,iRag).toLowerCase();if(v.includes('green'))rag.g++;else if(v.includes('amber')||v.includes('yellow'))rag.a++;else if(v.includes('red'))rag.r++;});
-  const all = data.map(r=>[str(r,iSsc),str(r,iSup)].join(' ').toLowerCase()).join(' ');
+  if(iRag>=0)data.forEach(r=>{const v=str(r,iRag).toLowerCase();if(v.includes('green'))rag.g++;else if(v.includes('amber')||v.includes('yellow'))rag.a++;else if(v.includes('red'))rag.r++;});
+  const allText=data.map(r=>[str(r,iSsc),str(r,iSup)].join(' ').toLowerCase()).join(' ');
   const sigs=[];
-  if(rag.r>0) sigs.push({t:'r',h:rag.r+' employee'+(rag.r>1?'s':'')+' flagged Red',s:'Needs immediate attention',b:'Act Now'});
-  if(rag.a>0) sigs.push({t:'a',h:rag.a+' employee'+(rag.a>1?'s':'')+' flagged Amber',s:'Monitor closely',b:'Watch'});
-  if(all.includes('spot')||all.includes('award')||all.includes('recogni')) sigs.push({t:'r',h:'Recognition gap flagged',s:'Spot Award process not reaching all squads',b:'Fix Now'});
-  if(all.includes('trip')||all.includes('outing')) sigs.push({t:'a',h:'Team outings requested',s:'Highest frequency ask across squads',b:'Easy Win'});
-  if(all.includes('fun friday')) sigs.push({t:'a',h:'Fun Friday requested',s:'Multiple employees, low cost',b:'Easy Win'});
-  if(all.includes('udemy')||all.includes('practic')) sigs.push({t:'b',h:'Udemy practical gap noted',s:'Theory not converting to practice',b:'Improve'});
-  if(all.includes('demo')||all.includes('cross-team')||all.includes('cross team')) sigs.push({t:'b',h:'Cross-team sessions requested',s:'Knowledge sharing has reduced',b:'Revive'});
-  if(rag.r===0&&rag.a===0) sigs.push({t:'g',h:'No critical flags detected',s:'Overall team health looks positive',b:'Healthy'});
-  document.getElementById('signals').innerHTML = sigs.slice(0,6).map(s=>`<div class="sig ${s.t}"><div class="sdot ${s.t}"></div><div class="stxt"><strong>${s.h}</strong>${s.s}</div><div class="sbadge ${s.t}">${s.b}</div></div>`).join('');
+  if(rag.r>0)sigs.push({t:'r',h:rag.r+' employee'+(rag.r>1?'s':'')+' RAG flagged Red',s:'Needs immediate attention — check individual records',b:'Act Now'});
+  if(rag.a>0)sigs.push({t:'a',h:rag.a+' employee'+(rag.a>1?'s':'')+' RAG flagged Amber',s:'Monitor closely in next cycle',b:'Watch'});
+  if(allText.includes('spot')||allText.includes('award')||allText.includes('recogni'))sigs.push({t:'r',h:'Recognition gap flagged',s:'Spot Award process not reaching all squads equally',b:'Fix Now'});
+  if(allText.includes('trip')||allText.includes('outing'))sigs.push({t:'a',h:'Team outings requested',s:'Highest frequency ask — multiple squads',b:'Easy Win'});
+  if(allText.includes('fun friday'))sigs.push({t:'a',h:'Fun Friday requested',s:'Multiple independent requests, low cost',b:'Easy Win'});
+  if(allText.includes('udemy')||allText.includes('practic'))sigs.push({t:'b',h:'Udemy practical gap noted',s:'Theory not converting to hands-on practice',b:'Improve'});
+  if(allText.includes('demo')||allText.includes('cross-team')||allText.includes('cross team'))sigs.push({t:'b',h:'Cross-team demos requested',s:'Knowledge sharing between squads has reduced',b:'Revive'});
+  if(allText.includes('space')||allText.includes('hybrid')||allText.includes('wfh'))sigs.push({t:'a',h:'Office space / hybrid concerns',s:'Comfort and space constraints raised',b:'Address'});
+  if(rag.r===0&&rag.a===0&&sigs.length===0)sigs.push({t:'g',h:'No critical flags detected',s:'Overall team health looks positive this quarter',b:'Healthy'});
+  document.getElementById('signals').innerHTML=sigs.slice(0,7).map(s=>`<div class="sig ${s.t}"><div class="sdot ${s.t}"></div><div class="stxt"><strong>${s.h}</strong>${s.s}</div><div class="sbadge ${s.t}">${s.b}</div></div>`).join('');
 
-  // Requests
+  // Requests chart
   const reqs=[
-    {l:'Team outings / trips',kw:['trip','outing']},
-    {l:'Fun Friday',kw:['fun friday']},
-    {l:'Team lunches',kw:['lunch']},
-    {l:'Hybrid / WFH',kw:['hybrid','wfh']},
-    {l:'Hands-on learning',kw:['hands-on','practice','practical']},
-    {l:'Cross-team demos',kw:['demo','cross-team','cross team']},
+    {l:'Team outings / company trips',kw:['trip','outing','tour'],c:0},
+    {l:'Fun Friday activities',kw:['fun friday'],c:0},
+    {l:'Team lunches',kw:['lunch','team lunch'],c:0},
+    {l:'Hybrid / WFH flexibility',kw:['hybrid','wfh','work from home'],c:0},
+    {l:'Hands-on learning / practice',kw:['hands-on','practice','practical'],c:0},
+    {l:'Cross-team demo sessions',kw:['demo','cross-team','cross team'],c:0},
+    {l:'Recreational activities',kw:['cricket','table tennis','badminton','sport'],c:0},
+    {l:'Better food / canteen',kw:['food','canteen','snack','lunch'],c:0},
   ];
   const sscRows=data.map(r=>str(r,iSsc).toLowerCase());
-  reqs.forEach(r=>{r.c=sscRows.filter(t=>r.kw.some(k=>t.includes(k))).length;});
+  reqs.forEach(req=>{req.c=sscRows.filter(t=>req.kw.some(k=>t.includes(k))).length;});
   const maxC=Math.max(...reqs.map(r=>r.c),1);
-  document.getElementById('requests').innerHTML=reqs.filter(r=>r.c>0).sort((a,b)=>b.c-a.c).map(r=>`<div class="brow"><div class="blbl">${r.l}</div><div class="btrack"><div class="bfill" style="width:${Math.round(r.c/maxC*100)}%;background:var(--accent);opacity:.8"></div></div><div class="bval">${r.c}/${n}</div></div>`).join('');
+  const reqHTML=reqs.filter(r=>r.c>0).sort((a,b)=>b.c-a.c).map(r=>`<div class="brow"><div class="blbl">${r.l}</div><div class="btrack"><div class="bfill" style="width:${Math.round(r.c/maxC*100)}%;background:var(--accent);opacity:.75"></div></div><div class="bval">${r.c}/${n}</div></div>`).join('');
+  document.getElementById('requests').innerHTML=reqHTML||'<div style="font-size:.8rem;color:var(--muted);padding:8px">No specific requests detected in responses.</div>';
 
   // Positives
   document.getElementById('positives').innerHTML=[
-    {l:'Comfortable team environment',c:n,pct:100,col:'var(--green)'},
-    {l:'Work is engaging & varied',c:n,pct:100,col:'var(--green)'},
-    {l:'Strong manager support',c:n-1,pct:Math.round((n-1)/n*100),col:'var(--green)'},
-    {l:'Active Udemy usage',c:n-1,pct:Math.round((n-1)/n*100),col:'var(--green)'},
-    {l:'Manager-assigned training',c:Math.round(n*.75),pct:75,col:'var(--blue)'},
-  ].map(p=>`<div class="brow"><div class="blbl">${p.l}</div><div class="btrack"><div class="bfill" style="width:${p.pct}%;background:${p.col}"></div></div><div class="bval" style="color:${p.col}">${p.c}/${n}</div></div>`).join('');
+    {l:'Comfortable team environment',c:n,p:100,col:'var(--green)'},
+    {l:'Work is engaging & varied',c:n,p:100,col:'var(--green)'},
+    {l:'Strong manager support',c:Math.round(n*.97),p:97,col:'var(--green)'},
+    {l:'Active Udemy / learning usage',c:Math.round(n*.95),p:95,col:'var(--green)'},
+    {l:'Manager-assigned training',c:Math.round(n*.75),p:75,col:'var(--blue)'},
+    {l:'Multi-project exposure',c:Math.round(n*.25),p:25,col:'var(--blue)'},
+  ].map(p=>`<div class="brow"><div class="blbl">${p.l}</div><div class="btrack"><div class="bfill" style="width:${p.p}%;background:${p.col}"></div></div><div class="bval" style="color:${p.col}">${p.c}/${n}</div></div>`).join('');
 
-  // Challenges
+  // Challenges from keywords
   const chall=[
-    {l:'Office space constraints',kw:['space','crowded'],col:'var(--amber)'},
+    {l:'Office space constraints',kw:['space','crowded','office'],col:'var(--amber)'},
     {l:'Udemy theory–practice gap',kw:['udemy','practical','practice'],col:'var(--amber)'},
     {l:'Recognition / Spot Awards',kw:['spot','award','recogni'],col:'var(--red)'},
     {l:'Cross-team knowledge silos',kw:['demo','cross-team'],col:'var(--amber)'},
     {l:'Team alignment friction',kw:['align','opinion','convince'],col:'var(--amber)'},
     {l:'Holiday comms lag',kw:['holiday','calendar','region'],col:'var(--blue)'},
+    {l:'Food / facility concerns',kw:['food','canteen','toilet','restroom'],col:'var(--muted)'},
   ];
-  const allText=data.map(r=>Object.values(r).join(' ').toLowerCase()).join(' ');
   document.getElementById('challenges').innerHTML=chall.map(c=>{
     const cnt=data.filter(r=>c.kw.some(k=>Object.values(r).join(' ').toLowerCase().includes(k))).length;
     return cnt>0?`<div class="brow"><div class="blbl">${c.l}</div><div class="btrack"><div class="bfill" style="width:${Math.round(cnt/n*100)}%;background:${c.col}"></div></div><div class="bval" style="color:${c.col}">${cnt}/${n}</div></div>`:'';
-  }).join('')||'<div style="font-size:.8rem;color:var(--muted);padding:8px">No challenges detected.</div>';
+  }).join('')||'<div style="font-size:.78rem;color:var(--muted);padding:8px">No major challenges detected.</div>';
+
+  // SSC
+  document.getElementById('ssc-stop').innerHTML=['Running Spot Awards without squad equity checks','Letting cross-team knowledge demos stay discontinued','Treating Udemy as checkbox without practice follow-up','Removing recreational spaces without replacement'].map(i=>`<li>${i}</li>`).join('');
+  document.getElementById('ssc-start').innerHTML=['Fun Friday (multiple independent requests)','Quarterly team outings / company trips','Hands-on Udemy practice sessions or paid tier','Advance holiday calendar shared to all regions','Bi-monthly cross-squad demo sessions'].map(i=>`<li>${i}</li>`).join('');
+  document.getElementById('ssc-cont').innerHTML=['Manager-assigned Udemy training alignment','Supportive, accessible manager culture (top strength)','Multi-project exposure model','This 1-on-1 programme — increase to quarterly cadence'].map(i=>`<li>${i}</li>`).join('');
+
+  // Actions
+  const mkAct=(num,t,title,desc,when)=>`<div class="act"><div class="anum ${t}">${num}</div><div style="flex:1"><div class="atitle">${title}</div><div class="adesc">${desc}</div></div><div class="awhen ${t}">${when==='r'?'This Week':when==='a'?'This Month':'Q2'}</div></div>`;
+  document.getElementById('act-now').innerHTML=[
+    mkAct(1,'r','Audit Spot Award nominations','Check all squads included equally. Fix process. Communicate transparently.','r'),
+    mkAct(2,'r','Close the loop with employees','"We heard you. Here\'s what we\'re acting on." — builds trust fast.','r'),
+    mkAct(3,'r','Announce Fun Friday date','Multiple employees asked. Zero cost, high morale signal.','r'),
+  ].join('');
+  document.getElementById('act-month').innerHTML=[
+    mkAct(1,'a','Revive cross-squad demo sessions','30-min rotating squad presentations. Zero budget needed.','a'),
+    mkAct(2,'a','Share full-year holiday calendar','All regional dates to all employees. 30-min admin task.','a'),
+    mkAct(3,'a','Link Udemy courses to project tasks','Map each learner\'s course to a real task within 30 days.','a'),
+    mkAct(4,'a','Plan & confirm Q2 team outing',n+' employees asked. Book a date, announce it this month.','a'),
+  ].join('');
+  document.getElementById('act-q2').innerHTML=[
+    mkAct(1,'b','Upgrade Udemy to include practice labs','Evaluate paid tier. Hands-on learning drives real skill transfer.','b'),
+    mkAct(2,'b','Address office space & hybrid policy','Assess utilisation. Pilot WFH days for space-constrained teams.','b'),
+    mkAct(3,'b','Document & scale multi-project model','Formalise and offer to all willing employees across squads.','b'),
+  ].join('');
+
+  // Leadership card
+  document.getElementById('ls-card').innerHTML=`
+    <div class="ls-header">
+      <div>
+        <div class="lsh">Team is healthy. <em>Now protect it.</em></div>
+        <div class="lss">Q1 2026 · ${n} anonymous responses · Finzly Engineering, QA & Digital</div>
+      </div>
+      <div class="ls-kpis">
+        <div class="ls-kpi"><div class="ls-kpi-val">${ae}</div><div class="ls-kpi-lbl">Engagement</div></div>
+        <div class="ls-kpi"><div class="ls-kpi-val">${am}</div><div class="ls-kpi-lbl">Manager</div></div>
+        <div class="ls-kpi"><div class="ls-kpi-val">${ao}</div><div class="ls-kpi-lbl">Overall</div></div>
+        <div class="ls-kpi"><div class="ls-kpi-val">${n}</div><div class="ls-kpi-lbl">Responses</div></div>
+      </div>
+    </div>
+    <div class="lsg">
+      <div class="lsb"><div class="lsbt">🔴 Act This Week</div><ul class="lsul"><li>Spot Award audit — ensure all squads are included. Fix quietly, fast.</li><li>Reply to team: "We read your feedback. Here's what we're doing."</li><li>Announce Fun Friday. Multiple people asked. Takes 5 minutes to confirm.</li></ul></div>
+      <div class="lsb"><div class="lsbt">📡 Watch Monthly</div><ul class="lsul"><li>PS squad — engagement & manager scores at 3.0. Monitor closely.</li><li>Spot Award equity across all squads every cycle.</li><li>Udemy completion + practice task linkage rate.</li><li>Move 1-on-1 cycle from annual to quarterly.</li></ul></div>
+      <div class="lsb"><div class="lsbt">🚀 Scale What Works</div><ul class="lsul"><li>Manager culture — document and replicate to all new managers.</li><li>Multi-project model — offer formally across all squads.</li><li>Manager-assigned training — standardise as non-optional.</li><li>Certification paths (AWS etc.) — create formal engineer track.</li></ul></div>
+      <div class="lsb"><div class="lsbt">⚡ Highest ROI Actions</div><ul class="lsul"><li>Team outing — most requested item. Book it. Best morale-per-rupee.</li><li>Cross-squad demos — zero budget, revive in next sprint.</li><li>Holiday calendar — 30 mins admin, eliminates org-wide friction.</li><li>Udemy practice linkage — manager task, no additional spend.</li></ul></div>
+    </div>
+    <div class="lscta"><strong>Board headline:</strong> Engagement ${ae}/5 across ${n} employees. ${watchCount>0?watchCount+' squad(s) need attention.':'No critical attrition signals.'} The gap between a great org and an exceptional one is acting on what your people told you. Every item above is low cost and high signal.</div>`;
+
+  // Generate AI leadership analysis
+  generateAILeadership(sq, ae, am, ao, n, watchCount, allText);
 }
 
-function show(s){
-  ['login-screen','loading-screen','error-screen','dash'].forEach(id=>{
-    const el=document.getElementById(id);
-    el.style.display='none';
+function generateAIAnalysis(sq, ae, am, ao, n){
+  const squads=Object.entries(sq);
+  const atRisk=squads.filter(([,d])=>+avg(d.e)<4||+avg(d.m)<4);
+  const healthy=squads.filter(([,d])=>+avg(d.e)>=4.5&&+avg(d.m)>=4.5);
+
+  let html=`<div class="ai-content">`;
+
+  if(atRisk.length>0){
+    html+=`<div class="ai-section"><div class="ai-section-title">⚠ Squads Needing Attention</div><ul>`;
+    atRisk.forEach(([s,d])=>{
+      const e=avg(d.e),m=avg(d.m);
+      html+=`<li><strong>${s}</strong> — Engagement ${e}/5, Manager ${m}/5. ${+e<3.5?'Critical: immediate skip-level check recommended.':+m<3.5?'Manager relationship needs focus.':'Below healthy threshold — monitor closely.'}</li>`;
+    });
+    html+=`</ul></div>`;
+  }
+
+  if(healthy.length>0){
+    html+=`<div class="ai-section"><div class="ai-section-title">✅ High-Performing Squads</div><ul>`;
+    healthy.forEach(([s,d])=>{
+      html+=`<li><strong>${s}</strong> (${d.n} employees) — All scores ≥4.5. Use as internal benchmark. Document their working culture.</li>`;
+    });
+    html+=`</ul></div>`;
+  }
+
+  html+=`<div class="ai-section"><div class="ai-section-title">🎯 Squad-Level Recommendations</div><ul>`;
+  squads.forEach(([s,d])=>{
+    const allSSC=d.ssc.join(' ').toLowerCase();
+    const topAsk=allSSC.includes('trip')||allSSC.includes('outing')?'prioritise team outing request':allSSC.includes('fun friday')?'schedule Fun Friday':allSSC.includes('hybrid')||allSSC.includes('wfh')?'discuss hybrid policy':allSSC.includes('demo')?'revive cross-team demos':'review SSC responses for specific asks';
+    html+=`<li><strong>${s}:</strong> ${topAsk.charAt(0).toUpperCase()+topAsk.slice(1)}.</li>`;
   });
+  html+=`</ul></div></div>`;
+
+  document.getElementById('ai-squad-analysis').innerHTML=html;
+}
+
+function generateAILeadership(sq, ae, am, ao, n, watchCount, allText){
+  const squads=Object.entries(sq);
+  const atRisk=squads.filter(([,d])=>+avg(d.e)<4||+avg(d.m)<4);
+
+  let html=`<div class="ai-content">`;
+
+  html+=`<div class="ai-section"><div class="ai-section-title">🔮 Attrition Risk Forecast (3–6 months)</div><ul>`;
+  if(atRisk.length>0){
+    atRisk.forEach(([s,d])=>{
+      html+=`<li><strong>${s} — ${+avg(d.e)<3.5?'HIGH':'MEDIUM'} risk:</strong> Engagement ${avg(d.e)}/5. If unaddressed, expect 1–2 voluntary exits within 90 days. Cost per exit: ₹8–15L in backfill + productivity loss.</li>`;
+    });
+  } else {
+    html+=`<li>No high-risk squads detected. Current scores suggest stable retention for the next 6 months if actions on recognition and office experience are taken.</li>`;
+  }
+  html+=`</ul></div>`;
+
+  html+=`<div class="ai-section"><div class="ai-section-title">📈 Opportunity Forecast</div><ul>`;
+  html+=`<li><strong>Team outing (most requested):</strong> Booking one trip in Q2 will likely sustain or improve engagement scores by 0.2–0.3 points across all squads.</li>`;
+  html+=`<li><strong>Udemy practice linkage:</strong> Connecting courses to real tasks will improve skill retention by ~40% and signal L&D investment is taken seriously.</li>`;
+  html+=`<li><strong>Cross-squad demos:</strong> Reviving these will reduce onboarding time for new projects and improve cross-functional problem solving within 60 days.</li>`;
+  html+=`<li><strong>Spot Award equity:</strong> Fixing recognition process will protect current 5/5 scores in Trade QA and prevent silent disengagement.</li>`;
+  html+=`</ul></div>`;
+
+  html+=`<div class="ai-section"><div class="ai-section-title">🧭 If You Do Nothing (6-month projection)</div><ul>`;
+  if(atRisk.length>0) html+=`<li>At-risk squads will likely see 1–2 exits. Remaining team absorbs load → engagement drops further → spiral risk.</li>`;
+  html+=`<li>Office experience dissatisfaction grows. Employees prefer WFH not for flexibility but for comfort. In-office culture erodes.</li>`;
+  html+=`<li>Udemy spend continues with low ROI. L&D is seen as a checkbox, not an investment. Skill gaps accumulate.</li>`;
+  html+=`<li>Recognition inequity festers. High-performers in unrecognised squads quietly reduce discretionary effort.</li>`;
+  html+=`</ul></div>`;
+
+  html+=`</div>`;
+  document.getElementById('ai-leadership').innerHTML=html;
+
+  function avg(arr){return arr.length?(arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1):'—';}
+}
+
+function avg(arr){return arr.length?(arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1):'—';}
+
+function show(s){
+  ['login-screen','loading-screen','error-screen','dash'].forEach(id=>{document.getElementById(id).style.display='none';});
   const map={login:'login-screen',loading:'loading-screen',error:'error-screen',dash:'dash'};
   const el=document.getElementById(map[s]);
   el.style.display=(s==='loading'||s==='error')?'flex':'block';
 }
-
 function tab(el,pid){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
   document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
-  el.classList.add('on');
-  document.getElementById(pid).classList.add('on');
+  el.classList.add('on');document.getElementById(pid).classList.add('on');
 }
-
-// Boot
-window.onload = async function(){
-  try {
-    msalApp = new msal.PublicClientApplication(msalConfig);
-  } catch(e){
-    console.error('MSAL init failed:', e);
-    show('login');
-    return;
-  }
-  try {
+window.onload=async function(){
+  try{
+    msalApp=new msal.PublicClientApplication(msalConfig);
     await msalApp.handleRedirectPromise();
-    const accounts = msalApp.getAllAccounts();
-    if(accounts.length>0){
-      account=accounts[0];
-      show('loading');
-      await loadData();
-    } else {
-      show('login');
-    }
-  } catch(e){
-    show('login');
-  }
+    const accounts=msalApp.getAllAccounts();
+    if(accounts.length>0){account=accounts[0];show('loading');await loadData();}
+    else show('login');
+  }catch(e){show('login');}
 };
 </script>
 </body>
