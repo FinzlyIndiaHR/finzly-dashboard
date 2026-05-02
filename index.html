@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Finzly · People Pulse · Q1 2026</title>
-<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js" crossorigin="anonymous"></script>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -227,13 +227,15 @@ const msalConfig = {
 };
 
 let msalApp, account;
-try { msalApp = new msal.PublicClientApplication(msalConfig); } catch(e){ console.error(e); }
 
 const SCOPES = ["Files.Read","User.Read"];
 
 async function signIn(){
   try {
     show('loading');
+    // Always init fresh on button click
+    msalApp = new msal.PublicClientApplication(msalConfig);
+    await msalApp.initialize();
     const r = await msalApp.loginPopup({scopes:SCOPES});
     account = r.account;
     await loadData();
@@ -411,7 +413,13 @@ function tab(el,pid){
 
 // Boot
 window.onload = async function(){
-  if(!msalApp){show('login');return;}
+  try {
+    msalApp = new msal.PublicClientApplication(msalConfig);
+  } catch(e){
+    console.error('MSAL init failed:', e);
+    show('login');
+    return;
+  }
   try {
     await msalApp.handleRedirectPromise();
     const accounts = msalApp.getAllAccounts();
