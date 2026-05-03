@@ -503,13 +503,13 @@ const SCOPES=["Files.Read.All","User.Read"];
 
 async function signIn(){
   try{show('loading');msalApp=new msal.PublicClientApplication(msalConfig);
-    const r=await msalApp.loginPopup({scopes:SCOPES});account=r.account;await loadData();
+    await msalApp.loginRedirect({scopes:SCOPES});
   }catch(e){show('login');alert("Sign-in failed: "+e.message);}
 }
 async function signOut(){await msalApp.logoutPopup({account});location.reload();}
 async function getToken(){
   try{return(await msalApp.acquireTokenSilent({scopes:SCOPES,account})).accessToken;}
-  catch{return(await msalApp.acquireTokenPopup({scopes:SCOPES,account})).accessToken;}
+  catch(e){await msalApp.acquireTokenRedirect({scopes:SCOPES,account});return null;}
 }
 
 let ALL_DATA=[],ALL_HEADERS=[];
@@ -948,11 +948,25 @@ function tab(el,pid){
 window.onload=async function(){
   try{
     msalApp=new msal.PublicClientApplication(msalConfig);
-    await msalApp.handleRedirectPromise();
+    const resp=await msalApp.handleRedirectPromise();
+    if(resp){
+      account=resp.account;
+      show('loading');
+      await loadData();
+      return;
+    }
     const accounts=msalApp.getAllAccounts();
-    if(accounts.length>0){account=accounts[0];show('loading');await loadData();}
-    else show('login');
-  }catch(e){show('login');}
+    if(accounts.length>0){
+      account=accounts[0];
+      show('loading');
+      await loadData();
+    } else {
+      show('login');
+    }
+  }catch(e){
+    console.error(e);
+    show('login');
+  }
 };
 </script>
 </body>
