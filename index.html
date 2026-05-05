@@ -877,12 +877,12 @@ function render(data){
       const e=avg(d.e);return`<div class="loc-sq-row"><div class="loc-sq-lbl">${s}</div><div class="loc-sq-track"><div class="loc-sq-fill" style="width:${pct(e)}%"></div></div><div class="loc-sq-val">${e}</div></div>`;
     }).join('');
     const lsscRows=locD.map(r=>str(r,iSsc).toLowerCase());
-    allReqs.forEach(r=>{r.lc=lsscRows.filter(t=>r.kw.some(k=>t.includes(k))).length;});
-    const lmax=Math.max(...allReqs.map(r=>r.lc||0),1);
+    const locReqs=allReqs.map(r=>({...r,lc:lsscRows.filter(t=>r.kw.some(k=>t.includes(k))).length}));
+    const lmax=Math.max(...locReqs.map(r=>r.lc),1);
     const reqEl=document.getElementById(prefix+'-req');
-    if(reqEl)reqEl.innerHTML=allReqs.filter(r=>(r.lc||0)>0).sort((a,b)=>(b.lc||0)-(a.lc||0))
-      .map(r=>`<div class="brow"><div class="blbl">${r.icon} ${r.l}</div><div class="btrack"><div class="bfill" style="width:${Math.round((r.lc||0)/lmax*100)}%;background:${color};opacity:.75"></div></div><div class="bval">${r.lc||0}/${locD.length}</div></div>`).join('')
-      ||'<div style="font-size:.76rem;color:var(--muted)">No specific requests in this location.</div>';
+    if(reqEl)reqEl.innerHTML=locReqs.filter(r=>r.lc>0).sort((a,b)=>b.lc-a.lc)
+      .map(r=>`<div class="brow"><div class="blbl">${r.icon} ${r.l}</div><div class="btrack"><div class="bfill" style="width:${Math.round(r.lc/lmax*100)}%;background:${color};opacity:.75"></div></div><div class="bval">${r.lc}/${locD.length}</div></div>`).join('')
+      ||'<div style="font-size:.76rem;color:var(--muted)">No specific requests detected in this location.</div>';
   };
   renderLoc(chD,'ch','var(--ch)');renderLoc(puD,'pu','var(--pu)');
 
