@@ -886,9 +886,15 @@ function render(data){
     const engIdx = iEng>=0 ? iEng : 17;
     const mgrIdx = iMgr>=0 ? iMgr : 14;
     const ovIdx  = iOv>=0  ? iOv  : 20;
+    // Debug: log first 3 rows for this location
+    console.log('=== '+prefix.toUpperCase()+' DEBUG === engIdx:'+engIdx+' ovIdx:'+ovIdx+' rows:'+locD.length);
+    locD.slice(0,3).forEach((r,i)=>{
+      console.log('Row '+i+' | eng['+engIdx+']:'+JSON.stringify(r[engIdx])+' | ov['+ovIdx+']:'+JSON.stringify(r[ovIdx]));
+    });
     const le=locD.map(r=>num(r,engIdx)).filter(v=>v!==null);
     const lm=locD.map(r=>num(r,mgrIdx)).filter(v=>v!==null);
     const lo=locD.map(r=>num(r,ovIdx)).filter(v=>v!==null);
+    console.log('le:'+le+' lm:'+lm+' lo:'+lo);
     document.getElementById(prefix+'-badge').textContent=locD.length+" employees";
     document.getElementById(prefix+'-eng').textContent=avg(le)||'—';
     document.getElementById(prefix+'-mgr').textContent=avg(lm)||'—';
