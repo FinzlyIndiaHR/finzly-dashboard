@@ -634,9 +634,10 @@ function render(data){
 
   const num=(row,i)=>{
     if(i<0)return null;
-    const v=String(row[i]||'');
-    const m=v.match(/^\s*([1-5])\s*[-–,]|^\s*([1-5])\s*$|\b([1-5])\b/);
-    return m?+([m[1],m[2],m[3]].find(x=>x)):null;
+    const v=String(row[i]||'').trim();
+    // Match: "5", "5-", "5–", "5,", "5 ,", "5 -", "5- reason", "5, reason"
+    const m=v.match(/^([1-5])\s*[-–,\s]/) || v.match(/^([1-5])$/) || v.match(/\b([1-5])\b/);
+    return m?+m[1]:null;
   };
   const str=(row,i)=>i<0?'':String(row[i]||'').trim();
 
@@ -824,7 +825,7 @@ function render(data){
 
   // REQUESTS — ranked with top 3 prominent
   const allReqs=[
-    {l:'Team Outings & Trips',icon:'🏖',kw:['trip','outing','tour','travel','asking for trip','team outing']},
+    {l:'Team Outings & Trips',icon:'🏖',kw:['trip','outing','tour','travel','asking for','team outing']},
     {l:'Fun Friday',icon:'🎉',kw:['fun friday','fun-friday']},
     {l:'Team Lunches',icon:'🍽',kw:['lunch','team lunch','lunches']},
     {l:'Hybrid / WFH',icon:'🏠',kw:['hybrid','wfh','work from home','work from']},
