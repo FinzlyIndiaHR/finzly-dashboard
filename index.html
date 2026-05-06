@@ -623,7 +623,7 @@ function render(data){
   const iMgr=ci(['relationship','communication','rating on','describe your relationship']);
   const iEng=ci(['engaged','engagement','scale of 1','how engaged']);
   const iOv=ci(['overall experience']);
-  const iSsc=ci(['stop','start','continue']);
+  const iSsc=ci(['stop','start','continue','should start','should stop','team/company','as a team']);
   const iRag=ci(['rag']);
   const iCom=ci(['additional comments','comments']);
   const iPsych=ci(['comfortable','concerns','feedback','new ideas']);
@@ -824,17 +824,17 @@ function render(data){
 
   // REQUESTS — ranked with top 3 prominent
   const allReqs=[
-    {l:'Team Outings & Trips',icon:'🏖',kw:['trip','outing','tour','travel']},
-    {l:'Fun Friday',icon:'🎉',kw:['fun friday']},
-    {l:'Team Lunches',icon:'🍽',kw:['lunch','team lunch']},
+    {l:'Team Outings & Trips',icon:'🏖',kw:['trip','outing','tour','travel','asking for trip','team outing']},
+    {l:'Fun Friday',icon:'🎉',kw:['fun friday','fun-friday']},
+    {l:'Team Lunches',icon:'🍽',kw:['lunch','team lunch','lunches']},
     {l:'Hybrid / WFH',icon:'🏠',kw:['hybrid','wfh','work from home','work from']},
     {l:'Hands-on Learning',icon:'🛠',kw:['hands-on','practice','practical','automation session']},
     {l:'Cross-team Demos',icon:'🔄',kw:['demo','cross-team','cross team','other team']},
-    {l:'Recreational Activities',icon:'🏏',kw:['cricket','table tennis','sport','game','badminton']},
+    {l:'Recreational Activities',icon:'🏏',kw:['cricket','table tennis','sport','game','badminton','reintroduc']},
     {l:'Better Food / Canteen',icon:'🥗',kw:['food','canteen','snack','biscuit','milk']},
     {l:'Holiday Calendar',icon:'📅',kw:['holiday','calendar','region','notif']},
   ];
-  const sscRows=data.map(r=>str(r,iSsc).toLowerCase());
+  const sscRows=data.map(r=>[str(r,iSsc),str(r,iSup),str(r,iQ2)].join(' ').toLowerCase());
   allReqs.forEach(req=>{req.c=sscRows.filter(t=>req.kw.some(k=>t.includes(k))).length;});
   const rankedReqs=allReqs.filter(r=>r.c>0).sort((a,b)=>b.c-a.c);
   const top3=rankedReqs.slice(0,3);
@@ -876,7 +876,7 @@ function render(data){
     document.getElementById(prefix+'-squads').innerHTML=Object.entries(lsq).map(([s,d])=>{
       const e=avg(d.e);return`<div class="loc-sq-row"><div class="loc-sq-lbl">${s}</div><div class="loc-sq-track"><div class="loc-sq-fill" style="width:${pct(e)}%"></div></div><div class="loc-sq-val">${e}</div></div>`;
     }).join('');
-    const lsscRows=locD.map(r=>str(r,iSsc).toLowerCase());
+    const lsscRows=locD.map(r=>[str(r,iSsc),str(r,iSup),str(r,iQ2)].join(' ').toLowerCase());
     const locReqs=allReqs.map(r=>({...r,lc:lsscRows.filter(t=>r.kw.some(k=>t.includes(k))).length}));
     const lmax=Math.max(...locReqs.map(r=>r.lc),1);
     const reqEl=document.getElementById(prefix+'-req');
