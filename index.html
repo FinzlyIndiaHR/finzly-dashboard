@@ -619,25 +619,32 @@ function render(data){
   document.getElementById('f-info').textContent=n+" employee"+(n!==1?'s':'')+" in view";
 
   const ci=kw=>HDRS.findIndex(h=>kw.some(k=>h.includes(k)));
-  const iHR=ci(['name']),iSq=ci(['squad','sqaud']),iPr=ci(['practice']);
-  const iMgr=ci(['relationship','communication','rating on','describe your relationship']);
-  const iEng=ci(['engaged','engagement','scale of 1','how engaged']);
-  const iOv=ci(['overall experience']);
-  const iSsc=ci(['stop','start','continue','should start','should stop','team/company','as a team']);
-  const iRag=ci(['rag']);
-  const iCom=ci(['additional comments','comments']);
-  const iPsych=ci(['comfortable','concerns','feedback','new ideas']);
-  const iQ1=ci(['last quarter','day-to-day']);
-  const iQ2=ci(['going well','challenging']);
-  const iLearn=ci(['skills','training','certifications','udemy']);
-  const iSup=ci(['support','need from us']);
+  // Use keyword search with positional fallback based on known column structure
+  const iHR  = ci(['name']) > -1 ? ci(['name']) : 4;
+  const iSq  = ci(['squad','sqaud']) > -1 ? ci(['squad','sqaud']) : 9;
+  const iPr  = ci(['practice']) > -1 ? ci(['practice']) : 11;
+  const iMgr = ci(['relationship','communication','rating on','describe your relationship']) > -1 ? ci(['relationship','communication','rating on','describe your relationship']) : 14;
+  const iEng = ci(['engaged','engagement','scale of 1','how engaged']) > -1 ? ci(['engaged','engagement','scale of 1','how engaged']) : 17;
+  const iOv  = ci(['overall experience']) > -1 ? ci(['overall experience']) : 20;
+  const iSsc = ci(['stop','start','continue','should start','team/company','as a team']) > -1 ? ci(['stop','start','continue','should start','team/company','as a team']) : 18;
+  const iRag = ci(['rag']) > -1 ? ci(['rag']) : 22;
+  const iCom = ci(['additional comments','comments']) > -1 ? ci(['additional comments','comments']) : 21;
+  const iPsych = ci(['comfortable','concerns','feedback','new ideas']) > -1 ? ci(['comfortable','concerns','feedback','new ideas']) : 15;
+  const iQ1  = ci(['last quarter','day-to-day']) > -1 ? ci(['last quarter','day-to-day']) : 12;
+  const iQ2  = ci(['going well','challenging']) > -1 ? ci(['going well','challenging']) : 13;
+  const iLearn = ci(['skills','training','certifications','udemy']) > -1 ? ci(['skills','training','certifications','udemy']) : 16;
+  const iSup = ci(['support','need from us']) > -1 ? ci(['support','need from us']) : 19;
 
   const num=(row,i)=>{
-    if(i<0)return null;
+    if(i<0||i>=row.length)return null;
     const v=String(row[i]||'').trim();
-    // Match: "5", "5-", "5–", "5,", "5 ,", "5 -", "5- reason", "5, reason"
-    const m=v.match(/^([1-5])\s*[-–,\s]/) || v.match(/^([1-5])$/) || v.match(/\b([1-5])\b/);
-    return m?+m[1]:null;
+    if(!v||v==='null'||v==='undefined')return null;
+    // Match first digit 1-5 at start of string (handles "5 - reason", "5, reason", "5- reason")
+    const m=v.match(/^([1-5])/);
+    if(m)return +m[1];
+    // Fallback: find any 1-5 digit
+    const m2=v.match(/\b([1-5])\b/);
+    return m2?+m2[1]:null;
   };
   const str=(row,i)=>i<0?'':String(row[i]||'').trim();
 
