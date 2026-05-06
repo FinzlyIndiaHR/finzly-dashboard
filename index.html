@@ -551,6 +551,16 @@ async function loadData(){
     const d=await res.json();
     HDRS=d.values[0].map(h=>String(h||'').trim().toLowerCase());
     ALL=d.values.slice(1).filter(r=>r.some(c=>c!==null&&c!==''));
+    
+    // DEBUG: log column headers and first row sample values to console
+    console.log("=== COLUMN HEADERS ===");
+    HDRS.forEach((h,i)=>console.log("["+i+"] "+h));
+    console.log("=== FIRST DATA ROW SAMPLE ===");
+    if(ALL.length>0)ALL[0].forEach((v,i)=>console.log("["+i+"] "+String(v||'').slice(0,60)));
+    console.log("=== NAME COL VALUES (first 5) ===");
+    const iHRd=HDRS.findIndex(h=>h.includes('name'));
+    if(iHRd>=0)ALL.slice(0,5).forEach(r=>console.log("  '"+String(r[iHRd]||'')+"'"));
+    
     populateFilters();render(ALL);
     document.getElementById('ts').textContent="● Live · SharePoint · Refreshed "+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
     document.getElementById('h-live').textContent="● Live";
@@ -619,24 +629,32 @@ function render(data){
   document.getElementById('f-info').textContent=n+" employee"+(n!==1?'s':'')+" in view";
 
   const ci=kw=>HDRS.findIndex(h=>kw.some(k=>h.includes(k)));
-  const iHR=ci(['name']),iSq=ci(['squad','sqaud']),iPr=ci(['practice']);
-  const iMgr=ci(['relationship','communication','rating on','describe your relationship']);
-  const iEng=ci(['engaged','engagement','scale of 1','how engaged']);
-  const iOv=ci(['overall experience']);
-  const iSsc=ci(['stop','start','continue']);
-  const iRag=ci(['rag']);
-  const iCom=ci(['additional comments','comments']);
-  const iPsych=ci(['comfortable','concerns','feedback','new ideas']);
-  const iQ1=ci(['last quarter','day-to-day']);
-  const iQ2=ci(['going well','challenging']);
-  const iLearn=ci(['skills','training','certifications','udemy']);
-  const iSup=ci(['support','need from us']);
+  // Use keyword search with positional fallback based on known column structure
+  const iHR  = ci(['name']) > -1 ? ci(['name']) : 4;
+  const iSq  = ci(['squad','sqaud']) > -1 ? ci(['squad','sqaud']) : 9;
+  const iPr  = ci(['practice']) > -1 ? ci(['practice']) : 11;
+  const iMgr = ci(['relationship','communication','rating on','describe your relationship']) > -1 ? ci(['relationship','communication','rating on','describe your relationship']) : 14;
+  const iEng = ci(['engaged','engagement','scale of 1','how engaged']) > -1 ? ci(['engaged','engagement','scale of 1','how engaged']) : 17;
+  const iOv  = ci(['overall experience']) > -1 ? ci(['overall experience']) : 20;
+  const iSsc = ci(['stop','start','continue','should start','team/company','as a team']) > -1 ? ci(['stop','start','continue','should start','team/company','as a team']) : 18;
+  const iRag = ci(['rag']) > -1 ? ci(['rag']) : 22;
+  const iCom = ci(['additional comments','comments']) > -1 ? ci(['additional comments','comments']) : 21;
+  const iPsych = ci(['comfortable','concerns','feedback','new ideas']) > -1 ? ci(['comfortable','concerns','feedback','new ideas']) : 15;
+  const iQ1  = ci(['last quarter','day-to-day']) > -1 ? ci(['last quarter','day-to-day']) : 12;
+  const iQ2  = ci(['going well','challenging']) > -1 ? ci(['going well','challenging']) : 13;
+  const iLearn = ci(['skills','training','certifications','udemy']) > -1 ? ci(['skills','training','certifications','udemy']) : 16;
+  const iSup = ci(['support','need from us']) > -1 ? ci(['support','need from us']) : 19;
 
   const num=(row,i)=>{
-    if(i<0)return null;
-    const v=String(row[i]||'');
-    const m=v.match(/^\s*([1-5])\s*[-–,]|^\s*([1-5])\s*$|\b([1-5])\b/);
-    return m?+([m[1],m[2],m[3]].find(x=>x)):null;
+    if(i<0||i>=row.length)return null;
+    const v=String(row[i]||'').trim();
+    if(!v||v==='null'||v==='undefined')return null;
+    // Match first digit 1-5 at start of string (handles "5 - reason", "5, reason", "5- reason")
+    const m=v.match(/^([1-5])/);
+    if(m)return +m[1];
+    // Fallback: find any 1-5 digit
+    const m2=v.match(/\b([1-5])\b/);
+    return m2?+m2[1]:null;
   };
   const str=(row,i)=>i<0?'':String(row[i]||'').trim();
 
@@ -824,17 +842,17 @@ function render(data){
 
   // REQUESTS — ranked with top 3 prominent
   const allReqs=[
-    {l:'Team Outings & Trips',icon:'🏖',kw:['trip','outing','tour','travel']},
-    {l:'Fun Friday',icon:'🎉',kw:['fun friday']},
-    {l:'Team Lunches',icon:'🍽',kw:['lunch','team lunch']},
+    {l:'Team Outings & Trips',icon:'🏖',kw:['trip','outing','tour','travel','asking for','team outing']},
+    {l:'Fun Friday',icon:'🎉',kw:['fun friday','fun-friday']},
+    {l:'Team Lunches',icon:'🍽',kw:['lunch','team lunch','lunches']},
     {l:'Hybrid / WFH',icon:'🏠',kw:['hybrid','wfh','work from home','work from']},
     {l:'Hands-on Learning',icon:'🛠',kw:['hands-on','practice','practical','automation session']},
     {l:'Cross-team Demos',icon:'🔄',kw:['demo','cross-team','cross team','other team']},
-    {l:'Recreational Activities',icon:'🏏',kw:['cricket','table tennis','sport','game','badminton']},
+    {l:'Recreational Activities',icon:'🏏',kw:['cricket','table tennis','sport','game','badminton','reintroduc']},
     {l:'Better Food / Canteen',icon:'🥗',kw:['food','canteen','snack','biscuit','milk']},
     {l:'Holiday Calendar',icon:'📅',kw:['holiday','calendar','region','notif']},
   ];
-  const sscRows=data.map(r=>str(r,iSsc).toLowerCase());
+  const sscRows=data.map(r=>[str(r,iSsc),str(r,iSup),str(r,iQ2)].join(' ').toLowerCase());
   allReqs.forEach(req=>{req.c=sscRows.filter(t=>req.kw.some(k=>t.includes(k))).length;});
   const rankedReqs=allReqs.filter(r=>r.c>0).sort((a,b)=>b.c-a.c);
   const top3=rankedReqs.slice(0,3);
@@ -876,13 +894,13 @@ function render(data){
     document.getElementById(prefix+'-squads').innerHTML=Object.entries(lsq).map(([s,d])=>{
       const e=avg(d.e);return`<div class="loc-sq-row"><div class="loc-sq-lbl">${s}</div><div class="loc-sq-track"><div class="loc-sq-fill" style="width:${pct(e)}%"></div></div><div class="loc-sq-val">${e}</div></div>`;
     }).join('');
-    const lsscRows=locD.map(r=>str(r,iSsc).toLowerCase());
-    allReqs.forEach(r=>{r.lc=lsscRows.filter(t=>r.kw.some(k=>t.includes(k))).length;});
-    const lmax=Math.max(...allReqs.map(r=>r.lc||0),1);
+    const lsscRows=locD.map(r=>[str(r,iSsc),str(r,iSup),str(r,iQ2)].join(' ').toLowerCase());
+    const locReqs=allReqs.map(r=>({...r,lc:lsscRows.filter(t=>r.kw.some(k=>t.includes(k))).length}));
+    const lmax=Math.max(...locReqs.map(r=>r.lc),1);
     const reqEl=document.getElementById(prefix+'-req');
-    if(reqEl)reqEl.innerHTML=allReqs.filter(r=>(r.lc||0)>0).sort((a,b)=>(b.lc||0)-(a.lc||0))
-      .map(r=>`<div class="brow"><div class="blbl">${r.icon} ${r.l}</div><div class="btrack"><div class="bfill" style="width:${Math.round((r.lc||0)/lmax*100)}%;background:${color};opacity:.75"></div></div><div class="bval">${r.lc||0}/${locD.length}</div></div>`).join('')
-      ||'<div style="font-size:.76rem;color:var(--muted)">No specific requests in this location.</div>';
+    if(reqEl)reqEl.innerHTML=locReqs.filter(r=>r.lc>0).sort((a,b)=>b.lc-a.lc)
+      .map(r=>`<div class="brow"><div class="blbl">${r.icon} ${r.l}</div><div class="btrack"><div class="bfill" style="width:${Math.round(r.lc/lmax*100)}%;background:${color};opacity:.75"></div></div><div class="bval">${r.lc}/${locD.length}</div></div>`).join('')
+      ||'<div style="font-size:.76rem;color:var(--muted)">No specific requests detected in this location.</div>';
   };
   renderLoc(chD,'ch','var(--ch)');renderLoc(puD,'pu','var(--pu)');
 
@@ -1047,7 +1065,7 @@ function render(data){
       <div class="ls-box"><div class="ls-bt">🔴 Act This Week</div><ul class="ls-ul"><li>Spot Award audit — ensure all squads across Chennai & Pune are included equally.</li><li>Send team-wide message: "We read your 1-on-1 feedback. Here's what we're doing." Builds trust instantly.</li><li>Announce Fun Friday. Multiple squads asked. Takes 5 minutes. Highest morale-per-effort action.</li></ul></div>
       <div class="ls-box"><div class="ls-bt">📡 Watch Monthly</div><ul class="ls-ul"><li>${watchCount>0?watchCount+' squad(s) below 4.0 — monitor in next 1-on-1 cycle.':'All squads healthy — maintain and sustain.'}</li><li>RAG movement: ${rag.Green}G · ${rag.Amber}A · ${rag.Red}R. Prevent any Green from sliding to Amber.</li><li>Udemy completion + practice task linkage rate — track L&D ROI.</li><li>Increase 1-on-1 cadence to quarterly to catch trends earlier.</li></ul></div>
       <div class="ls-box"><div class="ls-bt">🚀 Scale What Works</div><ul class="ls-ul"><li>Manager culture — document top-scoring managers' approach and replicate.</li><li>Multi-project model — formalise and offer across all squads.</li><li>Manager-assigned training — make standard, not optional.</li><li>Certification paths (AWS etc.) — create formal engineer track.</li></ul></div>
-      <div class="ls-box"><div class="ls-bt">⚡ Highest ROI Actions</div><ul class="ls-ul"><li>Team outing — #1 request from ${top3[0]?.c||0} employees. Book it. Best morale-per-rupee.</li><li>Cross-squad demos — zero budget. Revive next sprint. High knowledge value.</li><li>Holiday calendar — 30 mins admin. Eliminates org-wide planning friction.</li><li>Udemy practice linkage — manager task only. No new spend.</li></ul></div>
+      <div class="ls-box"><div class="ls-bt">⚡ Highest ROI Actions</div><ul class="ls-ul"><li>Team outing — requested by ${rankedReqs.length>0?rankedReqs[0].c+" of "+n+" employees ("+rankedReqs[0].l+")":" multiple employees"}. Book it now. Best morale-per-rupee this quarter.</li><li>Cross-squad demos — zero budget. Revive next sprint. High knowledge value.</li><li>Holiday calendar — 30 mins admin. Eliminates org-wide planning friction.</li><li>Udemy practice linkage — manager task only. No new spend.</li></ul></div>
     </div>
     <div class="ls-cta"><strong>Board headline:</strong> Engagement ${ae}/5 across ${n} employees. Chennai avg ${chE}/5 · Pune avg ${puE}/5. RAG: ${rag.Green} healthy · ${rag.Amber} watch · ${rag.Red} urgent. ${atRisk.length>0?atRisk.length+' squad(s) need attention before next cycle.':'No attrition risk signals.'} Top employee request: ${top3[0]?.l||'—'} (${top3[0]?.c||0} of ${n} asked).</div>`;
 
@@ -1060,7 +1078,7 @@ function render(data){
       <li><strong>Pune (${puD.length} employees, avg ${puE}/5):</strong> ${puE>=4.5?'Strong health.':puE>=4?'Good. Address Udemy practical gap to reach 4.5+.':'Below benchmark. Prioritise manager quality and team events.'} Location gap vs Chennai: ${locGap} points.</li>
     </ul></div>
     <div class="ai-sec"><div class="ai-sh">📈 Opportunity Forecast</div><ul class="ai-ul">
-      <li><strong>Team outing</strong> — single highest-impact morale action this quarter. ${top3[0]?.c||0} of ${n} employees asked. Expected impact: +0.2–0.3 engagement points in next cycle.</li>
+      <li><strong>Team outing</strong> — single highest-impact morale action this quarter. ${rankedReqs.length>0?rankedReqs[0].c+" of "+n+" employees asked for "+rankedReqs[0].l:"Multiple employees across squads asked for team events"}. Expected impact: +0.2–0.3 engagement points in next cycle.</li>
       <li><strong>Udemy practice linkage</strong> — connect courses to real tasks. Improves skill retention ~40%. Manager-only effort, zero budget.</li>
       <li><strong>Cross-squad demos</strong> — reviving these reduces onboarding time and cross-functional friction within 60 days.</li>
       <li><strong>Spot Award equity</strong> — fixing nomination process protects high scores and prevents silent disengagement in unrecognised teams.</li>
