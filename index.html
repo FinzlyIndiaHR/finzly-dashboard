@@ -554,7 +554,7 @@ async function loadData(){
     const res=await fetch(url,{headers:H});
     if(!res.ok)throw new Error("Cannot read Excel ("+res.status+").");
     const d=await res.json();
-    HDRS=d.values[0].map(h=>String(h||'').trim().toLowerCase());
+    HDRS=d.values[0].map(h=>String(h||'').trim().toLowerCase().replace(/[–—]/g,'-').replace(/\s+/g,' '));
     ALL=d.values.slice(1).filter(r=>r.some(c=>c!==null&&c!==''));
     populateFilters();render(ALL);
     document.getElementById('ts').textContent="● Live · SharePoint · Refreshed "+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
@@ -571,12 +571,7 @@ function getLoc(row,iHR){
     .trim();
 
   if(v.includes('abirami')) return 'Chennai';
-
-  if(
-    v.includes('vishwata') ||
-    v.includes('vishwatha') ||
-    v.includes('mayekar')
-  ) return 'Pune';
+  if(v.includes('vishwata') || v.includes('vishwatha') || v.includes('mayekar')) return 'Pune';
 
   return 'Unknown';
 }
@@ -639,20 +634,21 @@ function render(data){
   const iHR  = ci(['name']) > -1 ? ci(['name']) : 4;
   const iSq  = ci(['squad','sqaud']) > -1 ? ci(['squad','sqaud']) : 9;
   const iPr  = ci(['practice']) > -1 ? ci(['practice']) : 11;
-  const iMgr = HDRS.findIndex(h =>
+  let iMgr = HDRS.findIndex(h =>
     h.includes('relationship and communication') ||
     h.includes('manager and team') ||
     h.includes('department collaboration')
   );
-
-  const iEng = HDRS.findIndex(h =>
+  let iEng = HDRS.findIndex(h =>
     h.includes('how engaged do you currently feel') ||
     h.includes('engaged do you currently feel at work')
   );
-
-  const iOv = HDRS.findIndex(h =>
+  let iOv = HDRS.findIndex(h =>
     h.includes('overall experience rating')
   );
+  if(iMgr < 0) iMgr = 13;
+  if(iEng < 0) iEng = 16;
+  if(iOv < 0) iOv = 19;
   const iSsc = ci(['stop','start','continue','should start','team/company','as a team']) > -1 ? ci(['stop','start','continue','should start','team/company','as a team']) : 18;
   const iRag = ci(['rag']) > -1 ? ci(['rag']) : 22;
   const iCom = ci(['additional comments','comments']) > -1 ? ci(['additional comments','comments']) : 21;
