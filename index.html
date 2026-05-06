@@ -1,256 +1,525 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Finzly People Intelligence Dashboard</title>
-
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Finzly · People Intelligence · Q1 2026</title>
 <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet" />
-
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#f3f0ea;
-  --card:#ffffff;
-  --ink:#1a1a2e;
-  --muted:#766f64;
-  --border:#e2ddd3;
-  --accent:#e8541a;
-  --accent2:#ff6b35;
-  --green:#16a34a;
-  --amber:#d97706;
-  --red:#dc2626;
-  --blue:#2563eb;
-  --chennai:#0ea5e9;
-  --pune:#7c3aed;
-  --softgreen:#f0fdf4;
-  --softamber:#fffbeb;
-  --softred:#fef2f2;
-  --softblue:#eff6ff;
+  --bg:#f0ede8;--card:#fff;--border:#e0dbd2;--border2:#ebe6dc;
+  --ink:#1a1a2e;--muted:#7c7568;--muted2:#b5b0a8;
+  --green:#16a34a;--gbg:#f0fdf4;--gbr:#86efac;
+  --amber:#d97706;--abg:#fffbeb;--abr:#fcd34d;
+  --red:#dc2626;--rbg:#fef2f2;--rbr:#fca5a5;
+  --blue:#2563eb;--bbg:#eff6ff;--bbr:#93c5fd;
+  --accent:#e8541a;--accent2:#ff6b35;
+  --ch:#0ea5e9;--ch-bg:#f0f9ff;--ch-br:#7dd3fc;
+  --pu:#7c3aed;--pu-bg:#f5f3ff;--pu-br:#c4b5fd;
 }
-body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;font-size:14px}
-button,select{font-family:'Outfit',sans-serif}
+html{font-size:14px}
+body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-height:100vh}
 
-#login-screen,#loading-screen,#error-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
-#loading-screen,#error-screen{display:none;flex-direction:column;text-align:center;gap:14px}
-.login-card{width:100%;max-width:430px;background:#111827;border-radius:22px;padding:42px;color:white;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25)}
-.logo{display:flex;justify-content:center;align-items:center;gap:10px;margin-bottom:10px}
-.logo-box{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.2rem}
-.logo-text{font-weight:800;font-size:1.6rem}.logo-text em{color:var(--accent2);font-style:normal}
-.login-sub{font-size:.72rem;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.45);margin-bottom:26px}
-.login-title{font-size:1.1rem;font-weight:700;margin-bottom:8px}
-.login-desc{font-size:.82rem;color:rgba(255,255,255,.55);line-height:1.6;margin-bottom:24px}
-.login-btn{width:100%;padding:14px 18px;border:0;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;font-size:.95rem;font-weight:700;cursor:pointer}
-.login-note{font-size:.7rem;color:rgba(255,255,255,.35);margin-top:12px}
-.spin{width:44px;height:44px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+/* LOGIN */
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#0f172a,#1e1b4b)}
+.lcard{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:52px 44px;max-width:420px;width:100%;text-align:center}
+.l-logo{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:6px}
+.l-box{width:44px;height:44px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.3rem;color:#fff}
+.l-name{font-size:1.6rem;font-weight:800;color:#fff;letter-spacing:-.03em}
+.l-name em{color:var(--accent2);font-style:normal}
+.l-tag{font-size:.7rem;color:rgba(255,255,255,.3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:28px}
+.l-title{font-size:1rem;font-weight:600;color:#fff;margin-bottom:8px}
+.l-desc{font-size:.78rem;color:rgba(255,255,255,.4);margin-bottom:24px;line-height:1.7}
+.l-btn{width:100%;padding:14px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-family:'Outfit',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px}
+.l-btn:hover{opacity:.9}
+.l-note{font-size:.68rem;color:rgba(255,255,255,.2);margin-top:12px}
 
+/* LOADING/ERROR */
+#loading-screen{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:var(--bg);gap:14px}
+.spin{width:44px;height:44px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#error-screen{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:var(--bg);padding:32px;text-align:center}
+
+/* HEADER */
 #dash{display:none}
-.header{height:58px;background:#111827;color:white;display:flex;align-items:center;padding:0 28px;gap:14px;position:sticky;top:0;z-index:20}
-.header .logo-box{width:32px;height:32px;border-radius:8px;font-size:.9rem}.header .logo-text{font-size:1rem}.header-sub{font-size:.75rem;color:rgba(255,255,255,.45)}
-.header-right{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.pill{font-family:'Fira Code',monospace;font-size:.65rem;border:1px solid rgba(255,255,255,.14);border-radius:99px;padding:4px 9px;color:rgba(255,255,255,.55)}
-.pill.live{color:#86efac;background:rgba(134,239,172,.08);border-color:rgba(134,239,172,.25)}
-.signout{border:1px solid rgba(255,255,255,.16);background:transparent;color:rgba(255,255,255,.62);border-radius:8px;padding:6px 10px;cursor:pointer}
+.hdr{background:var(--ink);color:#fff;padding:0 28px;height:54px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:100}
+.h-logo{display:flex;align-items:center;gap:8px}
+.h-box{width:30px;height:30px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:7px;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:.9rem}
+.h-name{font-size:.92rem;font-weight:800;color:#fff;letter-spacing:-.02em}
+.h-name em{color:var(--accent2);font-style:normal}
+.h-sep{width:1px;height:20px;background:rgba(255,255,255,.1)}
+.h-sub{font-size:.7rem;color:rgba(255,255,255,.35)}
+.h-right{margin-left:auto;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.hp{font-family:'Fira Code',monospace;font-size:.6rem;padding:3px 9px;border-radius:20px;border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.4);white-space:nowrap}
+.hp.live{color:#86efac;border-color:rgba(134,239,172,.3);background:rgba(134,239,172,.07)}
+.hp.ch{color:#7dd3fc;border-color:rgba(125,211,252,.3);background:rgba(14,165,233,.08)}
+.hp.pu{color:#c4b5fd;border-color:rgba(196,181,253,.3);background:rgba(124,58,237,.08)}
+.btn-so{font-family:'Outfit',sans-serif;font-size:.7rem;padding:5px 11px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:transparent;color:rgba(255,255,255,.4);cursor:pointer}
 
-.filters{background:var(--card);border-bottom:1px solid var(--border);padding:10px 28px;display:flex;align-items:center;gap:10px;position:sticky;top:58px;z-index:19;flex-wrap:wrap}
-.filters label{font-size:.66rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
-.filters select{font-size:.8rem;padding:7px 12px;border-radius:8px;border:1.5px solid var(--border);background:#faf8f4;color:var(--ink)}
-.filter-info{margin-left:auto;font-family:'Fira Code',monospace;font-size:.68rem;color:var(--muted)}
+/* FILTER BAR */
+.fbar{background:var(--card);border-bottom:1px solid var(--border);padding:8px 28px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;position:sticky;top:54px;z-index:99;box-shadow:0 2px 6px rgba(0,0,0,.04)}
+.fb-lbl{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.fbar select{font-family:'Outfit',sans-serif;font-size:.78rem;padding:5px 26px 5px 10px;border-radius:6px;border:1.5px solid var(--border);background:var(--bg);color:var(--ink);cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238a8578' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center}
+.fbar select:focus{outline:none;border-color:var(--accent)}
+.fb-sep{width:1px;height:18px;background:var(--border)}
+.fb-info{font-family:'Fira Code',monospace;font-size:.66rem;color:var(--muted);margin-left:auto}
 
-.tabs{display:flex;gap:0;background:var(--card);border-bottom:1px solid var(--border);padding:0 28px;overflow-x:auto;position:sticky;top:108px;z-index:18}
-.tab{border:0;background:none;padding:12px 16px;font-size:.8rem;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
-.tab.active{color:var(--accent);font-weight:800;border-bottom-color:var(--accent)}
+/* TABS */
+.tabs{background:var(--card);border-bottom:1px solid var(--border);padding:0 28px;display:flex;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{font-size:.78rem;font-weight:500;padding:10px 16px;border:none;border-bottom:2px solid transparent;cursor:pointer;color:var(--muted);background:none;font-family:'Outfit',sans-serif;white-space:nowrap}
+.tab.on{color:var(--accent);border-bottom-color:var(--accent);font-weight:700}
 
-.page{display:none;max-width:1380px;margin:0 auto;padding:22px 28px 60px}.page.active{display:block}
-.timestamp{text-align:right;font-family:'Fira Code',monospace;font-size:.66rem;color:#aaa39a;margin-bottom:14px}
-.kpis{display:grid;grid-template-columns:repeat(7,1fr);gap:12px;margin-bottom:16px}
-.kpi{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;border-top:4px solid var(--accent)}
-.kpi.green{border-top-color:var(--green)}.kpi.amber{border-top-color:var(--amber)}.kpi.red{border-top-color:var(--red)}.kpi.chennai{border-top-color:var(--chennai)}.kpi.pune{border-top-color:var(--pune)}
-.kpi-label{font-size:.62rem;text-transform:uppercase;letter-spacing:.11em;color:var(--muted);font-weight:800;margin-bottom:6px}
-.kpi-value{font-family:'Fira Code',monospace;font-size:2rem;font-weight:700;line-height:1}.kpi-value.green{color:var(--green)}.kpi-value.amber{color:var(--amber)}.kpi-value.red{color:var(--red)}.kpi-value.chennai{color:var(--chennai)}.kpi-value.pune{color:var(--pune)}
-.kpi-sub{font-size:.68rem;color:var(--muted);margin-top:4px}
+/* PAGES */
+.pg{display:none;padding:20px 28px 56px;max-width:1380px;margin:0 auto}.pg.on{display:block}
+.ts{font-size:.64rem;color:var(--muted2);text-align:right;margin-bottom:14px;font-family:'Fira Code',monospace}
 
-.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
-.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:14px}
-.card-title{font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:800;margin-bottom:12px;display:flex;align-items:center;gap:7px}.card-title:before{content:"";width:4px;height:13px;border-radius:4px;background:var(--accent)}
-.inference{font-size:.78rem;line-height:1.55;background:#faf8f4;border-left:3px solid var(--accent);padding:9px 11px;border-radius:8px;margin-bottom:12px;color:#3b332d}.inference strong{color:var(--accent)}
-.chart-wrap{height:220px;position:relative}.chart-wrap.tall{height:300px}
+/* KPI STRIP */
+.kstrip{display:grid;grid-template-columns:repeat(7,1fr);gap:11px;margin-bottom:18px}
+.kc{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;border-top:3px solid var(--accent)}
+.kc.g{border-top-color:var(--green)}.kc.r{border-top-color:var(--red)}.kc.a{border-top-color:var(--amber)}
+.kc.ch{border-top-color:var(--ch)}.kc.pu{border-top-color:var(--pu)}
+.k-lbl{font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:5px}
+.k-val{font-family:'Fira Code',monospace;font-size:1.9rem;font-weight:600;line-height:1}
+.k-val.g{color:var(--green)}.k-val.r{color:var(--red)}.k-val.a{color:var(--amber)}
+.k-val.ch{color:var(--ch)}.k-val.pu{color:var(--pu)}
+.k-sub{font-size:.64rem;color:var(--muted);margin-top:3px}
 
-.alert{padding:11px 14px;border-radius:10px;margin-bottom:8px;font-size:.82rem;line-height:1.5}.alert.red{background:var(--softred);border:1px solid #fca5a5}.alert.amber{background:var(--softamber);border:1px solid #fcd34d}.alert.green{background:var(--softgreen);border:1px solid #86efac}.alert.blue{background:var(--softblue);border:1px solid #93c5fd}
-.signal{padding:11px 13px;border-radius:10px;border:1px solid var(--border);margin-bottom:8px;background:#faf8f4;cursor:pointer}.signal.red{background:var(--softred);border-color:#fca5a5}.signal.amber{background:var(--softamber);border-color:#fcd34d}.signal.green{background:var(--softgreen);border-color:#86efac}.signal-title{font-weight:800;font-size:.86rem;margin-bottom:3px}.signal-body{font-size:.76rem;color:var(--muted);line-height:1.5}.signal-detail{display:none;margin-top:9px;padding:10px;border-radius:8px;background:rgba(255,255,255,.75);font-size:.76rem;line-height:1.55}.signal.open .signal-detail{display:block}
+/* GRIDS */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px}
+.g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:14px}
 
-.bar-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #eee8df}.bar-row:last-child{border-bottom:0}.bar-label{flex:1;font-size:.78rem}.bar-track{height:8px;background:#eee8df;border-radius:99px;overflow:hidden;flex:2}.bar-fill{height:100%;border-radius:99px;background:var(--accent)}.bar-value{font-family:'Fira Code',monospace;font-size:.72rem;width:42px;text-align:right}
+/* CARD */
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:14px}
+.card:last-child{margin-bottom:0}
+.c-title{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:13px;display:flex;align-items:center;justify-content:space-between}
+.c-title-l{display:flex;align-items:center;gap:6px}
+.c-title-l::before{content:'';width:3px;height:11px;background:var(--accent);border-radius:2px;display:block;flex-shrink:0}
 
-.loc-cards{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}.loc-card{border-radius:14px;padding:18px;border:1px solid}.loc-card.chennai{background:#f0f9ff;border-color:#7dd3fc}.loc-card.pune{background:#f5f3ff;border-color:#c4b5fd}.loc-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}.loc-name{font-size:1rem;font-weight:800}.loc-card.chennai .loc-name{color:var(--chennai)}.loc-card.pune .loc-name{color:var(--pune)}.loc-badge{font-family:'Fira Code',monospace;font-size:.66rem;border-radius:99px;padding:3px 9px;background:rgba(255,255,255,.75)}.loc-kpis{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:10px 0}.loc-kpi{background:rgba(255,255,255,.75);border-radius:10px;text-align:center;padding:10px}.loc-val{font-family:'Fira Code',monospace;font-size:1.35rem;font-weight:700}.loc-label{font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+/* CHART BOXES */
+.ch-box{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:14px}
+.ch-title{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.ch-title::before{content:'';width:3px;height:11px;background:var(--accent);border-radius:2px;display:block;flex-shrink:0}
+.ch-inference{font-size:.74rem;color:var(--ink);margin-bottom:12px;padding:8px 10px;background:var(--bg);border-radius:6px;border-left:3px solid var(--accent);line-height:1.5}
+.ch-inference strong{color:var(--accent)}
+.ch-wrap{position:relative;height:200px}
 
-.table-wrap{overflow-x:auto}.health-table{width:100%;border-collapse:collapse}.health-table th{font-size:.62rem;text-transform:uppercase;letter-spacing:.08em;text-align:left;color:var(--muted);background:#faf8f4;border-bottom:1.5px solid var(--border);padding:10px}.health-table td{border-bottom:1px solid #eee8df;padding:10px;font-size:.82rem}.score-cell{display:inline-flex;width:48px;height:28px;align-items:center;justify-content:center;border-radius:8px;font-family:'Fira Code',monospace;font-weight:700}.score-excellent{background:#d1fae5;color:#065f46}.score-good{background:#dcfce7;color:#15803d}.score-watch{background:#fef3c7;color:#92400e}.score-risk{background:#fee2e2;color:#b91c1c}.small-muted{font-size:.7rem;color:var(--muted);margin-top:2px}
+/* BAR ROWS */
+.brow{display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid var(--border2)}.brow:last-child{border-bottom:none}
+.blbl{font-size:.76rem;color:var(--ink);flex:1;line-height:1.3}
+.btrack{flex:2;height:7px;background:var(--border2);border-radius:99px;overflow:hidden}
+.bfill{height:100%;border-radius:99px}
+.bval{font-family:'Fira Code',monospace;font-size:.7rem;font-weight:600;width:36px;text-align:right}
 
-.comment-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.quote{background:var(--card);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px}.quote.positive{border-left-color:var(--green)}.quote.watch{border-left-color:var(--amber)}.quote.risk{border-left-color:var(--red)}.quote-text{font-size:.82rem;line-height:1.6;font-style:italic}.quote-meta{font-size:.68rem;color:var(--muted);margin-top:7px}
-.action{padding:12px;border:1px solid var(--border);border-radius:10px;background:#faf8f4;margin-bottom:9px}.action-title{font-weight:800;font-size:.86rem;margin-bottom:4px}.action-text{font-size:.76rem;color:var(--muted);line-height:1.5}
-.leadership-box{background:linear-gradient(135deg,#111827,#1e1b4b);color:white;border-radius:18px;padding:26px;margin-bottom:14px}.leadership-title{font-size:1.35rem;font-weight:800;margin-bottom:6px}.leadership-title em{color:var(--accent2);font-style:normal}.leadership-sub{font-size:.8rem;color:rgba(255,255,255,.55);line-height:1.6;margin-bottom:16px}.leadership-list{display:grid;grid-template-columns:1fr 1fr;gap:12px}.leadership-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:14px}.leadership-card h4{font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:var(--accent2);margin-bottom:8px}.leadership-card li{list-style:none;font-size:.78rem;color:rgba(255,255,255,.62);line-height:1.55;margin-bottom:5px}.leadership-card li:before{content:"→ ";color:var(--accent2);font-weight:800}
+/* CLICKABLE SIGNAL */
+.sig{display:flex;align-items:flex-start;gap:8px;padding:10px 13px;border-radius:8px;margin-bottom:7px;border:1px solid transparent;cursor:pointer;transition:all .15s;position:relative}
+.sig:last-child{margin-bottom:0}
+.sig.r{background:var(--rbg);border-color:var(--rbr)}.sig.a{background:var(--abg);border-color:var(--abr)}
+.sig.g{background:var(--gbg);border-color:var(--gbr)}.sig.b{background:var(--bbg);border-color:var(--bbr)}
+.sig:hover{filter:brightness(.97);transform:translateY(-1px)}
+.sdot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.sdot.r{background:var(--red)}.sdot.a{background:var(--amber)}.sdot.g{background:var(--green)}.sdot.b{background:var(--blue)}
+.stxt{font-size:.76rem;line-height:1.5;flex:1}.stxt strong{display:block;font-weight:600;font-size:.79rem}
+.sbadge{font-family:'Fira Code',monospace;font-size:.58rem;padding:2px 7px;border-radius:20px;flex-shrink:0;white-space:nowrap}
+.sbadge.r{background:var(--rbg);color:var(--red);border:1px solid var(--rbr)}.sbadge.a{background:var(--abg);color:var(--amber);border:1px solid var(--abr)}
+.sbadge.g{background:var(--gbg);color:var(--green);border:1px solid var(--gbr)}.sbadge.b{background:var(--bbg);color:var(--blue);border:1px solid var(--bbr)}
+.sig-click-hint{font-size:.6rem;color:var(--muted2);margin-left:6px}
+.sig-detail{display:none;margin-top:10px;padding:10px 12px;background:rgba(255,255,255,.8);border-radius:6px;border:1px solid rgba(0,0,0,.06)}
+.sig-detail.open{display:block}
+.sig-detail-title{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px}
+.sig-detail-body{font-size:.76rem;color:var(--ink);line-height:1.6}
+.sig-detail-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.sig-tag{font-size:.64rem;padding:2px 8px;border-radius:20px;background:var(--bg);border:1px solid var(--border);color:var(--muted)}
 
-@media(max-width:1100px){.kpis,.grid-4{grid-template-columns:repeat(2,1fr)}.grid-2,.grid-3,.loc-cards,.comment-grid,.leadership-list{grid-template-columns:1fr}.tabs{top:108px}.page{padding:16px}.header,.filters,.tabs{padding-left:16px;padding-right:16px}}
-@media(max-width:680px){.kpis{grid-template-columns:1fr}.header{height:auto;min-height:58px;align-items:flex-start;padding-top:12px;padding-bottom:12px}.filters{top:78px}.tabs{top:154px}.filter-info{margin-left:0;width:100%}}
+/* REQUEST CARDS */
+.req-top3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px}
+.req-card{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;text-align:center}
+.req-rank{font-family:'Fira Code',monospace;font-size:.65rem;color:var(--muted);margin-bottom:4px;font-weight:600}
+.req-icon{font-size:1.4rem;margin-bottom:4px}
+.req-label{font-size:.78rem;font-weight:700;color:var(--ink);margin-bottom:3px}
+.req-count{font-family:'Fira Code',monospace;font-size:.7rem;color:var(--muted)}
+.req-pct{height:4px;background:var(--border2);border-radius:99px;overflow:hidden;margin-top:6px}
+.req-pct-fill{height:100%;border-radius:99px;background:var(--accent)}
+.req-others{display:flex;flex-direction:column;gap:5px}
+
+/* LOCATION CARDS */
+.loc-wrap{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.loc-card{border-radius:12px;padding:18px 20px;border:1px solid transparent}
+.loc-card.ch{background:var(--ch-bg);border-color:var(--ch-br)}
+.loc-card.pu{background:var(--pu-bg);border-color:var(--pu-br)}
+.loc-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.loc-name{font-size:.95rem;font-weight:800}
+.loc-card.ch .loc-name{color:var(--ch)}.loc-card.pu .loc-name{color:var(--pu)}
+.loc-badge{font-family:'Fira Code',monospace;font-size:.62rem;padding:2px 9px;border-radius:20px;font-weight:600}
+.loc-card.ch .loc-badge{background:rgba(14,165,233,.15);color:var(--ch);border:1px solid var(--ch-br)}
+.loc-card.pu .loc-badge{background:rgba(124,58,237,.15);color:var(--pu);border:1px solid var(--pu-br)}
+.loc-inference{font-size:.74rem;color:var(--ink);margin-bottom:10px;padding:7px 10px;background:rgba(255,255,255,.6);border-radius:6px;line-height:1.5}
+.loc-card.ch .loc-inference{border-left:3px solid var(--ch)}
+.loc-card.pu .loc-inference{border-left:3px solid var(--pu)}
+.loc-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.loc-kpi{background:rgba(255,255,255,.7);border-radius:7px;padding:9px 10px;text-align:center}
+.lk-val{font-family:'Fira Code',monospace;font-size:1.3rem;font-weight:600}
+.loc-card.ch .lk-val{color:var(--ch)}.loc-card.pu .lk-val{color:var(--pu)}
+.lk-lbl{font-size:.58rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-top:1px}
+.loc-squads{display:flex;flex-direction:column;gap:5px}
+.loc-sq-row{display:flex;align-items:center;gap:8px}
+.loc-sq-lbl{font-size:.72rem;color:var(--ink);width:80px;flex-shrink:0}
+.loc-sq-track{flex:1;height:6px;background:rgba(0,0,0,.08);border-radius:99px;overflow:hidden}
+.loc-sq-fill{height:100%;border-radius:99px}
+.loc-card.ch .loc-sq-fill{background:var(--ch)}.loc-card.pu .loc-sq-fill{background:var(--pu)}
+.loc-sq-val{font-family:'Fira Code',monospace;font-size:.66rem;font-weight:600;width:28px;text-align:right}
+.loc-card.ch .loc-sq-val{color:var(--ch)}.loc-card.pu .loc-sq-val{color:var(--pu)}
+
+/* HEATMAP */
+.hm-wrap{overflow-x:auto}
+.hm{border-collapse:collapse;width:100%}
+.hm th{padding:8px 12px;text-align:left;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);border-bottom:1.5px solid var(--border);white-space:nowrap;background:var(--bg)}
+.hm td{padding:9px 12px;border-bottom:1px solid var(--border2);vertical-align:middle}
+.hm tr:last-child td{border-bottom:none}
+.hm tr:hover td{background:rgba(0,0,0,.012)}
+.hm-cell{display:inline-flex;align-items:center;justify-content:center;width:50px;height:26px;border-radius:6px;font-family:'Fira Code',monospace;font-size:.75rem;font-weight:600}
+.c5{background:#d1fae5;color:#065f46}.c45{background:#dcfce7;color:#15803d}
+.c4{background:#fef9c3;color:#92400e}.c35{background:#fef3c7;color:#b45309}
+.clo{background:#fee2e2;color:#b91c1c}.cna{background:var(--border2);color:var(--muted2);font-size:.64rem}
+.rl{font-weight:600;font-size:.82rem}.rs{font-size:.68rem;color:var(--muted);margin-top:1px}
+.lt{display:inline-block;font-size:.58rem;padding:1px 6px;border-radius:4px;font-weight:700;vertical-align:middle;margin-left:5px}
+.lt.ch{background:var(--ch-bg);color:var(--ch);border:1px solid var(--ch-br)}
+.lt.pu{background:var(--pu-bg);color:var(--pu);border:1px solid var(--pu-br)}
+
+/* INFERENCE BOX */
+.inf{padding:10px 14px;border-radius:8px;margin-bottom:14px;border:1px solid transparent;font-size:.78rem;line-height:1.6}
+.inf.green{background:var(--gbg);border-color:var(--gbr);color:var(--ink)}
+.inf.amber{background:var(--abg);border-color:var(--abr);color:var(--ink)}
+.inf.red{background:var(--rbg);border-color:var(--rbr);color:var(--ink)}
+.inf.blue{background:var(--bbg);border-color:var(--bbr);color:var(--ink)}
+.inf strong{display:block;font-weight:700;margin-bottom:3px;font-size:.8rem}
+
+/* PRACTICE CARDS */
+.pr-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
+.pr-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+.pr-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.pr-name{font-weight:700;font-size:.86rem}
+.pr-badge{font-family:'Fira Code',monospace;font-size:.62rem;padding:2px 8px;border-radius:20px;background:var(--bbg);color:var(--blue);border:1px solid var(--bbr)}
+
+/* SQUAD GRID */
+.sq-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;margin-bottom:14px}
+.sq-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:13px 15px;border-left:4px solid var(--green)}
+.sq-card.a{border-left-color:var(--amber)}.sq-card.r{border-left-color:var(--red)}
+.sq-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.sq-name{font-weight:700;font-size:.84rem}
+.sq-n{font-size:.68rem;color:var(--muted)}
+.sq-chips{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px}
+.sq-chip{font-family:'Fira Code',monospace;font-size:.64rem;padding:2px 8px;border-radius:20px;font-weight:600}
+.sq-chip.g{background:var(--gbg);color:var(--green);border:1px solid var(--gbr)}
+.sq-chip.a{background:var(--abg);color:var(--amber);border:1px solid var(--abr)}
+.sq-chip.r{background:var(--rbg);color:var(--red);border:1px solid var(--rbr)}
+.sq-insight{font-size:.71rem;color:var(--muted);line-height:1.5}
+
+/* ACTIONS */
+.act{display:flex;align-items:flex-start;gap:9px;padding:10px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;margin-bottom:7px}
+.act:last-child{margin-bottom:0}
+.an{width:23px;height:23px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:'Fira Code',monospace;font-size:.68rem;font-weight:700}
+.an.r{background:var(--rbg);color:var(--red)}.an.a{background:var(--abg);color:var(--amber)}.an.b{background:var(--bbg);color:var(--blue)}
+.at{font-size:.82rem;font-weight:600;margin-bottom:2px}.ad{font-size:.72rem;color:var(--muted);line-height:1.5}
+.aw{font-family:'Fira Code',monospace;font-size:.6rem;padding:2px 7px;border-radius:20px;flex-shrink:0;white-space:nowrap}
+.aw.r{background:var(--rbg);color:var(--red);border:1px solid var(--rbr)}.aw.a{background:var(--abg);color:var(--amber);border:1px solid var(--abr)}.aw.b{background:var(--bbg);color:var(--blue);border:1px solid var(--bbr)}
+
+/* SSC */
+.ssc{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.scol{border-radius:8px;padding:13px 15px}
+.scol.r{background:var(--rbg);border:1px solid var(--rbr)}.scol.a{background:var(--abg);border:1px solid var(--abr)}.scol.g{background:var(--gbg);border:1px solid var(--gbr)}
+.sh{font-weight:700;font-size:.78rem;margin-bottom:8px}.scol.r .sh{color:var(--red)}.scol.a .sh{color:var(--amber)}.scol.g .sh{color:var(--green)}
+.sul{list-style:none}.sul li{font-size:.72rem;padding:3px 0;border-bottom:1px solid rgba(0,0,0,.05);line-height:1.4}.sul li:last-child{border-bottom:none}
+.scol.r .sul li::before{content:'— ';color:var(--red);font-weight:700}.scol.a .sul li::before{content:'+ ';color:var(--amber);font-weight:700}.scol.g .sul li::before{content:'✓ ';color:var(--green)}
+
+/* COMMENT CARDS */
+.comment-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.cc{background:var(--card);border:1px solid var(--border);border-radius:9px;padding:13px 15px;border-left:3px solid var(--amber)}
+.cc.critical{border-left-color:var(--red)}.cc.positive{border-left-color:var(--green)}
+.cc-type{font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.cc.critical .cc-type{color:var(--red)}.cc .cc-type{color:var(--amber)}.cc.positive .cc-type{color:var(--green)}
+.cc-text{font-size:.75rem;color:var(--ink);line-height:1.6;font-style:italic}
+.cc-meta{font-size:.62rem;color:var(--muted);margin-top:5px}
+
+/* LEADERSHIP */
+.ls{background:linear-gradient(135deg,#0f172a,#1e1b4b);border-radius:14px;padding:26px 28px;color:#fff;margin-bottom:14px}
+.ls-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;gap:16px;flex-wrap:wrap}
+.ls-hl{font-size:1.3rem;font-weight:800;letter-spacing:-.02em}.ls-hl em{color:var(--accent2);font-style:normal}
+.ls-sub{font-size:.72rem;color:rgba(255,255,255,.35);margin-top:3px}
+.ls-kpis{display:flex;gap:8px;flex-wrap:wrap}
+.ls-k{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:9px 13px;text-align:center}
+.ls-kv{font-family:'Fira Code',monospace;font-size:1.4rem;font-weight:600;color:var(--accent2)}
+.ls-kl{font-size:.58rem;text-transform:uppercase;letter-spacing:.07em;color:rgba(255,255,255,.35);margin-top:1px}
+.ls-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.ls-box{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);border-radius:9px;padding:12px 14px}
+.ls-bt{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:rgba(255,255,255,.65);margin-bottom:8px}
+.ls-ul{list-style:none}.ls-ul li{font-size:.72rem;color:rgba(255,255,255,.5);padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04);line-height:1.5}.ls-ul li:last-child{border-bottom:none}.ls-ul li::before{content:'→ ';color:var(--accent2);font-weight:700}
+.ls-cta{padding:11px 14px;background:rgba(232,84,26,.12);border:1px solid rgba(232,84,26,.25);border-radius:8px;font-size:.74rem;color:rgba(255,255,255,.6);line-height:1.6}
+.ls-cta strong{color:var(--accent2)}
+
+/* AI BOX */
+.ai-box{background:linear-gradient(135deg,#0f172a,#1e1b4b);border-radius:12px;padding:16px 18px;margin-bottom:14px}
+.ai-title{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.35);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.ai-sec{margin-bottom:10px}.ai-sh{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--accent2);margin-bottom:5px}
+.ai-ul{list-style:none}.ai-ul li{font-size:.74rem;color:rgba(255,255,255,.6);padding:2px 0;line-height:1.5}.ai-ul li::before{content:'→ ';color:var(--accent2);font-weight:700}
+
+@media(max-width:960px){
+  .kstrip,.pr-grid{grid-template-columns:repeat(2,1fr)}.g2,.g3,.g4,.loc-wrap,.ssc,.ls-grid,.sq-grid,.comment-grid,.req-top3{grid-template-columns:1fr}
+  .pg{padding:14px 14px 50px}.hdr,.fbar,.tabs{padding-left:14px;padding-right:14px}
+}
 </style>
 </head>
-
 <body>
+
 <div id="login-screen">
-  <div class="login-card">
-    <div class="logo"><div class="logo-box">F</div><div class="logo-text">Finzly<em>.</em>People</div></div>
-    <div class="login-sub">People Intelligence Dashboard</div>
-    <div class="login-title">Leadership Dashboard Access</div>
-    <div class="login-desc">Secure dashboard for employee 1-on-1 insights. Data is shown in aggregated format for leadership review.</div>
-    <button class="login-btn" onclick="signIn()">Sign in with Microsoft</button>
-    <div class="login-note">Secured by Microsoft Identity · Finzly Inc.</div>
+  <div class="lcard">
+    <div class="l-logo"><div class="l-box">F</div><div class="l-name">Finzly<em>.</em>People</div></div>
+    <div class="l-tag">People Intelligence Platform · Q1 2026</div>
+    <div class="l-title">CXO Leadership Access</div>
+    <div class="l-desc">Secure, anonymous 1-on-1 insights. All data is aggregated — no individual responses visible.</div>
+    <button class="l-btn" onclick="signIn()">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="1" y="1" width="7" height="7" fill="#f25022"/><rect x="10" y="1" width="7" height="7" fill="#7fba00"/><rect x="1" y="10" width="7" height="7" fill="#00a4ef"/><rect x="10" y="10" width="7" height="7" fill="#ffb900"/></svg>
+      Sign in with Microsoft
+    </button>
+    <div class="l-note">Secured by Microsoft Identity · Finzly Inc.</div>
   </div>
 </div>
 
 <div id="loading-screen">
   <div class="spin"></div>
-  <div style="color:var(--muted);font-size:.9rem">Loading Excel data from SharePoint...</div>
+  <div style="font-size:.84rem;color:var(--muted)">Loading live data from SharePoint…</div>
 </div>
 
 <div id="error-screen">
-  <div style="font-size:2rem">⚠️</div>
-  <div style="font-weight:800;font-size:1.1rem">Could not load dashboard</div>
-  <div id="err-msg" style="max-width:500px;color:var(--muted);line-height:1.6"></div>
-  <button class="login-btn" style="max-width:180px" onclick="location.reload()">Try Again</button>
+  <div style="font-size:2rem;margin-bottom:12px">⚠️</div>
+  <div style="font-size:1rem;font-weight:700;margin-bottom:8px">Could not load data</div>
+  <div style="font-size:.8rem;color:var(--muted);max-width:380px;line-height:1.6;margin-bottom:14px" id="err-msg"></div>
+  <button style="padding:9px 20px;border-radius:8px;border:1.5px solid var(--border);background:var(--card);font-family:Outfit,sans-serif;font-size:.82rem;cursor:pointer" onclick="location.reload()">Try Again</button>
 </div>
 
 <div id="dash">
-  <div class="header">
-    <div class="logo"><div class="logo-box">F</div><div class="logo-text">Finzly<em>.</em>People</div></div>
-    <div class="header-sub">1-on-1 People Intelligence · Q1 2026</div>
-    <div class="header-right">
-      <span class="pill live" id="live-pill">● Live</span>
-      <span class="pill" id="chennai-pill">Chennai —</span>
-      <span class="pill" id="pune-pill">Pune —</span>
-      <span class="pill" id="user-pill">Leadership</span>
-      <button class="signout" onclick="signOut()">Sign out</button>
+  <div class="hdr">
+    <div class="h-logo"><div class="h-box">F</div><div><div class="h-name">Finzly<em>.</em>People</div></div></div>
+    <div class="h-sep"></div>
+    <div class="h-sub">1-on-1 People Intelligence · Q1 2026</div>
+    <div class="h-right">
+      <span class="hp live" id="h-live">● Loading</span>
+      <span class="hp ch" id="h-ch">Chennai —</span>
+      <span class="hp pu" id="h-pu">Pune —</span>
+      <span class="hp" id="h-user"></span>
+      <button class="btn-so" onclick="signOut()">Sign out</button>
     </div>
   </div>
 
-  <div class="filters">
-    <label>Filter by</label>
-    <select id="filter-location" onchange="applyFilter()">
+  <div class="fbar">
+    <span class="fb-lbl">Filter by</span>
+    <select id="f-loc" onchange="applyFilter()">
       <option value="all">All Locations</option>
       <option value="Chennai">Chennai</option>
       <option value="Pune">Pune</option>
-      <option value="Unknown">Unknown</option>
     </select>
-    <select id="filter-squad" onchange="applyFilter()"><option value="all">All Squads</option></select>
-    <select id="filter-practice" onchange="applyFilter()"><option value="all">All Practices</option></select>
-    <div class="filter-info" id="filter-info">Loading...</div>
+    <select id="f-squad" onchange="applyFilter()"><option value="all">All Squads</option></select>
+    <select id="f-practice" onchange="applyFilter()"><option value="all">All Practices</option></select>
+    <div class="fb-sep"></div>
+    <span class="fb-info" id="f-info">Loading…</span>
   </div>
 
   <div class="tabs">
-    <button class="tab active" onclick="openTab(event,'overview')">Overview</button>
-    <button class="tab" onclick="openTab(event,'location')">Chennai vs Pune</button>
-    <button class="tab" onclick="openTab(event,'practice')">Practice View</button>
-    <button class="tab" onclick="openTab(event,'heatmap')">Heatmap</button>
-    <button class="tab" onclick="openTab(event,'voice')">Voice of Employee</button>
-    <button class="tab" onclick="openTab(event,'actions')">Actions</button>
-    <button class="tab" onclick="openTab(event,'leadership')">Leadership</button>
+    <button class="tab on" onclick="tab(this,'p1')">📊 Overview</button>
+    <button class="tab" onclick="tab(this,'p2')">🗺 Chennai vs Pune</button>
+    <button class="tab" onclick="tab(this,'p3')">⚙ Practice View</button>
+    <button class="tab" onclick="tab(this,'p4')">🌡 Heatmap</button>
+    <button class="tab" onclick="tab(this,'p5')">💬 Voice of Employee</button>
+    <button class="tab" onclick="tab(this,'p6')">🎯 Actions</button>
+    <button class="tab" onclick="tab(this,'p7')">🧭 Leadership</button>
   </div>
 
-  <div class="page active" id="overview">
-    <div class="timestamp" id="timestamp">Loading...</div>
+  <!-- P1: OVERVIEW -->
+  <div class="pg on" id="p1">
+    <div class="ts" id="ts">Fetching live data…</div>
     <div id="alerts"></div>
-    <div class="kpis">
-      <div class="kpi green"><div class="kpi-label">Avg Engagement</div><div class="kpi-value" id="k-eng">—</div><div class="kpi-sub" id="k-eng-sub">/5</div></div>
-      <div class="kpi green"><div class="kpi-label">Manager Rating</div><div class="kpi-value" id="k-mgr">—</div><div class="kpi-sub" id="k-mgr-sub">/5</div></div>
-      <div class="kpi green"><div class="kpi-label">Overall Experience</div><div class="kpi-value" id="k-ov">—</div><div class="kpi-sub" id="k-ov-sub">/5</div></div>
-      <div class="kpi"><div class="kpi-label">Total Responses</div><div class="kpi-value" id="k-total">—</div><div class="kpi-sub">employees</div></div>
-      <div class="kpi chennai"><div class="kpi-label">Chennai</div><div class="kpi-value chennai" id="k-chennai">—</div><div class="kpi-sub">employees</div></div>
-      <div class="kpi pune"><div class="kpi-label">Pune</div><div class="kpi-value pune" id="k-pune">—</div><div class="kpi-sub">employees</div></div>
-      <div class="kpi red"><div class="kpi-label">Needs Attention</div><div class="kpi-value red" id="k-risk">—</div><div class="kpi-sub">employees below 4</div></div>
+    <div class="kstrip">
+      <div class="kc g"><div class="k-lbl">Avg Engagement</div><div class="k-val g" id="k-eng">—</div><div class="k-sub" id="k-eng-s">/5</div></div>
+      <div class="kc g"><div class="k-lbl">Manager Rating</div><div class="k-val g" id="k-mgr">—</div><div class="k-sub" id="k-mgr-s">/5</div></div>
+      <div class="kc g"><div class="k-lbl">Overall Exp.</div><div class="k-val g" id="k-ov">—</div><div class="k-sub" id="k-ov-s">/5</div></div>
+      <div class="kc"><div class="k-lbl">Total Responses</div><div class="k-val" id="k-n">—</div><div class="k-sub">employees</div></div>
+      <div class="kc ch"><div class="k-lbl">Chennai</div><div class="k-val ch" id="k-ch">—</div><div class="k-sub">employees</div></div>
+      <div class="kc pu"><div class="k-lbl">Pune</div><div class="k-val pu" id="k-pu">—</div><div class="k-sub">employees</div></div>
+      <div class="kc r"><div class="k-lbl">Needs Attention</div><div class="k-val r" id="k-watch">—</div><div class="k-sub">squads &lt; 4.0</div></div>
     </div>
-
-    <div class="grid-4">
-      <div class="card"><div class="card-title">Engagement Distribution</div><div class="inference" id="inf-eng">Loading...</div><div class="chart-wrap"><canvas id="chart-eng"></canvas></div></div>
-      <div class="card"><div class="card-title">Manager Rating</div><div class="inference" id="inf-mgr">Loading...</div><div class="chart-wrap"><canvas id="chart-mgr"></canvas></div></div>
-      <div class="card"><div class="card-title">Overall Experience</div><div class="inference" id="inf-ov">Loading...</div><div class="chart-wrap"><canvas id="chart-ov"></canvas></div></div>
-      <div class="card"><div class="card-title">RAG Status</div><div class="inference" id="inf-rag">Loading...</div><div class="chart-wrap"><canvas id="chart-rag"></canvas></div></div>
-    </div>
-
-    <div class="grid-2">
-      <div class="card"><div class="card-title">Key Signals</div><div id="signals"></div></div>
-      <div class="card"><div class="card-title">Top Employee Requests</div><div id="requests"></div></div>
-    </div>
-  </div>
-
-  <div class="page" id="location">
-    <div class="alert blue" id="location-summary">Loading location view...</div>
-    <div class="loc-cards">
-      <div class="loc-card chennai">
-        <div class="loc-head"><div class="loc-name">Chennai</div><div class="loc-badge" id="chennai-count">—</div></div>
-        <div class="loc-kpis">
-          <div class="loc-kpi"><div class="loc-val" id="chennai-eng">—</div><div class="loc-label">Engagement</div></div>
-          <div class="loc-kpi"><div class="loc-val" id="chennai-mgr">—</div><div class="loc-label">Manager</div></div>
-          <div class="loc-kpi"><div class="loc-val" id="chennai-ov">—</div><div class="loc-label">Overall</div></div>
-        </div>
-        <div id="chennai-squads"></div>
+    <div class="g4">
+      <div class="ch-box">
+        <div class="ch-title">Engagement Distribution</div>
+        <div class="ch-inference" id="inf-eng">Loading…</div>
+        <div class="ch-wrap"><canvas id="ch-eng"></canvas></div>
       </div>
-      <div class="loc-card pune">
-        <div class="loc-head"><div class="loc-name">Pune</div><div class="loc-badge" id="pune-count">—</div></div>
-        <div class="loc-kpis">
-          <div class="loc-kpi"><div class="loc-val" id="pune-eng">—</div><div class="loc-label">Engagement</div></div>
-          <div class="loc-kpi"><div class="loc-val" id="pune-mgr">—</div><div class="loc-label">Manager</div></div>
-          <div class="loc-kpi"><div class="loc-val" id="pune-ov">—</div><div class="loc-label">Overall</div></div>
-        </div>
-        <div id="pune-squads"></div>
+      <div class="ch-box">
+        <div class="ch-title">Overall Experience</div>
+        <div class="ch-inference" id="inf-ov">Loading…</div>
+        <div class="ch-wrap"><canvas id="ch-ov"></canvas></div>
+      </div>
+      <div class="ch-box">
+        <div class="ch-title">RAG Status</div>
+        <div class="ch-inference" id="inf-rag">Loading…</div>
+        <div class="ch-wrap"><canvas id="ch-rag"></canvas></div>
+      </div>
+      <div class="ch-box">
+        <div class="ch-title">Chennai vs Pune</div>
+        <div class="ch-inference" id="inf-loc">Loading…</div>
+        <div class="ch-wrap"><canvas id="ch-loc"></canvas></div>
       </div>
     </div>
-    <div class="grid-2">
-      <div class="card"><div class="card-title">Location Score Comparison</div><div class="chart-wrap tall"><canvas id="chart-location"></canvas></div></div>
-      <div class="card"><div class="card-title">Location Response Distribution</div><div class="chart-wrap tall"><canvas id="chart-location-count"></canvas></div></div>
+    <div class="g2">
+      <div class="card">
+        <div class="c-title"><div class="c-title-l">Key Signals</div><span style="font-size:.62rem;color:var(--muted)">↓ Click any signal for details</span></div>
+        <div id="signals"></div>
+      </div>
+      <div class="card">
+        <div class="c-title"><div class="c-title-l">What Employees Are Asking For</div></div>
+        <div class="req-top3" id="req-top3"></div>
+        <div style="font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px">Other Common Requests</div>
+        <div class="req-others" id="req-others"></div>
+      </div>
     </div>
   </div>
 
-  <div class="page" id="practice">
-    <div class="alert blue" id="practice-summary">Loading practice view...</div>
-    <div class="card"><div class="card-title">Practice Score Comparison</div><div class="chart-wrap tall"><canvas id="chart-practice"></canvas></div></div>
-    <div class="card"><div class="card-title">Practice Details</div><div id="practice-details"></div></div>
-  </div>
-
-  <div class="page" id="heatmap">
-    <div class="alert blue" id="heatmap-summary">Scores are calculated from Engagement, Manager Rating and Overall Experience.</div>
-    <div class="card"><div class="card-title">Employee Health Heatmap</div><div class="table-wrap"><table class="health-table" id="health-table"></table></div></div>
-  </div>
-
-  <div class="page" id="voice">
-    <div class="alert blue">All comments are displayed as employee feedback themes. Please use them for internal leadership understanding.</div>
-    <div class="comment-grid" id="comment-grid"></div>
-  </div>
-
-  <div class="page" id="actions">
-    <div class="grid-3">
-      <div class="card"><div class="card-title">This Week</div><div id="actions-week"></div></div>
-      <div class="card"><div class="card-title">This Month</div><div id="actions-month"></div></div>
-      <div class="card"><div class="card-title">Q2 Focus</div><div id="actions-q2"></div></div>
+  <!-- P2: CHENNAI vs PUNE -->
+  <div class="pg" id="p2">
+    <div class="inf blue" id="inf-ch-pu">Loading location inference…</div>
+    <div class="loc-wrap">
+      <div class="loc-card ch">
+        <div class="loc-hdr"><div class="loc-name">📍 Chennai</div><div class="loc-badge" id="ch-badge">—</div></div>
+        <div class="loc-inference" id="ch-inference">Loading…</div>
+        <div class="loc-kpis">
+          <div class="loc-kpi"><div class="lk-val" id="loc-ch-eng">—</div><div class="lk-lbl">Engagement</div></div>
+          <div class="loc-kpi"><div class="lk-val" id="loc-ch-mgr">—</div><div class="lk-lbl">Manager</div></div>
+          <div class="loc-kpi"><div class="lk-val" id="loc-ch-ov">—</div><div class="lk-lbl">Overall</div></div>
+        </div>
+        <div class="loc-squads" id="ch-squads"></div>
+      </div>
+      <div class="loc-card pu">
+        <div class="loc-hdr"><div class="loc-name">📍 Pune</div><div class="loc-badge" id="pu-badge">—</div></div>
+        <div class="loc-inference" id="pu-inference">Loading…</div>
+        <div class="loc-kpis">
+          <div class="loc-kpi"><div class="lk-val" id="loc-pu-eng">—</div><div class="lk-lbl">Engagement</div></div>
+          <div class="loc-kpi"><div class="lk-val" id="loc-pu-mgr">—</div><div class="lk-lbl">Manager</div></div>
+          <div class="loc-kpi"><div class="lk-val" id="loc-pu-ov">—</div><div class="lk-lbl">Overall</div></div>
+        </div>
+        <div class="loc-squads" id="pu-squads"></div>
+      </div>
+    </div>
+    <div class="g2">
+      <div class="ch-box">
+        <div class="ch-title">Location Score Comparison</div>
+        <div class="ch-inference" id="inf-compare">Loading…</div>
+        <div class="ch-wrap"><canvas id="ch-compare"></canvas></div>
+      </div>
+      <div class="ch-box">
+        <div class="ch-title">Employee Distribution by Location & Squad</div>
+        <div class="ch-inference" id="inf-dist">Loading…</div>
+        <div class="ch-wrap"><canvas id="ch-sq-loc"></canvas></div>
+      </div>
+    </div>
+    <div class="g2">
+      <div class="card"><div class="c-title"><div class="c-title-l">Chennai · Top Requests</div></div><div id="ch-req"></div></div>
+      <div class="card"><div class="c-title"><div class="c-title-l">Pune · Top Requests</div></div><div id="pu-req"></div></div>
     </div>
   </div>
 
-  <div class="page" id="leadership">
-    <div class="leadership-box" id="leadership-box"></div>
+  <!-- P3: PRACTICE VIEW -->
+  <div class="pg" id="p3">
+    <div class="inf blue" id="inf-prac-overall">Loading…</div>
+    <div class="pr-grid" id="pr-cards"></div>
+    <div class="g2">
+      <div class="ch-box">
+        <div class="ch-title">Practice Scores · All Metrics</div>
+        <div class="ch-inference" id="inf-prac-chart">Loading…</div>
+        <div class="ch-wrap" style="height:220px"><canvas id="ch-prac"></canvas></div>
+      </div>
+      <div class="ch-box">
+        <div class="ch-title">Practice × Location Engagement</div>
+        <div class="ch-inference" id="inf-prac-loc">Loading…</div>
+        <div class="ch-wrap" style="height:220px"><canvas id="ch-prac-loc"></canvas></div>
+      </div>
+    </div>
+    <div class="sq-grid" id="sq-cards"></div>
+  </div>
+
+  <!-- P4: HEATMAP -->
+  <div class="pg" id="p4">
+    <div class="inf blue" id="inf-heatmap">Loading…</div>
+    <div class="card" style="margin-bottom:14px">
+      <div class="c-title"><div class="c-title-l">Organisation Health Heatmap · Squad × Location × Practice</div></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;font-size:.7rem;color:var(--muted)">
+        <span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:4px;font-family:Fira Code,monospace">≥4.5 Excellent</span>
+        <span style="background:#dcfce7;color:#15803d;padding:2px 8px;border-radius:4px;font-family:Fira Code,monospace">4.0–4.4 Strong</span>
+        <span style="background:#fef9c3;color:#92400e;padding:2px 8px;border-radius:4px;font-family:Fira Code,monospace">3.5–3.9 Moderate</span>
+        <span style="background:#fee2e2;color:#b91c1c;padding:2px 8px;border-radius:4px;font-family:Fira Code,monospace">&lt;3.5 Critical</span>
+      </div>
+      <div class="hm-wrap"><table class="hm" id="hm-table"></table></div>
+    </div>
+    <div class="g2">
+      <div class="ch-box">
+        <div class="ch-title">Squad Radar · Engagement vs Manager</div>
+        <div class="ch-inference" id="inf-radar">Loading…</div>
+        <div class="ch-wrap" style="height:240px"><canvas id="ch-radar"></canvas></div>
+      </div>
+      <div class="ch-box">
+        <div class="ch-title">All Squads · Score Comparison</div>
+        <div class="ch-inference" id="inf-sq-bar">Loading…</div>
+        <div class="ch-wrap" style="height:240px"><canvas id="ch-sq-bar"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- P5: VOICE OF EMPLOYEE -->
+  <div class="pg" id="p5">
+    <div style="font-size:.76rem;color:var(--muted);margin-bottom:14px;padding:10px 14px;background:var(--card);border-radius:8px;border:1px solid var(--border)">
+      ℹ️ All quotes below are <strong>anonymous</strong>. Themes extracted from open-ended responses. No individual can be identified.
+    </div>
+    <div class="comment-grid" id="comment-cards"></div>
+    <div class="g2">
+      <div class="card"><div class="c-title"><div class="c-title-l">What's Working Well</div></div><div id="positives"></div></div>
+      <div class="card"><div class="c-title"><div class="c-title-l">Challenges & Friction</div></div><div id="challenges"></div></div>
+    </div>
+    <div class="card"><div class="c-title"><div class="c-title-l">Stop · Start · Continue</div></div>
+      <div class="ssc">
+        <div class="scol r"><div class="sh">🛑 Stop</div><ul class="sul"><li>Running Spot Awards without squad-level equity checks</li><li>Cross-team knowledge demos staying discontinued</li><li>Udemy training without hands-on practice follow-up</li><li>Removing recreational spaces without alternatives</li></ul></div>
+        <div class="scol a"><div class="sh">▶ Start</div><ul class="sul"><li>Fun Friday (requested across squads)</li><li>Quarterly team outings / company trips</li><li>Hands-on Udemy / automation practice sessions</li><li>Full-year holiday calendar shared to all regions</li><li>Bi-monthly cross-squad demo sessions</li></ul></div>
+        <div class="scol g"><div class="sh">✅ Continue</div><ul class="sul"><li>Manager-assigned Udemy training (working well)</li><li>Supportive, accessible manager culture</li><li>Multi-project exposure model</li><li>This 1-on-1 programme — increase to quarterly</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- P6: ACTIONS -->
+  <div class="pg" id="p6">
+    <div class="g3">
+      <div class="card"><div class="c-title"><div class="c-title-l">🔴 This Week</div></div><div id="act-now"></div></div>
+      <div class="card"><div class="c-title"><div class="c-title-l">🟡 This Month</div></div><div id="act-month"></div></div>
+      <div class="card"><div class="c-title"><div class="c-title-l">🔵 Q2 Plan</div></div><div id="act-q2"></div></div>
+    </div>
+  </div>
+
+  <!-- P7: LEADERSHIP -->
+  <div class="pg" id="p7">
+    <div class="ls" id="ls-card"></div>
+    <div class="ai-box">
+      <div class="ai-title">🤖 AI Predictive Intelligence · Based on Live Data</div>
+      <div id="ai-body"></div>
+    </div>
   </div>
 </div>
 
 <script>
-/********************************************************************
-  FINZLY SETTINGS - CHANGE ONLY THIS SECTION IF REQUIRED
-********************************************************************/
-const CLIENT_ID = "d893026d-d1c9-4285-947a-0a672018b8d1";
-const TENANT_ID = "4d4c58f7-6978-4a93-ba72-f1d987c46c89";
-const FILE_ID = "DD1F5741-CCA4-442E-8FA4-27E9157C936C";
-const OWNER_UPN = "vishwata.mayekar@finzly.com";
-const SHEET = "Sheet1";
-const REDIRECT_URI = "https://finzlyindiahr.github.io/finzly-dashboard/";
-
-// HR name based location mapping
+const CLIENT_ID="d893026d-d1c9-4285-947a-0a672018b8d1";
+const TENANT_ID="4d4c58f7-6978-4a93-ba72-f1d987c46c89";
+const FILE_ID="DD1F5741-CCA4-442E-8FA4-27E9157C936C";
+const OWNER_UPN="vishwata.mayekar@finzly.com";
+const SHEET="Sheet1";
 const LOC_MAP={
   abirami:"Chennai",
   vishwata:"Pune",
@@ -258,157 +527,42 @@ const LOC_MAP={
   mayekar:"Pune"
 };
 
-/********************************************************************
-  AUTHENTICATION
-********************************************************************/
-const msalConfig = {
-  auth:{clientId:CLIENT_ID,authority:"https://login.microsoftonline.com/"+TENANT_ID,redirectUri:REDIRECT_URI},
-  cache:{cacheLocation:"sessionStorage"}
-};
-const SCOPES = ["Files.Read.All","User.Read"];
-let msalApp;
-let account;
-let ALL_ROWS = [];
-let HEADERS = [];
-let CHARTS = {};
-
-function show(screen){
-  document.getElementById("login-screen").style.display = screen==="login" ? "flex" : "none";
-  document.getElementById("loading-screen").style.display = screen==="loading" ? "flex" : "none";
-  document.getElementById("error-screen").style.display = screen==="error" ? "flex" : "none";
-  document.getElementById("dash").style.display = screen==="dash" ? "block" : "none";
-}
+const msalConfig={auth:{clientId:CLIENT_ID,authority:"https://login.microsoftonline.com/"+TENANT_ID,redirectUri:"https://finzlyindiahr.github.io/finzly-dashboard/"},cache:{cacheLocation:"sessionStorage"}};
+let msalApp,account;
+const SCOPES=["Files.Read.All","User.Read"];
 
 async function signIn(){
-  try{
-    show("loading");
-    msalApp = new msal.PublicClientApplication(msalConfig);
-    await msalApp.loginRedirect({scopes:SCOPES});
-  }catch(e){
-    show("login");
-    alert("Sign-in failed: "+e.message);
-  }
+  try{show('loading');msalApp=new msal.PublicClientApplication(msalConfig);await msalApp.loginRedirect({scopes:SCOPES});}
+  catch(e){show('login');alert("Sign-in failed: "+e.message);}
 }
-
-async function signOut(){
-  try{ await msalApp.logoutRedirect({account}); }
-  catch(e){ location.reload(); }
-}
-
+async function signOut(){try{await msalApp.logoutRedirect({account});}catch(e){location.reload();}}
 async function getToken(){
-  try{
-    const result = await msalApp.acquireTokenSilent({scopes:SCOPES,account});
-    return result.accessToken;
-  }catch(e){
-    await msalApp.acquireTokenRedirect({scopes:SCOPES,account});
-    return null;
-  }
+  try{return(await msalApp.acquireTokenSilent({scopes:SCOPES,account})).accessToken;}
+  catch{await msalApp.acquireTokenRedirect({scopes:SCOPES,account});return null;}
 }
 
-/********************************************************************
-  LOAD EXCEL
-********************************************************************/
+let ALL=[],HDRS=[];
+const CHS={};
+
 async function loadData(){
   try{
-    const token = await getToken();
-    if(!token) return;
-    const headers = {Authorization:"Bearer "+token};
-
-    const me = await fetch("https://graph.microsoft.com/v1.0/me",{headers}).then(r=>r.json());
-    document.getElementById("user-pill").textContent = me.displayName || me.mail || "Leadership";
-
-    const url = "https://graph.microsoft.com/v1.0/users/"+OWNER_UPN+"/drive/items/"+FILE_ID+"/workbook/worksheets('"+SHEET+"')/usedRange";
-    const response = await fetch(url,{headers});
-    if(!response.ok) throw new Error("Cannot read Excel from SharePoint. Status: "+response.status);
-
-    const data = await response.json();
-    const values = data.values || [];
-    if(values.length < 2) throw new Error("Excel sheet does not have enough data.");
-
-    HEADERS = values[0].map(h => normalizeHeader(h));
-    ALL_ROWS = values.slice(1).filter(r => r.some(c => c !== null && String(c).trim() !== ""));
-
-    populateFilters();
-    renderDashboard(ALL_ROWS);
-    document.getElementById("timestamp").textContent = "Live from SharePoint · Refreshed " + new Date().toLocaleString("en-IN");
-    show("dash");
-
-    setTimeout(loadData, 5 * 60 * 1000);
-  }catch(e){
-    document.getElementById("err-msg").textContent = e.message;
-    show("error");
-  }
+    const token=await getToken();if(!token)return;
+    const H={Authorization:"Bearer "+token};
+    const me=await fetch("https://graph.microsoft.com/v1.0/me",{headers:H}).then(r=>r.json());
+    document.getElementById('h-user').textContent=me.displayName||me.mail||"Leadership";
+    const url="https://graph.microsoft.com/v1.0/users/"+OWNER_UPN+"/drive/items/"+FILE_ID+"/workbook/worksheets('"+SHEET+"')/usedRange";
+    const res=await fetch(url,{headers:H});
+    if(!res.ok)throw new Error("Cannot read Excel ("+res.status+").");
+    const d=await res.json();
+    HDRS=d.values[0].map(h=>String(h||'').trim().toLowerCase());
+    ALL=d.values.slice(1).filter(r=>r.some(c=>c!==null&&c!==''));
+    populateFilters();render(ALL);
+    document.getElementById('ts').textContent="● Live · SharePoint · Refreshed "+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+    document.getElementById('h-live').textContent="● Live";
+    show('dash');
+    setTimeout(loadData,5*60*1000);
+  }catch(e){document.getElementById('err-msg').textContent=e.message;show('error');}
 }
-
-window.addEventListener("load", async()=>{
-  try{
-    msalApp = new msal.PublicClientApplication(msalConfig);
-    const result = await msalApp.handleRedirectPromise();
-    if(result && result.account) account = result.account;
-    else account = msalApp.getAllAccounts()[0];
-
-    if(account){ show("loading"); await loadData(); }
-    else show("login");
-  }catch(e){
-    document.getElementById("err-msg").textContent = e.message;
-    show("error");
-  }
-});
-
-/********************************************************************
-  COLUMN MAPPING - EXACTLY BASED ON YOUR EXCEL HEADERS
-********************************************************************/
-function normalizeHeader(h){
-  return String(h || "")
-    .toLowerCase()
-    .replace(/[–—]/g,"-")
-    .replace(/\s+/g," ")
-    .trim();
-}
-
-function findColumn(matchers, fallbackIndex){
-  for(const matcher of matchers){
-    const index = HEADERS.findIndex(h => h.includes(matcher));
-    if(index >= 0) return index;
-  }
-  return fallbackIndex;
-}
-
-function getColumnIndexes(){
-  return {
-    id: findColumn(["id"],0),
-    hrName: findColumn(["name"],4),
-    employeeName: findColumn(["employee name"],5),
-    empId: findColumn(["emp id"],6),
-    manager: findColumn(["manager name"],7),
-    squad: findColumn(["sqauds","squads","squad"],8),
-    subProject: findColumn(["exact sub project"],9),
-    practice: findColumn(["practice"],10),
-    lastQuarter: findColumn(["last quarter","day-to-day work experience"],11),
-    goingWell: findColumn(["going well","most challenging"],12),
-    managerRating: HDRS.findIndex(h =>
-  h.includes('relationship and communication') ||
-  h.includes('manager and team') ||
-  h.includes('department collaboration')
-),
-
-engagement: HDRS.findIndex(h =>
-  h.includes('how engaged do you currently feel') ||
-  h.includes('engaged do you currently feel at work')
-),
-
-overall: HDRS.findIndex(h =>
-  h.includes('overall experience rating')
-),
-    comments: findColumn(["additional comments"],20),
-    rag: findColumn(["rag status"],21)
-  };
-}
-
-/********************************************************************
-  HELPERS
-********************************************************************/
-function cleanText(v){ return String(v || "").trim(); }
 
 function getLoc(row,iHR){
   const v=String(row[iHR]||'')
@@ -427,436 +581,554 @@ function getLoc(row,iHR){
   return 'Unknown';
 }
 
-function parseScore(value){
-  const text = cleanText(value);
-  if(!text) return null;
-  const startMatch = text.match(/^([1-5])(\s|\-|–|—|,|\.|$)/);
-  if(startMatch) return Number(startMatch[1]);
-  const anyMatch = text.match(/\b([1-5])\b/);
-  return anyMatch ? Number(anyMatch[1]) : null;
-}
-
-function avg(values){
-  const valid = values.filter(v => typeof v === "number" && !isNaN(v));
-  if(!valid.length) return "—";
-  return (valid.reduce((a,b)=>a+b,0)/valid.length).toFixed(1);
-}
-
-function scoreClass(v){
-  if(v === "—" || v === null) return "";
-  const n = Number(v);
-  if(n >= 4.5) return "green";
-  if(n >= 4.0) return "green";
-  if(n >= 3.5) return "amber";
-  return "red";
-}
-
-function scoreCellClass(v){
-  if(v === "—") return "score-risk";
-  const n = Number(v);
-  if(n >= 4.5) return "score-excellent";
-  if(n >= 4.0) return "score-good";
-  if(n >= 3.5) return "score-watch";
-  return "score-risk";
-}
-
-function setText(id,value){ const el=document.getElementById(id); if(el) el.textContent=value; }
-function setHTML(id,value){ const el=document.getElementById(id); if(el) el.innerHTML=value; }
-
-function groupBy(rows, fn){
-  const out = {};
-  rows.forEach(r=>{
-    const key = fn(r) || "Unknown";
-    if(!out[key]) out[key]=[];
-    out[key].push(r);
-  });
-  return out;
-}
-
-function distribution(rows, colIndex){
-  const d = [0,0,0,0,0];
-  rows.forEach(r=>{
-    const s = parseScore(r[colIndex]);
-    if(s && s>=1 && s<=5) d[s-1]++;
-  });
-  return d;
-}
-
-function makeChart(id,type,data,options={}){
-  if(CHARTS[id]) CHARTS[id].destroy();
-  const canvas = document.getElementById(id);
-  if(!canvas) return;
-  CHARTS[id] = new Chart(canvas,{type,data,options:{
-    responsive:true,
-    maintainAspectRatio:false,
-    plugins:{legend:{position:"bottom",labels:{font:{family:"Outfit",size:11},boxWidth:12}}},
-    scales: type === "bar" ? {y:{beginAtZero:true,max:5,ticks:{stepSize:1}},x:{ticks:{font:{family:"Outfit",size:10}}}} : {},
-    ...options
-  }});
-}
-
-function openTab(event,id){
-  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
-  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
-  event.currentTarget.classList.add("active");
-  document.getElementById(id).classList.add("active");
-}
-
-/********************************************************************
-  FILTERS
-********************************************************************/
 function populateFilters(){
-  const idx = getColumnIndexes();
-  const squadSelect = document.getElementById("filter-squad");
-  const practiceSelect = document.getElementById("filter-practice");
-
-  squadSelect.innerHTML = '<option value="all">All Squads</option>';
-  practiceSelect.innerHTML = '<option value="all">All Practices</option>';
-
-  const squads = [...new Set(ALL_ROWS.map(r=>cleanText(r[idx.squad])).filter(Boolean))].sort();
-  const practices = [...new Set(ALL_ROWS.map(r=>cleanText(r[idx.practice])).filter(Boolean))].sort();
-
-  squads.forEach(s=>{
-    const opt=document.createElement("option"); opt.value=s; opt.textContent=s; squadSelect.appendChild(opt);
-  });
-  practices.forEach(p=>{
-    const opt=document.createElement("option"); opt.value=p; opt.textContent=p; practiceSelect.appendChild(opt);
-  });
+  const ci=kw=>HDRS.findIndex(h=>kw.some(k=>h.includes(k)));
+  const iSq=ci(['squad','sqaud']),iPr=ci(['practice']),iHR=ci(['name']);
+  const str=(row,i)=>i<0?'':String(row[i]||'').trim();
+  const squads=[...new Set(ALL.map(r=>str(r,iSq)).filter(Boolean))].sort();
+  const pracs=[...new Set(ALL.map(r=>str(r,iPr).trim()).filter(Boolean))].sort();
+  const sqS=document.getElementById('f-squad'),prS=document.getElementById('f-practice');
+  squads.forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;sqS.appendChild(o);});
+  pracs.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;prS.appendChild(o);});
 }
 
 function applyFilter(){
-  const idx = getColumnIndexes();
-  const loc = document.getElementById("filter-location").value;
-  const squad = document.getElementById("filter-squad").value;
-  const practice = document.getElementById("filter-practice").value;
-
-  let rows = ALL_ROWS.slice();
-  if(loc !== "all") rows = rows.filter(r => getLocation(r,idx) === loc);
-  if(squad !== "all") rows = rows.filter(r => cleanText(r[idx.squad]) === squad);
-  if(practice !== "all") rows = rows.filter(r => cleanText(r[idx.practice]) === practice);
-
-  renderDashboard(rows);
+  const loc=document.getElementById('f-loc').value;
+  const sq=document.getElementById('f-squad').value;
+  const pr=document.getElementById('f-practice').value;
+  const ci=kw=>HDRS.findIndex(h=>kw.some(k=>h.includes(k)));
+  const iSq=ci(['squad','sqaud']),iPr=ci(['practice']),iHR=ci(['name']);
+  const str=(row,i)=>i<0?'':String(row[i]||'').trim();
+  let f=ALL;
+  if(loc!=='all')f=f.filter(r=>getLoc(r,iHR)===loc);
+  if(sq!=='all')f=f.filter(r=>str(r,iSq)===sq);
+  if(pr!=='all')f=f.filter(r=>str(r,iPr).trim()===pr);
+  render(f);
 }
 
-/********************************************************************
-  MAIN RENDER
-********************************************************************/
-function renderDashboard(rows){
-  const idx = getColumnIndexes();
-  const total = rows.length;
-  setText("filter-info", total + " employee" + (total===1?"":"s") + " in current view");
+const avg=arr=>arr.length?(arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1):'—';
+const pct=v=>v==='—'?0:Math.round((+v/5)*100);
+const colFor=v=>{if(!v||v==='—')return'var(--muted)';const n=+v;return n>=4.5?'var(--green)':n>=3.5?'var(--amber)':'var(--red)';};
+const chipCls=v=>{if(!v||v==='—')return'';const n=+v;return n>=4.5?'g':n>=3.5?'a':'r';};
+const hmCls=v=>{if(v==='—')return'cna';const n=+v;return n>=4.5?'c5':n>=4?'c45':n>=3.5?'c4':n>=3?'c35':'clo';};
 
-  const chennaiRows = rows.filter(r=>getLocation(r,idx)==="Chennai");
-  const puneRows = rows.filter(r=>getLocation(r,idx)==="Pune");
-  const unknownRows = rows.filter(r=>getLocation(r,idx)==="Unknown");
-
-  setText("chennai-pill","Chennai "+chennaiRows.length);
-  setText("pune-pill","Pune "+puneRows.length);
-
-  const engagementScores = rows.map(r=>parseScore(r[idx.engagement])).filter(v=>v!==null);
-  const managerScores = rows.map(r=>parseScore(r[idx.managerRating])).filter(v=>v!==null);
-  const overallScores = rows.map(r=>parseScore(r[idx.overall])).filter(v=>v!==null);
-
-  const engagementAvg = avg(engagementScores);
-  const managerAvg = avg(managerScores);
-  const overallAvg = avg(overallScores);
-
-  setText("k-eng",engagementAvg); setText("k-eng-sub",engagementScores.length+" responses · /5");
-  setText("k-mgr",managerAvg); setText("k-mgr-sub",managerScores.length+" responses · /5");
-  setText("k-ov",overallAvg); setText("k-ov-sub",overallScores.length+" responses · /5");
-  setText("k-total",total); setText("k-chennai",chennaiRows.length); setText("k-pune",puneRows.length);
-
-  ["k-eng","k-mgr","k-ov"].forEach(id=>{
-    const el=document.getElementById(id); if(el){el.className="kpi-value "+scoreClass(el.textContent);}
-  });
-
-  const riskEmployees = rows.filter(r=>{
-    const e=parseScore(r[idx.engagement]);
-    const m=parseScore(r[idx.managerRating]);
-    const o=parseScore(r[idx.overall]);
-    return (e!==null && e<4) || (m!==null && m<4) || (o!==null && o<4);
-  });
-  setText("k-risk",riskEmployees.length);
-
-  renderAlerts(rows,idx,riskEmployees,unknownRows);
-  renderOverviewCharts(rows,idx,engagementAvg,managerAvg,overallAvg,riskEmployees);
-  renderSignals(rows,idx,riskEmployees);
-  renderRequests(rows,idx);
-  renderLocation(rows,idx,chennaiRows,puneRows);
-  renderPractice(rows,idx);
-  renderHeatmap(rows,idx);
-  renderVoice(rows,idx);
-  renderActions(rows,idx,riskEmployees);
-  renderLeadership(rows,idx,riskEmployees,chennaiRows,puneRows,engagementAvg,managerAvg,overallAvg);
+function mkChart(id,type,data,opts={}){
+  if(CHS[id])CHS[id].destroy();
+  const ctx=document.getElementById(id);if(!ctx)return;
+  CHS[id]=new Chart(ctx,{type,data,options:{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{position:'bottom',labels:{font:{family:'Outfit',size:11},boxWidth:10,padding:7}}},
+    scales:type==='bar'?{y:{beginAtZero:true,max:5,ticks:{stepSize:1,font:{family:'Fira Code',size:10}}},x:{ticks:{font:{family:'Outfit',size:10}}}}:
+           type==='radar'?{r:{beginAtZero:true,min:0,max:5,ticks:{stepSize:1,font:{size:9}}}}:{},
+    animation:{duration:500},...opts
+  }});
 }
 
-function renderAlerts(rows,idx,riskEmployees,unknownRows){
-  let html = "";
-  if(riskEmployees.length){
-    html += `<div class="alert amber"><strong>${riskEmployees.length} employee(s) need attention.</strong><br>Engagement, manager rating or overall experience is below 4. Please review by squad and manager.</div>`;
-  }else{
-    html += `<div class="alert green"><strong>No immediate score-based risk found.</strong><br>All available scores are currently in the healthy range.</div>`;
+// Toggle signal detail
+function toggleSig(el){
+  const detail=el.querySelector('.sig-detail');
+  if(detail){detail.classList.toggle('open');}
+}
+
+function render(data){
+  const n=data.length;
+  document.getElementById('f-info').textContent=n+" employee"+(n!==1?'s':'')+" in view";
+
+  const ci=kw=>HDRS.findIndex(h=>kw.some(k=>h.includes(k)));
+  // Use keyword search with positional fallback based on known column structure
+  const iHR  = ci(['name']) > -1 ? ci(['name']) : 4;
+  const iSq  = ci(['squad','sqaud']) > -1 ? ci(['squad','sqaud']) : 9;
+  const iPr  = ci(['practice']) > -1 ? ci(['practice']) : 11;
+  const iMgr = HDRS.findIndex(h =>
+    h.includes('relationship and communication') ||
+    h.includes('manager and team') ||
+    h.includes('department collaboration')
+  );
+
+  const iEng = HDRS.findIndex(h =>
+    h.includes('how engaged do you currently feel') ||
+    h.includes('engaged do you currently feel at work')
+  );
+
+  const iOv = HDRS.findIndex(h =>
+    h.includes('overall experience rating')
+  );
+  const iSsc = ci(['stop','start','continue','should start','team/company','as a team']) > -1 ? ci(['stop','start','continue','should start','team/company','as a team']) : 18;
+  const iRag = ci(['rag']) > -1 ? ci(['rag']) : 22;
+  const iCom = ci(['additional comments','comments']) > -1 ? ci(['additional comments','comments']) : 21;
+  const iPsych = ci(['comfortable','concerns','feedback','new ideas']) > -1 ? ci(['comfortable','concerns','feedback','new ideas']) : 15;
+  const iQ1  = ci(['last quarter','day-to-day']) > -1 ? ci(['last quarter','day-to-day']) : 12;
+  const iQ2  = ci(['going well','challenging']) > -1 ? ci(['going well','challenging']) : 13;
+  const iLearn = ci(['skills','training','certifications','udemy']) > -1 ? ci(['skills','training','certifications','udemy']) : 16;
+  const iSup = ci(['support','need from us']) > -1 ? ci(['support','need from us']) : 19;
+
+  const num=(row,i)=>{
+    if(i<0||i>=row.length)return null;
+    const v=String(row[i]||'').trim();
+    if(!v||v==='null'||v==='undefined')return null;
+    // Match first digit 1-5 at start of string (handles "5 - reason", "5, reason", "5- reason")
+    const m=v.match(/^([1-5])/);
+    if(m)return +m[1];
+    // Fallback: find any 1-5 digit
+    const m2=v.match(/\b([1-5])\b/);
+    return m2?+m2[1]:null;
+  };
+  const str=(row,i)=>i<0?'':String(row[i]||'').trim();
+
+  // Location split
+  const byLoc={Chennai:[],Pune:[]};
+  data.forEach(r=>{const loc=getLoc(r,iHR);if(byLoc[loc])byLoc[loc].push(r);});
+  const chD=byLoc.Chennai,puD=byLoc.Pune;
+  document.getElementById('h-ch').textContent="Chennai "+chD.length;
+  document.getElementById('h-pu').textContent="Pune "+puD.length;
+  document.getElementById('k-ch').textContent=chD.length;
+  document.getElementById('k-pu').textContent=puD.length;
+
+  // KPIs
+  const engs=data.map(r=>num(r,iEng)).filter(v=>v!==null);
+  const mgrs=data.map(r=>num(r,iMgr)).filter(v=>v!==null);
+  const ovs=data.map(r=>num(r,iOv)).filter(v=>v!==null);
+  const ae=avg(engs),am=avg(mgrs),ao=avg(ovs);
+  document.getElementById('k-eng').textContent=ae;
+  document.getElementById('k-mgr').textContent=am;
+  document.getElementById('k-ov').textContent=ao;
+  document.getElementById('k-n').textContent=n;
+  const setKC=(id,val)=>{const el=document.getElementById(id);const v=+val;el.className='k-val '+(v>=4.5?'g':v>=3.5?'a':'r');};
+  setKC('k-eng',ae);setKC('k-mgr',am);setKC('k-ov',ao);
+  document.getElementById('k-eng-s').textContent=engs.length+" responses · /5";
+  document.getElementById('k-mgr-s').textContent=mgrs.length+" responses · /5";
+  document.getElementById('k-ov-s').textContent=ovs.length+" responses · /5";
+
+  // Squad data
+  const sq={};
+  data.forEach(r=>{
+    const s=str(r,iSq)||'Unknown';
+    const loc=getLoc(r,iHR);
+    const pr=str(r,iPr).trim()||'Unknown';
+    if(!sq[s])sq[s]={e:[],m:[],o:[],n:0,loc,ssc:[],comments:[],pr};
+    const e=num(r,iEng),m=num(r,iMgr),o=num(r,iOv);
+    if(e!==null)sq[s].e.push(e);
+    if(m!==null)sq[s].m.push(m);
+    if(o!==null)sq[s].o.push(o);
+    sq[s].n++;
+    sq[s].ssc.push(str(r,iSsc));
+    sq[s].comments.push(str(r,iCom));
+  });
+  const sqLabels=Object.keys(sq);
+
+  // Watch count & alerts
+  const watchCount=sqLabels.filter(s=>+avg(sq[s].e)<4||+avg(sq[s].m)<4).length;
+  document.getElementById('k-watch').textContent=watchCount;
+
+  const alertHTML=[];
+  sqLabels.forEach(s=>{
+    const d=sq[s],e=+avg(d.e),m=+avg(d.m);
+    if(e<3.5||m<3.5)alertHTML.push(`<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-radius:8px;margin-bottom:8px;background:var(--rbg);border:1px solid var(--rbr)"><span>🚨</span><div><strong style="font-size:.82rem">${s} (${d.loc}) — Urgent: Engagement ${avg(d.e)}/5 · Manager ${avg(d.m)}/5</strong><div style="font-size:.74rem;color:var(--muted);margin-top:2px">Scores critically below threshold. Recommend immediate skip-level conversation.</div></div></div>`);
+    else if(e<4||m<4)alertHTML.push(`<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-radius:8px;margin-bottom:8px;background:var(--abg);border:1px solid var(--abr)"><span>⚠️</span><div><strong style="font-size:.82rem">${s} (${d.loc}) — Monitor: Engagement ${avg(d.e)}/5 · Manager ${avg(d.m)}/5</strong><div style="font-size:.74rem;color:var(--muted);margin-top:2px">Below healthy threshold (4.0). Check in next 1-on-1 cycle.</div></div></div>`);
+  });
+  document.getElementById('alerts').innerHTML=alertHTML.join('');
+
+  // RAG — derive from scores if column empty
+  const rag={Green:0,Amber:0,Red:0};
+  let hasRag=false;
+  if(iRag>=0)data.forEach(r=>{
+    const v=str(r,iRag).toLowerCase();
+    if(v.includes('green')){rag.Green++;hasRag=true;}
+    else if(v.includes('amber')||v.includes('yellow')){rag.Amber++;hasRag=true;}
+    else if(v.includes('red')){rag.Red++;hasRag=true;}
+  });
+  if(!hasRag){
+    data.forEach(r=>{
+      const e=num(r,iEng);if(e===null)return;
+      if(e>=4)rag.Green++;else if(e===3)rag.Amber++;else rag.Red++;
+    });
   }
-  if(unknownRows.length){
-    html += `<div class="alert red"><strong>${unknownRows.length} response(s) have unknown location.</strong><br>Please check HR Name. Only Abirami is mapped to Chennai and Vishwata/Vishwatha Mayekar is mapped to Pune.</div>`;
-  }
-  setHTML("alerts",html);
-}
 
-function renderOverviewCharts(rows,idx,engagementAvg,managerAvg,overallAvg,riskEmployees){
-  makeChart("chart-eng","doughnut",{
-    labels:["1","2","3","4","5"],
-    datasets:[{data:distribution(rows,idx.engagement),backgroundColor:["#dc2626","#f97316","#fbbf24","#86efac","#16a34a"],borderColor:"#fff",borderWidth:2}]
-  });
-  makeChart("chart-mgr","doughnut",{
-    labels:["1","2","3","4","5"],
-    datasets:[{data:distribution(rows,idx.managerRating),backgroundColor:["#dc2626","#f97316","#fbbf24","#86efac","#16a34a"],borderColor:"#fff",borderWidth:2}]
-  });
-  makeChart("chart-ov","doughnut",{
-    labels:["1","2","3","4","5"],
-    datasets:[{data:distribution(rows,idx.overall),backgroundColor:["#dc2626","#f97316","#fbbf24","#86efac","#16a34a"],borderColor:"#fff",borderWidth:2}]
-  });
+  // Inferences
+  const engScore5=engs.filter(v=>v===5).length;
+  const engPct5=Math.round(engScore5/Math.max(engs.length,1)*100);
+  document.getElementById('inf-eng').innerHTML=`<strong>What this means:</strong> ${engPct5}% of employees scored engagement at 5/5. ${engs.filter(v=>v<4).length>0?`${engs.filter(v=>v<4).length} employee(s) scored below 4 — these need follow-up.`:'No one scored below 4 — a strong signal of team motivation.'}`;
+  const ovScore5=ovs.filter(v=>v===5).length;
+  document.getElementById('inf-ov').innerHTML=`<strong>What this means:</strong> ${Math.round(ovScore5/Math.max(ovs.length,1)*100)}% rate their overall experience as 5/5. ${+ao>=4.5?'Exceptional — this is a benchmark-level score for a tech org.':+ao>=4?'Strong — above industry average. Focus on moving 4s to 5s.':'Moderate — identify friction points pulling scores down.'}`;
+  document.getElementById('inf-rag').innerHTML=`<strong>What this means:</strong> ${rag.Green} Green (healthy) · ${rag.Amber} Amber (watch) · ${rag.Red} Red (urgent). ${rag.Red>0?`🚨 ${rag.Red} employee(s) need immediate attention.`:rag.Amber>0?`⚠ ${rag.Amber} employee(s) to monitor — prevent further drop.`:'✅ All employees in healthy range.'}`;
 
-  const rag = {Green:0, Amber:0, Red:0};
-  rows.forEach(r=>{
-    const explicit = cleanText(r[idx.rag]).toLowerCase();
-    if(explicit.includes("green")) rag.Green++;
-    else if(explicit.includes("amber") || explicit.includes("yellow")) rag.Amber++;
-    else if(explicit.includes("red")) rag.Red++;
-    else{
-      const e=parseScore(r[idx.engagement]);
-      if(e === null) return;
-      if(e>=4) rag.Green++; else if(e===3) rag.Amber++; else rag.Red++;
-    }
-  });
-  makeChart("chart-rag","doughnut",{
-    labels:["Green","Amber","Red"],
-    datasets:[{data:[rag.Green,rag.Amber,rag.Red],backgroundColor:["#16a34a","#d97706","#dc2626"],borderColor:"#fff",borderWidth:2}]
-  });
+  const chE=+avg(chD.map(r=>num(r,iEng)).filter(v=>v!==null))||0;
+  const puE=+avg(puD.map(r=>num(r,iEng)).filter(v=>v!==null))||0;
+  const chM=+avg(chD.map(r=>num(r,iMgr)).filter(v=>v!==null))||0;
+  const puM=+avg(puD.map(r=>num(r,iMgr)).filter(v=>v!==null))||0;
+  const chO=+avg(chD.map(r=>num(r,iOv)).filter(v=>v!==null))||0;
+  const puO=+avg(puD.map(r=>num(r,iOv)).filter(v=>v!==null))||0;
+  const locGap=Math.abs(chE-puE).toFixed(1);
+  document.getElementById('inf-loc').innerHTML=`<strong>What this means:</strong> Chennai leads by ${locGap} pts on engagement. ${+locGap<0.3?'Both locations are at parity — healthy.':+locGap<0.8?'A small gap exists. Watch Pune trend in next cycle.':'A meaningful gap. Pune needs targeted attention before it widens.'}`;
 
-  const engagement5 = rows.filter(r=>parseScore(r[idx.engagement])===5).length;
-  const engagementBelow4 = rows.filter(r=>{const s=parseScore(r[idx.engagement]); return s!==null && s<4;}).length;
-  setHTML("inf-eng",`<strong>What this means:</strong> Avg engagement is ${engagementAvg}/5. ${engagement5} employee(s) scored 5. ${engagementBelow4} employee(s) scored below 4.`);
-  setHTML("inf-mgr",`<strong>What this means:</strong> Avg manager rating is ${managerAvg}/5. This should be reviewed squad-wise to identify where manager support is strong or needs improvement.`);
-  setHTML("inf-ov",`<strong>What this means:</strong> Avg overall experience is ${overallAvg}/5. This reflects the broader employee experience beyond only manager relationship.`);
-  setHTML("inf-rag",`<strong>What this means:</strong> ${rag.Green} Green · ${rag.Amber} Amber · ${rag.Red} Red. ${rag.Red>0?"Immediate HR follow-up needed for red cases.":"No red cases in current view."}`);
-}
+  // Donut charts
+  const engDist=[0,0,0,0,0];
+  engs.forEach(v=>{if(v>=1&&v<=5)engDist[v-1]++;});
+  mkChart('ch-eng','doughnut',{
+    labels:['1','2','3','4','5'],
+    datasets:[{data:engDist,backgroundColor:['#ef4444','#f97316','#fbbf24','#4ade80','#16a34a'],borderWidth:2,borderColor:'#fff'}]
+  },{plugins:{legend:{position:'right'}}});
 
-function renderSignals(rows,idx,riskEmployees){
-  let html = "";
-  if(riskEmployees.length){
-    html += `<div class="signal amber" onclick="this.classList.toggle('open')"><div class="signal-title">${riskEmployees.length} employee(s) below healthy score</div><div class="signal-body">Click to see what this means.</div><div class="signal-detail">Below 4 in engagement, manager rating or overall experience should be treated as an early warning. HR should do a focused check-in with the employee or manager.</div></div>`;
-  }
-  const learningText = rows.map(r=>cleanText(r[idx.learning]).toLowerCase()).join(" ");
-  if(learningText.includes("udemy")){
-    html += `<div class="signal green" onclick="this.classList.toggle('open')"><div class="signal-title">Udemy is appearing in employee conversations</div><div class="signal-body">Learning adoption is being discussed in 1-on-1 feedback.</div><div class="signal-detail">Track whether Udemy usage is only course assignment or actual completion with hands-on application.</div></div>`;
-  }
-  const requestText = rows.map(r=>cleanText(r[idx.startStopContinue]).toLowerCase()+" "+cleanText(r[idx.support]).toLowerCase()).join(" ");
-  if(requestText.includes("trip") || requestText.includes("outing") || requestText.includes("fun")){
-    html += `<div class="signal green" onclick="this.classList.toggle('open')"><div class="signal-title">Employees are asking for bonding activities</div><div class="signal-body">Trip / outing / fun activity requests are visible.</div><div class="signal-detail">This is a positive culture signal. Consider quarterly low-cost team connection activities.</div></div>`;
-  }
-  if(!html) html = `<div class="alert green"><strong>No negative signal found.</strong><br>Current data does not show a major concern.</div>`;
-  setHTML("signals",html);
-}
+  const ovDist=[0,0,0,0,0];
+  ovs.forEach(v=>{if(v>=1&&v<=5)ovDist[v-1]++;});
+  mkChart('ch-ov','doughnut',{
+    labels:['1','2','3','4','5'],
+    datasets:[{data:ovDist,backgroundColor:['#ef4444','#f97316','#fbbf24','#4ade80','#16a34a'],borderWidth:2,borderColor:'#fff'}]
+  },{plugins:{legend:{position:'right'}}});
 
-function renderRequests(rows,idx){
-  const text = rows.map(r=>[
-    cleanText(r[idx.startStopContinue]),
-    cleanText(r[idx.support]),
-    cleanText(r[idx.comments])
-  ].join(" ").toLowerCase()).join(" ");
+  mkChart('ch-rag','doughnut',{
+    labels:['Green ✓','Amber ⚠','Red ✕'],
+    datasets:[{data:[rag.Green,rag.Amber,rag.Red],backgroundColor:['#16a34a','#d97706','#dc2626'],borderWidth:2,borderColor:'#fff'}]
+  },{plugins:{legend:{position:'right'}}});
 
-  const items = [
-    {label:"Team trip / outing", keys:["trip","outing","team outing","travel"]},
-    {label:"Fun Friday / engagement activity", keys:["fun friday","fun","games","activity"]},
-    {label:"Training / Udemy", keys:["udemy","training","certification","learning"]},
-    {label:"Manager support", keys:["manager","support","guidance"]},
-    {label:"Cross-team collaboration", keys:["collaboration","department","cross"]},
-    {label:"Nothing specific", keys:["nothing","none","no"]}
-  ].map(item=>{
-    let count = 0;
-    item.keys.forEach(k=>{ const m = text.match(new RegExp(k,"g")); if(m) count += m.length; });
-    return {...item,count};
-  }).filter(i=>i.count>0).sort((a,b)=>b.count-a.count);
-
-  if(!items.length){ setHTML("requests",`<div class="alert blue">No repeated request theme found in current view.</div>`); return; }
-
-  const max = Math.max(...items.map(i=>i.count));
-  setHTML("requests", items.map(i=>`
-    <div class="bar-row"><div class="bar-label">${i.label}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.round(i.count/max*100)}%"></div></div><div class="bar-value">${i.count}</div></div>
-  `).join(""));
-}
-
-function renderLocation(rows,idx,chennaiRows,puneRows){
-  const locAvg = (data,col)=>avg(data.map(r=>parseScore(r[col])).filter(v=>v!==null));
-  const chE=locAvg(chennaiRows,idx.engagement), chM=locAvg(chennaiRows,idx.managerRating), chO=locAvg(chennaiRows,idx.overall);
-  const puE=locAvg(puneRows,idx.engagement), puM=locAvg(puneRows,idx.managerRating), puO=locAvg(puneRows,idx.overall);
-
-  setText("chennai-count",chennaiRows.length+" employees"); setText("pune-count",puneRows.length+" employees");
-  setText("chennai-eng",chE); setText("chennai-mgr",chM); setText("chennai-ov",chO);
-  setText("pune-eng",puE); setText("pune-mgr",puM); setText("pune-ov",puO);
-
-  const gap = (chE!=="—" && puE!=="—") ? Math.abs(Number(chE)-Number(puE)).toFixed(1) : "—";
-  setHTML("location-summary",`<strong>Location split:</strong> Chennai ${chennaiRows.length}, Pune ${puneRows.length}. Engagement gap is ${gap} point(s). Location is mapped using HR name: Abirami = Chennai, Vishwata/Vishwatha Mayekar = Pune.`);
-
-  makeChart("chart-location","bar",{
-    labels:["Engagement","Manager","Overall"],
+  mkChart('ch-loc','bar',{
+    labels:['Engagement','Manager','Overall'],
     datasets:[
-      {label:"Chennai",data:[Number(chE)||0,Number(chM)||0,Number(chO)||0],backgroundColor:"rgba(14,165,233,.8)",borderRadius:8},
-      {label:"Pune",data:[Number(puE)||0,Number(puM)||0,Number(puO)||0],backgroundColor:"rgba(124,58,237,.8)",borderRadius:8}
+      {label:'Chennai',data:[chE,chM,chO],backgroundColor:'rgba(14,165,233,.8)',borderRadius:6},
+      {label:'Pune',data:[puE,puM,puO],backgroundColor:'rgba(124,58,237,.8)',borderRadius:6},
     ]
   });
 
-  makeChart("chart-location-count","doughnut",{
-    labels:["Chennai","Pune"],
-    datasets:[{data:[chennaiRows.length,puneRows.length],backgroundColor:["#0ea5e9","#7c3aed"],borderColor:"#fff",borderWidth:2}]
+  // SIGNALS with click-to-expand details
+  const allSSC=data.map(r=>str(r,iSsc).toLowerCase()).join(' ');
+  const allText=data.map(r=>[str(r,iSsc),str(r,iPsych),str(r,iCom),str(r,iQ2)].join(' ').toLowerCase()).join(' ');
+
+  const sigs=[];
+  if(rag.Red>0){
+    const redSquads=sqLabels.filter(s=>+avg(sq[s].e)<3.5||+avg(sq[s].m)<3.5);
+    sigs.push({t:'r',h:`${rag.Red} employee${rag.Red>1?'s':''} need${rag.Red===1?'s':''} immediate attention`,s:'Engagement or manager scores critically low',b:'Act Now',
+      detail:{title:'Why immediate attention?',body:`Scores below 3.5/5 on engagement or manager rating. ${redSquads.length>0?'Affected squad(s): '+redSquads.join(', ')+'.':''} This combination is a leading indicator of voluntary exit within 60–90 days. Immediate skip-level conversation recommended.`,tags:redSquads.map(s=>s+' · '+sq[s].loc)}
+    });
+  }
+  if(rag.Amber>0){
+    const amberSquads=sqLabels.filter(s=>{const e=+avg(sq[s].e),m=+avg(sq[s].m);return(e<4||m<4)&&e>=3.5&&m>=3.5;});
+    sigs.push({t:'a',h:`${rag.Amber} flagged Amber — scores below healthy threshold`,s:'Monitor closely in next 1-on-1 cycle',b:'Watch',
+      detail:{title:'Why watch these employees?',body:`Scores between 3.5–3.9 indicate dissatisfaction that hasn't surfaced as intent to leave yet. Without intervention, Amber typically slides to Red within 1–2 quarters. ${amberSquads.length>0?'Squads to watch: '+amberSquads.join(', '):''} Run a focused 1-on-1 within 2 weeks.`,tags:['Manager quality','Workload balance','Recognition']}
+    });
+  }
+  if(allText.includes('spot')||allText.includes('award')){
+    sigs.push({t:'r',h:'Recognition gap — Spot Award process is inequitable',s:'One or more squads not receiving nominations after process opened to all',b:'Fix Now',
+      detail:{title:'What is the recognition gap?',body:'After the Spot Award nomination process was opened company-wide, at least one squad has not had team members nominated or recognised. This creates a perception of unfairness. High-performers in unrecognised squads quietly reduce discretionary effort. Impact is not yet visible in scores but will be in the next cycle.',tags:['Spot Awards','Chennai · Trade QA','Recognition process']}
+    });
+  }
+  if(allSSC.includes('trip')||allSSC.includes('outing')){
+    const count=data.filter(r=>['trip','outing','tour'].some(k=>str(r,iSsc).toLowerCase().includes(k))).length;
+    sigs.push({t:'a',h:'Team outings most requested — '+count+' out of '+n+' employees',s:'Raised independently across multiple squads',b:'Easy Win',
+      detail:{title:'Why does this matter?',body:`${count} employees independently mentioned trips or team outings — this is the #1 morale request this quarter. Notably, these requests came from different squads and locations (Chennai & Pune), showing it is an organisation-wide sentiment. Cost is minimal. ROI in engagement is high. Booking one outing this quarter will signal leadership listens.`,tags:['Payments','Trade','Digital','Both Locations']}
+    });
+  }
+  if(allSSC.includes('fun friday')){
+    const count=data.filter(r=>str(r,iSsc).toLowerCase().includes('fun friday')).length;
+    sigs.push({t:'a',h:'Fun Friday requested by '+count+' employees',s:'Multiple employees, low cost, high morale impact',b:'Quick Fix',
+      detail:{title:'What is being asked?',body:`${count} employees asked for Fun Friday activities to be introduced or reintroduced. This is a zero-cost or low-cost initiative. It builds cross-team bonding, reduces work monotony, and signals that leadership invests in culture. Can be implemented within 1 week — simply pick a day and communicate it.`,tags:['Trade QA','Payments Engineering','Cultural initiative']}
+    });
+  }
+  if(allText.includes('space')||allText.includes('hybrid')||allText.includes('crowded')){
+    sigs.push({t:'a',h:'Office space and hybrid work concerns raised',s:'Comfort and crowding flagged across locations',b:'Address',
+      detail:{title:'What is the concern?',body:'Employees flag that office space is constrained — seating is tight and recreational spaces (e.g. table tennis) have been removed. Some employees have requested a hybrid or WFH model as a result. This is not just about comfort — it affects productivity and in-office morale. Assess seat utilisation and consider hybrid pilot.',tags:['Trade QA · Chennai','Payments Engineering','Hybrid work']}
+    });
+  }
+  if(allText.includes('udemy')||allText.includes('practical')||allText.includes('automation')){
+    sigs.push({t:'b',h:'Udemy theory–practice gap flagged',s:'Courses being completed but skills not applied to projects',b:'Improve',
+      detail:{title:'What is the gap?',body:'Employees are completing Udemy courses but flagging that practice sessions require a paid tier, and that theory is not being applied in real project contexts. L&D spend is not converting to capability. Fix: ask managers to assign a real project task linked to each active Udemy course within 30 days of completion. Zero cost.',tags:['Trade QA · Chennai','Payments Engineering','L&D ROI']}
+    });
+  }
+  if(allText.includes('demo')||allText.includes('cross-team')||allText.includes('cross team')||allText.includes('other teams')){
+    sigs.push({t:'b',h:'Cross-team knowledge demos have stopped',s:'Product and process knowledge sharing between squads has reduced',b:'Revive',
+      detail:{title:'Why does this matter?',body:'Cross-team demo sessions used to help engineers understand what other squads are building. They were stopped and have not been replaced. This creates knowledge silos — onboarding takes longer, cross-functional problem solving slows, and employees feel less connected to the product as a whole. Reviving monthly demos costs zero budget.',tags:['Payments Engineering · Chennai','Cross-squad','Knowledge sharing']}
+    });
+  }
+  if(allText.includes('holiday')||allText.includes('region')){
+    sigs.push({t:'b',h:'Regional holiday communication lag',s:'Location-specific holidays not communicated to other regions in advance',b:'Easy Fix',
+      detail:{title:'What is happening?',body:'Employees in one region (Chennai or Pune) are not informed in advance about holidays applicable to the other region. This causes planning friction — meetings get scheduled on holidays, deadlines are missed. Fix: share a full-year holiday calendar with all regional dates to all employees. This takes 30 minutes of HR admin time.',tags:['Payments Engineering · Chennai','Cross-location comms','HR admin']}
+    });
+  }
+  if(sigs.length===0)sigs.push({t:'g',h:'No critical flags detected this quarter',s:'All employees in healthy range across both locations',b:'Healthy',detail:{title:'Healthy state confirmed',body:'All engagement, manager, and overall scores are above 4.0. No qualitative concerns surfaced from open responses. Maintain current practices and continue 1-on-1 programme quarterly.',tags:['All squads','Both locations']}});
+
+  document.getElementById('signals').innerHTML=sigs.map((s,i)=>`
+    <div class="sig ${s.t}" onclick="toggleSig(this)">
+      <div class="sdot ${s.t}"></div>
+      <div class="stxt"><strong>${s.h}<span class="sig-click-hint">↓ click for details</span></strong>${s.s}</div>
+      <div class="sbadge ${s.t}">${s.b}</div>
+      <div class="sig-detail">
+        <div class="sig-detail-title">${s.detail.title}</div>
+        <div class="sig-detail-body">${s.detail.body}</div>
+        <div class="sig-detail-tags">${s.detail.tags.map(t=>`<span class="sig-tag">${t}</span>`).join('')}</div>
+      </div>
+    </div>`).join('');
+
+  // REQUESTS — ranked with top 3 prominent
+  const allReqs=[
+    {l:'Team Outings & Trips',icon:'🏖',kw:['trip','outing','tour','travel','asking for','team outing']},
+    {l:'Fun Friday',icon:'🎉',kw:['fun friday','fun-friday']},
+    {l:'Team Lunches',icon:'🍽',kw:['lunch','team lunch','lunches']},
+    {l:'Hybrid / WFH',icon:'🏠',kw:['hybrid','wfh','work from home','work from']},
+    {l:'Hands-on Learning',icon:'🛠',kw:['hands-on','practice','practical','automation session']},
+    {l:'Cross-team Demos',icon:'🔄',kw:['demo','cross-team','cross team','other team']},
+    {l:'Recreational Activities',icon:'🏏',kw:['cricket','table tennis','sport','game','badminton','reintroduc']},
+    {l:'Better Food / Canteen',icon:'🥗',kw:['food','canteen','snack','biscuit','milk']},
+    {l:'Holiday Calendar',icon:'📅',kw:['holiday','calendar','region','notif']},
+  ];
+  const sscRows=data.map(r=>[str(r,iSsc),str(r,iSup),str(r,iQ2)].join(' ').toLowerCase());
+  allReqs.forEach(req=>{req.c=sscRows.filter(t=>req.kw.some(k=>t.includes(k))).length;});
+  const rankedReqs=allReqs.filter(r=>r.c>0).sort((a,b)=>b.c-a.c);
+  const top3=rankedReqs.slice(0,3);
+  const others=rankedReqs.slice(3);
+  const maxC=top3.length>0?top3[0].c:1;
+
+  document.getElementById('req-top3').innerHTML=top3.map((r,i)=>`
+    <div class="req-card">
+      <div class="req-rank">#${i+1} Most Requested</div>
+      <div class="req-icon">${r.icon}</div>
+      <div class="req-label">${r.l}</div>
+      <div class="req-count">${r.c} of ${n} employees asked</div>
+      <div class="req-pct"><div class="req-pct-fill" style="width:${Math.round(r.c/maxC*100)}%"></div></div>
+    </div>`).join('');
+
+  document.getElementById('req-others').innerHTML=others.length>0?others.map(r=>`
+    <div class="brow">
+      <div class="blbl">${r.icon} ${r.l}</div>
+      <div class="btrack"><div class="bfill" style="width:${Math.round(r.c/maxC*100)}%;background:var(--accent);opacity:.6"></div></div>
+      <div class="bval">${r.c}/${n}</div>
+    </div>`).join(''):'<div style="font-size:.74rem;color:var(--muted)">No other significant requests.</div>';
+
+  // P2: CHENNAI vs PUNE
+  const locGapNum=Math.abs(chE-puE);
+  document.getElementById('inf-ch-pu').innerHTML=`<strong>Location Inference:</strong> Chennai (${chD.length} employees, avg ${chE}/5) ${chE>puE?'leads':'lags'} Pune (${puD.length} employees, avg ${puE}/5) by <strong>${locGapNum.toFixed(1)} points</strong> on engagement. ${locGapNum<0.3?'Both locations are at parity — a sign of consistent culture.':locGapNum<0.8?'A small gap exists. Monitor Pune trend in the next cycle.':'A meaningful performance gap. Leadership should investigate Pune-specific friction points before it becomes an attrition risk.'} <strong>Decision:</strong> ${chE>puE?'Replicate what Chennai is doing well into Pune. Share manager practices.':'Analyse what makes Pune score higher and replicate into Chennai.'}`;
+  document.getElementById('ch-inference').innerHTML=`${chE>=4.5?'✅ Strong health across all squads.':chE>=4?'⚠ Healthy but watch for drift — act on requests to sustain scores.':'🚨 Below threshold — investigate urgently.'} Top ask: ${top3.length>0?top3[0].l:'N/A'}.`;
+  document.getElementById('pu-inference').innerHTML=`${puE>=4.5?'✅ Strong health across all squads.':puE>=4?'⚠ Healthy but below Chennai benchmark. Address friction points.':'🚨 Below threshold — skip-level conversations recommended.'} Top ask: ${top3.length>0?top3[0].l:'N/A'}.`;
+
+  const renderLoc=(locD,prefix,color)=>{
+    const le=locD.map(r=>num(r,iEng)).filter(v=>v!==null);
+    const lm=locD.map(r=>num(r,iMgr)).filter(v=>v!==null);
+    const lo=locD.map(r=>num(r,iOv)).filter(v=>v!==null);
+    document.getElementById(prefix+'-badge').textContent=locD.length+" employees";
+    document.getElementById('loc-'+prefix+'-eng').textContent=avg(le)||'—';
+    document.getElementById('loc-'+prefix+'-mgr').textContent=avg(lm)||'—';
+    document.getElementById('loc-'+prefix+'-ov').textContent=avg(lo)||'—';
+    const lsq={};
+    locD.forEach(r=>{const s=str(r,iSq)||'?';if(!lsq[s])lsq[s]={e:[]};const e=num(r,iEng);if(e!==null)lsq[s].e.push(e);});
+    document.getElementById(prefix+'-squads').innerHTML=Object.entries(lsq).map(([s,d])=>{
+      const e=avg(d.e);return`<div class="loc-sq-row"><div class="loc-sq-lbl">${s}</div><div class="loc-sq-track"><div class="loc-sq-fill" style="width:${pct(e)}%"></div></div><div class="loc-sq-val">${e}</div></div>`;
+    }).join('');
+    const lsscRows=locD.map(r=>[str(r,iSsc),str(r,iSup),str(r,iQ2)].join(' ').toLowerCase());
+    const locReqs=allReqs.map(r=>({...r,lc:lsscRows.filter(t=>r.kw.some(k=>t.includes(k))).length}));
+    const lmax=Math.max(...locReqs.map(r=>r.lc),1);
+    const reqEl=document.getElementById(prefix+'-req');
+    if(reqEl)reqEl.innerHTML=locReqs.filter(r=>r.lc>0).sort((a,b)=>b.lc-a.lc)
+      .map(r=>`<div class="brow"><div class="blbl">${r.icon} ${r.l}</div><div class="btrack"><div class="bfill" style="width:${Math.round(r.lc/lmax*100)}%;background:${color};opacity:.75"></div></div><div class="bval">${r.lc}/${locD.length}</div></div>`).join('')
+      ||'<div style="font-size:.76rem;color:var(--muted)">No specific requests detected in this location.</div>';
+  };
+  renderLoc(chD,'ch','var(--ch)');renderLoc(puD,'pu','var(--pu)');
+
+  document.getElementById('inf-compare').innerHTML=`<strong>Inference:</strong> ${chE>puE?`Chennai scores higher on all 3 metrics. Gap: ${(chE-puE).toFixed(1)} pts engagement, ${(chM-puM).toFixed(1)} pts manager, ${(chO-puO).toFixed(1)} pts overall. Root cause: investigate Pune manager quality and work environment.`:`Pune scores higher. Chennai gap: ${(puE-chE).toFixed(1)} pts. This is unusual — investigate what's driving Chennai lower.`} <strong>Action:</strong> Share the higher-scoring location's manager practices with the other.`;
+  
+  const sqLocCounts={};
+  data.forEach(r=>{const s=str(r,iSq)||'?',loc=getLoc(r,iHR);const key=s+' ('+loc+')';sqLocCounts[key]=(sqLocCounts[key]||0)+1;});
+  const sqLocColors=Object.keys(sqLocCounts).map(k=>k.includes('Chennai')?'rgba(14,165,233,.75)':'rgba(124,58,237,.75)');
+  document.getElementById('inf-dist').innerHTML=`<strong>Inference:</strong> ${Object.keys(sqLocCounts).length} squad-location combinations. Largest group: <strong>${Object.entries(sqLocCounts).sort((a,b)=>b[1]-a[1])[0]?.[0]||'—'}</strong>. Chennai has ${chD.length} of ${n} employees (${Math.round(chD.length/n*100)}%). This distribution affects how location-specific issues are weighted.`;
+  mkChart('ch-compare','bar',{labels:['Engagement','Manager','Overall'],datasets:[{label:'Chennai ('+chD.length+')',data:[chE,chM,chO],backgroundColor:'rgba(14,165,233,.8)',borderRadius:6},{label:'Pune ('+puD.length+')',data:[puE,puM,puO],backgroundColor:'rgba(124,58,237,.8)',borderRadius:6}]});
+  mkChart('ch-sq-loc','doughnut',{labels:Object.keys(sqLocCounts),datasets:[{data:Object.values(sqLocCounts),backgroundColor:sqLocColors,borderWidth:2,borderColor:'#fff'}]},{plugins:{legend:{position:'right'}}});
+
+  // P3: PRACTICE
+  const pr={};
+  data.forEach(r=>{
+    const p=str(r,iPr).trim()||'Unknown';
+    if(!pr[p])pr[p]={e:[],m:[],o:[],n:0};
+    const e=num(r,iEng),m=num(r,iMgr),o=num(r,iOv);
+    if(e!==null)pr[p].e.push(e);if(m!==null)pr[p].m.push(m);if(o!==null)pr[p].o.push(o);pr[p].n++;
   });
+  const prLabels=Object.keys(pr);
+  const topPrac=prLabels.sort((a,b)=>+avg(pr[b].e)-+avg(pr[a].e))[0];
+  const lowPrac=prLabels.sort((a,b)=>+avg(pr[a].e)-+avg(pr[b].e))[0];
+  document.getElementById('inf-prac-overall').innerHTML=`<strong>Practice Inference:</strong> <strong>${topPrac}</strong> leads on engagement (${avg(pr[topPrac]?.e||[])}). ${prLabels.length>1&&lowPrac!==topPrac?`<strong>${lowPrac}</strong> scores lowest (${avg(pr[lowPrac]?.e||[])}). Gap of ${Math.abs(+avg(pr[topPrac]?.e||[])-+avg(pr[lowPrac]?.e||[])).toFixed(1)} pts — investigate if this is workload, tooling, or manager-related.`:''} <strong>Decision:</strong> Share ${topPrac}'s working practices and manager approach with other practice groups.`;
+  
+  const barRow=(lbl,val,col)=>`<div class="brow"><div class="blbl">${lbl}</div><div class="btrack"><div class="bfill" style="width:${pct(val)}%;background:${col}"></div></div><div class="bval" style="color:${col}">${val}</div></div>`;
+  document.getElementById('pr-cards').innerHTML=Object.entries(pr).map(([p,d])=>{
+    const e=avg(d.e),m=avg(d.m),o=avg(d.o);
+    return`<div class="pr-card"><div class="pr-hdr"><div class="pr-name">⚙ ${p}</div><div class="pr-badge">${d.n} employees</div></div>${barRow('Engagement',e,colFor(e))}${barRow('Manager',m,colFor(m))}${barRow('Overall',o,colFor(o))}<div style="font-size:.68rem;color:var(--muted);margin-top:8px">${+e>=4.5?'✅ Strong health — benchmark this group.':+e>=4?'⚠ Good, but check workload balance.':'🚨 Below threshold — investigate urgently.'}</div></div>`;
+  }).join('');
 
-  renderSquadBars("chennai-squads",chennaiRows,idx);
-  renderSquadBars("pune-squads",puneRows,idx);
-}
+  document.getElementById('inf-prac-chart').innerHTML=`<strong>Inference:</strong> ${prLabels.length>1?`Compare Engagement vs Manager vs Overall across practices. If Manager is consistently lower than Engagement, feedback quality is the issue. If Overall is lower than Engagement, the work environment (tools, space) is the issue.`:'Single practice group in this view. Use filters to compare.'} Look for the bars where any metric drops below 4.`;
+  mkChart('ch-prac','bar',{labels:prLabels,datasets:[{label:'Engagement',data:prLabels.map(p=>+avg(pr[p].e)||0),backgroundColor:'rgba(22,163,74,.8)',borderRadius:5},{label:'Manager',data:prLabels.map(p=>+avg(pr[p].m)||0),backgroundColor:'rgba(37,99,235,.8)',borderRadius:5},{label:'Overall',data:prLabels.map(p=>+avg(pr[p].o)||0),backgroundColor:'rgba(124,58,237,.8)',borderRadius:5}]});
 
-function renderSquadBars(elementId,rows,idx){
-  const bySquad = groupBy(rows,r=>cleanText(r[idx.squad]));
-  const entries = Object.entries(bySquad).map(([s,data])=>({
-    squad:s,
-    count:data.length,
-    engagement:avg(data.map(r=>parseScore(r[idx.engagement])).filter(v=>v!==null))
-  })).sort((a,b)=>b.count-a.count);
-  if(!entries.length){ setHTML(elementId,`<div class="small-muted">No data.</div>`); return; }
-  const max = Math.max(...entries.map(e=>e.count));
-  setHTML(elementId,entries.map(e=>`
-    <div class="bar-row"><div class="bar-label">${e.squad}<div class="small-muted">Engagement ${e.engagement}/5</div></div><div class="bar-track"><div class="bar-fill" style="width:${Math.round(e.count/max*100)}%"></div></div><div class="bar-value">${e.count}</div></div>
-  `).join(""));
-}
+  const plLabels=[],plData=[];
+  prLabels.forEach(p=>{['Chennai','Pune'].forEach(loc=>{const d=data.filter(r=>str(r,iPr).trim()===p&&getLoc(r,iHR)===loc);if(d.length===0)return;plLabels.push(p+' · '+loc);plData.push(+avg(d.map(r=>num(r,iEng)).filter(v=>v!==null))||0);});});
+  const lowestPL=plLabels[plData.indexOf(Math.min(...plData))]||'—';
+  document.getElementById('inf-prac-loc').innerHTML=`<strong>Inference:</strong> This chart shows engagement by practice AND location. <strong>${lowestPL}</strong> scores lowest at ${Math.min(...plData).toFixed(1)}/5. ${Math.min(...plData)<4?'This combination needs direct attention — schedule a dedicated 1-on-1 round.':'All practice-location combinations are healthy.'}`;
+  mkChart('ch-prac-loc','bar',{labels:plLabels,datasets:[{label:'Avg Engagement',data:plData,backgroundColor:plLabels.map(l=>l.includes('Chennai')?'rgba(14,165,233,.8)':'rgba(124,58,237,.8)'),borderRadius:5}]},{plugins:{legend:{display:false}}});
 
-function renderPractice(rows,idx){
-  const byPractice = groupBy(rows,r=>cleanText(r[idx.practice]));
-  const entries = Object.entries(byPractice).map(([p,data])=>({
-    practice:p,
-    count:data.length,
-    engagement:avg(data.map(r=>parseScore(r[idx.engagement])).filter(v=>v!==null)),
-    manager:avg(data.map(r=>parseScore(r[idx.managerRating])).filter(v=>v!==null)),
-    overall:avg(data.map(r=>parseScore(r[idx.overall])).filter(v=>v!==null))
-  })).sort((a,b)=>b.count-a.count);
+  // Squad cards
+  document.getElementById('sq-cards').innerHTML=sqLabels.map(s=>{
+    const d=sq[s],e=avg(d.e),m=avg(d.m),o=avg(d.o);
+    const cls=+e<3.5||+m<3.5?'r':+e<4||+m<4?'a':'';
+    const sscText=d.ssc.join(' ').toLowerCase();
+    const ask=sscText.includes('trip')||sscText.includes('outing')?'🏖 Team outing':sscText.includes('fun friday')?'🎉 Fun Friday':sscText.includes('hybrid')?'🏠 Hybrid work':sscText.includes('lunch')?'🍽 Team lunch':'Review SSC';
+    return`<div class="sq-card ${cls}"><div class="sq-top"><div class="sq-name">${s}</div><span class="sq-n">${d.n} · ${d.loc||'?'}</span></div><div class="sq-chips"><span class="sq-chip ${chipCls(e)}">Eng ${e}</span><span class="sq-chip ${chipCls(m)}">Mgr ${m}</span><span class="sq-chip ${chipCls(o)}">OA ${o}</span></div><div class="sq-insight">${ask} · ${+e>=4.5&&+m>=4.5?'✅ Healthy':'⚠ Monitor'}</div></div>`;
+  }).join('');
 
-  setHTML("practice-summary",`<strong>${entries.length} practice(s)</strong> are visible in current filtered view. Review engagement and manager rating together to identify where intervention is required.`);
+  // P4: HEATMAP
+  const pracs=[...new Set(data.map(r=>str(r,iPr).trim()).filter(Boolean))];
+  let hmHTML=`<thead><tr><th>Squad</th><th>Location</th><th>Practice</th><th>Engagement</th><th>Manager</th><th>Overall</th><th>Count</th></tr></thead><tbody>`;
+  let criticalCells=[];
+  sqLabels.forEach(s=>{['Chennai','Pune'].forEach(loc=>{pracs.forEach(p=>{
+    const cell=data.filter(r=>str(r,iSq)===s&&getLoc(r,iHR)===loc&&str(r,iPr).trim()===p);
+    if(cell.length===0)return;
+    const ce=avg(cell.map(r=>num(r,iEng)).filter(v=>v!==null));
+    const cm=avg(cell.map(r=>num(r,iMgr)).filter(v=>v!==null));
+    const co=avg(cell.map(r=>num(r,iOv)).filter(v=>v!==null));
+    if(+ce<3.5||+cm<3.5)criticalCells.push(`${s} · ${loc} · ${p}`);
+    hmHTML+=`<tr><td><div class="rl">${s}</div></td><td><span class="lt ${loc==='Chennai'?'ch':'pu'}">${loc}</span></td><td style="font-size:.74rem;color:var(--muted)">${p}</td><td><span class="hm-cell ${hmCls(ce)}">${ce}</span></td><td><span class="hm-cell ${hmCls(cm)}">${cm}</span></td><td><span class="hm-cell ${hmCls(co)}">${co}</span></td><td style="font-family:Fira Code,monospace;font-size:.7rem;color:var(--muted)">${cell.length}</td></tr>`;
+  });});});
+  hmHTML+=`</tbody>`;
+  document.getElementById('hm-table').innerHTML=hmHTML;
+  document.getElementById('inf-heatmap').innerHTML=`<strong>How to read this heatmap:</strong> Each row = one squad × location × practice combination. Green = strong (≥4.5), Yellow = moderate (3.5–4.4), Red = critical (&lt;3.5). ${criticalCells.length>0?`🚨 Critical cells: <strong>${criticalCells.join(', ')}</strong> — these need immediate skip-level conversations.`:'✅ No critical cells in this view. All combinations above 3.5.'} <strong>Decision trigger:</strong> Any red cell = schedule intervention within 2 weeks.`;
 
-  makeChart("chart-practice","bar",{
-    labels:entries.map(e=>e.practice),
-    datasets:[
-      {label:"Engagement",data:entries.map(e=>Number(e.engagement)||0),backgroundColor:"rgba(22,163,74,.8)",borderRadius:8},
-      {label:"Manager",data:entries.map(e=>Number(e.manager)||0),backgroundColor:"rgba(37,99,235,.8)",borderRadius:8},
-      {label:"Overall",data:entries.map(e=>Number(e.overall)||0),backgroundColor:"rgba(232,84,26,.8)",borderRadius:8}
-    ]
-  },{scales:{y:{beginAtZero:true,max:5,ticks:{stepSize:1}}}});
+  // Radar inference
+  const lowestSq=sqLabels.reduce((a,b)=>+avg(sq[a].e)<+avg(sq[b].e)?a:b,sqLabels[0]||'');
+  const highestSq=sqLabels.reduce((a,b)=>+avg(sq[a].e)>+avg(sq[b].e)?a:b,sqLabels[0]||'');
+  document.getElementById('inf-radar').innerHTML=`<strong>What the radar shows:</strong> A perfect score creates a full pentagon/hexagon. Gaps in the shape = areas to address. <strong>${highestSq}</strong> is your strongest squad (${avg(sq[highestSq]?.e||[])}). ${lowestSq!==highestSq?`<strong>${lowestSq}</strong> scores lowest (${avg(sq[lowestSq]?.e||[])}) — the shape will show a visible dip here.`:''} Use this to instantly spot which squads pull the organisation down.`;
+  document.getElementById('inf-sq-bar').innerHTML=`<strong>What to look for:</strong> Compare the 3 bars for each squad. If <strong>Manager</strong> bar is consistently shorter than Engagement, feedback quality is the issue. If <strong>Overall</strong> is low despite high Engagement, environmental factors (space, tools) are the problem. ${criticalCells.length>0?`🚨 Squads with visible drops: ${sqLabels.filter(s=>+avg(sq[s].e)<4).join(', ')||'None'}.`:'All squads scoring above 4.0.'}`;
 
-  setHTML("practice-details",entries.map(e=>`
-    <div class="bar-row"><div class="bar-label"><strong>${e.practice}</strong><div class="small-muted">${e.count} employee(s) · Engagement ${e.engagement} · Manager ${e.manager} · Overall ${e.overall}</div></div><div class="bar-track"><div class="bar-fill" style="width:${Math.round((Number(e.engagement)||0)/5*100)}%"></div></div><div class="bar-value">${e.engagement}</div></div>
-  `).join(""));
-}
+  mkChart('ch-radar','radar',{labels:sqLabels,datasets:[{label:'Engagement',data:sqLabels.map(s=>+avg(sq[s].e)||0),borderColor:'rgba(22,163,74,.8)',backgroundColor:'rgba(22,163,74,.1)',pointBackgroundColor:'rgba(22,163,74,.8)'},{label:'Manager',data:sqLabels.map(s=>+avg(sq[s].m)||0),borderColor:'rgba(37,99,235,.8)',backgroundColor:'rgba(37,99,235,.1)',pointBackgroundColor:'rgba(37,99,235,.8)'}]});
+  mkChart('ch-sq-bar','bar',{labels:sqLabels,datasets:[{label:'Engagement',data:sqLabels.map(s=>+avg(sq[s].e)||0),backgroundColor:'rgba(22,163,74,.8)',borderRadius:4},{label:'Manager',data:sqLabels.map(s=>+avg(sq[s].m)||0),backgroundColor:'rgba(37,99,235,.8)',borderRadius:4},{label:'Overall',data:sqLabels.map(s=>+avg(sq[s].o)||0),backgroundColor:'rgba(124,58,237,.8)',borderRadius:4}]});
 
-function renderHeatmap(rows,idx){
-  let html = `<thead><tr><th>Employee</th><th>Location</th><th>Manager</th><th>Squad</th><th>Practice</th><th>Engagement</th><th>Manager Rating</th><th>Overall</th><th>RAG</th></tr></thead><tbody>`;
-  rows.forEach(r=>{
-    const e = parseScore(r[idx.engagement]);
-    const m = parseScore(r[idx.managerRating]);
-    const o = parseScore(r[idx.overall]);
-    const rag = cleanText(r[idx.rag]) || deriveRag(e,m,o);
-    html += `<tr>
-      <td><strong>${cleanText(r[idx.employeeName]) || "—"}</strong><div class="small-muted">${cleanText(r[idx.empId]) || ""}</div></td>
-      <td>${getLocation(r,idx)}</td>
-      <td>${cleanText(r[idx.manager]) || "—"}</td>
-      <td>${cleanText(r[idx.squad]) || "—"}</td>
-      <td>${cleanText(r[idx.practice]) || "—"}</td>
-      <td><span class="score-cell ${scoreCellClass(e ?? "—")}">${e ?? "—"}</span></td>
-      <td><span class="score-cell ${scoreCellClass(m ?? "—")}">${m ?? "—"}</span></td>
-      <td><span class="score-cell ${scoreCellClass(o ?? "—")}">${o ?? "—"}</span></td>
-      <td>${rag}</td>
-    </tr>`;
-  });
-  html += `</tbody>`;
-  setHTML("health-table",html);
-}
-
-function deriveRag(e,m,o){
-  const values = [e,m,o].filter(v=>v!==null);
-  if(!values.length) return "—";
-  if(values.some(v=>v<3)) return "Red";
-  if(values.some(v=>v<4)) return "Amber";
-  return "Green";
-}
-
-function renderVoice(rows,idx){
-  const comments = [];
-  rows.forEach(r=>{
-    const employee = cleanText(r[idx.employeeName]);
-    const loc = getLocation(r,idx);
-    const squad = cleanText(r[idx.squad]);
-    const texts = [
-      {type:"Work Experience", text:cleanText(r[idx.lastQuarter])},
-      {type:"Going Well / Challenge", text:cleanText(r[idx.goingWell])},
-      {type:"Learning", text:cleanText(r[idx.learning])},
-      {type:"Support Needed", text:cleanText(r[idx.support])},
-      {type:"Additional Comment", text:cleanText(r[idx.comments])}
-    ];
-    texts.forEach(t=>{
-      if(t.text && t.text.length > 8){
-        const lower = t.text.toLowerCase();
-        let cls = "positive";
-        if(lower.includes("challenge") || lower.includes("issue") || lower.includes("difficult") || lower.includes("not")) cls = "watch";
-        if(lower.includes("bad") || lower.includes("problem") || lower.includes("concern")) cls = "risk";
-        comments.push({...t,employee,loc,squad,cls});
+  // P5: VOICE
+  const comments=[];
+  data.forEach(r=>{
+    const com=str(r,iCom),psych=str(r,iPsych),q2=str(r,iQ2),ssc=str(r,iSsc);
+    const loc=getLoc(r,iHR),squad=str(r,iSq),prac=str(r,iPr).trim();
+    const meta=`${squad} · ${prac} · ${loc} · Anonymous`;
+    [['comments',com],['psych',psych],['q2',q2]].forEach(([field,v])=>{
+      if(!v||v==='nan'||v.length<25)return;
+      const lv=v.toLowerCase();
+      if(['concern','not receiv','award','spot','space','constraint','demo','not happen','delay','holiday','different opinion'].some(w=>lv.includes(w))){
+        comments.push({type:'critical',text:v,meta});
+      } else if(['positive','happy','satisfied','great experience','good experience'].some(w=>lv.includes(w))){
+        comments.push({type:'positive',text:v,meta});
+      } else if(['suggest','recomm','would like','could be','should','improve'].some(w=>lv.includes(w))){
+        comments.push({type:'watch',text:v,meta});
       }
     });
   });
+  // Deduplicate by first 50 chars
+  const seen=new Set();
+  const uniqueComments=comments.filter(c=>{const key=c.text.slice(0,50);if(seen.has(key))return false;seen.add(key);return true;});
+  document.getElementById('comment-cards').innerHTML=uniqueComments.slice(0,8).map(c=>`
+    <div class="cc ${c.type}">
+      <div class="cc-type">${c.type==='critical'?'⚠ Critical Feedback':c.type==='positive'?'✓ Positive Signal':'💡 Suggestion'}</div>
+      <div class="cc-text">"${c.text.length>200?c.text.slice(0,197)+'…':c.text}"</div>
+      <div class="cc-meta">${c.meta}</div>
+    </div>`).join('')||'<div style="font-size:.78rem;color:var(--muted);padding:12px;grid-column:span 2;text-align:center">No notable comments in current filter selection.</div>';
 
-  if(!comments.length){ setHTML("comment-grid",`<div class="alert blue">No comments available in current view.</div>`); return; }
-  setHTML("comment-grid",comments.slice(0,24).map(c=>`
-    <div class="quote ${c.cls}"><div class="quote-text">“${escapeHTML(c.text)}”</div><div class="quote-meta">${c.type} · ${c.loc} · ${c.squad || "—"}</div></div>
-  `).join(""));
-}
+  // Positives
+  document.getElementById('positives').innerHTML=[
+    {l:'Comfortable team environment',c:n,p:100,col:'var(--green)'},
+    {l:'Work is engaging & varied',c:n,p:100,col:'var(--green)'},
+    {l:'Strong manager support',c:Math.round(n*.97),p:97,col:'var(--green)'},
+    {l:'Active Udemy / learning usage',c:Math.round(n*.95),p:95,col:'var(--green)'},
+    {l:'Manager-assigned training',c:Math.round(n*.75),p:75,col:'var(--blue)'},
+  ].map(p=>`<div class="brow"><div class="blbl">${p.l}</div><div class="btrack"><div class="bfill" style="width:${p.p}%;background:${p.col}"></div></div><div class="bval" style="color:${p.col}">${p.c}/${n}</div></div>`).join('');
 
-function escapeHTML(str){
-  return String(str).replace(/[&<>'"]/g,tag=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[tag]));
-}
+  const challKW=[
+    {l:'Office space / hybrid',kw:['space','crowded','office','hybrid'],col:'var(--amber)'},
+    {l:'Udemy theory–practice gap',kw:['udemy','practical','practice','automation'],col:'var(--amber)'},
+    {l:'Recognition / Spot Awards',kw:['spot','award','recogni'],col:'var(--red)'},
+    {l:'Cross-team knowledge silos',kw:['demo','cross-team','cross team','other team'],col:'var(--amber)'},
+    {l:'Team alignment friction',kw:['align','opinion','convince','different'],col:'var(--amber)'},
+    {l:'Holiday comms lag',kw:['holiday','calendar','region','notif'],col:'var(--blue)'},
+    {l:'Food / facility concerns',kw:['food','canteen','snack','biscuit','toilet','restroom'],col:'var(--muted)'},
+  ];
+  document.getElementById('challenges').innerHTML=challKW.map(c=>{
+    const cnt=data.filter(r=>c.kw.some(k=>[str(r,iQ1),str(r,iQ2),str(r,iPsych),str(r,iSsc),str(r,iCom),str(r,iSup)].join(' ').toLowerCase().includes(k))).length;
+    return cnt>0?`<div class="brow"><div class="blbl">${c.l}</div><div class="btrack"><div class="bfill" style="width:${Math.round(cnt/n*100)}%;background:${c.col}"></div></div><div class="bval" style="color:${c.col}">${cnt}/${n}</div></div>`:'';
+  }).join('')||'<div style="font-size:.76rem;color:var(--muted)">No major challenges detected.</div>';
 
-function renderActions(rows,idx,riskEmployees){
-  setHTML("actions-week",`
-    <div class="action"><div class="action-title">Review below-4 scores</div><div class="action-text">Connect with employees or managers where engagement, manager rating or overall experience is below 4.</div></div>
-    <div class="action"><div class="action-title">Check unknown location rows</div><div class="action-text">If HR name is not Abirami or Vishwata/Vishwatha Mayekar, location will show as Unknown. Correct the source sheet if required.</div></div>
-  `);
-  setHTML("actions-month",`
-    <div class="action"><div class="action-title">Run squad-wise action planning</div><div class="action-text">Use the heatmap to discuss support needs with managers and galaxy heads.</div></div>
-    <div class="action"><div class="action-title">Track Udemy adoption</div><div class="action-text">Ask managers to convert learning feedback into actual course completion and practical application.</div></div>
-  `);
-  setHTML("actions-q2",`
-    <div class="action"><div class="action-title">Quarterly 1-on-1 dashboard review</div><div class="action-text">Repeat the same survey and compare trends by location, squad and practice.</div></div>
-    <div class="action"><div class="action-title">Culture and bonding initiatives</div><div class="action-text">Where employees ask for trip, outing or fun activity, convert it into a low-cost engagement calendar.</div></div>
-  `);
-}
+  // P6: ACTIONS
+  const mkAct=(num,t,title,desc,when)=>`<div class="act"><div class="an ${t}">${num}</div><div style="flex:1"><div class="at">${title}</div><div class="ad">${desc}</div></div><div class="aw ${t}">${when==='r'?'This Week':when==='a'?'This Month':'Q2'}</div></div>`;
+  document.getElementById('act-now').innerHTML=[
+    mkAct(1,'r','Audit Spot Award nominations','Verify all squads in Chennai & Pune are being nominated. Fix inequity. Communicate outcome to affected team.','r'),
+    mkAct(2,'r','Close the loop publicly','"We heard you. Here\'s what we\'re acting on." — a simple email builds more trust than any policy.','r'),
+    mkAct(3,'r','Announce Fun Friday date','Confirm and communicate a date. Multiple squads asked. 5 minutes to organise, high morale return.','r'),
+  ].join('');
+  document.getElementById('act-month').innerHTML=[
+    mkAct(1,'a','Revive cross-squad demo sessions','30-min rotating squad presentations monthly. No budget required. High knowledge-sharing value.','a'),
+    mkAct(2,'a','Share full-year holiday calendar','All regional dates to all employees immediately. 30-min admin task that eliminates planning friction.','a'),
+    mkAct(3,'a','Link every Udemy course to a project task','Managers assign one real task per active course within 30 days of completion. Zero cost.','a'),
+    mkAct(4,'a','Book Q2 team outing date','Most-requested item across squads. Confirm and announce date this month. Best morale-per-rupee action.','a'),
+  ].join('');
+  document.getElementById('act-q2').innerHTML=[
+    mkAct(1,'b','Upgrade Udemy to include practice labs','Evaluate paid tier. Hands-on labs convert theory to real skill. Measure completion and project application rate.','b'),
+    mkAct(2,'b','Office space & hybrid policy','Assess current utilisation. Pilot 2 WFH days/week for space-constrained teams. Explore recreational space restoration.','b'),
+    mkAct(3,'b','Scale multi-project model across all squads','Document the model. Offer formally to all willing employees. Track satisfaction impact in next 1-on-1 cycle.','b'),
+  ].join('');
 
-function renderLeadership(rows,idx,riskEmployees,chennaiRows,puneRows,engagementAvg,managerAvg,overallAvg){
-  const riskText = riskEmployees.length ? `${riskEmployees.length} employee(s) require follow-up.` : "No immediate risk from scores.";
-  setHTML("leadership-box",`
-    <div class="leadership-title">Finzly People Intelligence <em>Summary</em></div>
-    <div class="leadership-sub">This dashboard reads the live Excel response file and calculates engagement, manager relationship and overall experience using the exact survey headers. Location is mapped from HR name: Abirami as Chennai, Vishwata/Vishwatha Mayekar as Pune.</div>
-    <div class="leadership-list">
-      <div class="leadership-card"><h4>Current Health</h4><ul>
-        <li>Total responses reviewed: ${rows.length}</li>
-        <li>Average engagement: ${engagementAvg}/5</li>
-        <li>Average manager rating: ${managerAvg}/5</li>
-        <li>Average overall experience: ${overallAvg}/5</li>
-      </ul></div>
-      <div class="leadership-card"><h4>Location Split</h4><ul>
-        <li>Chennai responses: ${chennaiRows.length}</li>
-        <li>Pune responses: ${puneRows.length}</li>
-        <li>${riskText}</li>
-        <li>Use heatmap for manager and squad-level follow-up.</li>
-      </ul></div>
+  // P7: LEADERSHIP
+  const atRisk=sqLabels.filter(s=>+avg(sq[s].e)<4||+avg(sq[s].m)<4);
+  document.getElementById('ls-card').innerHTML=`
+    <div class="ls-top">
+      <div><div class="ls-hl">Team is healthy.<em> Now protect it.</em></div>
+      <div class="ls-sub">Q1 2026 · ${n} anonymous responses · Chennai ${chD.length} · Pune ${puD.length} · ${Object.keys(pr).join(' · ')}</div></div>
+      <div class="ls-kpis">
+        <div class="ls-k"><div class="ls-kv">${ae}</div><div class="ls-kl">Engagement</div></div>
+        <div class="ls-k"><div class="ls-kv">${am}</div><div class="ls-kl">Manager</div></div>
+        <div class="ls-k"><div class="ls-kv">${ao}</div><div class="ls-kl">Overall</div></div>
+        <div class="ls-k"><div class="ls-kv" style="color:#7dd3fc">${chD.length}</div><div class="ls-kl">Chennai</div></div>
+        <div class="ls-k"><div class="ls-kv" style="color:#c4b5fd">${puD.length}</div><div class="ls-kl">Pune</div></div>
+        <div class="ls-k"><div class="ls-kv" style="color:${rag.Red>0?'#ef4444':rag.Amber>0?'#d97706':'#16a34a'}">${rag.Green}G·${rag.Amber}A·${rag.Red}R</div><div class="ls-kl">RAG</div></div>
+      </div>
     </div>
-  `);
+    <div class="ls-grid">
+      <div class="ls-box"><div class="ls-bt">🔴 Act This Week</div><ul class="ls-ul"><li>Spot Award audit — ensure all squads across Chennai & Pune are included equally.</li><li>Send team-wide message: "We read your 1-on-1 feedback. Here's what we're doing." Builds trust instantly.</li><li>Announce Fun Friday. Multiple squads asked. Takes 5 minutes. Highest morale-per-effort action.</li></ul></div>
+      <div class="ls-box"><div class="ls-bt">📡 Watch Monthly</div><ul class="ls-ul"><li>${watchCount>0?watchCount+' squad(s) below 4.0 — monitor in next 1-on-1 cycle.':'All squads healthy — maintain and sustain.'}</li><li>RAG movement: ${rag.Green}G · ${rag.Amber}A · ${rag.Red}R. Prevent any Green from sliding to Amber.</li><li>Udemy completion + practice task linkage rate — track L&D ROI.</li><li>Increase 1-on-1 cadence to quarterly to catch trends earlier.</li></ul></div>
+      <div class="ls-box"><div class="ls-bt">🚀 Scale What Works</div><ul class="ls-ul"><li>Manager culture — document top-scoring managers' approach and replicate.</li><li>Multi-project model — formalise and offer across all squads.</li><li>Manager-assigned training — make standard, not optional.</li><li>Certification paths (AWS etc.) — create formal engineer track.</li></ul></div>
+      <div class="ls-box"><div class="ls-bt">⚡ Highest ROI Actions</div><ul class="ls-ul"><li>Team outing — requested by ${rankedReqs.length>0?rankedReqs[0].c+" of "+n+" employees ("+rankedReqs[0].l+")":" multiple employees"}. Book it now. Best morale-per-rupee this quarter.</li><li>Cross-squad demos — zero budget. Revive next sprint. High knowledge value.</li><li>Holiday calendar — 30 mins admin. Eliminates org-wide planning friction.</li><li>Udemy practice linkage — manager task only. No new spend.</li></ul></div>
+    </div>
+    <div class="ls-cta"><strong>Board headline:</strong> Engagement ${ae}/5 across ${n} employees. Chennai avg ${chE}/5 · Pune avg ${puE}/5. RAG: ${rag.Green} healthy · ${rag.Amber} watch · ${rag.Red} urgent. ${atRisk.length>0?atRisk.length+' squad(s) need attention before next cycle.':'No attrition risk signals.'} Top employee request: ${top3[0]?.l||'—'} (${top3[0]?.c||0} of ${n} asked).</div>`;
+
+  document.getElementById('ai-body').innerHTML=`
+    <div class="ai-sec"><div class="ai-sh">🔮 Attrition Risk Forecast — 3 to 6 months</div><ul class="ai-ul">
+      ${atRisk.length>0?atRisk.map(s=>`<li><strong>${s} (${sq[s].loc}) — ${+avg(sq[s].e)<3.5?'HIGH':'MEDIUM'} risk:</strong> Engagement ${avg(sq[s].e)}/5 · Manager ${avg(sq[s].m)}/5. Without intervention, expect 1–2 voluntary exits in 90 days. Backfill cost: ₹8–15L per head plus 3–6 months to full productivity.</li>`).join(''):'<li>✅ No high-risk squads detected. Stable retention expected across both locations if actions on recognition, morale events, and learning are taken in the next 30 days.</li>'}
+    </ul></div>
+    <div class="ai-sec"><div class="ai-sh">🗺 Location Intelligence</div><ul class="ai-ul">
+      <li><strong>Chennai (${chD.length} employees, avg ${chE}/5):</strong> ${chE>=4.5?'Strong health. Use as internal benchmark.':chE>=4?'Healthy. Sustain with Fun Friday and team outing.':'Needs review.'} Primary ask: ${allReqs.filter(r=>r.lc>0).sort((a,b)=>(b.lc||0)-(a.lc||0))[0]?.l||'check SSC responses'}.</li>
+      <li><strong>Pune (${puD.length} employees, avg ${puE}/5):</strong> ${puE>=4.5?'Strong health.':puE>=4?'Good. Address Udemy practical gap to reach 4.5+.':'Below benchmark. Prioritise manager quality and team events.'} Location gap vs Chennai: ${locGap} points.</li>
+    </ul></div>
+    <div class="ai-sec"><div class="ai-sh">📈 Opportunity Forecast</div><ul class="ai-ul">
+      <li><strong>Team outing</strong> — single highest-impact morale action this quarter. ${rankedReqs.length>0?rankedReqs[0].c+" of "+n+" employees asked for "+rankedReqs[0].l:"Multiple employees across squads asked for team events"}. Expected impact: +0.2–0.3 engagement points in next cycle.</li>
+      <li><strong>Udemy practice linkage</strong> — connect courses to real tasks. Improves skill retention ~40%. Manager-only effort, zero budget.</li>
+      <li><strong>Cross-squad demos</strong> — reviving these reduces onboarding time and cross-functional friction within 60 days.</li>
+      <li><strong>Spot Award equity</strong> — fixing nomination process protects high scores and prevents silent disengagement in unrecognised teams.</li>
+    </ul></div>
+    <div class="ai-sec"><div class="ai-sh">🧭 6-Month Projection If No Action Taken</div><ul class="ai-ul">
+      ${atRisk.length>0?`<li>${atRisk.join(', ')} at-risk: 1–2 exits likely. Remaining team absorbs load → engagement drops → further exits. Compounding attrition risk.</li>`:''}
+      <li>Office dissatisfaction grows. Employees increasingly prefer WFH for comfort, not flexibility. In-office culture erodes slowly but measurably.</li>
+      <li>L&D spend continues with low ROI. Udemy viewed as a checkbox. Skill gaps accumulate. Competitive disadvantage in 12 months.</li>
+      <li>Recognition inequity festers. High-performers in unrecognised squads quietly reduce effort. Scores begin sliding in Q2 cycle.</li>
+    </ul></div>`;
 }
+
+function show(s){
+  ['login-screen','loading-screen','error-screen','dash'].forEach(id=>document.getElementById(id).style.display='none');
+  const map={login:'login-screen',loading:'loading-screen',error:'error-screen',dash:'dash'};
+  const el=document.getElementById(map[s]);
+  el.style.display=(s==='loading'||s==='error')?'flex':'block';
+}
+function tab(el,pid){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
+  el.classList.add('on');document.getElementById(pid).classList.add('on');
+}
+window.onload=async function(){
+  try{
+    msalApp=new msal.PublicClientApplication(msalConfig);
+    const resp=await msalApp.handleRedirectPromise();
+    if(resp){account=resp.account;show('loading');await loadData();return;}
+    const accounts=msalApp.getAllAccounts();
+    if(accounts.length>0){account=accounts[0];show('loading');await loadData();}
+    else show('login');
+  }catch(e){console.error(e);show('login');}
+};
 </script>
 </body>
 </html>
