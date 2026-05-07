@@ -394,21 +394,13 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
       <div class="loc-card ch">
         <div class="loc-hdr"><div class="loc-name">📍 Chennai</div><div class="loc-badge" id="ch-badge">—</div></div>
         <div class="loc-inference" id="ch-inference">Loading…</div>
-        <div class="loc-kpis">
-          <div class="loc-kpi"><div class="lk-val" id="ch-eng">—</div><div class="lk-lbl">Engagement</div></div>
-          <div class="loc-kpi"><div class="lk-val" id="ch-mgr">—</div><div class="lk-lbl">Manager</div></div>
-          <div class="loc-kpi"><div class="lk-val" id="ch-ov">—</div><div class="lk-lbl">Overall</div></div>
-        </div>
+
         <div class="loc-squads" id="ch-squads"></div>
       </div>
       <div class="loc-card pu">
         <div class="loc-hdr"><div class="loc-name">📍 Pune</div><div class="loc-badge" id="pu-badge">—</div></div>
         <div class="loc-inference" id="pu-inference">Loading…</div>
-        <div class="loc-kpis">
-          <div class="loc-kpi"><div class="lk-val" id="pu-eng">—</div><div class="lk-lbl">Engagement</div></div>
-          <div class="loc-kpi"><div class="lk-val" id="pu-mgr">—</div><div class="lk-lbl">Manager</div></div>
-          <div class="loc-kpi"><div class="lk-val" id="pu-ov">—</div><div class="lk-lbl">Overall</div></div>
-        </div>
+
         <div class="loc-squads" id="pu-squads"></div>
       </div>
     </div>
@@ -902,14 +894,6 @@ function render(data){
     const lo=locD.map(r=>num(r,19)).filter(v=>v!==null);
 
     document.getElementById(prefix+'-badge').textContent=locD.length+" employees";
-    // DEBUG: show raw value and num result for first row
-    const dbgVal = locD.length>0 ? locD[0][16] : 'NO ROWS';
-    const dbgNum = locD.length>0 ? num(locD[0],16) : 'NO ROWS';
-    const dbgType = locD.length>0 ? typeof locD[0][16] : 'NO ROWS';
-    document.getElementById(prefix+'-eng').textContent=
-      avg(le)||'['+dbgType+':'+String(dbgVal).slice(0,20)+']->'+dbgNum;
-    document.getElementById(prefix+'-mgr').textContent=avg(lm)||'—';
-    document.getElementById(prefix+'-ov').textContent=avg(lo)||'—';
     const lsq={};
     locD.forEach(r=>{const s=str(r,8)||'?';if(!lsq[s])lsq[s]={e:[]};const e=num(r,16);if(e!==null)lsq[s].e.push(e);});
     document.getElementById(prefix+'-squads').innerHTML=Object.entries(lsq).map(([s,d])=>{
