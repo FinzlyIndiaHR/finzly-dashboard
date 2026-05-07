@@ -1071,14 +1071,22 @@ function render(data){
     }).join('') || '<li>No specific positives detected in current data.</li>';
   // ── END DYNAMIC SSC ──────────────────────────────────────────
 
-  // Positives
-  document.getElementById('positives').innerHTML=[
-    {l:'Comfortable team environment',c:n,p:100,col:'var(--green)'},
-    {l:'Work is engaging & varied',c:n,p:100,col:'var(--green)'},
-    {l:'Strong manager support',c:Math.round(n*.97),p:97,col:'var(--green)'},
-    {l:'Active Udemy / learning usage',c:Math.round(n*.95),p:95,col:'var(--green)'},
-    {l:'Manager-assigned training',c:Math.round(n*.75),p:75,col:'var(--blue)'},
-  ].map(p=>`<div class="brow"><div class="blbl">${p.l}</div><div class="btrack"><div class="bfill" style="width:${p.p}%;background:${p.col}"></div></div><div class="bval" style="color:${p.col}">${p.c}/${n}</div></div>`).join('');
+  // Positives — fully dynamic from live data
+  const posDefs = [
+    { l:'Supportive team and manager', kw:['supportive','very supportive','comfortable with','great support','good support'], col:'var(--green)' },
+    { l:'Good learning and growth opportunities', kw:['learning','good learning','gaining','exposure','growing'], col:'var(--green)' },
+    { l:'Comfortable sharing feedback and ideas', kw:['comfortable sharing','comfortable working','no concerns','open to share'], col:'var(--green)' },
+    { l:'Udemy and training being utilised', kw:['udemy','training','courses','certif'], col:'var(--green)' },
+    { l:'Work is manageable and well distributed', kw:['manageable','well distributed','on time','no challenge','not faced any'], col:'var(--blue)' },
+    { l:'Multi-project exposure appreciated', kw:['multiple project','multi project','different project','variety'], col:'var(--blue)' },
+    { l:'AI tools and recommendations from managers', kw:['ai course','ai prompting','prompt','rag ai'], col:'var(--blue)' },
+  ];
+  document.getElementById('positives').innerHTML = posDefs.map(p => {
+    const cnt = data.filter(r => p.kw.some(k => [str(r,iQ1),str(r,iQ2),str(r,iPsych),str(r,iLearn),str(r,iCom)].join(' ').toLowerCase().includes(k))).length;
+    if(cnt === 0) return '';
+    const pct2 = Math.round(cnt/n*100);
+    return `<div class="brow"><div class="blbl">${p.l}</div><div class="btrack"><div class="bfill" style="width:${pct2}%;background:${p.col}"></div></div><div class="bval" style="color:${p.col}">${cnt}/${n}</div></div>`;
+  }).filter(Boolean).join('') || '<div style="font-size:.76rem;color:var(--muted)">No positives detected in current data.</div>';
 
   const challKW=[
     {l:'Office space / hybrid',kw:['space','crowded','office','hybrid'],col:'var(--amber)'},
@@ -1094,24 +1102,41 @@ function render(data){
     return cnt>0?`<div class="brow"><div class="blbl">${c.l}</div><div class="btrack"><div class="bfill" style="width:${Math.round(cnt/n*100)}%;background:${c.col}"></div></div><div class="bval" style="color:${c.col}">${cnt}/${n}</div></div>`:'';
   }).join('')||'<div style="font-size:.76rem;color:var(--muted)">No major challenges detected.</div>';
 
-  // P6: ACTIONS
+  // P6: ACTIONS — fully driven by live data
   const mkAct=(num,t,title,desc,when)=>`<div class="act"><div class="an ${t}">${num}</div><div style="flex:1"><div class="at">${title}</div><div class="ad">${desc}</div></div><div class="aw ${t}">${when==='r'?'This Week':when==='a'?'This Month':'Q2'}</div></div>`;
-  document.getElementById('act-now').innerHTML=[
-    mkAct(1,'r','Audit Spot Award nominations','Verify all squads in Chennai & Pune are being nominated. Fix inequity. Communicate outcome to affected team.','r'),
-    mkAct(2,'r','Close the loop publicly','"We heard you. Here\'s what we\'re acting on." — a simple email builds more trust than any policy.','r'),
-    mkAct(3,'r','Announce Fun Friday date','Confirm and communicate a date. Multiple squads asked. 5 minutes to organise, high morale return.','r'),
-  ].join('');
-  document.getElementById('act-month').innerHTML=[
-    mkAct(1,'a','Revive cross-squad demo sessions','30-min rotating squad presentations monthly. No budget required. High knowledge-sharing value.','a'),
-    mkAct(2,'a','Share full-year holiday calendar','All regional dates to all employees immediately. 30-min admin task that eliminates planning friction.','a'),
-    mkAct(3,'a','Link every Udemy course to a project task','Managers assign one real task per active course within 30 days of completion. Zero cost.','a'),
-    mkAct(4,'a','Book Q2 team outing date','Most-requested item across squads. Confirm and announce date this month. Best morale-per-rupee action.','a'),
-  ].join('');
-  document.getElementById('act-q2').innerHTML=[
-    mkAct(1,'b','Upgrade Udemy to include practice labs','Evaluate paid tier. Hands-on labs convert theory to real skill. Measure completion and project application rate.','b'),
-    mkAct(2,'b','Office space & hybrid policy','Assess current utilisation. Pilot 2 WFH days/week for space-constrained teams. Explore recreational space restoration.','b'),
-    mkAct(3,'b','Scale multi-project model across all squads','Document the model. Offer formally to all willing employees. Track satisfaction impact in next 1-on-1 cycle.','b'),
-  ].join('');
+
+  const hasSpot   = allRows.some(r=>['spot award','not receiv','nomination','recogni'].some(k=>r.includes(k)));
+  const hasTrip   = allRows.some(r=>['trip','outing','tour'].some(k=>r.includes(k)));
+  const hasFriday = allRows.some(r=>['fun friday','movie on friday','movie friday','movie'].some(k=>r.includes(k)));
+  const hasDemo   = allRows.some(r=>['demo','cross-team','other team'].some(k=>r.includes(k)));
+  const hasUdemy  = allRows.some(r=>['udemy','practical','hands-on','practice session'].some(k=>r.includes(k)));
+  const hasSpace  = allRows.some(r=>['space constraint','workspace constraint','crowded','no space'].some(k=>r.includes(k)));
+  const hasHoliday= allRows.some(r=>['holiday','calendar','region'].some(k=>r.includes(k)));
+  const topReq    = rankedReqs[0]?.l || 'team events';
+  const topCnt    = rankedReqs[0]?.c || 0;
+
+  const actNow = [];
+  let an = 1;
+  if(hasSpot) actNow.push(mkAct(an++,'r','Fix Spot Award nominations','Check which squads have not been nominated and ensure all are included. Communicate the outcome — transparency builds trust.','r'));
+  actNow.push(mkAct(an++,'r','Close the loop with employees',`Share a short update: "We read your responses. Here is what we are doing." Reference the top ask: ${topReq} (${topCnt} employees asked).`,'r'));
+  if(hasFriday) actNow.push(mkAct(an++,'r','Announce Fun Friday or monthly activity','Multiple employees asked for this. Pick a date and communicate it. Zero cost, high morale return.','r'));
+  document.getElementById('act-now').innerHTML = actNow.join('');
+
+  const actMonth = [];
+  an = 1;
+  if(hasTrip) actMonth.push(mkAct(an++,'a',`Book a team outing — ${topCnt} employees asked`,`${topReq} is the most requested item. Confirm a date and announce it. Best morale-per-rupee action this quarter.`,'a'));
+  if(hasDemo) actMonth.push(mkAct(an++,'a','Revive cross-squad knowledge sessions','30-minute rotating presentations once a month. No budget needed. Reduces knowledge gaps across squads.','a'));
+  if(hasHoliday) actMonth.push(mkAct(an++,'a','Share full-year holiday calendar to all regions','One document with all Chennai and Pune holidays. Takes 30 minutes. Eliminates planning friction.','a'));
+  if(hasUdemy) actMonth.push(mkAct(an++,'a','Link Udemy courses to real project tasks','Ask managers to assign one hands-on task per active course within 30 days. Zero cost, better skill conversion.','a'));
+  document.getElementById('act-month').innerHTML = actMonth.join('') || mkAct(1,'g','On track this month','No specific actions flagged. Keep current practices running.','a');
+
+  const actQ2 = [];
+  an = 1;
+  if(hasSpace) actQ2.push(mkAct(an++,'b','Review office space and explore hybrid options','Assess seating utilisation. Explore restoring recreational areas. Consider a pilot hybrid model for space-constrained teams.','b'));
+  if(hasUdemy) actQ2.push(mkAct(an++,'b','Evaluate Udemy paid tier with practice labs','Hands-on labs convert theory to real skill faster. Measure completion rates and project application to quantify L&D ROI.','b'));
+  actQ2.push(mkAct(an++,'b','Formalise multi-project exposure model','Document what is working. Offer it formally to all employees. Track satisfaction in the next 1-on-1 cycle.','b'));
+  actQ2.push(mkAct(an++,'b','Move 1-on-1 cadence to quarterly','Multiple employees suggested this. Catching issues earlier prevents them becoming attrition signals.','b'));
+  document.getElementById('act-q2').innerHTML = actQ2.join('');
 
   // P7: LEADERSHIP
   const atRisk=sqLabels.filter(s=>+avg(sq[s].e)<4||+avg(sq[s].m)<4);
