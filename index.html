@@ -634,28 +634,34 @@ function render(data){
   // [13]=Manager [14]=Psych [15]=Learn [16]=Engagement
   // [17]=SSC [18]=Support [19]=Overall [20]=Comments [21]=RAG
   const iHR   = ci(['name']) > -1 ? ci(['name']) : 4;
-  const iSq   = ci(['squad','sqaud']) > -1 ? ci(['squad','sqaud']) : 8;
-  const iPr   = ci(['practice']) > -1 ? ci(['practice']) : 10;
+  const iSq   = 8;   // "sqauds"
+  const iPr   = 10;  // "practice" 
   const iQ1   = ci(['last quarter','day-to-day']) > -1 ? ci(['last quarter','day-to-day']) : 11;
   const iQ2   = ci(['going well','challenging']) > -1 ? ci(['going well','challenging']) : 12;
-  const iMgr  = ci(['relationship','communication','rating on','describe your relationship']) > -1 ? ci(['relationship','communication','rating on','describe your relationship']) : 13;
+  const iMgr  = 13;  // "how would you describe your relationship... rating on a scale of 1-5" 
   const iPsych= ci(['comfortable','concerns','feedback','new ideas']) > -1 ? ci(['comfortable','concerns','feedback','new ideas']) : 14;
   const iLearn= ci(['skills','training','certifications','udemy']) > -1 ? ci(['skills','training','certifications','udemy']) : 15;
-  const iEng  = ci(['engaged','engagement','scale of 1','how engaged']) > -1 ? ci(['engaged','engagement','scale of 1','how engaged']) : 16;
-  const iSsc  = ci(['stop','start','continue','should start','team/company','as a team']) > -1 ? ci(['stop','start','continue','should start','team/company','as a team']) : 17;
-  const iSup  = ci(['support','need from us']) > -1 ? ci(['support','need from us']) : 18;
-  const iOv   = ci(['overall experience']) > -1 ? ci(['overall experience']) : 19;
-  const iCom  = ci(['additional comments','comments']) > -1 ? ci(['additional comments','comments']) : 20;
-  const iRag  = ci(['rag']) > -1 ? ci(['rag']) : 21;
+  // HARDCODED from live file console debug - do not use ci() for these
+  const iEng  = 16;  // "on a scale of 1-5 how engaged"
+  const iSsc  = 17;  // "is there anything we should start, stop, or continue"
+  const iSup  = 18;  // "what kind of support do you need from us"
+  const iOv   = 19;  // "overall experience rating 1-5"
+  const iCom  = 20;  // "additional comments (if any)"
+  const iRag  = 21;  // "rag status"
+  const iMgrH = 13;  // manager rating hardcoded backup
 
   const num=(row,i)=>{
     if(i<0||i>=row.length)return null;
-    const v=String(row[i]||'').trim();
+    const raw=row[i];
+    if(raw===null||raw===undefined||raw==='')return null;
+    // If it's already a number
+    if(typeof raw==='number'){const n=Math.round(raw);return(n>=1&&n<=5)?n:null;}
+    const v=String(raw).trim();
     if(!v||v==='null'||v==='undefined')return null;
-    // Match first digit 1-5 at start of string (handles "5 - reason", "5, reason", "5- reason")
+    // Match digit 1-5 at start
     const m=v.match(/^([1-5])/);
     if(m)return +m[1];
-    // Fallback: find any 1-5 digit
+    // Match digit 1-5 anywhere
     const m2=v.match(/\b([1-5])\b/);
     return m2?+m2[1]:null;
   };
@@ -889,7 +895,11 @@ function render(data){
     const engIdx = iEng>=0 ? iEng : 16;
     const mgrIdx = iMgr>=0 ? iMgr : 13;
     const ovIdx  = iOv>=0  ? iOv  : 19;
-
+    // Debug: show first 3 rows for this location
+    console.log('RENDERLOC',prefix,'rows:',locD.length,'iEng:',iEng,'engIdx:',engIdx,'iOv:',iOv,'ovIdx:',ovIdx);
+    locD.slice(0,2).forEach((r,i)=>{
+      console.log('  row'+i,'['+engIdx+']:',JSON.stringify(r[engIdx]),'num:',num(r,engIdx),'['+ovIdx+']:',JSON.stringify(r[ovIdx]),'num:',num(r,ovIdx));
+    });
     const le=locD.map(r=>num(r,engIdx)).filter(v=>v!==null);
     const lm=locD.map(r=>num(r,mgrIdx)).filter(v=>v!==null);
     const lo=locD.map(r=>num(r,ovIdx)).filter(v=>v!==null);
