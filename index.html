@@ -334,8 +334,8 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
     <button class="tab" onclick="tab(this,'p3')">⚙ Practice View</button>
     <button class="tab" onclick="tab(this,'p4')">🌡 Heatmap</button>
     <button class="tab" onclick="tab(this,'p5')">💬 Voice of Employee</button>
-    <button class="tab" onclick="tab(this,'p6')">🎯 Actions</button>
-    <button class="tab" onclick="tab(this,'p7')">🧭 Leadership</button>
+    <button class="tab" onclick="tab(this,'p6')">🎯 Action Plan</button>
+    <button class="tab" onclick="tab(this,'p7')">🧭 CXO Summary</button>
   </div>
 
   <!-- P1: OVERVIEW -->
@@ -490,9 +490,9 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
   <!-- P6: ACTIONS -->
   <div class="pg" id="p6">
     <div class="g3">
-      <div class="card"><div class="c-title"><div class="c-title-l">🔴 This Week</div></div><div id="act-now"></div></div>
-      <div class="card"><div class="c-title"><div class="c-title-l">🟡 This Month</div></div><div id="act-month"></div></div>
-      <div class="card"><div class="c-title"><div class="c-title-l">🔵 Q2 Plan</div></div><div id="act-q2"></div></div>
+      <div class="card"><div class="c-title"><div class="c-title-l">🔴 This Month</div></div><div id="act-now"></div></div>
+      <div class="card"><div class="c-title"><div class="c-title-l">🟡 This Quarter</div></div><div id="act-month"></div></div>
+      <div class="card"><div class="c-title"><div class="c-title-l">🔵 This Year</div></div><div id="act-q2"></div></div>
     </div>
   </div>
 
@@ -500,7 +500,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
   <div class="pg" id="p7">
     <div class="ls" id="ls-card"></div>
     <div class="ai-box">
-      <div class="ai-title">🤖 AI Predictive Intelligence · Based on Live Data</div>
+      <div class="ai-title">🔮 Predictive Intelligence · Risk & Opportunity Forecast · Based on Live Data</div>
       <div id="ai-body"></div>
     </div>
   </div>
@@ -1103,7 +1103,7 @@ function render(data){
   }).join('')||'<div style="font-size:.76rem;color:var(--muted)">No major challenges detected.</div>';
 
   // P6: ACTIONS — fully driven by live data
-  const mkAct=(num,t,title,desc,when)=>`<div class="act"><div class="an ${t}">${num}</div><div style="flex:1"><div class="at">${title}</div><div class="ad">${desc}</div></div><div class="aw ${t}">${when==='r'?'This Week':when==='a'?'This Month':'Q2'}</div></div>`;
+  const mkAct=(num,t,title,desc,when)=>`<div class="act"><div class="an ${t}">${num}</div><div style="flex:1"><div class="at">${title}</div><div class="ad">${desc}</div></div><div class="aw ${t}">${when==='r'?'This Month':when==='a'?'This Quarter':'This Year'}</div></div>`;
 
   const hasSpot   = allRows.some(r=>['spot award','not receiv','nomination','recogni'].some(k=>r.includes(k)));
   const hasTrip   = allRows.some(r=>['trip','outing','tour'].some(k=>r.includes(k)));
