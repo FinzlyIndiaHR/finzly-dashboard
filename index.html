@@ -891,25 +891,17 @@ function render(data){
   document.getElementById('pu-inference').innerHTML=`${puE>=4.5?'✅ Strong health across all squads.':puE>=4?'⚠ Healthy but below Chennai benchmark. Address friction points.':'🚨 Below threshold — skip-level conversations recommended.'} Top ask: ${top3.length>0?top3[0].l:'N/A'}.`;
 
   const renderLoc=(locD,prefix,color)=>{
-    // Use positional fallback explicitly for location cards
-    const engIdx = iEng>=0 ? iEng : 16;
-    const mgrIdx = iMgr>=0 ? iMgr : 13;
-    const ovIdx  = iOv>=0  ? iOv  : 19;
-    // Debug: show first 3 rows for this location
-    console.log('RENDERLOC',prefix,'rows:',locD.length,'iEng:',iEng,'engIdx:',engIdx,'iOv:',iOv,'ovIdx:',ovIdx);
-    locD.slice(0,2).forEach((r,i)=>{
-      console.log('  row'+i,'['+engIdx+']:',JSON.stringify(r[engIdx]),'num:',num(r,engIdx),'['+ovIdx+']:',JSON.stringify(r[ovIdx]),'num:',num(r,ovIdx));
-    });
-    const le=locD.map(r=>num(r,engIdx)).filter(v=>v!==null);
-    const lm=locD.map(r=>num(r,mgrIdx)).filter(v=>v!==null);
-    const lo=locD.map(r=>num(r,ovIdx)).filter(v=>v!==null);
+    // HARDCODED indices - confirmed from live console: [16]=Eng [13]=Mgr [19]=Ov
+    const le=locD.map(r=>num(r,16)).filter(v=>v!==null);
+    const lm=locD.map(r=>num(r,13)).filter(v=>v!==null);
+    const lo=locD.map(r=>num(r,19)).filter(v=>v!==null);
 
     document.getElementById(prefix+'-badge').textContent=locD.length+" employees";
     document.getElementById(prefix+'-eng').textContent=avg(le)||'—';
     document.getElementById(prefix+'-mgr').textContent=avg(lm)||'—';
     document.getElementById(prefix+'-ov').textContent=avg(lo)||'—';
     const lsq={};
-    locD.forEach(r=>{const s=str(r,iSq)||'?';if(!lsq[s])lsq[s]={e:[]};const e=num(r,engIdx);if(e!==null)lsq[s].e.push(e);});
+    locD.forEach(r=>{const s=str(r,8)||'?';if(!lsq[s])lsq[s]={e:[]};const e=num(r,16);if(e!==null)lsq[s].e.push(e);});
     document.getElementById(prefix+'-squads').innerHTML=Object.entries(lsq).map(([s,d])=>{
       const e=avg(d.e);return`<div class="loc-sq-row"><div class="loc-sq-lbl">${s}</div><div class="loc-sq-track"><div class="loc-sq-fill" style="width:${pct(e)}%"></div></div><div class="loc-sq-val">${e}</div></div>`;
     }).join('');
