@@ -1,1 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>BuddyFinzler – Finzly HR Assistant</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:linear-gradient(135deg,#07101f,#0d1a32 60%,#06111e);min-height:100vh;font-family:'DM Sans','Segoe UI',sans-serif}
+@keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:4px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useRef, useEffect } = React;
 
+const TEAMS_WEBHOOK_URL = "https://swapstechinc.webhook.office.com/webhookb2/95fe27eb-0280-40ac-abc4-bf05fdc95250@4d4c58f7-6978-4a93-ba72-f1d987c46c89/IncomingWebhook/7d680f77ffcf4195aa68ab3206a00d58/21943eff-d275-4627-a6df-22ead0a0bc4c/V2yZ2gowlgRBY_bVcFNrYQFiNNRlRgEnrza7V0sIl3_Rs1";
+const HR_EMAIL = "hr-india@finzly.com";
+const HANDBOOK_VERSION = "v1.2 – June 2024";
+
+const SYSTEM_PROMPT = `You are BuddyFinzler, Finzly's official HR assistant. You answer ONLY from the Finzly Employee Handbook version 1.2 dated June 2024, approved by Bharathkumar M (HR Head Manager).
+
+CRITICAL RULE: Never invent, assume, or extrapolate any policy detail not in this handbook. If the exact answer is not here, set needsHRRouting to true. Always cite the section number.
+
+FINZLY EMPLOYEE HANDBOOK v1.2 KNOWLEDGE BASE:
+
+SECTION 2 — GENERAL MANAGEMENT
+- Employee only after accepting contract and start date confirmed.
+- EEO: Merit-based. No discrimination on race, color, citizenship, national origin, gender, sexual orientation, age, religion, disability, marital status, veteran status, political affiliation.
+
+SECTION 3 — EMPLOYMENT CONDITIONS
+- Full Time Salaried: eligible for salary and full benefits.
+- Personnel files: Finzly property. Management access only. Employees review own file with HR present. Files cannot be removed.
+- Update HR for: name/marital status, address/phone, dependents, emergency contact, qualifications.
+- Background check: employment, address, identity, criminal.
+- References: Only through HR in writing. No phone. Name, dates, job title only unless written consent.
+- NDA: All employees must sign on joining.
+- Probation: As per Offer Letter. Unsatisfactory = extended 1 month OR terminated with 1 month notice or immediately.
+- Retirement age: 58 years.
+
+SECTION 4 — DAY 1 / ORIENTATION
+- Day 1: Induction meeting.
+- Documents to bring: DOB proof (10th cert/birth cert), PAN card photocopy, Passport photocopy (if held), Education certificates (10th/12th/Bachelors/Masters), Professional course certs, 2 passport photos, UAN for PF (if applicable), Relieving+experience letter from previous employer, Last 3 months payslips from previous employer.
+- Forms to fill on Day 1: Employee Info Form, Information Security Policy, NDA, Gratuity+PF nomination forms, Insurance Form.
+- Provided on Day 1: Employee number, NT ID, email address, access card/biometrics.
+- All completed documents must be submitted to HR on first day.
+
+SECTION 5 — WORK TIMINGS & ATTENDANCE
+- Mon–Fri, 45 hours/week including 1-hour lunch daily.
+- Office open: 9:00 AM to 9:00 PM Monday to Friday.
+- Minimum 40 work hours/week in office (excluding lunch). Minimum 5 hours/day (excluding breaks).
+- Late arrival: Inform manager at least 1 hour before start time.
+- Unexcused absence: deducted from EL. Zero EL = LOP.
+- Job abandonment: 5 consecutive absent days without reporting = absconded. 2 registered post reminders sent. No response = deemed abandoned, not re-inducted.
+
+SECTION 6 — DRESS CODE
+- Business Casual Mon–Fri. Friday = casual (no sandals/slippers/shorts).
+- Prohibited: miniskirts, tank/tube/halter/transparent tops, torn jeans, flip-flops, slippers.
+- Women: collared shirts/T-shirts (with or without sleeves), denim/skirts/dresses at or below knee, professional shoes/sandals.
+- Men: collared shirts/T-shirts with sleeves, trousers/khaki/jeans, professional shoes.
+- Good hygiene. Hair/beard/moustache neatly trimmed.
+
+SECTION 7 — LEAVE POLICY
+Leave year: 1 Jan to 31 Dec. Pro-rata for mid-year joiners.
+Applies to full-time salaried employees ONLY. Not trainees/interns under standard leave.
+Join 1st-15th = leave credited that month. Join 16th-end = no credit that month.
+Relieved 1st-15th = no credit that month. Relieved 16th-end = credited that month.
+
+EARNED LEAVE (EL): 10 days/year. Accrual: 0.8 day/month. Carry forward max 30 days (above 30 lapses at year end). Apply on GreytHR Portal, 2 days advance notice (except emergencies), manager approval required. EL encashed at basic salary on resignation.
+
+MANAGEMENT LEAVE (ML): 5 days/year. Accrual: 0.4 day/month. Lapses at year end, no carry forward. Onshore team approval mandatory.
+
+SICK LEAVE (SL): 5 days/year. Medical certificate mandatory if SL exceeds 2 days. Chronic illness beyond 5 continuous days: adjusted in EL first, then LOP.
+
+COMPENSATORY OFF: For working weekends due to business demand. Must be availed within 2 months of work date. Cannot be taken in advance. Cannot be encashed. Manager approval required.
+
+MATERNITY LEAVE: Female employees with more than 4 months continuous service. 26 weeks with full pay. Inform manager and HR of start and return dates. Post 26 weeks: WFH subject to work nature and management approval. If WFH unavailable, EL can be combined. After all leaves: LOP up to 2 months. Miscarriage/medical termination: 6 weeks paid leave on proof.
+
+PATERNITY LEAVE: Male employees with minimum 3 months service. Up to 5 days. Inform manager and HR at least 2 weeks before expected delivery. Can be availed within 1 month of child's birth. Emergency dates adjustable.
+
+BEREAVEMENT LEAVE: Up to 2 days. Immediate family members only. Inform manager and HR.
+
+LEAVE WITHOUT PAY (LOP): For employees who exhausted all leave, with prior manager approval. Employees on probation or notice period: all leaves = LOP. Sandwich leave: holiday between two availed leaves with zero balance = merged as LOP.
+
+LEAVE FOR INTERNS/FRESHERS: After 1 month service: 1 day total (0.5 SL + 0.5 CL). Lapses at end of training. Cannot be encashed.
+
+LEAVE PROCEDURE: Apply via GreytHR Portal. Leave not updated before 20th of next month = treated as absent, deducted from EL. Leaves cannot be adjusted against notice period (Country Head approval needed for deviation).
+
+SECTION 8 — HOLIDAY POLICY
+10 public holidays per year. List declared by HR at start of each year (effective Jan 1). Displayed on notice board.
+
+SECTION 9 — COMPENSATION AND BENEFITS
+Financial year: April to March. Payroll period: calendar month. Salary credited: between last working day of month to before 3rd of subsequent month. Deductions: Provident Fund and statutory deductions per Income Tax. For salary issues: contact HR Department.
+
+SECTION 10 — PERFORMANCE MANAGEMENT
+Formal review: every quarter. Annual review: November-December each year. Salary revision: effective January of succeeding year. NOT eligible for annual review: employees who joined on or after 31st October. Performance period: January to December.
+PIP: Initiated by reporting manager with HR present. Objectives agreed for max 1 month. Interim review at 2 weeks or final at 1 month. Full-time employees only. Outcome: continuation, extension, or termination.
+
+SECTION 11 — HEALTH INSURANCE
+MEDICLAIM: Provider: ICICI Lombard GIC Ltd. Coverage: Rs. 5 Lakhs. Covered: Employee + spouse + two children. Includes accidental insurance (death, permanent total/partial disability, temporary total disability, weekly compensation). Min 24-hour hospitalization required for claims. HR must be informed within 2 days of hospital admission. Claims not settled without discharge summary. App: https://www.icicilombard.com/il-takecare-app
+
+TERM INSURANCE: Provider: ICICI Prudential Life Insurance. Coverage: Rs. 35 Lakhs. Employee only (not family). App: https://www.iciciprulife.com/
+
+SECTION 12 — REWARDS AND RECOGNITION
+All full-time employees eligible. Monthly and Quarterly assessments. Monetary or non-monetary rewards.
+
+SECTION 13 — WORKPLACE PRACTICES
+1:1 discussions every 1-3 months (beyond quarterly appraisals). Open door: Concerns on salary, performance, discrimination. Path: Manager then HR then Senior Management. Company computers for official use only. Chain emails prohibited. Company property: all equipment is Finzly property. Laptop lost = employee liable to reimburse full replacement cost. No smoking/tobacco inside premises.
+
+SECTION 14 — POSH
+ALWAYS set needsHRRouting to true for ANY POSH or harassment query. Never attempt to answer. Zero tolerance policy. Complaints to ICC within 15 days. Enquiry completed within 90 days. Confidentiality mandatory. Contact HR Head.
+
+SECTION 15 — TRAVEL POLICY
+INTERNATIONAL: Company pays visa, air tickets, insurance, lodging. Employee pays + claims on actuals (with bills): local travel at client site, airport pickup/drop. USA per diem: USD 80/day (food + incidentals, no bills needed). Additional expenses (client meals): claimed at actuals with Project Manager approval.
+
+H1B/L1: All expenses arranged by Onshore company. Advances deducted from succeeding salaries.
+
+DOMESTIC (outside Chennai/Pune within India): 3 business days advance notice. Submit request to HR with Practice Head + Country Head approval. Air: Economy. Train: AC 2/3 Tier (preferred if under 6 hours). Car: Rs. 8/km + toll if 50-400km and no train.
+Hotel per day: Type 1 cities (Mumbai, Delhi, Chennai, Kolkata, Pune, Bangalore, Hyderabad) = Rs. 5,000. Type 2 cities = Rs. 4,000. Other cities = Rs. 3,000.
+Daily food max: Type 1 = Rs. 600. Type 2 = Rs. 500. Other = Rs. 400.
+Private stay allowance (flat, no bills): Type 1 = Rs. 1,400/day. Type 2 = Rs. 1,000/day. Other = Rs. 800/day.
+Non-reimbursable: clothing, toiletries, magazines, alcohol, cigarettes.
+Boarding pass mandatory for air travel. Unspent advance returned within 3 business days. Travel reimbursements are taxable.
+
+SECTION 16 — EMPLOYEE BENEFITS (excludes probation employees)
+REFERRAL BONUS: Not for fresher referrals. Paid 6 months after candidate joins on permanent rolls and stays. Not paid if candidate is non-performer or referring employee was part of hiring decision. Centre Head approval required.
+Development (Java, Angular, Spring Boot): 3-5 yrs = Rs. 20,000 | 5-10 yrs = Rs. 30,000 | 10+ yrs = Rs. 35,000.
+QA/Products/DevOps(AWS)/Digital Marketing/Support: 3-5 yrs = Rs. 15,000 | 5-10 yrs = Rs. 20,000 | 10+ yrs = Rs. 30,000.
+Immediate joiners (within 5-10 days, any position) = Rs. 50,000.
+
+LATE NIGHT DINNER & CAB: Working beyond 9:00 PM for official purpose. Dinner cap: Rs. 250/person. Cab: actual cost reimbursed. Requires Practice Head or reporting manager approval.
+
+SECTION 17 — EXIT & TERMINATION
+RESIGNATION: Minimum 2 months notice in writing to Practice Lead (forwarded to HR + Country Head). During notice: no leave can be availed. If leave taken, notice period extends by same days. Leave cannot be adjusted against notice period. Early relief: salary forfeited for unworked notice days at full fixed salary. Variable/joining bonus: repaid if resigning within 1 year. During notice: restricted IT access. Relieving/experience letter withheld until all dues settled. Accrued EL encashed at basic salary. Insurance ends on separation date.
+
+TERMINATION BY EMPLOYER: 1 month notice OR immediately after 2 written warnings for non-performance. Summary (no notice, no payment): misconduct, negligence, fundamental breach, causing loss to company.
+
+EXIT INTERVIEW: Conducted by HR on last working day.
+
+JOB ABANDONMENT: 5 consecutive absent days without reporting = absconded. Two RPAD reminders. No response = deemed abandoned, not re-inducted.
+
+ESCALATION RULES — set needsHRRouting true if:
+- ANY POSH or harassment query (ALWAYS)
+- Specific salary figures or individual compensation
+- Individual disciplinary cases
+- Visa/immigration specifics beyond what is above
+- PIP initiation or active PIP case
+- Termination proceedings for specific employee
+- Tax calculations
+- Anything not explicitly in this handbook
+
+RESPONSE FORMAT — return ONLY valid JSON nothing else:
+{
+  "answer": "Warm helpful answer using - for bullet points",
+  "section": "Section number e.g. Section 7.3.1 Earned Leave",
+  "needsHRRouting": false,
+  "routingReason": "",
+  "suggestedFollowUps": ["follow up 1", "follow up 2"]
+}`;
+
+const SUGGESTED_QUESTIONS = [
+  "How many earned leaves do I get?",
+  "When is salary credited?",
+  "What is the notice period?",
+  "Can I carry forward unused leaves?",
+  "What documents do I need on Day 1?",
+  "What is the referral bonus for a Java developer?",
+  "What is the USA per diem rate?",
+  "How do I apply for maternity leave?",
+  "What is the mediclaim coverage?",
+  "What happens if I lose my laptop?",
+];
+
+function App() {
+  const [messages, setMessages] = useState([{
+    id: 1, role: "assistant",
+    text: "Hey there! 👋 I'm **BuddyFinzler**, your Finzly HR assistant.\n\nI'm trained on the **Finzly Employee Handbook v1.2 (June 2024)**. Ask me about leaves, payroll, insurance, travel, exit policies, and more!\n\nWhat can I help you with today?",
+    needsHRRouting: false, section: "",
+  }]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(true);
+  const [routingModal, setRoutingModal] = useState(null);
+  const [teamsStatus, setTeamsStatus] = useState(null);
+  const messagesEndRef = useRef(null);
+  const conversationHistory = useRef([]);
+
+  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, loading]);
+
+  function renderText(text) {
+    const lines = text.split("\n");
+    const elements = [];
+    let listItems = [];
+    lines.forEach((line, i) => {
+      const isList = line.startsWith("- ") || line.startsWith("• ");
+      if (isList) {
+        listItems.push(line.slice(2));
+      } else {
+        if (listItems.length > 0) {
+          elements.push(
+            React.createElement("ul", { key: "ul"+i, style: { margin: "6px 0 6px 16px", padding: 0 } },
+              listItems.map((item, j) => React.createElement("li", {
+                key: j, style: { marginBottom: 3, lineHeight: 1.5 },
+                dangerouslySetInnerHTML: { __html: item.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") }
+              }))
+            )
+          );
+          listItems = [];
+        }
+        if (line.trim()) {
+          elements.push(React.createElement("p", {
+            key: "p"+i, style: { margin: "4px 0", lineHeight: 1.6 },
+            dangerouslySetInnerHTML: { __html: line.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") }
+          }));
+        }
+      }
+    });
+    if (listItems.length > 0) {
+      elements.push(
+        React.createElement("ul", { key: "ul-final", style: { margin: "6px 0 6px 16px", padding: 0 } },
+          listItems.map((item, j) => React.createElement("li", {
+            key: j, style: { marginBottom: 3, lineHeight: 1.5 },
+            dangerouslySetInnerHTML: { __html: item.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") }
+          }))
+        )
+      );
+    }
+    return elements;
+  }
+
+  async function sendMessage(text) {
+    const userText = (text || input).trim();
+    if (!userText || loading) return;
+    setInput(""); setShowSuggestions(false);
+    setMessages(prev => [...prev, { id: Date.now(), role: "user", text: userText }]);
+    setLoading(true);
+    conversationHistory.current.push({ role: "user", content: userText });
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 1000, system: SYSTEM_PROMPT, messages: conversationHistory.current }),
+      });
+      const data = await res.json();
+      const raw = data.content?.[0]?.text || "{}";
+      let parsed;
+      try { parsed = JSON.parse(raw.replace(/```json|```/g, "").trim()); }
+      catch { parsed = { answer: raw, section: "", needsHRRouting: false, routingReason: "", suggestedFollowUps: [] }; }
+      conversationHistory.current.push({ role: "assistant", content: parsed.answer });
+      setMessages(prev => [...prev, { id: Date.now()+1, role: "assistant", text: parsed.answer, section: parsed.section || "", needsHRRouting: parsed.needsHRRouting, routingReason: parsed.routingReason, suggestedFollowUps: parsed.suggestedFollowUps || [] }]);
+      if (parsed.needsHRRouting) {
+        setTeamsStatus("sending");
+        try {
+          const now = new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
+          await fetch(TEAMS_WEBHOOK_URL, {
+            method: "POST", mode: "no-cors",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              "@type": "MessageCard", "@context": "http://schema.org/extensions",
+              themeColor: "F4C430", summary: "BuddyFinzler HR Escalation",
+              sections: [{ activityTitle: "🤖 BuddyFinzler — HR Escalation", activitySubtitle: now + " IST",
+                facts: [{ name: "Query", value: userText }, { name: "Reason", value: parsed.routingReason }] }]
+            })
+          });
+        } catch(e) {}
+        setTeamsStatus("sent");
+        setTimeout(() => setTeamsStatus(null), 4000);
+        setTimeout(() => setRoutingModal({ reason: parsed.routingReason, query: userText }), 400);
+      }
+    } catch {
+      setMessages(prev => [...prev, { id: Date.now()+1, role: "assistant", text: "Hmm, ran into a hiccup. Please try again or reach out to HR India directly.", needsHRRouting: false, section: "" }]);
+    }
+    setLoading(false);
+  }
+
+  return (
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+      <div style={{ width: "100%", maxWidth: 720, height: "94vh", maxHeight: 860, display: "flex", flexDirection: "column", background: "rgba(255,255,255,0.03)", backdropFilter: "blur(24px)", borderRadius: 24, border: "1px solid rgba(255,255,255,0.07)", boxShadow: "0 40px 80px rgba(0,0,0,0.7)", overflow: "hidden" }}>
+
+        {/* HEADER */}
+        <div style={{ background: "linear-gradient(135deg,#122040,#0d1930)", borderBottom: "1px solid rgba(255,255,255,0.06)", padding: "16px 20px", display: "flex", alignItems: "center", gap: 14 }}>
+          <div style={{ position: "relative" }}>
+            <div style={{ width: 46, height: 46, borderRadius: "50%", background: "linear-gradient(135deg,#1d4ed8,#0ea5e9)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, boxShadow: "0 0 20px rgba(29,78,216,0.5)" }}>🤖</div>
+            <div style={{ position: "absolute", bottom: 2, right: 2, width: 11, height: 11, borderRadius: "50%", background: "#22c55e", border: "2px solid #0d1930", boxShadow: "0 0 8px rgba(34,197,94,0.7)" }}></div>
+          </div>
+          <div style={{ flex: 1 }}>
+            <p style={{ color: "#fff", fontWeight: 700, fontSize: 17, margin: 0 }}>BuddyFinzler</p>
+            <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, margin: "2px 0 0" }}>Finzly HR Assistant · Handbook {HANDBOOK_VERSION}</p>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 5, alignItems: "flex-end" }}>
+            <div style={{ background: "rgba(29,78,216,0.15)", border: "1px solid rgba(29,78,216,0.3)", color: "#60a5fa", fontSize: 10, fontWeight: 600, padding: "3px 9px", borderRadius: 20 }}>HR ASSISTANT</div>
+            {teamsStatus && <div style={{ background: teamsStatus === "sent" ? "rgba(34,197,94,0.15)" : "rgba(251,191,36,0.15)", border: "1px solid rgba(34,197,94,0.3)", color: "#86efac", fontSize: 10, fontWeight: 600, padding: "3px 9px", borderRadius: 20 }}>{teamsStatus === "sending" ? "⏳ Notifying..." : "✅ Teams Notified"}</div>}
+          </div>
+        </div>
+
+        {/* MESSAGES */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "18px 18px 8px", display: "flex", flexDirection: "column", gap: 12 }}>
+          {messages.map(msg => (
+            <div key={msg.id} style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start", alignItems: "flex-end", gap: 8 }}>
+              {msg.role === "assistant" && <div style={{ width: 30, height: 30, borderRadius: "50%", background: "linear-gradient(135deg,#1d4ed8,#0ea5e9)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>🤖</div>}
+              <div>
+                <div style={{ maxWidth: "78%", padding: "11px 15px", borderRadius: msg.role === "user" ? "18px 18px 4px 18px" : "18px 18px 18px 4px", background: msg.role === "user" ? "linear-gradient(135deg,#1d4ed8,#1e40af)" : "rgba(255,255,255,0.055)", border: msg.role === "user" ? "none" : "1px solid rgba(255,255,255,0.07)", color: "#f1f5f9", fontSize: 13.5 }}>
+                  <div>{renderText(msg.text)}</div>
+                  {msg.section && <div style={{ marginTop: 7, display: "inline-flex", alignItems: "center", gap: 5, background: "rgba(29,78,216,0.1)", border: "1px solid rgba(29,78,216,0.2)", borderRadius: 8, padding: "3px 9px", fontSize: 11, color: "#93c5fd" }}>📖 {msg.section}</div>}
+                  {msg.needsHRRouting && <div style={{ marginTop: 8, padding: "7px 11px", background: "rgba(251,191,36,0.07)", border: "1px solid rgba(251,191,36,0.2)", borderRadius: 10, fontSize: 12, color: "#fbbf24" }}>⚡ Escalated to HR India — {msg.routingReason}</div>}
+                  {msg.needsHRRouting && <div style={{ marginTop: 5, padding: "6px 11px", background: "rgba(34,197,94,0.07)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 10, fontSize: 11, color: "#86efac" }}>📣 HR India Teams channel notified</div>}
+                </div>
+                {msg.suggestedFollowUps && msg.suggestedFollowUps.length > 0 && (
+                  <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 5 }}>
+                    {msg.suggestedFollowUps.map((q, i) => (
+                      <button key={i} onClick={() => sendMessage(q)} style={{ background: "rgba(29,78,216,0.07)", border: "1px solid rgba(29,78,216,0.18)", borderRadius: 10, color: "#93c5fd", fontSize: 12, padding: "6px 12px", cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}>💬 {q}</button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+          {loading && (
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
+              <div style={{ width: 30, height: 30, borderRadius: "50%", background: "linear-gradient(135deg,#1d4ed8,#0ea5e9)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>🤖</div>
+              <div style={{ padding: "14px 18px", borderRadius: "18px 18px 18px 4px", background: "rgba(255,255,255,0.055)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                <div style={{ display: "flex", gap: 5 }}>
+                  {[0,1,2].map(i => <div key={i} style={{ width: 7, height: 7, borderRadius: "50%", background: "rgba(255,255,255,0.4)", animation: "bounce 1.2s infinite", animationDelay: i*0.2+"s" }}></div>)}
+                </div>
+              </div>
+            </div>
+          )}
+          <div ref={messagesEndRef}></div>
+        </div>
+
+        {/* SUGGESTIONS */}
+        {showSuggestions && (
+          <div style={{ padding: "0 18px 12px" }}>
+            <p style={{ color: "rgba(255,255,255,0.28)", fontSize: 11, fontWeight: 600, letterSpacing: "1px", textTransform: "uppercase", marginBottom: 7 }}>Quick questions</p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {SUGGESTED_QUESTIONS.map((q, i) => (
+                <button key={i} onClick={() => sendMessage(q)} style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)", borderRadius: 20, color: "rgba(255,255,255,0.55)", fontSize: 11.5, padding: "5px 12px", cursor: "pointer", fontFamily: "inherit" }}>{q}</button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* INPUT */}
+        <div style={{ padding: "10px 14px 14px", borderTop: "1px solid rgba(255,255,255,0.05)", background: "rgba(0,0,0,0.15)" }}>
+          <div style={{ display: "flex", gap: 9, alignItems: "flex-end", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.09)", borderRadius: 16, padding: "8px 8px 8px 15px" }}>
+            <textarea style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: "#f1f5f9", fontSize: 13.5, lineHeight: 1.5, resize: "none", fontFamily: "inherit", maxHeight: 100, minHeight: 22 }}
+              placeholder="Ask about leaves, salary, travel, insurance, exit policy..."
+              value={input} onChange={e => setInput(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
+              rows={1} onInput={e => { e.target.style.height = "auto"; e.target.style.height = Math.min(e.target.scrollHeight, 100)+"px"; }} />
+            <button onClick={() => sendMessage()} disabled={!input.trim() || loading}
+              style={{ width: 38, height: 38, borderRadius: 11, background: (!input.trim() || loading) ? "rgba(29,78,216,0.15)" : "linear-gradient(135deg,#1d4ed8,#1e40af)", border: "none", cursor: (!input.trim() || loading) ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13M22 2L15 22L11 13M11 13L2 9L22 2" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </button>
+          </div>
+          <p style={{ color: "rgba(255,255,255,0.18)", fontSize: 10.5, textAlign: "center", margin: "7px 0 0" }}>Finzly Handbook {HANDBOOK_VERSION} · Unresolved queries → HR India Teams + {HR_EMAIL}</p>
+        </div>
+      </div>
+
+      {/* ROUTING MODAL */}
+      {routingModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 20 }} onClick={() => setRoutingModal(null)}>
+          <div style={{ background: "linear-gradient(135deg,#122040,#0d1930)", border: "1px solid rgba(251,191,36,0.25)", borderRadius: 20, padding: 26, maxWidth: 430, width: "100%", boxShadow: "0 40px 80px rgba(0,0,0,0.7)" }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: 36, textAlign: "center", marginBottom: 10 }}>📨</div>
+            <h3 style={{ color: "#fbbf24", textAlign: "center", margin: "0 0 6px", fontSize: 17, fontWeight: 700 }}>Routed to HR India</h3>
+            <p style={{ color: "rgba(255,255,255,0.5)", textAlign: "center", fontSize: 12.5, margin: "0 0 18px" }}>Your query needs personal attention. HR India has been notified.</p>
+            <div style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12, padding: "11px 14px", marginBottom: 10 }}>
+              <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 10, margin: "0 0 4px", textTransform: "uppercase" }}>Your query</p>
+              <p style={{ color: "#f1f5f9", fontSize: 13, margin: 0 }}>"{routingModal.query}"</p>
+            </div>
+            <div style={{ background: "rgba(251,191,36,0.06)", border: "1px solid rgba(251,191,36,0.15)", borderRadius: 12, padding: "11px 14px", marginBottom: 10 }}>
+              <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 10, margin: "0 0 4px", textTransform: "uppercase" }}>Reason</p>
+              <p style={{ color: "#fbbf24", fontSize: 13, margin: 0 }}>{routingModal.reason}</p>
+            </div>
+            <div style={{ background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.15)", borderRadius: 12, padding: "10px 14px", marginBottom: 18, display: "flex", alignItems: "center", gap: 8 }}>
+              <span>✅</span><p style={{ color: "#86efac", fontSize: 12, margin: 0 }}>HR India Teams channel notified</p>
+            </div>
+            <button onClick={() => { window.open("mailto:"+HR_EMAIL+"?subject=HR Query via BuddyFinzler&body="+encodeURIComponent(routingModal.query)); setRoutingModal(null); }}
+              style={{ width: "100%", padding: 11, background: "linear-gradient(135deg,#1d4ed8,#1e40af)", border: "none", borderRadius: 12, color: "white", fontWeight: 700, fontSize: 13.5, cursor: "pointer", marginBottom: 8, fontFamily: "inherit" }}>
+              📧 Email HR India — {HR_EMAIL}
+            </button>
+            <button onClick={() => setRoutingModal(null)} style={{ width: "100%", padding: 9, background: "transparent", border: "1px solid rgba(255,255,255,0.09)", borderRadius: 12, color: "rgba(255,255,255,0.35)", fontSize: 12.5, cursor: "pointer", fontFamily: "inherit" }}>Close</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));
+</script>
+</body>
+</html>
