@@ -334,7 +334,6 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
     <button class="tab" onclick="tab(this,'p3')">⚙ Practice View</button>
     <button class="tab" onclick="tab(this,'p4')">🌡 Heatmap</button>
     <button class="tab" onclick="tab(this,'p5')">💬 Voice of Employee</button>
-    <button class="tab" onclick="tab(this,'p6')">🎯 Action Plan</button>
     <button class="tab" onclick="tab(this,'p7')">🧭 CXO Summary</button>
   </div>
 
@@ -484,15 +483,6 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
         <div class="scol a"><div class="sh">▶ Start</div><ul class="sul" id="ssc-start"></ul></div>
         <div class="scol g"><div class="sh">✅ Keep Going</div><ul class="sul" id="ssc-keep"></ul></div>
       </div>
-    </div>
-  </div>
-
-  <!-- P6: ACTIONS -->
-  <div class="pg" id="p6">
-    <div class="g3">
-      <div class="card"><div class="c-title"><div class="c-title-l">🔴 This Month</div></div><div id="act-now"></div></div>
-      <div class="card"><div class="c-title"><div class="c-title-l">🟡 This Quarter</div></div><div id="act-month"></div></div>
-      <div class="card"><div class="c-title"><div class="c-title-l">🔵 This Year</div></div><div id="act-q2"></div></div>
     </div>
   </div>
 
@@ -1102,9 +1092,8 @@ function render(data){
     return cnt>0?`<div class="brow"><div class="blbl">${c.l}</div><div class="btrack"><div class="bfill" style="width:${Math.round(cnt/n*100)}%;background:${c.col}"></div></div><div class="bval" style="color:${c.col}">${cnt}/${n}</div></div>`:'';
   }).join('')||'<div style="font-size:.76rem;color:var(--muted)">No major challenges detected.</div>';
 
-  // P6: ACTIONS — fully driven by live data
-  const mkAct=(num,t,title,desc,when)=>`<div class="act"><div class="an ${t}">${num}</div><div style="flex:1"><div class="at">${title}</div><div class="ad">${desc}</div></div><div class="aw ${t}">${when==='r'?'This Month':when==='a'?'This Quarter':'This Year'}</div></div>`;
-
+  // P7: CXO SUMMARY — board headline + dynamic actions (no repetition)
+  // Live signal flags — checked against all employee responses
   const hasSpot   = allRows.some(r=>['spot award','not receiv','nomination','recogni'].some(k=>r.includes(k)));
   const hasTrip   = allRows.some(r=>['trip','outing','tour'].some(k=>r.includes(k)));
   const hasFriday = allRows.some(r=>['fun friday','movie on friday','movie friday','movie'].some(k=>r.includes(k)));
@@ -1114,36 +1103,34 @@ function render(data){
   const hasHoliday= allRows.some(r=>['holiday','calendar','region'].some(k=>r.includes(k)));
   const topReq    = rankedReqs[0]?.l || 'team events';
   const topCnt    = rankedReqs[0]?.c || 0;
-
-  const actNow = [];
-  let an = 1;
-  if(hasSpot) actNow.push(mkAct(an++,'r','Fix Spot Award nominations','Check which squads have not been nominated and ensure all are included. Communicate the outcome — transparency builds trust.','r'));
-  actNow.push(mkAct(an++,'r','Close the loop with employees',`Share a short update: "We read your responses. Here is what we are doing." Reference the top ask: ${topReq} (${topCnt} employees asked).`,'r'));
-  if(hasFriday) actNow.push(mkAct(an++,'r','Announce Fun Friday or monthly activity','Multiple employees asked for this. Pick a date and communicate it. Zero cost, high morale return.','r'));
-  document.getElementById('act-now').innerHTML = actNow.join('');
-
-  const actMonth = [];
-  an = 1;
-  if(hasTrip) actMonth.push(mkAct(an++,'a',`Book a team outing — ${topCnt} employees asked`,`${topReq} is the most requested item. Confirm a date and announce it. Best morale-per-rupee action this quarter.`,'a'));
-  if(hasDemo) actMonth.push(mkAct(an++,'a','Revive cross-squad knowledge sessions','30-minute rotating presentations once a month. No budget needed. Reduces knowledge gaps across squads.','a'));
-  if(hasHoliday) actMonth.push(mkAct(an++,'a','Share full-year holiday calendar to all regions','One document with all Chennai and Pune holidays. Takes 30 minutes. Eliminates planning friction.','a'));
-  if(hasUdemy) actMonth.push(mkAct(an++,'a','Link Udemy courses to real project tasks','Ask managers to assign one hands-on task per active course within 30 days. Zero cost, better skill conversion.','a'));
-  document.getElementById('act-month').innerHTML = actMonth.join('') || mkAct(1,'g','On track this month','No specific actions flagged. Keep current practices running.','a');
-
-  const actQ2 = [];
-  an = 1;
-  if(hasSpace) actQ2.push(mkAct(an++,'b','Review office space and explore hybrid options','Assess seating utilisation. Explore restoring recreational areas. Consider a pilot hybrid model for space-constrained teams.','b'));
-  if(hasUdemy) actQ2.push(mkAct(an++,'b','Evaluate Udemy paid tier with practice labs','Hands-on labs convert theory to real skill faster. Measure completion rates and project application to quantify L&D ROI.','b'));
-  actQ2.push(mkAct(an++,'b','Formalise multi-project exposure model','Document what is working. Offer it formally to all employees. Track satisfaction in the next 1-on-1 cycle.','b'));
-  actQ2.push(mkAct(an++,'b','Move 1-on-1 cadence to quarterly','Multiple employees suggested this. Catching issues earlier prevents them becoming attrition signals.','b'));
-  document.getElementById('act-q2').innerHTML = actQ2.join('');
-
-  // P7: LEADERSHIP
   const atRisk=sqLabels.filter(s=>+avg(sq[s].e)<4||+avg(sq[s].m)<4);
+
+  // Build action items dynamically from live data — same keywords as SSC/Actions
+  const mkLsAct=(emoji,title,desc)=>`<li><strong>${emoji} ${title}</strong> — ${desc}</li>`;
+
+  const thisMonth=[];
+  if(hasSpot) thisMonth.push(mkLsAct('🔴','Fix Spot Award nominations','Ensure all squads are included. Communicate outcome to team.'));
+  thisMonth.push(mkLsAct('🔴','Close the loop with employees',`Send a short note: "We read your feedback. Here is what we are doing." Reference top ask: ${topReq} (${topCnt} asked).`));
+  if(hasFriday) thisMonth.push(mkLsAct('🟡','Announce Fun Friday or monthly activity','Multiple employees asked. Pick a date. Zero cost, high morale return.'));
+  if(hasTrip) thisMonth.push(mkLsAct('🟡',`Book team outing — ${topCnt} employees asked`,'Confirm a date and announce it. Highest morale-per-rupee action this quarter.'));
+
+  const thisQuarter=[];
+  if(hasDemo) thisQuarter.push(mkLsAct('🔄','Revive cross-squad knowledge sessions','30-min rotating presentations monthly. No budget needed. Reduces knowledge silos.'));
+  if(hasHoliday) thisQuarter.push(mkLsAct('📅','Share full-year holiday calendar to all regions','One document. 30 minutes admin. Eliminates planning friction across Chennai and Pune.'));
+  if(hasUdemy) thisQuarter.push(mkLsAct('📚','Link Udemy courses to real project tasks','Managers assign one task per course within 30 days. Zero cost, better skill conversion.'));
+  if(hasSpace) thisQuarter.push(mkLsAct('🏢','Review office space — restore recreational areas','Assess seating. Explore restoring table tennis or equivalent. Consider hybrid pilot.'));
+
+  const thisYear=[];
+  thisYear.push(mkLsAct('📈','Move 1-on-1 cadence to quarterly','Multiple employees suggested this. Earlier signals mean earlier action.'));
+  thisYear.push(mkLsAct('🎓','Formalise multi-project exposure model','Document what works. Offer formally to all. Track satisfaction in next cycle.'));
+  if(hasUdemy) thisYear.push(mkLsAct('💻','Evaluate Udemy paid tier with practice labs','Hands-on labs convert theory to skill. Quantify L&D ROI before next budget cycle.'));
+
   document.getElementById('ls-card').innerHTML=`
     <div class="ls-top">
-      <div><div class="ls-hl">Team is healthy.<em> Now protect it.</em></div>
-      <div class="ls-sub">Q1 2026 · ${n} anonymous responses · Chennai ${chD.length} · Pune ${puD.length} · ${Object.keys(pr).join(' · ')}</div></div>
+      <div>
+        <div class="ls-hl">People are engaged.<em> Keep it that way.</em></div>
+        <div class="ls-sub">Live · ${n} anonymous responses · Chennai ${chD.length} · Pune ${puD.length} · ${[...new Set(data.map(r=>str(r,iPr).trim()).filter(Boolean))].join(' · ')}</div>
+      </div>
       <div class="ls-kpis">
         <div class="ls-k"><div class="ls-kv">${ae}</div><div class="ls-kl">Engagement</div></div>
         <div class="ls-k"><div class="ls-kv">${am}</div><div class="ls-kl">Manager</div></div>
@@ -1154,12 +1141,35 @@ function render(data){
       </div>
     </div>
     <div class="ls-grid">
-      <div class="ls-box"><div class="ls-bt">🔴 Act This Week</div><ul class="ls-ul"><li>Spot Award audit — ensure all squads across Chennai & Pune are included equally.</li><li>Send team-wide message: "We read your 1-on-1 feedback. Here's what we're doing." Builds trust instantly.</li><li>Announce Fun Friday. Multiple squads asked. Takes 5 minutes. Highest morale-per-effort action.</li></ul></div>
-      <div class="ls-box"><div class="ls-bt">📡 Watch Monthly</div><ul class="ls-ul"><li>${watchCount>0?watchCount+' squad(s) below 4.0 — monitor in next 1-on-1 cycle.':'All squads healthy — maintain and sustain.'}</li><li>RAG movement: ${rag.Green}G · ${rag.Amber}A · ${rag.Red}R. Prevent any Green from sliding to Amber.</li><li>Udemy completion + practice task linkage rate — track L&D ROI.</li><li>Increase 1-on-1 cadence to quarterly to catch trends earlier.</li></ul></div>
-      <div class="ls-box"><div class="ls-bt">🚀 Scale What Works</div><ul class="ls-ul"><li>Manager culture — document top-scoring managers' approach and replicate.</li><li>Multi-project model — formalise and offer across all squads.</li><li>Manager-assigned training — make standard, not optional.</li><li>Certification paths (AWS etc.) — create formal engineer track.</li></ul></div>
-      <div class="ls-box"><div class="ls-bt">⚡ Highest ROI Actions</div><ul class="ls-ul"><li>Team outing — requested by ${rankedReqs.length>0?rankedReqs[0].c+" of "+n+" employees ("+rankedReqs[0].l+")":" multiple employees"}. Book it now. Best morale-per-rupee this quarter.</li><li>Cross-squad demos — zero budget. Revive next sprint. High knowledge value.</li><li>Holiday calendar — 30 mins admin. Eliminates org-wide planning friction.</li><li>Udemy practice linkage — manager task only. No new spend.</li></ul></div>
+      <div class="ls-box">
+        <div class="ls-bt">📅 Do This Month</div>
+        <ul class="ls-ul">${thisMonth.join('')}</ul>
+      </div>
+      <div class="ls-box">
+        <div class="ls-bt">📊 Do This Quarter</div>
+        <ul class="ls-ul">${thisQuarter.join('')}</ul>
+      </div>
+      <div class="ls-box">
+        <div class="ls-bt">🏆 Scale What Works</div>
+        <ul class="ls-ul">
+          <li>Supportive manager culture — document and replicate top manager behaviours across all squads</li>
+          <li>Manager-assigned Udemy training — make this standard across all teams, not optional</li>
+          <li>Multi-project exposure — formalise and offer to all employees who want it</li>
+          <li>AI course recommendations — encourage managers to keep recommending these</li>
+        </ul>
+      </div>
+      <div class="ls-box">
+        <div class="ls-bt">📆 Plan This Year</div>
+        <ul class="ls-ul">${thisYear.join('')}</ul>
+      </div>
     </div>
-    <div class="ls-cta"><strong>Board headline:</strong> Engagement ${ae}/5 across ${n} employees. Chennai avg ${chE}/5 · Pune avg ${puE}/5. RAG: ${rag.Green} healthy · ${rag.Amber} watch · ${rag.Red} urgent. ${atRisk.length>0?atRisk.length+' squad(s) need attention before next cycle.':'No attrition risk signals.'} Top employee request: ${top3[0]?.l||'—'} (${top3[0]?.c||0} of ${n} asked).</div>`;
+    <div class="ls-cta">
+      <strong>Board headline:</strong> Engagement ${ae}/5 · Manager ${am}/5 · Overall ${ao}/5 across ${n} employees.
+      Chennai ${chD.length} employees · Pune ${puD.length} employees.
+      RAG: ${rag.Green} healthy · ${rag.Amber} watch · ${rag.Red} urgent.
+      ${atRisk.length>0?atRisk.length+' squad(s) need attention before next cycle.':'No attrition risk signals this quarter.'}
+      Top employee ask: ${top3[0]?.l||'—'} (${top3[0]?.c||0} of ${n} employees asked).
+    </div>`;
 
   document.getElementById('ai-body').innerHTML=`
     <div class="ai-sec"><div class="ai-sh">🔮 Attrition Risk Forecast — 3 to 6 months</div><ul class="ai-ul">
