@@ -469,8 +469,11 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
 
   <!-- P5: VOICE OF EMPLOYEE -->
   <div class="pg" id="p5">
-    <div style="font-size:.76rem;color:var(--muted);margin-bottom:14px;padding:10px 14px;background:var(--card);border-radius:8px;border:1px solid var(--border)">
-      ℹ️ All quotes below are <strong>anonymous</strong>. Themes extracted from open-ended responses. No individual can be identified.
+    <div style="font-size:.76rem;color:var(--muted);margin-bottom:14px;padding:12px 16px;background:var(--card);border-radius:8px;border:1px solid var(--border);line-height:1.8">
+      ℹ️ All quotes below are <strong>anonymous</strong>. No individual can be identified.<br>
+      <strong>How scores are calculated:</strong> Engagement, Manager and Overall ratings are read directly from the numeric scores employees gave in the form (scale 1–5). 
+      Themes like "Team Outings" or "Fun Friday" are detected by scanning the open-text responses for matching keywords. 
+      Comments are classified as Critical (clear problem raised), Positive (clear praise), or Suggestion (improvement idea) based on the actual words used — not AI interpretation.
     </div>
     <div class="comment-grid" id="comment-cards"></div>
     <div class="g2">
@@ -978,13 +981,51 @@ function render(data){
     const loc=getLoc(r,iHR),squad=str(r,iSq),prac=str(r,iPr).trim();
     const meta=`${squad} · ${prac} · ${loc} · Anonymous`;
     [['comments',com],['psych',psych],['q2',q2]].forEach(([field,v])=>{
-      if(!v||v==='nan'||v.length<25)return;
+      if(!v||v==='nan'||v.length<60)return;
       const lv=v.toLowerCase();
-      if(['concern','not receiv','award','spot','space','constraint','demo','not happen','delay','holiday','different opinion'].some(w=>lv.includes(w))){
+      // CRITICAL: only flag when the negative issue is clearly the main point
+      // Avoid false positives like "no concerns", "comfortable sharing concerns"
+      const isCritical = (
+        (lv.includes('not receiv') && lv.includes('award')) ||
+        (lv.includes('spot award') && (lv.includes('not') || lv.includes('concern'))) ||
+        lv.includes('space constraint') ||
+        lv.includes('workspace constraint') ||
+        (lv.includes('demo') && (lv.includes('not happen') || lv.includes('stopped') || lv.includes('discontinued'))) ||
+        (lv.includes('delay') && lv.includes('notif')) ||
+        lv.includes('different opinion') ||
+        lv.includes('lack of recognition') ||
+        (lv.includes('weekend') && lv.includes('friday')) ||
+        lv.includes('adhoc') ||
+        (lv.includes('challenge') && !lv.includes('no challenge') && !lv.includes('not faced'))
+      );
+      // POSITIVE: clearly good feedback
+      const isPositive = (
+        lv.includes('positive experience') ||
+        lv.includes('great experience') ||
+        lv.includes('good experience') ||
+        lv.includes('happy doing') ||
+        lv.includes('satisfied') ||
+        lv.includes('very supportive') ||
+        (lv.includes('comfortable') && lv.includes('no concern')) ||
+        lv.includes('10 on 10') ||
+        lv.includes('overall') && lv.includes('good') && lv.includes('experience')
+      );
+      // SUGGESTION: constructive improvement ideas
+      const isSuggestion = (
+        lv.includes('suggest') ||
+        lv.includes('recomm') ||
+        lv.includes('would be helpful') ||
+        lv.includes('would like') ||
+        lv.includes('could be') ||
+        lv.includes('improve') ||
+        lv.includes('introducing') ||
+        lv.includes('reintroduc')
+      );
+      if(isCritical && !lv.includes('no concern') && !lv.includes('comfortable') && v.length > 40){
         comments.push({type:'critical',text:v,meta});
-      } else if(['positive','happy','satisfied','great experience','good experience'].some(w=>lv.includes(w))){
+      } else if(isPositive){
         comments.push({type:'positive',text:v,meta});
-      } else if(['suggest','recomm','would like','could be','should','improve'].some(w=>lv.includes(w))){
+      } else if(isSuggestion && !isCritical){
         comments.push({type:'watch',text:v,meta});
       }
     });
@@ -995,7 +1036,7 @@ function render(data){
   document.getElementById('comment-cards').innerHTML=uniqueComments.slice(0,8).map(c=>`
     <div class="cc ${c.type}">
       <div class="cc-type">${c.type==='critical'?'⚠ Critical Feedback':c.type==='positive'?'✓ Positive Signal':'💡 Suggestion'}</div>
-      <div class="cc-text">"${c.text.length>200?c.text.slice(0,197)+'…':c.text}"</div>
+      <div class="cc-text">"${c.text.length>300?c.text.slice(0,297)+'…':c.text}"</div>
       <div class="cc-meta">${c.meta}</div>
     </div>`).join('')||'<div style="font-size:.78rem;color:var(--muted);padding:12px;grid-column:span 2;text-align:center">No notable comments in current filter selection.</div>';
 
