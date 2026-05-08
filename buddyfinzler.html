@@ -30,6 +30,8 @@ const SYSTEM_PROMPT = `You are BuddyFinzler, Finzly's official HR assistant. You
 
 CRITICAL RULE: Never invent, assume, or extrapolate any policy detail not in this handbook. If the exact answer is not here, set needsHRRouting to true. Always cite the section number.
 
+OUTPUT FORMAT RULE — THIS IS ABSOLUTE: Your entire response must be a single valid JSON object and NOTHING ELSE. Do NOT write any text, prose, explanation, or preamble before or after the JSON. Do NOT use markdown code fences. The very first character of your response must be { and the very last must be }. Any response that is not pure JSON will break the application.
+
 FINZLY EMPLOYEE HANDBOOK v2.1 KNOWLEDGE BASE:
 
 SECTION 2 — GENERAL MANAGEMENT
@@ -209,9 +211,9 @@ ESCALATION RULES — set needsHRRouting true if:
 - Night shift allowance specifics (not fully detailed in this handbook)
 - Any topic not explicitly covered in this handbook
 
-RESPONSE FORMAT — return ONLY valid JSON, nothing else:
+RESPONSE FORMAT — your ENTIRE response must be ONLY this JSON object, no text before or after it:
 {
-  "answer": "Warm helpful answer using - for bullet points",
+  "answer": "Warm helpful answer using - for bullet points. Never include raw JSON in this field.",
   "section": "Section number e.g. Section 7.4.1 Earned Leave",
   "needsHRRouting": false,
   "routingReason": "",
@@ -299,13 +301,29 @@ function App() {
       const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": "Bearer " + GROQ_API_KEY },
-        body: JSON.stringify({ model: "llama-3.3-70b-versatile", max_tokens: 1000, messages: [{ role: "system", content: SYSTEM_PROMPT }, ...conversationHistory.current] }),
+        body: JSON.stringify({ model: "llama-3.3-70b-versatile", max_tokens: 1000, response_format: { type: "json_object" }, messages: [{ role: "system", content: SYSTEM_PROMPT }, ...conversationHistory.current] }),
       });
       const data = await res.json();
       const raw = data.choices?.[0]?.message?.content || "{}";
       let parsed;
-      try { parsed = JSON.parse(raw.replace(/```json|```/g, "").trim()); }
-      catch { parsed = { answer: raw, section: "", needsHRRouting: false, routingReason: "", suggestedFollowUps: [] }; }
+      // Robust JSON extraction: find the first { ... } block in the response
+      function extractJSON(str) {
+        // 1. Strip markdown code fences
+        let s = str.replace(/```json|```/g, "").trim();
+        // 2. Find the first opening brace and last closing brace
+        const start = s.indexOf("{");
+        const end = s.lastIndexOf("}");
+        if (start !== -1 && end !== -1 && end > start) {
+          return JSON.parse(s.slice(start, end + 1));
+        }
+        throw new Error("No JSON object found");
+      }
+      try {
+        parsed = extractJSON(raw);
+      } catch {
+        // Last resort: treat the whole response as the answer text, no JSON
+        parsed = { answer: raw.replace(/```json[\s\S]*?```/g, "").trim(), section: "", needsHRRouting: false, routingReason: "", suggestedFollowUps: [] };
+      }
       conversationHistory.current.push({ role: "assistant", content: parsed.answer });
       setMessages(prev => [...prev, { id: Date.now()+1, role: "assistant", text: parsed.answer, section: parsed.section || "", needsHRRouting: parsed.needsHRRouting, routingReason: parsed.routingReason, suggestedFollowUps: parsed.suggestedFollowUps || [] }]);
       if (parsed.needsHRRouting) {
