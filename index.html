@@ -615,21 +615,20 @@ function render(data) {
   // [13]=Manager [14]=Psych [15]=Learn [16]=Engagement
   // [17]=SSC [18]=Support [19]=Overall [20]=Comments [21]=RAG
   const iHR   = ci(['name']) > -1 ? ci(['name']) : 4;
-  const iSq   = 8;   // "sqauds"
-  const iPr   = 10;  // "practice" 
+  const iSq   = ci(['squad','sqaud','squads']) > -1 ? ci(['squad','sqaud','squads']) : 8;
+  const iPr   = ci(['practice']) > -1 ? ci(['practice']) : 10; 
   const iQ1   = ci(['last quarter','day-to-day']) > -1 ? ci(['last quarter','day-to-day']) : 11;
   const iQ2   = ci(['going well','challenging']) > -1 ? ci(['going well','challenging']) : 12;
-  const iMgr  = 13;  // "how would you describe your relationship... rating on a scale of 1-5" 
+  const iMgr  = ci(['relationship and communication','rating on a scale','describe your relationship']) > -1 ? ci(['relationship and communication','rating on a scale','describe your relationship']) : 13; 
   const iPsych= ci(['comfortable','concerns','feedback','new ideas']) > -1 ? ci(['comfortable','concerns','feedback','new ideas']) : 14;
   const iLearn= ci(['skills','training','certifications','udemy']) > -1 ? ci(['skills','training','certifications','udemy']) : 15;
   // HARDCODED indices with keyword fallback for resilience
-  const iEng  = ci(['how engaged','scale of 1','1-5 how engaged','engaged do you']) > -1 ? ci(['how engaged','scale of 1','1-5 how engaged','engaged do you']) : 16;
+  const iEng  = ci(['how engaged','feel at work','engaged do you','currently feel']) > -1 ? ci(['how engaged','feel at work','engaged do you','currently feel']) : 16;
   const iSsc  = ci(['start, stop','stop, or continue','team/company','as a team']) > -1 ? ci(['start, stop','stop, or continue','team/company','as a team']) : 17;
   const iSup  = ci(['support do you need','kind of support','need from us']) > -1 ? ci(['support do you need','kind of support','need from us']) : 18;
   const iOv   = ci(['overall experience','overall experience rating']) > -1 ? ci(['overall experience','overall experience rating']) : 19;
   const iCom  = ci(['additional comments','comments (if any)']) > -1 ? ci(['additional comments','comments (if any)']) : 20;
   const iRag  = ci(['rag','rag status']) > -1 ? ci(['rag','rag status']) : 21;
-  const iMgrH = 13;  // manager rating hardcoded backup
 
   const num=(row,i)=>{
     if(i<0||i>=row.length)return null;
@@ -877,14 +876,14 @@ function render(data) {
   document.getElementById('pu-inference').innerHTML=`${puE>=4.5?'✅ Strong health across all squads.':puE>=4?'⚠ Healthy but below Chennai benchmark. Address friction points.':'🚨 Below threshold — skip-level conversations recommended.'} Top ask: ${top3.length>0?top3[0].l:'N/A'}.`;
 
   const renderLoc=(locD,prefix,color)=>{
-    // HARDCODED indices - confirmed from live console: [16]=Eng [13]=Mgr [19]=Ov
-    const le=locD.map(r=>num(r,16)).filter(v=>v!==null);
-    const lm=locD.map(r=>num(r,13)).filter(v=>v!==null);
-    const lo=locD.map(r=>num(r,19)).filter(v=>v!==null);
+    // Uses live keyword-derived indices — no hardcoding
+    const le=locD.map(r=>num(r,iEng)).filter(v=>v!==null);
+    const lm=locD.map(r=>num(r,iMgr)).filter(v=>v!==null);
+    const lo=locD.map(r=>num(r,iOv)).filter(v=>v!==null);
 
     document.getElementById(prefix+'-badge').textContent=locD.length+" employees";
     const lsq={};
-    locD.forEach(r=>{const s=str(r,8)||'?';if(!lsq[s])lsq[s]={e:[]};const e=num(r,16);if(e!==null)lsq[s].e.push(e);});
+    locD.forEach(r=>{const s=str(r,iSq)||'?';if(!lsq[s])lsq[s]={e:[]};const e=num(r,iEng);if(e!==null)lsq[s].e.push(e);});
     document.getElementById(prefix+'-squads').innerHTML=Object.entries(lsq).map(([s,d])=>{
       const e=avg(d.e);return`<div class="loc-sq-row"><div class="loc-sq-lbl">${s}</div><div class="loc-sq-track"><div class="loc-sq-fill" style="width:${pct(e)}%"></div></div><div class="loc-sq-val">${e}</div></div>`;
     }).join('');
