@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Finzly · People Intelligence · Q1 2026</title><!-- v4 -->
-<script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
+<script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet"/>
 <style>
@@ -538,11 +538,10 @@ async function loadData(){
     ALL=d.values.slice(1).filter(r=>r.some(c=>c!==null&&c!==''));
     
     // DEBUG: log column headers and first row sample values to console
-    HDRS.forEach((h,i)=>
-    if(ALL.length>0)ALL[0].forEach((v,i)=>
-    const iHRd=HDRS.findIndex(h=>h.includes('name'));
-    if(iHRd>=0)ALL.slice(0,5).forEach(r=>
-    
+    console.log("=== COLUMN HEADERS ===");
+      console.log("=== FIRST DATA ROW SAMPLE ===");
+      console.log("=== NAME COL VALUES (first 5) ===");
+        
     populateFilters();render(ALL);
     document.getElementById('ts').textContent="● Live · SharePoint · Refreshed "+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
     document.getElementById('h-live').textContent="● Live";
@@ -655,7 +654,8 @@ function render(data) {
   const chD=byLoc.Chennai,puD=byLoc.Pune;
   // DEBUG: show first Chennai row columns 13-21
   if(chD.length>0){
-    chD[0].forEach((v,i)=>{if(i>=12&&i<=22)});
+    console.log('=== FIRST CHENNAI ROW ===');
+    chD[0].forEach((v,i)=>{if(i>=12&&i<=22)console.log('['+i+']',JSON.stringify(v),'type:',typeof v,'num:',num(chD[0],i));});
   }
   document.getElementById('h-ch').textContent="Chennai "+chD.length;
   document.getElementById('h-pu').textContent="Pune "+puD.length;
@@ -1206,7 +1206,7 @@ function render(data) {
       RAG: ${rag.Green} healthy · ${rag.Amber} watch · ${rag.Red} urgent.
       ${atRisk.length>0?atRisk.length+' squad(s) need attention before next cycle.':'No attrition risk signals this quarter.'}
       Top employee ask: ${top3[0]?.l||'—'} (${top3[0]?.c||0} of ${n} asked).
-    </div>\`;
+    </div>`;
 
   document.getElementById('ai-body').innerHTML=`
     <div class="ai-sec"><div class="ai-sh">🔮 Attrition Risk Forecast — 3 to 6 months</div><ul class="ai-ul">
