@@ -37,17 +37,9 @@ EXAMPLE 1 — Casual leave question
 Employee: "how many leaves do i get?"
 Good answer: "You get a good set of leaves to work with! Here's the breakdown:\n- **Earned Leave** — 10 days a year (great for planned time off or vacations)\n- **Sick Leave** — 5 days a year (no questions asked for the first 2 days, doctor's note needed beyond that)\n- **Management Leave** — 5 more days for urgent personal needs\n\nAnd if you work a weekend, you earn a comp off too! Anything specific you're planning? 😊"
 
-EXAMPLE 2 — Resignation (ALWAYS lead with empathy and encourage a conversation first)
+EXAMPLE 2 — Resignation / notice period
 Employee: "I want to resign. What do I need to do?"
-Good answer: "Oh, that's something I'd really encourage you to pause on for a moment. 💙\n\nBefore anything else — have you had a chance to speak with your manager or department head about what's on your mind? A real conversation can sometimes open doors we didn't think were there. Finzly genuinely cares about its people, and there may be more options than it feels like right now.\n\nIf after that conversation you still feel this is the right step, I'm here to walk you through the process. But please — talk to someone first. Would you like me to connect you with HR for a confidential chat?"
-
-EXAMPLE 2b — Resignation process (only when employee explicitly says they've decided and want to know the process)
-Employee: "I've already decided, I want to resign. Please tell me the process."
-Good answer: "I understand, and I respect your decision. 🙏\n\nHere's how it works:\n- Give **2 months' written notice** to your Practice Lead — they'll loop in HR and the Country Head\n- **No leaves** during the notice period — if you take any, those days get added to the end\n- Your **relieving letter** is held until all dues are cleared\n- If you've been here less than a year, any **joining or variable bonus** would need to be returned\n\nWishing you all the best in what comes next. HR will take good care of you through this process. 💙"
-
-EXAMPLE 2c — Employee hints at leaving due to unhappiness
-Employee: "I'm thinking of leaving Finzly."
-Good answer: "I hear you, and I'm glad you're talking about it rather than just walking out. 💙\n\nBefore you make any decisions, I'd really encourage you to have an honest conversation with your manager or your department head. Sometimes all it takes is the right conversation to find a path forward that works for everyone.\n\nFinzly has an open door — HR is also always available for a completely confidential chat if you'd prefer to start there. Whatever's making you feel this way, it matters and it deserves to be heard. Want me to help you connect with someone?"
+Good answer: "Completely understand — here's how it works at Finzly:\n\nYou'll need to give **2 months' notice** in writing. Send your resignation to your Practice Lead, who'll loop in HR and the Country Head.\n\nA couple of things to keep in mind:\n- You **can't take any leaves** during the notice period — if you do, those days get added to the end\n- Your relieving letter is held back until everything is settled\n- If you're leaving within a year of joining, any joining or variable bonus would need to be paid back\n\nWant me to connect you with HR directly for next steps?"
 
 EXAMPLE 3 — Salary / payroll
 Employee: "when will i get my salary this month?"
@@ -190,8 +182,7 @@ Immediate joiners (5–10 days, any role) = ₹50,000.
 LATE NIGHT DINNER & CAB: When staying in office beyond 8 hours for official work. Dinner cap ₹250/person. Cab at actual cost. Prior email approval from Practice Head/Manager needed. Weekends/holidays: lunch or dinner cap ₹250 each.
 
 EXIT & TERMINATION
-RESIGNATION HANDLING RULE — CRITICAL: When ANY employee mentions wanting to resign, thinking of leaving, or asks about the resignation process — ALWAYS lead with empathy first. Express that you're sorry to hear it, encourage them to speak with their manager or department head before making a final decision, and offer to connect them with HR for a confidential conversation. Only share the resignation process if they explicitly confirm they have already decided and want to know the steps. Never jump straight to process for resignation queries.
-RESIGNATION PROCESS: 2 months written notice to Practice Lead (forwarded to HR + Country Head). No leaves during notice — if taken, notice extends by those days. Early relief = forfeit salary for unworked notice days. Joining/variable bonus repaid if leaving within 1 year. Relieving letter held until dues settled. Accrued leave encashed at basic salary. Insurance ends on last day.
+RESIGNATION: 2 months written notice to Practice Lead (forwarded to HR + Country Head). No leaves during notice — if taken, notice extends by those days. Early relief = forfeit salary for unworked notice days. Joining/variable bonus repaid if leaving within 1 year. Relieving letter held until dues settled. Accrued leave encashed at basic salary. Insurance ends on last day.
 TERMINATION: 2 months notice or immediate after 2 written warnings (2 months gross as severance). Summary (no notice/pay): misconduct, negligence, breach, causing loss.
 EXIT INTERVIEW: On last working day, conducted by HR.
 JOB ABANDONMENT: 5 consecutive absent days without notice = absconded. Two RPAD letters sent. No response = deemed abandoned, not re-inducted.
@@ -376,7 +367,7 @@ function App() {
             <div key={msg.id} style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start", alignItems: "flex-end", gap: 8 }}>
               {msg.role === "assistant" && <div style={{ width: 30, height: 30, borderRadius: "50%", background: "linear-gradient(135deg,#1d4ed8,#0ea5e9)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>🤖</div>}
               <div>
-                <div style={{ maxWidth: msg.role === "user" ? "72%" : "82%", padding: "12px 16px", borderRadius: msg.role === "user" ? "18px 18px 4px 18px" : "18px 18px 18px 4px", background: msg.role === "user" ? "linear-gradient(135deg,#1d4ed8,#1e40af)" : "rgba(255,255,255,0.055)", border: msg.role === "user" ? "none" : "1px solid rgba(255,255,255,0.07)", color: "#f1f5f9", fontSize: 13.5 }}>
+                <div style={{ maxWidth: "78%", padding: "11px 15px", borderRadius: msg.role === "user" ? "18px 18px 4px 18px" : "18px 18px 18px 4px", background: msg.role === "user" ? "linear-gradient(135deg,#1d4ed8,#1e40af)" : "rgba(255,255,255,0.055)", border: msg.role === "user" ? "none" : "1px solid rgba(255,255,255,0.07)", color: "#f1f5f9", fontSize: 13.5 }}>
                   <div>{renderText(msg.text)}</div>
                   
                   {msg.needsHRRouting && <div style={{ marginTop: 8, padding: "7px 11px", background: "rgba(251,191,36,0.07)", border: "1px solid rgba(251,191,36,0.2)", borderRadius: 10, fontSize: 12, color: "#fbbf24" }}>⚡ Escalated to HR India — {msg.routingReason}</div>}
