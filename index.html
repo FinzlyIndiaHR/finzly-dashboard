@@ -389,6 +389,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
   <!-- P2: CHENNAI vs PUNE -->
   <div class="pg" id="p2">
     <div class="inf blue" id="inf-ch-pu">Loading location inference…</div>
+    <div id="loc-kpi-strip" style="display:grid;grid-template-columns:repeat(6,1fr);gap:11px;margin-bottom:14px"></div>
     <div class="loc-wrap">
       <div class="loc-card ch">
         <div class="loc-hdr"><div class="loc-name">📍 Chennai</div><div class="loc-badge" id="ch-badge">—</div></div>
@@ -871,7 +872,7 @@ function render(data) {
 
   // P2: CHENNAI vs PUNE
   const locGapNum=Math.abs(chE-puE);
-  document.getElementById('inf-ch-pu').innerHTML=`<strong>Location Inference:</strong> Chennai (${chD.length} employees, avg ${chE}/5) ${chE>puE?'leads':'lags'} Pune (${puD.length} employees, avg ${puE}/5) by <strong>${locGapNum.toFixed(1)} points</strong> on engagement. ${locGapNum<0.3?'Both locations are at parity — a sign of consistent culture.':locGapNum<0.8?'A small gap exists. Monitor Pune trend in the next cycle.':'A meaningful performance gap. Leadership should investigate Pune-specific friction points before it becomes an attrition risk.'} <strong>Decision:</strong> ${chE>puE?'Replicate what Chennai is doing well into Pune. Share manager practices.':'Analyse what makes Pune score higher and replicate into Chennai.'}`;
+  document.getElementById('inf-ch-pu').innerHTML=`<strong>Location Inference:</strong> Chennai (${chD.length} employees, avg ${chE}/5) ${chE>puE?'leads':'lags'} Pune (${puD.length} employees, avg ${puE}/5) by ${locGapNum.toFixed(1)} points on engagement. ${locGapNum<0.3?'Both locations are at parity — a sign of consistent culture.':locGapNum<0.8?'A small gap exists. Monitor Pune trend in the next cycle.':'A meaningful performance gap. Leadership should investigate Pune-specific friction points before it becomes an attrition risk.'} <strong>Decision:</strong> ${chE>puE?'Replicate what Chennai is doing well into Pune. Share manager practices.':'Analyse what makes Pune score higher and replicate into Chennai.'}`;
   document.getElementById('ch-inference').innerHTML=`${chE>=4.5?'✅ Strong health across all squads.':chE>=4?'⚠ Healthy but watch for drift — act on requests to sustain scores.':'🚨 Below threshold — investigate urgently.'} Top ask: ${top3.length>0?top3[0].l:'N/A'}.`;
   document.getElementById('pu-inference').innerHTML=`${puE>=4.5?'✅ Strong health across all squads.':puE>=4?'⚠ Healthy but below Chennai benchmark. Address friction points.':'🚨 Below threshold — skip-level conversations recommended.'} Top ask: ${top3.length>0?top3[0].l:'N/A'}.`;
 
@@ -896,6 +897,21 @@ function render(data) {
       ||'<div style="font-size:.76rem;color:var(--muted)">No specific requests detected in this location.</div>';
   };
   renderLoc(chD,'ch','var(--ch)');renderLoc(puD,'pu','var(--pu)');
+
+  // Chennai vs Pune KPI dashboard strip
+  const mkLocKpi=(val,lbl,col,bg,br)=>`
+    <div style="background:${bg};border:1px solid ${br};border-radius:10px;padding:14px 16px;border-top:3px solid ${col};text-align:center">
+      <div style="font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:5px">${lbl}</div>
+      <div style="font-family:'Fira Code',monospace;font-size:1.6rem;font-weight:600;color:${col};line-height:1">${val}</div>
+    </div>`;
+  const locStrip = document.getElementById('loc-kpi-strip');
+  if(locStrip) locStrip.innerHTML =
+    mkLocKpi(chD.length, 'Chennai Employees', 'var(--ch)', 'var(--ch-bg)', 'var(--ch-br)') +
+    mkLocKpi(chE||'—', 'Chennai Engagement', 'var(--ch)', 'var(--ch-bg)', 'var(--ch-br)') +
+    mkLocKpi(avg(chD.map(r=>num(r,iOv)).filter(v=>v!==null))||'—', 'Chennai Overall', 'var(--ch)', 'var(--ch-bg)', 'var(--ch-br)') +
+    mkLocKpi(puD.length, 'Pune Employees', 'var(--pu)', 'var(--pu-bg)', 'var(--pu-br)') +
+    mkLocKpi(puE||'—', 'Pune Engagement', 'var(--pu)', 'var(--pu-bg)', 'var(--pu-br)') +
+    mkLocKpi(avg(puD.map(r=>num(r,iOv)).filter(v=>v!==null))||'—', 'Pune Overall', 'var(--pu)', 'var(--pu-bg)', 'var(--pu-br)');
 
   document.getElementById('inf-compare').innerHTML=`<strong>Inference:</strong> ${chE>puE?`Chennai scores higher on all 3 metrics. Gap: ${(chE-puE).toFixed(1)} pts engagement, ${(chM-puM).toFixed(1)} pts manager, ${(chO-puO).toFixed(1)} pts overall. Root cause: investigate Pune manager quality and work environment.`:`Pune scores higher. Chennai gap: ${(puE-chE).toFixed(1)} pts. This is unusual — investigate what's driving Chennai lower.`} <strong>Action:</strong> Share the higher-scoring location's manager practices with the other.`;
   
