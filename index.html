@@ -472,8 +472,8 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
     <div style="font-size:.76rem;color:var(--muted);margin-bottom:14px;padding:12px 16px;background:var(--card);border-radius:8px;border:1px solid var(--border);line-height:1.8">
       ℹ️ All quotes below are <strong>anonymous</strong>. No individual can be identified.<br>
       <strong>How scores are calculated:</strong> Engagement, Manager and Overall ratings are read directly from the numeric scores employees gave in the form (scale 1–5). 
-      Open-text responses (SSC, challenges, comments) are analysed by <strong>Claude AI</strong> to extract themes, sentiment and representative quotes — no manual keyword guessing. 
-      If AI is unavailable, keyword matching is used as a fallback. Numbers shown in brackets are employee counts from live data.
+      Themes like "Team Outings" or "Fun Friday" are detected by scanning open-text responses for matching keywords. 
+      Comments are classified as Critical, Positive or Suggestion based on the actual words used. Numbers shown in brackets are live employee counts.
     </div>
     <div class="comment-grid" id="comment-cards"></div>
     <div class="g2">
@@ -546,22 +546,10 @@ async function loadData(){
     const iHRd=HDRS.findIndex(h=>h.includes('name'));
     if(iHRd>=0)ALL.slice(0,5).forEach(r=>console.log("  '"+String(r[iHRd]||'')+"'"));
     
-    populateFilters();
-    // Show dashboard immediately with keyword-based analysis
-    render(ALL, null);
+    populateFilters();render(ALL);
     document.getElementById('ts').textContent="● Live · SharePoint · Refreshed "+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
-    document.getElementById('h-live').textContent="● Live · AI analysing…";
+    document.getElementById('h-live').textContent="● Live";
     show('dash');
-    // Run AI analysis in background, update when ready
-    analyseWithAI(ALL).then(aiResult => {
-      if(aiResult) {
-        render(ALL, aiResult);
-        document.getElementById('h-live').textContent="● Live · AI Ready";
-        document.getElementById('ts').textContent="● Live · AI-powered · "+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
-      }
-    }).catch(()=>{
-      document.getElementById('h-live').textContent="● Live";
-    });
     setTimeout(loadData,5*60*1000);
   }catch(e){document.getElementById('err-msg').textContent=e.message;show('error');}
 }
@@ -621,90 +609,7 @@ function toggleSig(el){
   if(detail){detail.classList.toggle('open');}
 }
 
-// ── AI ANALYSIS ──────────────────────────────────────────────────
-async function analyseWithAI(rows) {
-  try {
-    // Build a compact summary of all open-text responses to send to Claude
-    // We don't send names/emails — only anonymous text content
-    const textCols = rows.map((r,i) => ({
-      id: i+1,
-      q1: String(r[11]||'').trim(),   // last quarter experience
-      q2: String(r[12]||'').trim(),   // going well / challenging
-      psych: String(r[14]||'').trim(), // comfort sharing
-      ssc: String(r[17]||'').trim(),  // start stop continue
-      support: String(r[18]||'').trim(), // support needed
-      comments: String(r[20]||'').trim() // additional comments
-    })).filter(r => r.ssc || r.comments || r.q2);
-
-    // Build prompt for Claude
-    const prompt = `You are analysing anonymous employee 1-on-1 feedback for an HR dashboard.
-
-Here are ${textCols.length} anonymous employee responses (no names, no IDs):
-
-${textCols.map(r => `---
-SSC (what to start/stop/continue): ${r.ssc || 'not provided'}
-Challenge/Going well: ${r.q2 || 'not provided'}
-Support needed: ${r.support || 'not provided'}
-Comments: ${r.comments || 'not provided'}
-`).join('
-')}
-
-Analyse all responses and return ONLY a JSON object with this exact structure (no markdown, no explanation):
-{
-  "needsFixing": [
-    {"theme": "short clear theme name", "count": number, "detail": "one sentence explanation"}
-  ],
-  "start": [
-    {"theme": "short clear theme name", "count": number, "detail": "one sentence explanation"}  
-  ],
-  "keepGoing": [
-    {"theme": "short clear theme name", "count": number, "detail": "one sentence explanation"}
-  ],
-  "comments": [
-    {"type": "critical|positive|suggestion", "text": "exact anonymised quote max 200 chars", "theme": "theme label"}
-  ],
-  "topInsight": "One powerful sentence for the CXO about the overall mood",
-  "attritionRisk": "low|medium|high",
-  "attritionReason": "One sentence explaining the risk level"
-}
-
-Rules:
-- needsFixing: real problems employees raised, sorted by how many mentioned it
-- start: things employees want introduced, sorted by frequency  
-- keepGoing: things employees praised, sorted by frequency
-- comments: pick the 6 most representative quotes (mix of types), use exact words but keep anonymous
-- Only include items actually mentioned in the data
-- Count = number of employees who mentioned that theme`;
-
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 2000,
-        messages: [{ role: "user", content: prompt }]
-      })
-    });
-
-    if (!response.ok) throw new Error("AI API failed: " + response.status);
-    const data = await response.json();
-    const text = data.content.map(b => b.text || '').join('');
-    
-    // Parse JSON from response
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error("No JSON in AI response");
-    const result = JSON.parse(jsonMatch[0]);
-    console.log("AI analysis complete:", result);
-    return result;
-
-  } catch(e) {
-    console.warn("AI analysis failed, using keyword fallback:", e.message);
-    return null;
-  }
-}
-// ── END AI ANALYSIS ───────────────────────────────────────────────
-
-function render(data, aiResult={}) {
+function render(data) {
   const n=data.length;
   document.getElementById('f-info').textContent=n+" employee"+(n!==1?'s':'')+" in view";
 
@@ -1128,22 +1033,12 @@ function render(data, aiResult={}) {
   // Deduplicate by first 50 chars
   const seen=new Set();
   const uniqueComments=comments.filter(c=>{const key=c.text.slice(0,50);if(seen.has(key))return false;seen.add(key);return true;});
-  // Use AI-extracted quotes if available, else keyword-classified comments
-  if(aiResult && aiResult.comments && aiResult.comments.length > 0) {
-    document.getElementById('comment-cards').innerHTML = aiResult.comments.map(c => `
-      <div class="cc ${c.type}">
-        <div class="cc-type">${c.type==='critical'?'⚠ Critical Feedback':c.type==='positive'?'✓ Positive Signal':'💡 Suggestion'}</div>
-        <div class="cc-text">"${c.text}"</div>
-        <div class="cc-meta">${c.theme} · Anonymous</div>
-      </div>`).join('');
-  } else {
-    document.getElementById('comment-cards').innerHTML=uniqueComments.slice(0,8).map(c=>`
-      <div class="cc ${c.type}">
-        <div class="cc-type">${c.type==='critical'?'⚠ Critical Feedback':c.type==='positive'?'✓ Positive Signal':'💡 Suggestion'}</div>
-        <div class="cc-text">"${c.text.length>300?c.text.slice(0,297)+'…':c.text}"</div>
-        <div class="cc-meta">${c.meta}</div>
-      </div>`).join('')||'<div style="font-size:.78rem;color:var(--muted);padding:12px;grid-column:span 2;text-align:center">No notable comments in current filter selection.</div>';
-  }
+  document.getElementById('comment-cards').innerHTML=uniqueComments.slice(0,8).map(c=>`
+    <div class="cc ${c.type}">
+      <div class="cc-type">${c.type==='critical'?'⚠ Critical Feedback':c.type==='positive'?'✓ Positive Signal':'💡 Suggestion'}</div>
+      <div class="cc-text">"${c.text.length>300?c.text.slice(0,297)+'…':c.text}"</div>
+      <div class="cc-meta">${c.meta}</div>
+    </div>`).join('')||'<div style="font-size:.78rem;color:var(--muted);padding:12px;grid-column:span 2;text-align:center">No notable comments in current filter selection.</div>';
 
   // ── DYNAMIC SSC ─────────────────────────────────────────────
   // All keywords checked against live SSC + Support + Q1 + Q2 + Comments columns
@@ -1161,22 +1056,12 @@ function render(data, aiResult={}) {
     { label:'Udemy training not followed by hands-on practice — theory not converting to skills', kw:['hands-on','practice session','practical','paid version','udemy'] },
   ];
   const fixEl = document.getElementById('ssc-fix');
-  if(fixEl) {
-    if(aiResult && aiResult.needsFixing && aiResult.needsFixing.length > 0) {
-      // Use AI analysis
-      fixEl.innerHTML = aiResult.needsFixing.map(item =>
-        `<li>${item.theme} <span style="font-family:Fira Code,monospace;font-size:.62rem;opacity:.6">(${item.count})</span><div style="font-size:.68rem;color:var(--muted);margin-top:2px">${item.detail}</div></li>`
-      ).join('');
-    } else {
-      // Keyword fallback
-      fixEl.innerHTML = fixDefs
-        .filter(d => allRows.some(r => d.kw.some(k => r.includes(k))))
-        .map(d => {
-          const cnt = allRows.filter(r => d.kw.some(k => r.includes(k))).length;
-          return `<li>${d.label} <span style="font-family:Fira Code,monospace;font-size:.62rem;opacity:.6">(${cnt})</span></li>`;
-        }).join('') || '<li>No specific issues flagged in current data.</li>';
-    }
-  }
+  if(fixEl) fixEl.innerHTML = fixDefs
+    .filter(d => allRows.some(r => d.kw.some(k => r.includes(k))))
+    .map(d => {
+      const cnt = allRows.filter(r => d.kw.some(k => r.includes(k))).length;
+      return `<li>${d.label} <span style="font-family:Fira Code,monospace;font-size:.62rem;opacity:.6">(${cnt})</span></li>`;
+    }).join('') || '<li>No specific issues flagged in current data.</li>';
 
   // START — things employees want introduced
   const startDefs = [
@@ -1192,20 +1077,12 @@ function render(data, aiResult={}) {
     { label:'Holiday calendar shared in advance to all regions', kw:['holiday','calendar','region','notif'] },
   ];
   const startEl = document.getElementById('ssc-start');
-  if(startEl) {
-    if(aiResult && aiResult.start && aiResult.start.length > 0) {
-      startEl.innerHTML = aiResult.start.map(item =>
-        `<li>${item.theme} <span style="font-family:Fira Code,monospace;font-size:.62rem;opacity:.6">(${item.count})</span><div style="font-size:.68rem;color:var(--muted);margin-top:2px">${item.detail}</div></li>`
-      ).join('');
-    } else {
-      startEl.innerHTML = startDefs
-        .filter(d => allRows.some(r => d.kw.some(k => r.includes(k))))
-        .map(d => {
-          const cnt = allRows.filter(r => d.kw.some(k => r.includes(k))).length;
-          return `<li>${d.label} <span style="font-family:Fira Code,monospace;font-size:.62rem;opacity:.6">(${cnt})</span></li>`;
-        }).join('') || '<li>No specific requests in current data.</li>';
-    }
-  }
+  if(startEl) startEl.innerHTML = startDefs
+    .filter(d => allRows.some(r => d.kw.some(k => r.includes(k))))
+    .map(d => {
+      const cnt = allRows.filter(r => d.kw.some(k => r.includes(k))).length;
+      return `<li>${d.label} <span style="font-family:Fira Code,monospace;font-size:.62rem;opacity:.6">(${cnt})</span></li>`;
+    }).join('') || '<li>No specific requests in current data.</li>';
 
   // KEEP GOING — positives employees want continued
   const keepDefs = [
@@ -1217,20 +1094,12 @@ function render(data, aiResult={}) {
     { label:'Multi-squad collaboration and team coordination', kw:['collaboration','cross-functional','team coordination','squad'] },
   ];
   const keepEl = document.getElementById('ssc-keep');
-  if(keepEl) {
-    if(aiResult && aiResult.keepGoing && aiResult.keepGoing.length > 0) {
-      keepEl.innerHTML = aiResult.keepGoing.map(item =>
-        `<li>${item.theme} <span style="font-family:Fira Code,monospace;font-size:.62rem;opacity:.6">(${item.count})</span><div style="font-size:.68rem;color:var(--muted);margin-top:2px">${item.detail}</div></li>`
-      ).join('');
-    } else {
-      keepEl.innerHTML = keepDefs
-        .filter(d => allRows.some(r => d.kw.some(k => r.includes(k))))
-        .map(d => {
-          const cnt = allRows.filter(r => d.kw.some(k => r.includes(k))).length;
-          return `<li>${d.label} <span style="font-family:Fira Code,monospace;font-size:.62rem;opacity:.6">(${cnt})</span></li>`;
-        }).join('') || '<li>No specific positives detected in current data.</li>';
-    }
-  }
+  if(keepEl) keepEl.innerHTML = keepDefs
+    .filter(d => allRows.some(r => d.kw.some(k => r.includes(k))))
+    .map(d => {
+      const cnt = allRows.filter(r => d.kw.some(k => r.includes(k))).length;
+      return `<li>${d.label} <span style="font-family:Fira Code,monospace;font-size:.62rem;opacity:.6">(${cnt})</span></li>`;
+    }).join('') || '<li>No specific positives detected in current data.</li>';
   // ── END DYNAMIC SSC ──────────────────────────────────────────
 
   // Positives — fully dynamic from live data
@@ -1341,8 +1210,6 @@ function render(data, aiResult={}) {
       RAG: ${rag.Green} healthy · ${rag.Amber} watch · ${rag.Red} urgent.
       ${atRisk.length>0?atRisk.length+' squad(s) need attention before next cycle.':'No attrition risk signals this quarter.'}
       Top employee ask: ${top3[0]?.l||'—'} (${top3[0]?.c||0} of ${n} asked).
-      ${aiResult&&aiResult.topInsight?'<br><strong>AI insight:</strong> '+aiResult.topInsight:''}
-      ${aiResult&&aiResult.attritionRisk?'<strong>Attrition risk:</strong> '+aiResult.attritionRisk.toUpperCase()+' — '+aiResult.attritionReason:''}
     </div>\`;
 
   document.getElementById('ai-body').innerHTML=`
