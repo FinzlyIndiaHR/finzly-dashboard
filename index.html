@@ -622,13 +622,13 @@ function render(data) {
   const iMgr  = 13;  // "how would you describe your relationship... rating on a scale of 1-5" 
   const iPsych= ci(['comfortable','concerns','feedback','new ideas']) > -1 ? ci(['comfortable','concerns','feedback','new ideas']) : 14;
   const iLearn= ci(['skills','training','certifications','udemy']) > -1 ? ci(['skills','training','certifications','udemy']) : 15;
-  // HARDCODED from live file console debug - do not use ci() for these
-  const iEng  = 16;  // "on a scale of 1-5 how engaged"
-  const iSsc  = 17;  // "is there anything we should start, stop, or continue"
-  const iSup  = 18;  // "what kind of support do you need from us"
-  const iOv   = 19;  // "overall experience rating 1-5"
-  const iCom  = 20;  // "additional comments (if any)"
-  const iRag  = 21;  // "rag status"
+  // HARDCODED indices with keyword fallback for resilience
+  const iEng  = ci(['how engaged','scale of 1','1-5 how engaged','engaged do you']) > -1 ? ci(['how engaged','scale of 1','1-5 how engaged','engaged do you']) : 16;
+  const iSsc  = ci(['start, stop','stop, or continue','team/company','as a team']) > -1 ? ci(['start, stop','stop, or continue','team/company','as a team']) : 17;
+  const iSup  = ci(['support do you need','kind of support','need from us']) > -1 ? ci(['support do you need','kind of support','need from us']) : 18;
+  const iOv   = ci(['overall experience','overall experience rating']) > -1 ? ci(['overall experience','overall experience rating']) : 19;
+  const iCom  = ci(['additional comments','comments (if any)']) > -1 ? ci(['additional comments','comments (if any)']) : 20;
+  const iRag  = ci(['rag','rag status']) > -1 ? ci(['rag','rag status']) : 21;
   const iMgrH = 13;  // manager rating hardcoded backup
 
   const num=(row,i)=>{
