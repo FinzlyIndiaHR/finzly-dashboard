@@ -125,7 +125,7 @@ var GROQ="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";
 var TEAMS="https://swapstechinc.webhook.office.com/webhookb2/95fe27eb-0280-40ac-abc4-bf05fdc95250@4d4c58f7-6978-4a93-ba72-f1d987c46c89/IncomingWebhook/7d680f77ffcf4195aa68ab3206a00d58/21943eff-d275-4627-a6df-22ead0a0bc4c/V2yZ2gowlgRBY_bVcFNrYQFiNNRlRgEnrza7V0sIl3_Rs1";
 var HR="hr-india@finzly.com";
 var SUGGS=["How many leaves do I get?","When does salary get credited?","I want to resign - what do I do?","My friend is a Java dev, referral bonus?","What do I bring on Day 1?","Can I carry forward my leaves?","I worked this Sunday, do I get comp off?","What is covered in my health insurance?","Going to Bangalore for work - hotel limit?","Can I wear jeans to office?"];
-var history=[];
+var chatHistory=[];
 var loading=false;
 var curQuery="";
 
@@ -232,7 +232,7 @@ function send(text){
   addMsg("u",userText);
   typing.style.display="flex";
   msgs.scrollTop=msgs.scrollHeight;
-  history.push({role:"user",content:userText});
+  chatHistory.push({role:"user",content:userText});
 
   fetch("https://api.groq.com/openai/v1/chat/completions",{
     method:"POST",
@@ -241,7 +241,7 @@ function send(text){
       model:"llama-3.3-70b-versatile",
       max_tokens:1000,
       response_format:{type:"json_object"},
-      messages:[{role:"system",content:PROMPT}].concat(history)
+      messages:[{role:"system",content:PROMPT}].concat(chatHistory)
     })
   })
   .then(function(r){return r.json();})
@@ -255,7 +255,7 @@ function send(text){
     }catch(e){
       parsed={answer:"Sorry, something went wrong. Please try again or contact HR directly.",needsHRRouting:false,suggestedFollowUps:[]};
     }
-    history.push({role:"assistant",content:parsed.answer||""});
+    chatHistory.push({role:"assistant",content:parsed.answer||""});
     typing.style.display="none";
     addMsg("b",parsed);
     if(parsed.needsHRRouting){
