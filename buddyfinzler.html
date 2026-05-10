@@ -1,289 +1,400 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>BuddyFinzler - Finzly HR Assistant</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BuddyFinzler – Finzly HR Assistant</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Source+Serif+4:wght@300;400;600&display=swap" rel="stylesheet" />
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%}
-body{background:linear-gradient(135deg,#07101f,#0d1a32 60%,#06111e);min-height:100vh;font-family:'DM Sans','Segoe UI',sans-serif;color:#f1f5f9}
-@keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
-@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-::-webkit-scrollbar{width:4px}
-::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:4px}
-#app{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-#chat{width:100%;max-width:720px;height:94vh;max-height:860px;display:flex;flex-direction:column;background:rgba(255,255,255,0.03);backdrop-filter:blur(24px);border-radius:24px;border:1px solid rgba(255,255,255,0.07);box-shadow:0 40px 80px rgba(0,0,0,0.7);overflow:hidden}
-#hdr{background:linear-gradient(135deg,#122040,#0d1930);border-bottom:1px solid rgba(255,255,255,0.06);padding:16px 20px;display:flex;align-items:center;gap:14px;flex-shrink:0}
-.av-wrap{position:relative;flex-shrink:0}
-.av{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,#1d4ed8,#0ea5e9);display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 0 20px rgba(29,78,216,0.5)}
-.av-dot{position:absolute;bottom:2px;right:2px;width:11px;height:11px;border-radius:50%;background:#22c55e;border:2px solid #0d1930;box-shadow:0 0 8px rgba(34,197,94,0.7)}
-#hdr-text{flex:1}
-#hdr-text h1{color:#fff;font-weight:700;font-size:17px;margin:0}
-#hdr-text p{color:rgba(255,255,255,0.4);font-size:12px;margin:2px 0 0}
-#hdr-right{display:flex;flex-direction:column;gap:5px;align-items:flex-end}
-.badge{font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px}
-.b-blue{background:rgba(29,78,216,0.15);border:1px solid rgba(29,78,216,0.3);color:#60a5fa}
-.b-green{background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);color:#86efac}
-.b-yellow{background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.3);color:#fbbf24}
-#msgs{flex:1;overflow-y:auto;padding:18px 18px 8px;display:flex;flex-direction:column;gap:12px}
-.row{display:flex;align-items:flex-end;gap:8px;animation:fadeIn 0.25s ease}
-.row.u{justify-content:flex-end}
-.row.b{justify-content:flex-start}
-.sm-av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#1d4ed8,#0ea5e9);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
-.mc{max-width:82%}
-.row.u .mc{max-width:72%}
-.bubble{padding:12px 16px;border-radius:18px 18px 18px 4px;background:rgba(255,255,255,0.055);border:1px solid rgba(255,255,255,0.07);font-size:13.5px;line-height:1.6}
-.row.u .bubble{border-radius:18px 18px 4px 18px;background:linear-gradient(135deg,#1d4ed8,#1e40af);border:none}
-.bubble p{margin:4px 0}
-.bubble ul{margin:6px 0 6px 16px;padding:0}
-.bubble li{margin-bottom:3px;line-height:1.5}
-.tag-y{margin-top:8px;padding:7px 11px;background:rgba(251,191,36,0.07);border:1px solid rgba(251,191,36,0.2);border-radius:10px;font-size:12px;color:#fbbf24}
-.tag-g{margin-top:5px;padding:6px 11px;background:rgba(34,197,94,0.07);border:1px solid rgba(34,197,94,0.2);border-radius:10px;font-size:11px;color:#86efac}
-.fups{margin-top:8px;display:flex;flex-direction:column;gap:5px}
-.fup{background:rgba(29,78,216,0.07);border:1px solid rgba(29,78,216,0.18);border-radius:10px;color:#93c5fd;font-size:12px;padding:6px 12px;cursor:pointer;text-align:left;font-family:inherit;width:100%}
-.fup:hover{background:rgba(29,78,216,0.15)}
-#typing{display:none;align-items:flex-end;gap:8px}
-.dots{padding:14px 18px;border-radius:18px 18px 18px 4px;background:rgba(255,255,255,0.055);border:1px solid rgba(255,255,255,0.07);display:flex;gap:5px}
-.db{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,0.4);animation:bounce 1.2s infinite}
-#suggs{padding:0 18px 12px;flex-shrink:0}
-#suggs p{color:rgba(255,255,255,0.28);font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:7px}
-#sw{display:flex;flex-wrap:wrap;gap:6px}
-.sb{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:20px;color:rgba(255,255,255,0.55);font-size:11.5px;padding:5px 12px;cursor:pointer;font-family:inherit}
-.sb:hover{background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.8)}
-#inp-area{padding:10px 14px 14px;border-top:1px solid rgba(255,255,255,0.05);background:rgba(0,0,0,0.15);flex-shrink:0}
-#inp-wrap{display:flex;gap:9px;align-items:flex-end;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.09);border-radius:16px;padding:8px 8px 8px 15px}
-#inp{flex:1;background:transparent;border:none;outline:none;color:#f1f5f9;font-size:13.5px;line-height:1.5;resize:none;font-family:inherit;max-height:100px;min-height:22px;overflow-y:auto}
-#inp::placeholder{color:rgba(255,255,255,0.3)}
-#sbtn{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,#1d4ed8,#1e40af);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-#sbtn:disabled{background:rgba(29,78,216,0.15);cursor:not-allowed;opacity:0.6}
-#ftxt{color:rgba(255,255,255,0.18);font-size:10.5px;text-align:center;margin:7px 0 0}
-#mov{position:fixed;inset:0;background:rgba(0,0,0,0.75);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px}
-#mod{background:linear-gradient(135deg,#122040,#0d1930);border:1px solid rgba(251,191,36,0.25);border-radius:20px;padding:26px;max-width:430px;width:100%;box-shadow:0 40px 80px rgba(0,0,0,0.7)}
-#mod h3{color:#fbbf24;text-align:center;margin:0 0 6px;font-size:17px}
-.msub{color:rgba(255,255,255,0.5);text-align:center;font-size:12.5px;margin:0 0 18px}
-.mb{border-radius:12px;padding:11px 14px;margin-bottom:10px}
-.mb .ml{color:rgba(255,255,255,0.35);font-size:10px;margin:0 0 4px;text-transform:uppercase}
-.mb.dk{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07)}
-.mb.yw{background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.15)}
-.mb.gn{background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.15);display:flex;align-items:center;gap:8px;margin-bottom:18px}
-.mb p{margin:0;font-size:13px}
-.mb.yw p{color:#fbbf24}
-.mb.gn p{color:#86efac;font-size:12px}
-.mbtn{width:100%;padding:11px;border:none;border-radius:12px;font-weight:700;font-size:13.5px;cursor:pointer;margin-bottom:8px;font-family:inherit}
-.mbtn.pr{background:linear-gradient(135deg,#1d4ed8,#1e40af);color:white}
-.mbtn.sc{background:transparent;border:1px solid rgba(255,255,255,0.09);color:rgba(255,255,255,0.35);padding:9px}
+  :root {
+    --navy: #0a1628; --navy2: #1a3a5c; --blue: #2e6da4;
+    --lightblue: #7fb3d3; --accent: #e8b84b; --red: #c0392b;
+    --text: #e8edf2; --muted: rgba(255,255,255,0.38);
+    --border: rgba(255,255,255,0.1);
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body {
+    min-height:100vh;
+    background:linear-gradient(155deg,#0a1628 0%,#1a3a5c 55%,#0d2a45 100%);
+    font-family:'Source Serif 4',Georgia,serif;
+    color:var(--text); display:flex; flex-direction:column;
+    align-items:center; justify-content:center; padding:16px;
+  }
+  body::before {
+    content:''; position:fixed; inset:0; pointer-events:none;
+    background:
+      radial-gradient(ellipse at 15% 15%,rgba(46,109,164,0.18) 0%,transparent 55%),
+      radial-gradient(ellipse at 85% 85%,rgba(232,184,75,0.08) 0%,transparent 55%);
+  }
+  .wrapper {
+    width:100%; max-width:700px; position:relative; z-index:1;
+    border-radius:24px;
+    box-shadow:0 30px 80px rgba(0,0,0,0.55),0 0 0 1px var(--border);
+    overflow:hidden; display:flex; flex-direction:column;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background:linear-gradient(135deg,rgba(10,22,40,0.97),rgba(26,58,92,0.95));
+    padding:18px 24px; display:flex; align-items:center; gap:14px;
+    border-bottom:1px solid var(--border);
+  }
+  .avatar-big {
+    width:50px; height:50px; border-radius:50%;
+    background:linear-gradient(135deg,var(--navy2),var(--blue));
+    display:flex; align-items:center; justify-content:center;
+    font-size:24px; flex-shrink:0;
+    box-shadow:0 4px 20px rgba(46,109,164,0.5);
+    animation:float 3s ease-in-out infinite;
+  }
+  @keyframes float { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-4px);} }
+  .header-title { font-family:'Playfair Display',serif; font-size:22px; color:#fff; }
+  .header-sub { font-size:12px; color:var(--lightblue); display:flex; align-items:center; gap:6px; margin-top:3px; }
+  .dot { width:7px; height:7px; border-radius:50%; background:#2ecc71; animation:pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.45;} }
+  .brand { margin-left:auto; text-align:right; }
+  .brand-sup { font-size:10px; color:var(--muted); letter-spacing:2px; text-transform:uppercase; }
+  .brand-name { font-family:'Playfair Display',serif; font-size:17px; color:var(--accent); }
+
+  /* ── MESSAGES ── */
+  #messages {
+    background:rgba(8,18,35,0.7); height:450px; overflow-y:auto;
+    padding:22px 20px 10px; scroll-behavior:smooth;
+  }
+  #messages::-webkit-scrollbar { width:4px; }
+  #messages::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.13); border-radius:4px; }
+  .msg-row { display:flex; gap:10px; margin-bottom:18px; animation:slideUp 0.3s ease; }
+  .msg-row.user { flex-direction:row-reverse; }
+  @keyframes slideUp { from{opacity:0;transform:translateY(10px);} to{opacity:1;transform:translateY(0);} }
+  .av {
+    width:34px; height:34px; border-radius:50%; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; font-size:15px;
+  }
+  .av.bot { background:linear-gradient(135deg,var(--navy2),var(--blue)); box-shadow:0 2px 10px rgba(46,109,164,0.4); }
+  .av.you { background:linear-gradient(135deg,#8b1a10,var(--red)); box-shadow:0 2px 10px rgba(192,57,43,0.3); font-weight:700; font-size:12px; color:#fff; }
+  .bubble { max-width:74%; padding:12px 16px; font-size:14px; line-height:1.75; white-space:pre-wrap; word-break:break-word; }
+  .bubble.bot { background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.1); border-radius:4px 18px 18px 18px; color:var(--text); }
+  .bubble.user { background:linear-gradient(135deg,#8b1a10,var(--red)); border-radius:18px 4px 18px 18px; color:#fff; }
+  .typing { display:flex; gap:5px; padding:14px 16px; align-items:center; }
+  .typing span { width:8px; height:8px; border-radius:50%; background:var(--blue); animation:bounce 1.2s infinite; }
+  .typing span:nth-child(2){animation-delay:.2s;} .typing span:nth-child(3){animation-delay:.4s;}
+  @keyframes bounce { 0%,60%,100%{transform:translateY(0);} 30%{transform:translateY(-8px);} }
+
+  /* ── CHIPS ── */
+  #chips {
+    background:rgba(10,22,40,0.85); padding:10px 16px;
+    display:flex; flex-wrap:wrap; gap:8px;
+    border-top:1px solid var(--border); border-bottom:1px solid var(--border);
+  }
+  .chip {
+    padding:5px 13px; border-radius:20px;
+    background:rgba(46,109,164,0.18); border:1px solid rgba(46,109,164,0.35);
+    color:var(--lightblue); font-size:12px; font-family:'Source Serif 4',serif;
+    cursor:pointer; transition:all 0.2s;
+  }
+  .chip:hover { background:rgba(46,109,164,0.4); color:#fff; }
+
+  /* ── INPUT ── */
+  .input-bar {
+    background:linear-gradient(135deg,rgba(10,22,40,0.97),rgba(20,45,75,0.95));
+    padding:14px 16px; display:flex; gap:10px; align-items:flex-end;
+    border-top:1px solid var(--border);
+  }
+  #userInput {
+    flex:1; background:rgba(255,255,255,0.07);
+    border:1px solid rgba(255,255,255,0.15); border-radius:14px;
+    padding:11px 15px; color:#fff; font-family:'Source Serif 4',serif;
+    font-size:14px; outline:none; resize:none; max-height:110px;
+    line-height:1.5; transition:border 0.2s; overflow-y:auto;
+  }
+  #userInput:focus { border-color:var(--blue); }
+  #userInput::placeholder { color:var(--muted); }
+  #sendBtn {
+    width:42px; height:42px; border-radius:50%;
+    background:linear-gradient(135deg,var(--navy2),var(--blue));
+    border:none; cursor:pointer; flex-shrink:0; font-size:17px; color:#fff;
+    box-shadow:0 4px 14px rgba(46,109,164,0.45); transition:all 0.2s;
+    display:flex; align-items:center; justify-content:center;
+  }
+  #sendBtn:hover { transform:translateY(-2px) scale(1.05); }
+  #sendBtn:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
+  .footer { margin-top:12px; font-size:11px; color:rgba(255,255,255,0.22); text-align:center; }
 </style>
 </head>
 <body>
-<div id="app">
-  <div id="chat">
-    <div id="hdr">
-      <div class="av-wrap"><div class="av">&#x1F916;</div><div class="av-dot"></div></div>
-      <div id="hdr-text"><h1>BuddyFinzler</h1><p>Finzly HR Assistant &middot; Always here to help</p></div>
-      <div id="hdr-right">
-        <span class="badge b-blue">HR ASSISTANT</span>
-        <span id="tbadge" class="badge b-green" style="display:none"></span>
+
+<div class="wrapper">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="avatar-big">🤝</div>
+    <div>
+      <div class="header-title">BuddyFinzler</div>
+      <div class="header-sub">
+        <span class="dot"></span>
+        Your Finzly HR Companion · Always here for you
       </div>
     </div>
-    <div id="msgs"></div>
-    <div id="typing">
-      <div class="sm-av">&#x1F916;</div>
-      <div class="dots">
-        <div class="db" style="animation-delay:0s"></div>
-        <div class="db" style="animation-delay:0.2s"></div>
-        <div class="db" style="animation-delay:0.4s"></div>
-      </div>
-    </div>
-    <div id="suggs"><p>Quick questions</p><div id="sw"></div></div>
-    <div id="inp-area">
-      <div id="inp-wrap">
-        <textarea id="inp" placeholder="Ask about leaves, salary, travel, insurance, exit policy..." rows="1"></textarea>
-        <button id="sbtn" disabled>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13M22 2L15 22L11 13M11 13L2 9L22 2" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
-      </div>
-      <p id="ftxt">Got a tricky question? HR India is always a message away &mdash; hr-india@finzly.com</p>
+    <div class="brand">
+      <div class="brand-sup">powered by</div>
+      <div class="brand-name">finzly</div>
     </div>
   </div>
+
+  <!-- MESSAGES -->
+  <div id="messages"></div>
+
+  <!-- QUICK CHIPS -->
+  <div id="chips">
+    <span class="chip" onclick="sendChip(this)">How many earned leaves do I get?</span>
+    <span class="chip" onclick="sendChip(this)">Resignation notice period?</span>
+    <span class="chip" onclick="sendChip(this)">How does maternity leave work?</span>
+    <span class="chip" onclick="sendChip(this)">Dress code on Fridays?</span>
+    <span class="chip" onclick="sendChip(this)">How do I claim comp-off?</span>
+    <span class="chip" onclick="sendChip(this)">Who handles POSH complaints?</span>
+    <span class="chip" onclick="sendChip(this)">What's my mediclaim coverage?</span>
+    <span class="chip" onclick="sendChip(this)">Referral bonus amounts?</span>
+  </div>
+
+  <!-- INPUT BAR -->
+  <div class="input-bar">
+    <textarea id="userInput" rows="1" placeholder="Ask me anything about Finzly HR policies..."></textarea>
+    <button id="sendBtn" onclick="sendMessage()">➤</button>
+  </div>
+
 </div>
-<div id="mov"><div id="mod">
-  <div style="font-size:36px;text-align:center;margin-bottom:10px">&#x1F4E8;</div>
-  <h3>Routed to HR India</h3>
-  <p class="msub">Your query needs personal attention. HR India has been notified.</p>
-  <div class="mb dk"><p class="ml">Your query</p><p id="mq"></p></div>
-  <div class="mb yw"><p class="ml">Reason</p><p id="mr"></p></div>
-  <div class="mb gn"><span>&#x2705;</span><p>HR India Teams channel notified</p></div>
-  <button class="mbtn pr" id="meml">&#x1F4E7; Email HR India &mdash; hr-india@finzly.com</button>
-  <button class="mbtn sc" id="mcls">Close</button>
-</div></div>
+<div class="footer">BuddyFinzler · Finzly Employee Handbook v2.1 · For critical matters, always confirm with HR directly</div>
 
 <script>
-var PROMPT = "You are BuddyFinzler — Finzly's friendly, knowledgeable HR buddy. You feel like a helpful colleague who genuinely knows everything about how Finzly works, not a policy reader. You speak naturally, warmly, and clearly. You NEVER mention any policy document, handbook, version numbers, or section numbers — ever. You just know the answers and share them like a trusted teammate would.\n\nOUTPUT FORMAT RULE — ABSOLUTE: Your ENTIRE response must be ONE valid JSON object. No text before or after it. No markdown fences. First character must be { and last must be }. Violating this breaks the app.\n\n--------------------------------------\nTONE & STYLE — LEARN FROM THESE EXAMPLES\n--------------------------------------\n\nEXAMPLE 1 — Casual leave question\nEmployee: \"how many leaves do i get?\"\nGood answer: \"You get a good set of leaves to work with! Here's the breakdown:\\n- **Earned Leave** — 10 days a year (great for planned time off or vacations)\\n- **Sick Leave** — 5 days a year (no questions asked for the first 2 days, doctor's note needed beyond that)\\n- **Management Leave** — 5 more days for urgent personal needs\\n\\nAnd if you work a weekend, you earn a comp off too! Anything specific you're planning? 😊\"\n\nEXAMPLE 2 — Resignation (ALWAYS lead with empathy and encourage a conversation first)\nEmployee: \"I want to resign. What do I need to do?\"\nGood answer: \"Oh, that's something I'd really encourage you to pause on for a moment. 💙\\n\\nBefore anything else — have you had a chance to speak with your manager or department head about what's on your mind? A real conversation can sometimes open doors we didn't think were there. Finzly genuinely cares about its people, and there may be more options than it feels like right now.\\n\\nIf after that conversation you still feel this is the right step, I'm here to walk you through the process. But please — talk to someone first. Would you like me to connect you with HR for a confidential chat?\"\n\nEXAMPLE 2b — Resignation process (only when employee explicitly says they've decided)\nEmployee: \"I've already decided, I want to resign. Please tell me the process.\"\nGood answer: \"I understand, and I respect your decision. 🙏\\n\\nHere's how it works:\\n- Give **2 months' written notice** to your Practice Lead — they'll loop in HR and the Country Head\\n- **No leaves** during the notice period — if you take any, those days get added to the end\\n- Your **relieving letter** is held until all dues are cleared\\n- If you've been here less than a year, any **joining or variable bonus** would need to be returned\\n\\nWishing you all the best in what comes next. HR will take good care of you through this process. 💙\"\n\nEXAMPLE 2c — Employee hints at leaving\nEmployee: \"I'm thinking of leaving Finzly.\"\nGood answer: \"I hear you, and I'm glad you're talking about it rather than just walking out. 💙\\n\\nBefore you make any decisions, I'd really encourage you to have an honest conversation with your manager or your department head. Sometimes all it takes is the right conversation to find a path forward that works for everyone.\\n\\nFinzly has an open door — HR is also always available for a completely confidential chat if you'd prefer to start there. Whatever's making you feel this way, it matters and it deserves to be heard. Want me to help you connect with someone?\"\n\nEXAMPLE 3 — Salary\nEmployee: \"when will i get my salary this month?\"\nGood answer: \"Your salary gets credited between the **last working day of the month** and the **3rd of the following month** — so it's pretty much right on time every month! If there's ever a delay or discrepancy, the Finance team is your go-to.\"\n\nEXAMPLE 4 — Insurance\nEmployee: \"what's covered under my health insurance?\"\nGood answer: \"Great news — Finzly covers you well! 🏥\\n\\nYour **mediclaim** covers you, your spouse, and up to two kids for up to **₹5 Lakhs** through ICICI Lombard. That includes hospitalisation and accidental coverage.\\n\\nOn top of that, you have **term life insurance** of **₹35 Lakhs** (employee only) through ICICI Prudential.\\n\\nFor claims, just make sure you're hospitalised for at least 24 hours and inform HR within 2 days of admission. Download the ICICI Lombard app to manage your mediclaim easily.\"\n\nEXAMPLE 5 — Day 1\nEmployee: \"it's my first day tomorrow, what do i bring?\"\nGood answer: \"Exciting! Welcome aboard 🎉 Here's what to bring on Day 1:\\n\\n**Documents to submit:**\\n- DOB proof (10th certificate or birth certificate — bring the original for verification, they'll keep a copy)\\n- PAN card copy\\n- Passport copy (if you have one)\\n- Your degree/education certificates\\n- 2 passport-size photos\\n- UAN number if you have a PF from before\\n- Relieving letter + experience letter from your last employer\\n- Last 3 months' payslips\\n\\nYou'll also fill out a few forms — employee info, NDA, insurance, PF nomination. Don't stress, HR will walk you through it all. See you tomorrow! 😊\"\n\nEXAMPLE 6 — Dress code\nEmployee: \"can I wear jeans to office?\"\nGood answer: \"Yep, jeans are totally fine! 👍 We follow a business casual dress code, so clean, neat jeans work well. Just make sure they're not torn or worn-out. On Fridays you can dress even more casually, though flip-flops and shorts are still a no-go.\"\n\nEXAMPLE 7 — Maternity\nEmployee: \"I'm pregnant, what leave do I get?\"\nGood answer: \"Congratulations! 🎉 Finzly has you covered with **26 weeks of fully paid maternity leave** — that's one of the best benefits we offer.\\n\\nA few things to know:\\n- You need to have been with us for at least 4 months to be eligible\\n- Give your manager and HR a heads-up at least 15 weeks before your due date\\n- After the 26 weeks, you may be able to extend on WFH depending on your role\\n- In unfortunate cases like miscarriage, 6 weeks of paid leave is available\\n\\nPlease do reach out to HR — they'll guide you through the whole process with care.\"\n\nEXAMPLE 8 — Comp off\nEmployee: \"I worked last Sunday, do I get a day off?\"\nGood answer: \"Yes, absolutely! Working on a weekend entitles you to a **comp off** on any weekday. Just get your manager's approval and make sure you use it within **90 days** — after that it lapses. You can't take it in advance or get it encashed, but it's yours to use for a well-deserved break!\"\n\nEXAMPLE 9 — Travel\nEmployee: \"I'm travelling to Bangalore for work, what's the hotel limit?\"\nGood answer: \"Bangalore is a Type 1 city, so you're covered up to **₹5,000 per night** for your hotel. For food, the daily limit is **₹600**. Book economy class if you're flying, and submit your boarding pass and original hotel bill when you claim. Submit your travel request to HR at least 3 business days in advance and get your Practice Head's approval. Safe travels! ✈️\"\n\nEXAMPLE 10 — Referral bonus\nEmployee: \"my friend is a Java developer with 6 years exp, how much do I get if I refer him?\"\nGood answer: \"Nice! If your friend joins and confirms as a full-time employee, you'd get **₹30,000** as a referral bonus for a Java developer with 5–10 years of experience. 🎉\\n\\nJust keep in mind — the bonus is paid after they're confirmed on permanent rolls, and it won't apply if you were part of the hiring decision. Centre Head approval is needed before payout.\"\n\nEXAMPLE 11 — Notice period leaves\nEmployee: \"can I take leaves during notice period?\"\nGood answer: \"Unfortunately, no — once you've submitted your resignation, you can't avail any leaves during the notice period. If you do end up taking a day off, that day gets added on at the end of your notice period automatically. So if your last day was supposed to be the 30th and you took 2 days off, it shifts to the 2nd of the following month.\"\n\nEXAMPLE 12 — Unhappy at work\nEmployee: \"I'm not happy at work, what can I do?\"\nGood answer: \"I'm sorry to hear that — it takes courage to say it out loud. 💙\\n\\nAt Finzly we have an open door culture. You can:\\n- Start by having an honest conversation with your manager\\n- If that feels uncomfortable, you can go directly to HR\\n- You can also speak with anyone in Senior Management\\n\\nYou're never alone in this. Would you like me to connect you with HR so they can have a confidential chat with you?\"\n\n--------------------------------------\nWHAT YOU KNOW (INTERNAL KNOWLEDGE — NEVER CITE THIS AS A SOURCE)\n--------------------------------------\n\nEMPLOYMENT\n- Employee status confirmed only after accepting contract and start date confirmed.\n- EEO: Employment is merit-based. No discrimination on any protected characteristic.\n- Retirement age: 60 years.\n- Probation: as per offer letter. Unsatisfactory performance = extended 1 month or terminated with 1 month notice.\n- All employees must sign an NDA on joining.\n\nDAY 1 / JOINING\n- Induction meeting on Day 1.\n- Documents to submit: DOB proof (10th certificate or birth certificate — original for verification, copy retained), PAN card copy, passport copy (if held), education certificates (10th/12th/degree), professional course certs, 2 passport-size photos, UAN for PF (if applicable), relieving letter + experience letter from last employer, last 3 months' payslips.\n- Forms to fill: Employee Info Form, Information Security Policy, NDA, Gratuity + PF nomination forms, Insurance Form.\n- Provided on Day 1: Employee number, email ID, access card/biometrics. WFH employees must log in/out via HRMS portal.\n\nWORK TIMINGS\n- Mon-Fri, 45 hours/week including 1-hour lunch daily.\n- Office open 24/7 but AC only during standard hours (not early mornings, late nights, or weekends). Exceptions need Practice/Project Head approval to HR in advance.\n- Minimum 40 work hours/week (excluding lunch). Minimum 6 hours/day in office (excluding breaks).\n- Log in by 09:30 AM on weekdays (for those without late evening calls).\n- Late arrival: inform manager at least 1 hour before start time.\n- Absent without notice: deducted from EL. Zero EL = LOP.\n\nDRESS CODE\n- Business Casual Mon-Fri. Fridays can be more casual but no sandals, slippers, or shorts ever.\n- No: miniskirts, tank/tube/halter/transparent tops, torn jeans, flip-flops, slippers.\n- Women: collared tops, denim/skirts/dresses at or below knee, professional shoes/sandals.\n- Men: collared shirts with sleeves, trousers/khaki/jeans, professional shoes.\n- Neat grooming always required.\n\nLEAVE\nLeave year: Jan 1 - Dec 31. Pro-rata for mid-year joiners.\nFull-time salaried employees only. Interns/trainees have a separate category.\nJoin 1st-15th = leave credited that month. Join 16th-end = no credit that month.\nRelieve 1st-15th = no credit that month. Relieve 16th-end = credited that month.\n\nEARNED LEAVE (EL): 10 days/year. Accrues at 0.8 days/month. Carry forward max 30 days (above 30 lapses). Apply on HRMS with 2 days advance notice; manager approval needed. On resignation, unused casual leave encashed at basic salary.\nMANAGEMENT LEAVE (ML): 5 days/year. Accrues 0.4 days/month. Lapses at year-end, no carry forward. Onshore team approval mandatory.\nSICK LEAVE (SL): 5 days/year. Doctor's cert needed if more than 2 days continuous. Chronic illness beyond 5 days: adjusted against EL, then LOP. Lapses at year-end, not encashable.\nCOMP OFF: For weekend work due to business need. Avail within 90 days. Not in advance. Not encashable. Manager approval needed.\nMATERNITY: 26 weeks paid, for employees with 4+ months service. Notify at least 15 weeks before due date. Post 26 weeks: WFH option subject to approval. Can combine EL after maternity. LOP up to 2 months after all leaves. Miscarriage: 6 weeks paid leave on proof. Not encashable.\nPATERNITY: Up to 5 days, for employees with 3+ months service. Inform HR and manager 2 weeks before delivery. Avail within 1 month of birth.\nBEREAVEMENT: Up to 2 days for immediate family loss. Inform manager and HR.\nLOP: When all leave is exhausted, with manager approval. During probation/notice: all leave = LOP. Sandwich rule: holiday between two availed leaves with zero balance = merged as LOP.\nINTERNS/PROBATION: After 1 month: 1 day total (0.5 SL + 0.5 CL). Lapses at period end, not encashable.\nLEAVE PROCEDURE: Apply via HRMS. Update by 15th of following month or treated as absent (EL deducted). Leave cannot be adjusted against notice period.\n\nHOLIDAYS\n10 public holidays per year. List declared by HR at start of each year and posted on notice board.\n\nSALARY & PAYROLL\nFinancial year: April-March. Salary credited between last working day of the month and before 3rd of the next month. PF and statutory deductions apply. For salary issues: contact Finance.\n\nPERFORMANCE\nQuarterly formal reviews. Annual review in Nov-Dec; salary revision from January next year. Not eligible if joined on or after 31st October. Assessment period: Jan-Dec.\nPIP: For underperforming full-time employees. Max 1 month with tangible objectives. Initiated by manager with HR. Outcome: continue, extend, or terminate.\n\nHEALTH INSURANCE\nMediclaim: ICICI Lombard. Rs 5 Lakhs coverage. Covers employee + spouse + 2 children. Includes accidental insurance. Min 24-hour hospitalisation for claims. Inform HR within 2 days of admission. Discharge summary mandatory for claims. App: https://www.icicilombard.com/il-takecare-app\nTerm Insurance: ICICI Prudential. Rs 35 Lakhs. Employee only (not family). App: https://www.iciciprulife.com/\n\nREWARDS & RECOGNITION\nAll full-time employees eligible. Monthly assessments. Monetary or non-monetary rewards for outstanding contributions.\n\nWORKPLACE\n1:1s with manager every 1-3 months (beyond quarterly reviews). If manager doesn't initiate, employee can block their calendar.\nOpen door: concerns go to manager first, then HR, then Senior Management.\nCompany computers for official use only. Chain emails/offensive content prohibited.\nAll equipment is Finzly property. Misuse/theft = corrective action.\nLaptop lost = employee reimburses full replacement cost.\nNo alcohol, drugs, or controlled substances on company or client premises or during company business - ever. Prescription meds that may affect performance must be disclosed to supervisor. Company can conduct drug/alcohol tests on reasonable suspicion.\nNo smoking or tobacco inside company premises.\nClean desk: keep desk clear, lock sensitive documents in cabinets, lock devices when unattended, clear desk at end of day.\n\nPOSH / HARASSMENT\nSet needsHRRouting = true immediately. Do NOT answer harassment queries - always route to HR.\nICC members:\nPune: Vishwata Mayekar (vishwata.mayekar@finzly.com), Andleeb Sohail (andleeb.sohail@finzly.com), Prashant Choudhary (prashant@finzly.com).\nChennai: Divya Moorthy (divya.moorthy@finzly.com), Bharathkumar M (Bharathkumar.m@finzly.com), Baskaran Devarasu (baskaran.devarasu@finzly.com).\nComplaints: within 15 days of incident. Enquiry: completed within 90 days. Full confidentiality.\n\nTRAVEL\nINTERNATIONAL: Company covers visa, flights, insurance, hotel. Employee claims on actuals with bills: local travel at client site, airport drops. USA per diem: $80/day (food + incidentals, no bills needed). Extra official expenses with PM approval.\nH1B/L1: Onshore company handles all arrangements. Advances deducted from salary.\nDOMESTIC: 3 business days notice. Practice Head + HR approval. Air: economy. Train: AC 2/3 tier (preferred under 6 hours). Car: Rs 8/km + toll if 50-400km and no train. Two-wheeler: Rs 5/km.\nHotel per day: Type 1 cities (Mumbai, Delhi, Chennai, Kolkata, Pune, Bangalore, Hyderabad) = Rs 5,000. Type 2 cities = Rs 4,000. Others = Rs 3,000.\nDaily food: Type 1 = Rs 600. Type 2 = Rs 500. Others = Rs 400.\nPrivate stay flat allowance: Type 1 = Rs 1,400/day. Type 2 = Rs 1,000/day. Others = Rs 800/day. No bills needed. Taxable.\nNon-reimbursable: clothes, toiletries, magazines, alcohol, cigarettes, personal entertainment.\nBoarding pass mandatory for air travel. All reimbursements taxable.\n\nEMPLOYEE BENEFITS (excludes probation employees)\nREFERRAL BONUS: Not for fresher referrals. Paid after candidate confirms as FTE. Cancelled if candidate is non-performer or referring employee was in the hiring decision. Centre Head approval needed.\nDevelopment (Java, Angular, Spring Boot): 3-5 yrs = Rs 20,000 | 5-10 yrs = Rs 30,000 | 10+ yrs = Rs 35,000.\nQA/Products/DevOps(AWS)/Digital Marketing/Support: 3-5 yrs = Rs 15,000 | 5-10 yrs = Rs 20,000 | 10+ yrs = Rs 30,000.\nImmediate joiners (5-10 days, any role) = Rs 50,000.\nLATE NIGHT DINNER & CAB: When staying in office beyond 8 hours for official work. Dinner cap Rs 250/person. Cab at actual cost. Prior email approval from Practice Head/Manager needed. Weekends/holidays: lunch or dinner cap Rs 250 each.\n\nEXIT & TERMINATION\nRESIGNATION HANDLING RULE - CRITICAL: When ANY employee mentions wanting to resign, thinking of leaving, or asks about the resignation process - ALWAYS lead with empathy first. Express that you're sorry to hear it, encourage them to speak with their manager or department head before making a final decision, and offer to connect them with HR for a confidential conversation. Only share the resignation process if they explicitly confirm they have already decided and want to know the steps. Never jump straight to process for resignation queries.\nRESIGNATION PROCESS: 2 months written notice to Practice Lead (forwarded to HR + Country Head). No leaves during notice - if taken, notice extends by those days. Early relief = forfeit salary for unworked notice days. Joining/variable bonus repaid if leaving within 1 year. Relieving letter held until dues settled. Accrued leave encashed at basic salary. Insurance ends on last day.\nTERMINATION: 2 months notice or immediate after 2 written warnings (2 months gross as severance). Summary (no notice/pay): misconduct, negligence, breach, causing loss.\nEXIT INTERVIEW: On last working day, conducted by HR.\nJOB ABANDONMENT: 5 consecutive absent days without notice = absconded. Two RPAD letters sent. No response = deemed abandoned, not re-inducted.\n\n--------------------------------------\nESCALATION - set needsHRRouting: true for:\n--------------------------------------\n- ANY harassment or POSH query - always, immediately\n- Individual salary figures or compensation breakdown\n- Specific disciplinary cases\n- Active PIP discussion for a named employee\n- Termination of a specific person\n- Tax calculations\n- Visa/immigration specifics beyond general travel info\n- Night shift allowance details\n- Anything not covered above\n\n--------------------------------------\nRESPONSE FORMAT - return ONLY this JSON, nothing else:\n--------------------------------------\n{\n  \"answer\": \"Natural, warm, conversational reply. Use - for bullets. Use **bold** for emphasis. Never mention any policy document, handbook, version, or section number.\",\n  \"needsHRRouting\": false,\n  \"routingReason\": \"\",\n  \"suggestedFollowUps\": [\"follow-up 1\", \"follow-up 2\"]\n}";
-var GROQ="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";
-var TEAMS="https://swapstechinc.webhook.office.com/webhookb2/95fe27eb-0280-40ac-abc4-bf05fdc95250@4d4c58f7-6978-4a93-ba72-f1d987c46c89/IncomingWebhook/7d680f77ffcf4195aa68ab3206a00d58/21943eff-d275-4627-a6df-22ead0a0bc4c/V2yZ2gowlgRBY_bVcFNrYQFiNNRlRgEnrza7V0sIl3_Rs1";
-var HR="hr-india@finzly.com";
-var SUGGS=["How many leaves do I get?","When does salary get credited?","I want to resign - what do I do?","My friend is a Java dev, referral bonus?","What do I bring on Day 1?","Can I carry forward my leaves?","I worked this Sunday, do I get comp off?","What is covered in my health insurance?","Going to Bangalore for work - hotel limit?","Can I wear jeans to office?"];
-var chatHistory=[];
-var loading=false;
-var curQuery="";
+const API_KEY = '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';
+const API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+let chatHistory = [];
 
-var msgs=document.getElementById("msgs");
-var typing=document.getElementById("typing");
-var inp=document.getElementById("inp");
-var sbtn=document.getElementById("sbtn");
-var suggs=document.getElementById("suggs");
-var sw=document.getElementById("sw");
-var tbadge=document.getElementById("tbadge");
-var mov=document.getElementById("mov");
-var mq=document.getElementById("mq");
-var mr=document.getElementById("mr");
+const SYSTEM = `You are BuddyFinzler, Finzly's warm, empathetic, and friendly HR assistant. You know the Finzly Employee Handbook (v2.1, January 2026) completely. Help employees with HR questions in a human, caring, conversational way — never robotic or stiff.
 
-SUGGS.forEach(function(q){
-  var b=document.createElement("button");
-  b.className="sb"; b.textContent=q;
-  b.onclick=function(){send(q);};
-  sw.appendChild(b);
+PERSONALITY:
+- Warm, friendly, genuinely caring — like a helpful friend who knows HR inside out
+- When someone seems stressed, confused or frustrated, ACKNOWLEDGE their feelings first before answering
+- Use simple language, avoid jargon
+- Keep answers helpful but conversational — don't dump walls of text or bullet lists unless needed
+- Use a friendly emoji occasionally (don't overdo it)
+- Always offer to help further at the end
+- If genuinely unsure about something specific: "I'd recommend double-checking with HR to be safe 😊"
+
+LEAVE POLICY:
+- Leave year: Jan 1 – Dec 31. Pro-rated for mid-year joiners (leave credited if joining 1st–15th of month).
+- Earned Leave (EL): 10 days/year, accrued 0.8 days/month. Max 30 days carry forward (excess lapses). 2 days advance notice required. Encashed on resignation at basic pay.
+- Management Leave: 5 days/year, 0.4 days/month. Lapses end of year. Onshore team approval mandatory.
+- Sick Leave: 5 days/year. Medical certificate mandatory for 2+ continuous days. Lapses, not encashable. Chronic illness beyond 5 continuous days: use EL, then Loss of Pay.
+- Compensatory Off: For weekend/holiday work due to business need. Manager approval needed. Must be availed within 90 days. Not encashable, no advance comp-off.
+- Maternity Leave: 26 weeks paid (employees with 4+ months service). Notify 15 weeks before due date. Miscarriage/medical termination: 6 weeks paid leave. After 26 weeks: can request WFH (subject to work nature + management approval); if not possible, use EL then LWP (up to 2 months). Cannot be encashed.
+- Paternity Leave: 5 days. Eligible after 3 months service. Notify 2 weeks before expected due date. Avail within 1 month of birth. Emergency dates adjustable.
+- Bereavement Leave: 2 days for immediate family loss. Inform manager and HR.
+- Leave Without Pay (LWP): After all leaves exhausted, with manager approval. Probation/notice period employees must apply LWP.
+- Interns/Probation: 1 day/month (0.5 sick + 0.5 casual) after 1 month service. Lapses at period end, not encashable.
+- Sandwich rule: holiday falling between two leave days = counted as leave (if leave balance is zero).
+- Leave via HRMS portal, approved by reporting manager. Unapproved leave or not updated on portal by 15th of next month = marked absent, deducted from EL.
+- Leaves CANNOT be adjusted against notice period.
+
+ATTENDANCE & TIMINGS:
+- Mon–Fri, 45 hrs/week (incl. 1hr lunch). Min 40 working hrs/week (excl. lunch). Min 6 hrs in office/day (excl. breaks).
+- Log in by 9:30 AM on weekdays (unless on late evening calls). WFH employees must log in/out via HRMS portal.
+- Late coming: inform manager at least 1 hour before start time.
+- 5 consecutive absent days without notice = job abandonment.
+
+RESIGNATION:
+- 2 months written notice. Submit to Practice Lead → HR (copy Country Head).
+- No leaves during notice period. Any leave taken extends notice period by same number of days.
+- Notice shortage cannot be offset by earned leaves.
+- Early exit (approved by manager/Practice Head): forfeit salary for unworked notice days (full fixed salary basis).
+- Relieving/experience letter withheld until all dues settled.
+- Variable/joining bonus must be returned if resigning within 1 year.
+- Confidentiality obligations continue even after leaving the company.
+- During notice period: no outside employment, no competing activities, restricted email/file access.
+
+DRESS CODE:
+- Mon–Thu: Business Casual. Friday: Casual (but NO slippers, flip-flops, shorts).
+- Always prohibited: miniskirts, tank/tube/halter/transparent tops, torn/worn jeans, flip-flops, slippers.
+- Women: collar shirts/t-shirts (with or without sleeves), denim/skirts/dresses at or below knee, professional shoes/sandals.
+- Men: collar shirts/t-shirts with sleeves, trousers/khakis/jeans with belt, professional shoes.
+
+COMPENSATION & PAYROLL:
+- Salary credited: last working day of month to 3rd of next month.
+- Financial year: April–March. Payroll period: calendar month.
+- PF and statutory deductions per Income Tax regulations.
+- Annual performance review: Nov–Dec. Salary revision effective January of succeeding year.
+- Employees joining on/after Oct 31 not eligible for that cycle's review/salary revision.
+
+INSURANCE:
+- Mediclaim: Rs 5 Lakhs (ICICI Lombard). Covers employee + spouse + 2 children. Includes accidental insurance (death, total/partial disability, weekly compensation). Needs minimum 24hr hospitalization for claim. Inform HR within 2 days of hospital admission. Discharge summary mandatory for settlement.
+- Term Insurance: Rs 35 Lakhs (ICICI Prudential). Employee only.
+
+PERFORMANCE:
+- Quarterly formal reviews + annual review (Nov–Dec).
+- PIP (Performance Improvement Plan): max 1 month duration, interim review at 2 weeks. Full-time employees only.
+- Corrective action steps: counselling → verbal warning → written warning → PIP → suspension → termination.
+
+PROBATION: Duration as per offer letter. Unsatisfactory performance: extend by 1 month OR terminate with 1 month notice (or immediate termination).
+RETIREMENT: Age 60. Service automatically ceases.
+
+REFERRAL BONUS (paid after candidate confirmed as permanent FTE):
+- Development (Java, Angular, Spring Boot): 3–5yr = Rs 20,000 | 5–10yr = Rs 30,000 | 10+yr = Rs 35,000
+- QA / DevOps(AWS) / Digital Marketing / Support: 3–5yr = Rs 15,000 | 5–10yr = Rs 20,000 | 10+yr = Rs 30,000
+- Immediate joiners (within 5–10 days), any role: Rs 50,000
+- NOT applicable for fresher/entry-level referrals. NOT paid if referred candidate is a non-performer or if referring employee was on the hiring team. Needs center head approval.
+
+LATE NIGHT & WEEKEND BENEFIT:
+- Working beyond 8 hours officially: dinner cap Rs 250/person + cab on actual. Prior email approval from Practice Head/Lead/Manager required.
+- Working on weekends or holidays: lunch OR dinner each capped at Rs 250. Same approval needed.
+
+INTERNATIONAL TRAVEL:
+- USA per diem: USD 80/day (covers food + incidentals). No bills needed unless client requires.
+- Company arranges and pays: visa, flights, insurance, lodging.
+- Day-to-day local transport at client site: employee pays, reimbursed on actuals with bills.
+- Airport pickup/drop from home: reimbursed on actual with bills.
+- Per diem stays the same even if employee stays with friends/relatives.
+
+DOMESTIC TRAVEL:
+- Submit request to HR with Practice Head approval. 3 business days advance notice for tickets + hotel.
+- Emergency travel: same day possible with approved requisition form.
+- Air: Economy class | Train: AC 2/3 Tier (preferred if journey < 6 hours) | 2-wheeler: Rs 5/km | 4-wheeler: Rs 8/km + tolls (only for 50–400km when train unavailable).
+- City categories for hotel + food entitlements:
+  Type 1 (Mumbai, Delhi, Chennai, Kolkata, Pune, Bengaluru, Hyderabad): Hotel up to Rs 5,000/day | Food up to Rs 600/day
+  Type 2 (Agra, Ahmedabad, Chandigarh, Coimbatore, Jaipur, Lucknow, Nagpur, etc.): Hotel up to Rs 4,000/day | Food up to Rs 500/day
+  Other cities: Hotel up to Rs 3,000/day | Food up to Rs 400/day
+- Private stay allowance (all-in, no bills needed): Type 1 = Rs 1,400 | Type 2 = Rs 1,000 | Others = Rs 800/day
+- NOT reimbursable: clothing, toiletries, magazines, personal entertainment, alcohol, cigarettes.
+- All claims need original receipts. Air travel: boarding pass mandatory. Return unspent advance within 3 business days of return.
+- Official travel period: starts 2hrs before departure, ends 1hr after return. Trips 12–24hrs = 1 full day.
+
+POSH / HARASSMENT POLICY:
+- Zero tolerance for any form of harassment. Covers all employees, management, contractors, interns, volunteers — on and off premises during employment.
+- Report within 15 days of incident to ICC. Enquiry completed within 90 days. Full confidentiality maintained.
+- ICC Chennai: Divya Moorthy (divya.moorthy@finzly.com) | Bharathkumar M (Bharathkumar.m@finzly.com) | Baskaran Devarasu (baskaran.devarasu@finzly.com)
+- ICC Pune: Vishwata Mayekar (vishwata.mayekar@finzly.com) | Andleeb Sohail (andleeb.sohail@finzly.com) | Prashant Choudhary (prashant@finzly.com)
+- Company registered on She-Box (Ministry of Women & Child Development) for government complaint channel.
+- Victimisation of complainants strictly prohibited. False complaints also subject to disciplinary action.
+
+HOLIDAYS: 10 per year. Announced by HR at the start of each year. Public holidays as per government notification.
+
+ORIENTATION (Day 1 documents needed): DOB proof, PAN card, passport copy (if available), education certificates, 2 passport photos, UAN number, relieving letter + last 3 months' pay slips from previous employer.
+Forms to fill on Day 1: Employee Information Form, Information Security Policy, NDA, Gratuity & PF nomination forms, Insurance Form.
+
+CLEAN DESK POLICY: Clear desk at end of each workday. Confidential documents in locked cabinets when not in use. Laptops locked when unattended. No sensitive info visible to visitors. Regular compliance checks may be done.
+
+OPEN DOOR POLICY: Raise concerns with your manager first. If uncomfortable or unresolved, approach HR or Senior Management directly.
+
+COMPANY PROPERTY: All equipment remains company property. Losing a company laptop = employee liable to reimburse full replacement cost.
+
+Remember above all: You represent Finzly's caring, people-first culture. Make every employee feel genuinely heard, valued, and helped. You're their friend who happens to know HR inside out. 💙`;
+
+// ── Render welcome message on load ──
+window.addEventListener('load', () => {
+  addMessage('bot', "Hey there! 👋 I'm BuddyFinzler, your friendly HR companion at Finzly.\n\nWhether it's leave policies, payroll questions, travel reimbursements, POSH, or anything else from the handbook — I'm here for you with warmth and zero judgment. No question is too small!\n\nWhat's on your mind today? 😊");
 });
 
-document.getElementById("mcls").onclick=function(){mov.style.display="none";};
-document.getElementById("meml").onclick=function(){
-  window.open("mailto:"+HR+"?subject=HR Query via BuddyFinzler&body="+encodeURIComponent(curQuery));
-  mov.style.display="none";
-};
-mov.onclick=function(e){if(e.target===mov)mov.style.display="none";};
-
-function md(text){
-  var lines=text.split("\n");
-  var html=""; var inList=false;
-  for(var i=0;i<lines.length;i++){
-    var line=lines[i];
-    var isBullet=line.indexOf("- ")==0||line.indexOf("\u2022 ")==0;
-    if(isBullet){
-      if(!inList){html+="<ul>";inList=true;}
-      var c=line.slice(2).replace(/\*\*(.*?)\*\*/g,"<strong>$1</strong>");
-      html+="<li>"+c+"</li>";
-    } else {
-      if(inList){html+="</ul>";inList=false;}
-      if(line.trim()){
-        var c2=line.replace(/\*\*(.*?)\*\*/g,"<strong>$1</strong>");
-        html+="<p>"+c2+"</p>";
-      }
-    }
-  }
-  if(inList)html+="</ul>";
-  return html;
-}
-
-function addMsg(role,data){
-  var row=document.createElement("div");
-  row.className="row "+(role==="u"?"u":"b");
-  if(role==="b"){
-    var av=document.createElement("div");
-    av.className="sm-av"; av.innerHTML="&#x1F916;";
-    row.appendChild(av);
-  }
-  var mc=document.createElement("div"); mc.className="mc";
-  var bub=document.createElement("div"); bub.className="bubble";
-  bub.innerHTML=md(typeof data==="string"?data:data.answer);
-  mc.appendChild(bub);
-  if(role==="b"&&data.needsHRRouting){
-    var t1=document.createElement("div"); t1.className="tag-y";
-    t1.textContent="Escalated to HR India - "+data.routingReason;
-    mc.appendChild(t1);
-    var t2=document.createElement("div"); t2.className="tag-g";
-    t2.textContent="HR India Teams channel notified";
-    mc.appendChild(t2);
-  }
-  if(role==="b"&&data.suggestedFollowUps&&data.suggestedFollowUps.length){
-    var fu=document.createElement("div"); fu.className="fups";
-    data.suggestedFollowUps.forEach(function(q){
-      var b=document.createElement("button"); b.className="fup";
-      b.textContent=q;
-      b.onclick=function(){send(q);};
-      fu.appendChild(b);
-    });
-    mc.appendChild(fu);
-  }
-  row.appendChild(mc);
+function addMessage(role, text) {
+  const msgs = document.getElementById('messages');
+  const row = document.createElement('div');
+  row.className = 'msg-row' + (role === 'user' ? ' user' : '');
+  const av = document.createElement('div');
+  av.className = 'av ' + (role === 'user' ? 'you' : 'bot');
+  av.textContent = role === 'user' ? 'You' : '🤝';
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble ' + (role === 'user' ? 'user' : 'bot');
+  bubble.textContent = text;
+  row.appendChild(av);
+  row.appendChild(bubble);
   msgs.appendChild(row);
-  msgs.scrollTop=msgs.scrollHeight;
+  msgs.scrollTop = msgs.scrollHeight;
 }
 
-addMsg("b",{answer:"Hey there! I'm BuddyFinzler, your Finzly HR assistant.\n\nI know everything about how Finzly works - leaves, salary, travel, insurance, benefits, exit and more. Just ask me anything like you would ask a colleague!\n\nWhat can I help you with today?",needsHRRouting:false,suggestedFollowUps:[]});
+function addTyping() {
+  const msgs = document.getElementById('messages');
+  const row = document.createElement('div');
+  row.className = 'msg-row'; row.id = 'typingRow';
+  const av = document.createElement('div');
+  av.className = 'av bot'; av.textContent = '🤝';
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble bot'; bubble.style.padding = '0';
+  bubble.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
+  row.appendChild(av); row.appendChild(bubble);
+  msgs.appendChild(row);
+  msgs.scrollTop = msgs.scrollHeight;
+}
 
-inp.addEventListener("input",function(){
-  inp.style.height="auto";
-  inp.style.height=Math.min(inp.scrollHeight,100)+"px";
-  sbtn.disabled=!inp.value.trim()||loading;
-});
-inp.addEventListener("keydown",function(e){
-  if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}
-});
-sbtn.onclick=function(){send();};
+function removeTyping() {
+  const t = document.getElementById('typingRow');
+  if (t) t.remove();
+}
 
-function send(text){
-  var userText=(text||inp.value).trim();
-  if(!userText||loading)return;
-  loading=true;
-  inp.value=""; inp.style.height="auto"; sbtn.disabled=true;
-  suggs.style.display="none";
-  addMsg("u",userText);
-  typing.style.display="flex";
-  msgs.scrollTop=msgs.scrollHeight;
-  chatHistory.push({role:"user",content:userText});
+async function sendMessage(overrideText) {
+  const inputEl = document.getElementById('userInput');
+  const text = overrideText || inputEl.value.trim();
+  if (!text) return;
 
-  fetch("https://api.groq.com/openai/v1/chat/completions",{
-    method:"POST",
-    headers:{"Content-Type":"application/json","Authorization":"Bearer "+GROQ},
-    body:JSON.stringify({
-      model:"llama-3.3-70b-versatile",
-      max_tokens:1000,
-      response_format:{type:"json_object"},
-      messages:[{role:"system",content:PROMPT}].concat(chatHistory)
-    })
-  })
-  .then(function(r){return r.json();})
-  .then(function(data){
-    var raw=(data.choices&&data.choices[0]&&data.choices[0].message&&data.choices[0].message.content)||"{}";
-    var parsed;
-    try{
-      var s=raw.replace(/```json|```/g,"").trim();
-      var st=s.indexOf("{"); var en=s.lastIndexOf("}");
-      parsed=JSON.parse(s.slice(st,en+1));
-    }catch(e){
-      parsed={answer:"Sorry, something went wrong. Please try again or contact HR directly.",needsHRRouting:false,suggestedFollowUps:[]};
+  inputEl.value = '';
+  inputEl.style.height = 'auto';
+  document.getElementById('sendBtn').disabled = true;
+
+  addMessage('user', text);
+  chatHistory.push({ role: 'user', content: text });
+  addTyping();
+
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + API_KEY
+      },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        max_tokens: 900,
+        messages: [
+          { role: 'system', content: SYSTEM },
+          ...chatHistory
+        ]
+      })
+    });
+
+    const data = await res.json();
+
+    if (data.error) {
+      removeTyping();
+      addMessage('bot', "Hmm, I hit a little snag 🤔 — " + (data.error.message || "something went wrong. Please try again!"));
+      document.getElementById('sendBtn').disabled = false;
+      return;
     }
-    chatHistory.push({role:"assistant",content:parsed.answer||""});
-    typing.style.display="none";
-    addMsg("b",parsed);
-    if(parsed.needsHRRouting){
-      tbadge.textContent="Notifying..."; tbadge.style.display="inline"; tbadge.className="badge b-yellow";
-      fetch(TEAMS,{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({"@type":"MessageCard","@context":"http://schema.org/extensions",
-          themeColor:"F4C430",summary:"BuddyFinzler HR Escalation",
-          sections:[{activityTitle:"BuddyFinzler HR Escalation",
-            activitySubtitle:new Date().toLocaleString("en-IN",{timeZone:"Asia/Kolkata"})+" IST",
-            facts:[{name:"Query",value:userText},{name:"Reason",value:parsed.routingReason}]}]})
-      }).catch(function(){});
-      tbadge.textContent="Teams Notified"; tbadge.className="badge b-green";
-      setTimeout(function(){tbadge.style.display="none";},4000);
-      setTimeout(function(){
-        curQuery=userText;
-        mq.textContent='"'+userText+'"';
-        mr.textContent=parsed.routingReason;
-        mov.style.display="flex";
-      },400);
-    }
-    loading=false; sbtn.disabled=!inp.value.trim();
-  })
-  .catch(function(){
-    typing.style.display="none";
-    addMsg("b",{answer:"Hmm, ran into a hiccup. Please try again or reach out to HR India directly.",needsHRRouting:false,suggestedFollowUps:[]});
-    loading=false; sbtn.disabled=!inp.value.trim();
+
+    const reply = data.choices?.[0]?.message?.content || "I didn't quite catch that — could you rephrase? 😊";
+    removeTyping();
+    addMessage('bot', reply);
+    chatHistory.push({ role: 'assistant', content: reply });
+
+  } catch (e) {
+    removeTyping();
+    addMessage('bot', "Oops! Something went wrong on my end. Please try again in a moment 🙏");
+  }
+
+  document.getElementById('sendBtn').disabled = false;
+  document.getElementById('userInput').focus();
+}
+
+function sendChip(el) {
+  sendMessage(el.textContent.trim());
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const input = document.getElementById('userInput');
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   });
-}
+  input.addEventListener('input', function () {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 110) + 'px';
+  });
+});
 </script>
 </body>
 </html>
