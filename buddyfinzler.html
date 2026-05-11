@@ -114,8 +114,6 @@
   #sendBtn:hover { transform:translateY(-2px) scale(1.05); }
   #sendBtn:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
   .footer { margin-top:12px; font-size:11px; color:rgba(255,255,255,0.22); text-align:center; }
-
-  /* error banner */
   #errBanner {
     display:none; background:rgba(192,57,43,0.15); border:1px solid rgba(192,57,43,0.4);
     color:#f1948a; font-size:12px; padding:8px 16px; text-align:center;
@@ -160,8 +158,9 @@
 <div class="footer">BuddyFinzler · Finzly Employee Handbook v2.1 · For critical matters, always confirm with HR directly</div>
 
 <script>
-const API_KEY = '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';
-const API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+const API_KEY = 'AIzaSyCCqxfKzt4mabknPc7sdpBgTgtpuSTXyIM';
+const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + API_KEY;
+
 let chatHistory = [];
 
 const SYSTEM = `You are BuddyFinzler, Finzly's warm, empathetic, and friendly HR assistant. You know the Finzly Employee Handbook (v2.1, January 2026) completely. Help employees with HR questions in a human, caring, conversational way — never robotic or stiff.
@@ -262,20 +261,17 @@ POSH:
 - Registered on She-Box (Ministry of Women & Child Development).
 
 HOLIDAYS: 10/year, announced at start of year.
-
 CLEAN DESK: Clear desk end of day. Confidential docs in locked cabinets. Laptops locked when unattended.
-
 OPEN DOOR: Raise with manager first; if uncomfortable, go to HR or Senior Management.
-
 COMPANY PROPERTY: Losing company laptop = employee reimburses full replacement cost.
 
 Always make employees feel heard, valued and helped. You're their caring friend who knows HR inside out. 💙`;
 
 function showError(msg) {
   const b = document.getElementById('errBanner');
-  b.textContent = msg;
+  b.textContent = '⚠️ ' + msg;
   b.style.display = 'block';
-  setTimeout(() => { b.style.display = 'none'; }, 6000);
+  setTimeout(() => { b.style.display = 'none'; }, 8000);
 }
 
 window.addEventListener('load', () => {
@@ -327,79 +323,67 @@ async function sendMessage(overrideText) {
   document.getElementById('sendBtn').disabled = true;
 
   addMessage('user', text);
-  chatHistory.push({ role: 'user', content: text });
+  chatHistory.push({ role: 'user', parts: [{ text }] });
   addTyping();
 
   try {
     const res = await fetch(API_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + API_KEY,
-        'Accept': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'llama3-8b-8192',
-        max_tokens: 900,
-        temperature: 0.7,
-        messages: [
-          { role: 'system', content: SYSTEM },
-          ...chatHistory
-        ]
+        system_instruction: { parts: [{ text: SYSTEM }] },
+        contents: chatHistory,
+        generationConfig: { maxOutputTokens: 900, temperature: 0.7 }
       })
     });
 
-    // Log full response for debugging
     const rawText = await res.text();
-    console.log('Groq raw response:', rawText);
-    console.log('HTTP status:', res.status);
+    console.log('Gemini status:', res.status, 'response:', rawText);
 
     let data;
-    try {
-      data = JSON.parse(rawText);
-    } catch(parseErr) {
+    try { data = JSON.parse(rawText); }
+    catch(e) {
       removeTyping();
-      showError('Response parse error (status ' + res.status + '): ' + rawText.slice(0, 200));
-      addMessage('bot', "I ran into a technical hiccup 😔 Please try again in a moment!");
+      showError('Parse error (HTTP ' + res.status + '): ' + rawText.slice(0,150));
+      addMessage('bot', "I ran into a technical hiccup 😔 Please try again!");
       document.getElementById('sendBtn').disabled = false;
       return;
     }
 
     if (!res.ok || data.error) {
       removeTyping();
-      const errMsg = data.error?.message || data.error || ('HTTP ' + res.status);
+      const errMsg = data.error?.message || ('HTTP ' + res.status);
       showError('API error: ' + errMsg);
-      addMessage('bot', "Something went wrong on my end 😔 — " + errMsg + "\n\nPlease try again!");
+      addMessage('bot', "Something went wrong 😔 — " + errMsg + "\n\nPlease try again!");
       document.getElementById('sendBtn').disabled = false;
       return;
     }
 
-    const reply = data.choices?.[0]?.message?.content || "I didn't catch that — could you rephrase? 😊";
+    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "I didn't catch that — could you rephrase? 😊";
     removeTyping();
     addMessage('bot', reply);
-    chatHistory.push({ role: 'assistant', content: reply });
+    // Push assistant reply into history in Gemini format
+    chatHistory.push({ role: 'model', parts: [{ text: reply }] });
 
-  } catch (e) {
+  } catch(e) {
     removeTyping();
     console.error('Fetch error:', e);
-    showError('Network error: ' + e.message + '. Check browser console for details.');
-    addMessage('bot', "I couldn't reach my servers 😔 This might be a network issue. Please check your internet connection and try again!");
+    showError('Network error: ' + e.message);
+    addMessage('bot', "I couldn't reach my servers 😔 Please check your connection and try again!");
   }
 
   document.getElementById('sendBtn').disabled = false;
   document.getElementById('userInput').focus();
 }
 
-function sendChip(el) {
-  sendMessage(el.textContent.trim());
-}
+function sendChip(el) { sendMessage(el.textContent.trim()); }
 
 document.addEventListener('DOMContentLoaded', () => {
   const input = document.getElementById('userInput');
   input.addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   });
-  input.addEventListener('input', function () {
+  input.addEventListener('input', function() {
     this.style.height = 'auto';
     this.style.height = Math.min(this.scrollHeight, 110) + 'px';
   });
