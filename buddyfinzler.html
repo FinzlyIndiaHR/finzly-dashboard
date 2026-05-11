@@ -5,424 +5,692 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>BuddyFinzler – Finzly HR Assistant</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
-<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:linear-gradient(135deg,#07101f,#0d1a32 60%,#06111e);min-height:100vh;font-family:'DM Sans','Segoe UI',sans-serif}
+body{background:linear-gradient(135deg,#07101f,#0d1a32 60%,#06111e);min-height:100vh;font-family:'DM Sans','Segoe UI',sans-serif;display:flex;align-items:center;justify-content:center;padding:20px}
 @keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:4px}
+#app{width:100%;max-width:720px;height:94vh;max-height:860px;display:flex;flex-direction:column;background:rgba(255,255,255,0.03);backdrop-filter:blur(24px);border-radius:24px;border:1px solid rgba(255,255,255,0.07);box-shadow:0 40px 80px rgba(0,0,0,0.7);overflow:hidden}
+.header{background:linear-gradient(135deg,#122040,#0d1930);border-bottom:1px solid rgba(255,255,255,0.06);padding:16px 20px;display:flex;align-items:center;gap:14px;flex-shrink:0}
+.bot-avatar{position:relative}
+.bot-icon{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,#1d4ed8,#0ea5e9);display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 0 20px rgba(29,78,216,0.5)}
+.online-dot{position:absolute;bottom:2px;right:2px;width:11px;height:11px;border-radius:50%;background:#22c55e;border:2px solid #0d1930;box-shadow:0 0 8px rgba(34,197,94,0.7);animation:pulse 2s infinite}
+.header-info{flex:1}
+.header-name{color:#fff;font-weight:700;font-size:17px}
+.header-sub{color:rgba(255,255,255,0.4);font-size:12px;margin-top:2px}
+.badge{font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;background:rgba(29,78,216,0.15);border:1px solid rgba(29,78,216,0.3);color:#60a5fa}
+#messages{flex:1;overflow-y:auto;padding:18px 18px 8px;display:flex;flex-direction:column;gap:12px}
+.msg-row{display:flex;align-items:flex-end;gap:8px;animation:fadeIn 0.3s ease}
+.msg-row.user{justify-content:flex-end}
+.msg-avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#1d4ed8,#0ea5e9);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.bubble{max-width:78%;padding:11px 15px;font-size:13.5px;color:#f1f5f9;line-height:1.6}
+.bubble.bot{background:rgba(255,255,255,0.055);border:1px solid rgba(255,255,255,0.07);border-radius:18px 18px 18px 4px}
+.bubble.user{background:linear-gradient(135deg,#1d4ed8,#1e40af);border-radius:18px 18px 4px 18px}
+.bubble ul{margin:6px 0 6px 16px;padding:0}
+.bubble li{margin-bottom:4px}
+.bubble p{margin:4px 0}
+.section-tag{margin-top:8px;display:inline-flex;align-items:center;gap:5px;background:rgba(29,78,216,0.1);border:1px solid rgba(29,78,216,0.2);border-radius:8px;padding:3px 9px;font-size:11px;color:#93c5fd}
+.escalation-tag{margin-top:8px;padding:7px 11px;background:rgba(251,191,36,0.07);border:1px solid rgba(251,191,36,0.2);border-radius:10px;font-size:12px;color:#fbbf24}
+.followups{margin-top:8px;display:flex;flex-direction:column;gap:5px}
+.followup-btn{background:rgba(29,78,216,0.07);border:1px solid rgba(29,78,216,0.18);border-radius:10px;color:#93c5fd;font-size:12px;padding:6px 12px;cursor:pointer;text-align:left;font-family:inherit}
+.followup-btn:hover{background:rgba(29,78,216,0.15)}
+.typing-dots{display:flex;gap:5px;padding:14px 18px}
+.typing-dots span{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,0.4);animation:bounce 1.2s infinite}
+.typing-dots span:nth-child(2){animation-delay:0.2s}
+.typing-dots span:nth-child(3){animation-delay:0.4s}
+#suggestions{padding:0 18px 12px;flex-shrink:0}
+.suggestions-label{color:rgba(255,255,255,0.28);font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:7px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:20px;color:rgba(255,255,255,0.55);font-size:11.5px;padding:5px 12px;cursor:pointer;font-family:inherit;transition:all 0.2s}
+.chip:hover{background:rgba(255,255,255,0.09);color:#fff}
+.input-area{padding:10px 14px 14px;border-top:1px solid rgba(255,255,255,0.05);background:rgba(0,0,0,0.15);flex-shrink:0}
+.input-box{display:flex;gap:9px;align-items:flex-end;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.09);border-radius:16px;padding:8px 8px 8px 15px}
+#userInput{flex:1;background:transparent;border:none;outline:none;color:#f1f5f9;font-size:13.5px;line-height:1.5;resize:none;font-family:inherit;max-height:100px;min-height:22px}
+#userInput::placeholder{color:rgba(255,255,255,0.3)}
+#sendBtn{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,#1d4ed8,#1e40af);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+#sendBtn:hover{opacity:0.85}
+.input-footer{color:rgba(255,255,255,0.18);font-size:10.5px;text-align:center;margin-top:7px}
+#modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);align-items:center;justify-content:center;z-index:1000;padding:20px}
+#modal.show{display:flex}
+.modal-box{background:linear-gradient(135deg,#122040,#0d1930);border:1px solid rgba(251,191,36,0.25);border-radius:20px;padding:26px;max-width:430px;width:100%;box-shadow:0 40px 80px rgba(0,0,0,0.7)}
+.modal-icon{font-size:36px;text-align:center;margin-bottom:10px}
+.modal-title{color:#fbbf24;text-align:center;margin:0 0 6px;font-size:17px;font-weight:700}
+.modal-sub{color:rgba(255,255,255,0.5);text-align:center;font-size:12.5px;margin:0 0 18px}
+.modal-card{border-radius:12px;padding:11px 14px;margin-bottom:10px}
+.card-query{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07)}
+.card-query p{color:#f1f5f9;font-size:13px;margin:0}
+.card-reason{background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.15)}
+.card-reason p{color:#fbbf24;font-size:13px;margin:0}
+.card-label{color:rgba(255,255,255,0.35);font-size:10px;margin:0 0 4px;text-transform:uppercase}
+.modal-btn-primary{width:100%;padding:11px;background:linear-gradient(135deg,#1d4ed8,#1e40af);border:none;border-radius:12px;color:white;font-weight:700;font-size:13.5px;cursor:pointer;margin-bottom:8px;font-family:inherit}
+.modal-btn-secondary{width:100%;padding:9px;background:transparent;border:1px solid rgba(255,255,255,0.09);border-radius:12px;color:rgba(255,255,255,0.35);font-size:12.5px;cursor:pointer;font-family:inherit}
 </style>
 </head>
 <body>
-<div id="root"></div>
-<script type="text/babel">
-const { useState, useRef, useEffect } = React;
+<div id="app">
+  <div class="header">
+    <div class="bot-avatar">
+      <div class="bot-icon">🤖</div>
+      <div class="online-dot"></div>
+    </div>
+    <div class="header-info">
+      <div class="header-name">BuddyFinzler</div>
+      <div class="header-sub">Finzly HR Assistant · Handbook v2.1 – Jan 2026</div>
+    </div>
+    <div class="badge">HR ASSISTANT</div>
+  </div>
+  <div id="messages"></div>
+  <div id="suggestions">
+    <div class="suggestions-label">Quick questions</div>
+    <div class="chips" id="chips"></div>
+  </div>
+  <div class="input-area">
+    <div class="input-box">
+      <textarea id="userInput" rows="1" placeholder="Ask about leaves, salary, travel, insurance, exit policy..."></textarea>
+      <button id="sendBtn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13M22 2L15 22L11 13M11 13L2 9L22 2" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+    <div class="input-footer">Finzly Handbook v2.1 · For personal queries → hr-india@finzly.com</div>
+  </div>
+</div>
 
-const TEAMS_WEBHOOK_URL = "https://swapstechinc.webhook.office.com/webhookb2/95fe27eb-0280-40ac-abc4-bf05fdc95250@4d4c58f7-6978-4a93-ba72-f1d987c46c89/IncomingWebhook/7d680f77ffcf4195aa68ab3206a00d58/21943eff-d275-4627-a6df-22ead0a0bc4c/V2yZ2gowlgRBY_bVcFNrYQFiNNRlRgEnrza7V0sIl3_Rs1";
+<div id="modal">
+  <div class="modal-box">
+    <div class="modal-icon">📨</div>
+    <div class="modal-title">Connect with HR India</div>
+    <div class="modal-sub">This query needs personal attention from HR.</div>
+    <div class="modal-card card-query">
+      <div class="card-label">Your query</div>
+      <p id="modalQuery"></p>
+    </div>
+    <div class="modal-card card-reason">
+      <div class="card-label">Why HR needs to help</div>
+      <p id="modalReason"></p>
+    </div>
+    <button class="modal-btn-primary" id="emailHRBtn">📧 Email HR India — hr-india@finzly.com</button>
+    <button class="modal-btn-secondary" onclick="closeModal()">Close</button>
+  </div>
+</div>
+
+<script>
 const HR_EMAIL = "hr-india@finzly.com";
-const HANDBOOK_VERSION = "v2.1 – Jan 2026";
-const GEMINI_API_KEY = "AIzaSyCCqxfKzt4mabknPc7sdpBgTgtpuSTXyIM";
-const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + GEMINI_API_KEY;
+let currentModalQuery = "";
 
-const SYSTEM_PROMPT = `You are BuddyFinzler, Finzly's official HR assistant. You answer ONLY from the Finzly Employee Handbook version 2.1 dated January 2026, approved by Bharathkumar M (Head of India HR and Facilities).
+// ─────────────────────────────────────────────
+// KNOWLEDGE BASE — Finzly Employee Handbook v2.1, Jan 2026
+// ─────────────────────────────────────────────
+const KB = [
 
-CRITICAL RULE: Never invent, assume, or extrapolate any policy detail not in this handbook. If the exact answer is not here, set needsHRRouting to true. Always cite the section number. Be warm, empathetic and friendly — like a caring colleague who knows HR inside out. Acknowledge feelings first when someone seems stressed.
+  // ── LEAVE TYPES ──────────────────────────────────────────────────────────
+  {
+    keys: ["earned leave","el","annual leave","how many leave","how many leaves","leave entitlement","leave balance","casual leave","cl"],
+    section: "Section 7.4.1 – Earned Leave",
+    answer: "Great question! 😊 Here's your **Earned Leave** entitlement:\n\n- **10 days** of Earned Leave per calendar year\n- Accrued at **0.8 days per month** worked\n- Apply **at least 2 days in advance** (exceptions for emergencies)\n- Apply via the **HRMS portal** with Lead/Reporting Manager approval\n- Unused EL carries forward — maximum **30 days**; anything above 30 lapses at year end\n- On **resignation**, unused EL is **encashed at your basic salary**\n- Leave year runs **1 Jan to 31 Dec**",
+    followUps: ["Can I carry forward my earned leaves?","How do I apply for leave?","What other types of leave do I get?"]
+  },
+  {
+    keys: ["management leave","ml","management leave policy","management leaves"],
+    section: "Section 7.4.2 – Management Leave",
+    answer: "Here's everything about **Management Leave**! 😊\n\n- **5 days** of Management Leave per calendar year\n- Accrued at **0.4 days per month**\n- Requires **onshore team approval** — mandatory\n- All unused Management Leave **lapses at year end** — no carry forward, no encashment\n- Apply via the HRMS portal",
+    followUps: ["What is earned leave?","What is sick leave?","How do I apply for leave?"]
+  },
+  {
+    keys: ["sick leave","sl","medical leave","ill","illness","unwell","doctor","fever"],
+    section: "Section 7.4.3 – Sick Leave",
+    answer: "Hope you feel better soon! 🙏 Here's the **Sick Leave** policy:\n\n- **5 days** of Sick Leave per calendar year\n- A **medical certificate is mandatory** if sick leave exceeds 2 continuous days\n- Chronic illness extending beyond **5 continuous days** is adjusted against Earned Leave first, then treated as Loss of Pay\n- Unused Sick Leave **lapses** at year end — cannot be carried forward or encashed",
+    followUps: ["What if my sick leave exceeds 5 days?","What is earned leave?","How do I inform my manager about absence?"]
+  },
+  {
+    keys: ["comp off","compensatory","comp-off","weekend work","worked weekend","worked on holiday","worked sunday","worked saturday","holiday work"],
+    section: "Section 7.4.4 – Compensatory Off",
+    answer: "Yes, you do get comp off for weekend/holiday work! 🙌\n\n- Entitled when required to work on a **weekend (Sat/Sun) or company declared holiday** due to business demand\n- Must be **availed within 90 days** of the work date\n- Requires **manager approval** via HRMS\n- Cannot be taken in advance\n- Cannot be encashed",
+    followUps: ["How many earned leaves do I get?","What is leave without pay?","How do I apply for leave?"]
+  },
+  {
+    keys: ["maternity","pregnancy","baby","deliver","expecting","prenatal","postnatal","miscarriage","expecting mother","pregnant"],
+    section: "Section 7.4.5 – Maternity Leave",
+    answer: "Congratulations! 🎉 Here's everything about **Maternity Leave**:\n\n- **26 weeks (paid)** for female employees with **more than 4 months** of continuous service\n- Must notify HR **no later than 15 weeks before** the baby is due\n- Provide your manager and HR the intended start date and expected return date\n- After 26 weeks: you may request **Work From Home** (subject to work nature and management approval)\n- If WFH is not possible and you're still unable to join, combine **Earned Leave**, then **Leave Without Pay for up to 2 months**\n- **Miscarriage or medical termination of pregnancy**: 6 weeks paid leave (on production of proof)\n- Maternity leave **cannot be encashed**",
+    followUps: ["What is paternity leave?","What is leave without pay?","Who do I inform for maternity leave?"]
+  },
+  {
+    keys: ["paternity","father","dad","fatherhood","child birth","newborn","paternity leave"],
+    section: "Section 7.4.6 – Paternity Leave",
+    answer: "Congratulations! 👶 Here's the **Paternity Leave** policy:\n\n- **Up to 5 days** of paid Paternity Leave\n- Eligible after **minimum 3 months** of service\n- Inform your manager and HR **at least 2 weeks** before the expected delivery date\n- Must be availed **within 1 month** of the child's birth\n- Emergency date changes can be accommodated",
+    followUps: ["What is maternity leave?","What is bereavement leave?","How do I inform HR?"]
+  },
+  {
+    keys: ["bereavement","death","passed away","loss","funeral","family member died","demise","loved one"],
+    section: "Section 7.4.7 – Bereavement Leave",
+    answer: "I'm so sorry for your loss. 💙 Please take care of yourself.\n\n- **Up to 2 days** of Bereavement Leave\n- Applicable for **immediate family members** only\n- Inform your **manager and HR** as soon as possible\n\nFinzly understands these are difficult times.",
+    followUps: ["What is leave without pay?","What is earned leave?","Who do I contact in HR?"]
+  },
+  {
+    keys: ["leave without pay","lop","loss of pay","lwp","unpaid leave","no leave balance","leave exhausted"],
+    section: "Section 7.4.8 – Leave Without Pay",
+    answer: "Here's how **Leave Without Pay (LOP)** works:\n\n- Available after **exhausting all your available leaves**\n- Requires **prior manager approval**\n- Employees on **probation or notice period** must apply all leaves as LOP\n- **Sandwich rule**: if a public holiday falls between two leave days and your balance is zero, the holiday is also counted as LOP",
+    followUps: ["How many earned leaves do I get?","What is the notice period?","What happens during probation?"]
+  },
+  {
+    keys: ["intern leave","probation leave","fresher leave","trainee leave","intern","probationer leave"],
+    section: "Section 7.4.9 – Leave for Interns / Probation Employees",
+    answer: "For **interns and probationary employees**:\n\n- After **more than 1 month** of continuous service, entitled to **1 day of leave per month**\n  (0.5 day Sick Leave + 0.5 day Casual Leave)\n- Any unused leave **lapses** at end of the internship/probation period\n- Cannot be encashed",
+    followUps: ["What is probation?","How do I apply for leave?","What is leave without pay?"]
+  },
+  {
+    keys: ["how to apply leave","apply leave","leave application","hrms","leave portal","leave procedure","leave process","apply for leave"],
+    section: "Section 7.4.10 – Leave Procedure",
+    answer: "Here's how to apply for leave at Finzly:\n\n- Apply via the **HRMS portal**\n- Get approval from your **Lead / Reporting Manager**\n- Apply **at least 2 days in advance** for Earned Leave (except emergencies)\n- If leave is not updated on the portal before the **15th of the following month**, it's marked as absent and deducted from EL\n- The sanctioning authority can refuse, revise, curtail or revoke at any time\n- Leaves **cannot be adjusted against notice period**",
+    followUps: ["What are the types of leave?","What is earned leave?","What happens if I don't apply in time?"]
+  },
+  {
+    keys: ["carry forward","carry over","lapse","expire","leave expire","unused leave","leave lapse"],
+    section: "Section 7 – Leave Carry Forward Rules",
+    answer: "Here's the carry forward / lapse summary:\n\n- **Earned Leave**: carries forward — max **30 days**. Anything above 30 lapses at year end\n- **Management Leave**: all unused leaves **lapse** at year end — no carry forward\n- **Sick Leave**: lapses at year end — cannot be carried forward or encashed\n- **Comp Off**: must be used within **90 days** or it lapses\n- **Intern/Probation Leave**: lapses at end of period",
+    followUps: ["How many earned leaves do I get?","What is leave encashment?","What is management leave?"]
+  },
+  {
+    keys: ["leave year","leave period","leave calendar","when does leave reset","leave start"],
+    section: "Section 7.2 – Leave Year",
+    answer: "The **leave year** at Finzly runs from **1st January to 31st December**.\n\n- Employees joining mid-year get leaves on a **pro-rata basis**\n- Joining between **1st–15th** of a month: eligible for leave credit for that month\n- Joining between **16th–end** of a month: not eligible for that month's leave credit\n- Relieved between **1st–15th**: not entitled to leave for that month\n- Relieved between **16th–end**: entitled to leave for that month",
+    followUps: ["How many earned leaves do I get?","How do I apply for leave?","What is carry forward?"]
+  },
 
-FINZLY EMPLOYEE HANDBOOK v2.1 KNOWLEDGE BASE:
+  // ── HOLIDAY POLICY ───────────────────────────────────────────────────────
+  {
+    keys: ["holiday","public holiday","national holiday","holidays list","how many holidays","festival holiday","holidays 2026"],
+    section: "Section 8 – Holiday Policy",
+    answer: "Finzly grants **10 public holidays** per year! 🎉\n\n- The holiday list is **declared by HR at the beginning of each year** (effective January 1st)\n- Holidays coincide with national, religious, and important days of the country\n- The detailed list is displayed on the **Notice Board** and shared with all employees",
+    followUps: ["How many earned leaves do I get?","What is compensatory off?","What is the leave year?"]
+  },
 
-SECTION 2 — GENERAL MANAGEMENT
-- Employee only after accepting contract and start date confirmed.
-- EEO: Merit-based. No discrimination on race, color, citizenship, national origin, gender, sexual orientation, age, religion, disability, marital status, veteran status, political affiliation.
+  // ── SALARY & PAYROLL ─────────────────────────────────────────────────────
+  {
+    keys: ["salary","pay","payroll","when salary","salary date","salary credited","salary credit","pay day","payday","payment date","monthly salary"],
+    section: "Section 9 – Compensation & Payroll",
+    answer: "Here's when your salary gets credited:\n\n- Salary is credited between the **last working day of the month** and the **3rd of the following month**\n- Payroll period is the **calendar month**\n- Financial year runs from **April to March**\n- Deductions include **Provident Fund (PF)** and other statutory deductions per Income Tax regulations\n- Submit your savings/investment details to Finance for tax planning\n- For salary issues, contact the **Finance Department**",
+    followUps: ["What are the payroll deductions?","What is the PF policy?","What is the financial year?"]
+  },
+  {
+    keys: ["pf","provident fund","gratuity","deduction","payroll deduction","tax","income tax","statutory deduction"],
+    section: "Section 9.3 – Payroll Deductions",
+    answer: "Here's what gets deducted from your salary:\n\n- **Provident Fund (PF)** — statutory deduction as per law\n- **Income Tax** — calculated based on your declared investments/savings\n- Other **statutory deductions** as applicable\n\nSubmit your **investment/savings declarations** to Finance to help compute the correct tax deduction.\n\nFor queries, contact the **Finance Department**.",
+    followUps: ["When is salary credited?","What is PF?","What is the financial year?"]
+  },
 
-SECTION 3 — EMPLOYMENT CONDITIONS
-- Full Time Salaried: eligible for salary and full benefits.
-- Personnel files: Finzly property. Management access only. Employees review own file with HR present.
-- Update HR for: name/marital status, address/phone, dependents, emergency contact, qualifications.
-- Background check: employment, address, identity, criminal.
-- References: Only through HR in writing. No phone. Name, dates, job title only unless written consent.
-- NDA: All employees must sign on joining.
-- Probation: As per Offer Letter. Unsatisfactory = extended 1 month OR terminated with 1 month notice or immediately.
-- Retirement age: 60 years.
+  // ── PERFORMANCE & CAREER ─────────────────────────────────────────────────
+  {
+    keys: ["performance review","appraisal","increment","salary hike","rating","performance","review process","quarterly review","annual review","pip","performance improvement"],
+    section: "Section 10 – Performance Management",
+    answer: "Here's how performance management works at Finzly:\n\n- **Quarterly formal reviews** throughout the year with your manager\n- **Annual review** happens in **November–December**\n- **Salary revision** is effective from **January** of the following year\n- Employees who joined **on or after 31st October** are not eligible for that year's review/salary revision\n- Performance period considered: **January to December**\n\n**PIP (Performance Improvement Plan):**\n- Initiated by reporting manager, with HR present\n- Both parties agree on tangible objectives to be met within a **maximum of 1 month**\n- Optional interim review at **2 weeks**\n- Based on outcome: service continued or terminated per applicable clause\n- Only for **full-time employees**",
+    followUps: ["When is salary revision effective?","What is a PIP?","What is the continuous feedback process?"]
+  },
+  {
+    keys: ["feedback","continuous feedback","appreciation","area of improvement","pms","feedback tool"],
+    section: "Section 10.3 – Continuous Feedback",
+    answer: "Here's how the **Continuous Feedback** process works:\n\n**Appreciation feedback:**\n- Can be given by: Primary Manager, HR, Practice Lead, Final Authority, Skip Level Manager, Department Head\n- **Visible to: All**\n\n**Area of Improvement feedback:**\n- Can be given by: Primary Manager, Practice Lead, Final Authority, Skip Level Manager\n- **Visible to:** Employee (self), Primary Manager, HR, Practice Lead, Final Authority, Skip Level Manager\n\nFeedback is used as a reference during performance evaluations.",
+    followUps: ["What is the annual review process?","What is a PIP?","What is the open door policy?"]
+  },
 
-SECTION 4 — DAY 1 / ORIENTATION
-- Day 1: Induction meeting.
-- Documents: DOB proof, PAN card, Passport (if held), Education certificates, Professional certs, 2 passport photos, UAN for PF, Relieving+experience letter, Last 3 months payslips.
-- Forms on Day 1: Employee Info Form, Information Security Policy, NDA, Gratuity+PF nomination, Insurance Form.
-- Provided: Employee number, email, access card/biometrics. WFH employees: biometric access + must log via HRMS portal.
+  // ── RESIGNATION & EXIT ───────────────────────────────────────────────────
+  {
+    keys: ["notice period","resign","resignation","leaving","quit","put in papers","notice","two months notice","2 months notice"],
+    section: "Section 18.1 – Resignation",
+    answer: "Here's everything about **resignation** at Finzly:\n\n- Minimum **2 months written notice** required\n- Submit resignation to your **Practice Lead** → forwarded to HR with copy to Country Head\n- **No leaves** can be availed during the notice period — if taken, notice period extends by those days\n- Shortage of notice **cannot** be adjusted with accumulated EL\n- Early relieving (with manager approval): salary forfeited for unworked notice days\n- **Variable/joining bonus** must be returned if resigning within 1 year\n- **EL balance** encashed at basic salary on exit\n- Relieving/experience letter withheld until all dues are settled\n- **Insurance ends** on separation date\n- Confidentiality obligations continue **after leaving**",
+    followUps: ["What happens to my leaves when I resign?","What is the exit interview process?","What is leave encashment?"]
+  },
+  {
+    keys: ["termination","terminate","dismissed","fired","summary dismissal","employer terminate","sacked"],
+    section: "Section 18.2 – Termination by Employer",
+    answer: "Here's the **employer termination** policy:\n\nThe company may terminate employment **summarily (without notice)** if you:\n- Commit any serious or persistent breach of employment terms\n- Are guilty of grave misconduct or wilful neglect of duties\n\nFor **non-performance**: company provides 2 months' notice after 2 written warnings, with 2 months' gross salary as severance.\n\nFor **misconduct/negligence/fundamental breach**: summary termination with no notice or payment.",
+    followUps: ["What is the notice period?","What is a PIP?","What are my rights during exit?"]
+  },
+  {
+    keys: ["exit interview","last day","relieving letter","experience letter","full and final","fnf","separation","exit process"],
+    section: "Section 18.3 – Exit Interview",
+    answer: "Here's what happens when you leave Finzly:\n\n- **Exit interview** is conducted by HR on your **last working day**\n- Information from exit interviews is used to improve recruitment, retention and work environment\n- Your **relieving and experience letter** is issued once all dues are settled\n- **EL balance** is encashed at basic salary\n- **Insurance** ends on your separation date\n- Ongoing **confidentiality obligations** apply even after leaving",
+    followUps: ["What is the notice period?","What is leave encashment?","What is job abandonment?"]
+  },
+  {
+    keys: ["job abandonment","absconding","absent without","missing","not reporting","5 days absent","abscond"],
+    section: "Section 18.4 – Job Abandonment",
+    answer: "Here's the **job abandonment** policy:\n\n- Absent for **5 consecutive working days** without informing manager or HR → considered to have **absconded**\n- Finzly sends **2 reminders via Registered Post (A/D)** to your permanent address\n- If no response to both: employee is deemed to have **abandoned the job**\n- Such employees will **not be re-inducted** into Finzly",
+    followUps: ["What is the notice period?","How do I inform about absence?","What is leave without pay?"]
+  },
 
-SECTION 5 — WORK TIMINGS & ATTENDANCE
-- Mon-Fri, 45 hours/week including 1-hour lunch daily.
-- Office accessible 24/7. AC operational during standard hours only.
-- Minimum 40 work hours/week (excluding lunch). Minimum 6 hours/day in office (excluding breaks).
-- Log in by 9:30 AM on weekdays (unless late evening calls).
-- Late arrival: Inform manager at least 1 hour before start time.
-- Unexcused absence: deducted from EL. Zero EL = LOP.
-- Job abandonment: 5 consecutive absent days without reporting = absconded. 2 RPAD reminders. No response = deemed abandoned, not re-inducted.
+  // ── INSURANCE & BENEFITS ─────────────────────────────────────────────────
+  {
+    keys: ["mediclaim","health insurance","medical insurance","hospitalization","hospital","claim","coverage","insurance coverage","family insurance","accidental insurance","group insurance"],
+    section: "Section 11.1 – Mediclaim Insurance",
+    answer: "Here's your **Mediclaim** insurance coverage:\n\n- **Coverage amount: Rs. 5 Lakhs**\n- **Covered members:** You + spouse + 2 children\n- Also includes **Accidental Insurance**:\n  - Accidental death\n  - Accidental Permanent Total Disability\n  - Accidental Permanent Partial Disability\n  - Temporary Total Disability\n  - Weekly compensation\n\n**To make a claim:**\n- Minimum **24 hours hospitalization** required\n- Submit: test reports, X-rays, culture reports, medical history, etc.\n- **Inform HR within 2 days** of hospital admission\n- Claims **will not be settled** without the discharge summary from the hospital",
+    followUps: ["What is term insurance?","How do I make a mediclaim claim?","What is covered under accidental insurance?"]
+  },
+  {
+    keys: ["term insurance","life insurance","death benefit","term cover","term life"],
+    section: "Section 11.2 – Term Insurance",
+    answer: "Here's your **Term Insurance** coverage:\n\n- **Coverage amount: Rs. 35 Lakhs**\n- **Covered:** Employee only (family members are not covered)\n- This is a life insurance benefit provided by the company",
+    followUps: ["What is mediclaim insurance?","What happens to insurance when I leave?","Who is covered under mediclaim?"]
+  },
 
-SECTION 6 — DRESS CODE
-- Business Casual Mon-Thu. Friday = casual (no sandals/slippers/shorts).
-- Prohibited always: miniskirts, tank/tube/halter/transparent tops, torn jeans, flip-flops, slippers.
-- Women: collared shirts/T-shirts (with or without sleeves), denim/skirts/dresses at or below knee, professional shoes/sandals.
-- Men: collared shirts/T-shirts with sleeves, trousers/khaki/jeans with belt, professional shoes.
+  // ── REFERRAL & PERKS ─────────────────────────────────────────────────────
+  {
+    keys: ["referral","refer","referral bonus","refer a friend","candidate referral","bonus for referral","employee referral"],
+    section: "Section 17.1 – Referral Bonus",
+    answer: "Here's the **Referral Bonus** structure! 🎁\n\n**Development (Java, Angular, Spring Boot):**\n- 3–5 years experience: **Rs. 20,000**\n- 5–10 years: **Rs. 30,000**\n- 10+ years: **Rs. 35,000**\n\n**QA / Products / DevOps (AWS) / Digital Marketing / Support:**\n- 3–5 years: **Rs. 15,000**\n- 5–10 years: **Rs. 20,000**\n- 10+ years: **Rs. 30,000**\n\n**Immediate joiners (within 5–10 days, any role): Rs. 50,000** 🎉\n\n**Important conditions:**\n- Not applicable for fresher/entry-level referrals\n- Paid after candidate joins on **permanent rolls (FTE)**\n- Not paid if candidate is a **non-performer**\n- Not paid if referring employee was **part of the hiring decision**\n- Requires **Centre Head approval**",
+    followUps: ["When is the referral bonus paid?","What is the late night benefit?","What are employee benefits?"]
+  },
+  {
+    keys: ["late night","dinner","cab","working late","beyond 8","after 8","night cab","food allowance","dinner allowance","weekend work dinner","late night allowance"],
+    section: "Section 17.2 – Late Night Dinner & Cab Facility",
+    answer: "Working late or on weekends? Here's what you're entitled to:\n\n**Working beyond 8 hours on weekdays:**\n- Dinner allowance: up to **Rs. 250 per person**\n- Cab allowance: **actual cost reimbursed**\n\n**Working on weekends or holidays:**\n- Lunch OR Dinner: up to **Rs. 250 per meal**\n\n**Important:** Prior **email approval** from your Practice Head / Lead / Manager is required before claiming.",
+    followUps: ["How do I claim reimbursement?","What is the travel policy?","What is the referral bonus?"]
+  },
+  {
+    keys: ["night shift","night shift allowance","night allowance","shift allowance","working night","night duty"],
+    section: "Section 17 – Night Shift Allowance",
+    answer: "Finzly has a **Night Shift Allowance** policy (updated in v1.3, Nov 2025).\n\nFor the specific rates and eligibility criteria for your role/band, please contact **HR India** directly at **hr-india@finzly.com** as allowances may vary by designation and shift schedule.",
+    needsHR: true,
+    routingReason: "Night shift allowance details are role/band specific — HR can confirm your exact entitlement",
+    followUps: ["What is the late night dinner benefit?","What is the travel policy?","Who do I contact in HR?"]
+  },
 
-SECTION 7 — LEAVE POLICY
-Leave year: 1 Jan to 31 Dec. Pro-rata for mid-year joiners.
-Applies to full-time salaried employees ONLY. Not trainees/interns under standard leave.
-Join 1st-15th = leave credited that month. Join 16th-end = no credit that month.
-Relieved 1st-15th = no credit that month. Relieved 16th-end = credited that month.
+  // ── TRAVEL POLICY ────────────────────────────────────────────────────────
+  {
+    keys: ["travel","business travel","domestic travel","international travel","trip","outstation","tour","travel policy"],
+    section: "Section 16 – Travel Policy",
+    answer: "Here's a summary of the **Travel Policy**:\n\n**International Travel:**\n- Company pays: visa, flights, insurance, lodging\n- **USA per diem: USD 80/day** (covers food + incidentals — no bills needed)\n- Local transport at client site + airport drop/pickup: claim on actuals with bills\n- Business visa: only meetings, conferences, seminars, requirements gathering — no billable \"work\"\n\n**Domestic Travel (outside Chennai/Pune):**\n- 3 business days advance notice required\n- Air: **Economy class** | Train: **AC 2/3 Tier** (preferred if journey is under 6 hours)\n- Hotel/day: Type 1 cities = **Rs. 5,000** | Type 2 = **Rs. 4,000** | Others = **Rs. 3,000**\n- Food/day: Type 1 = **Rs. 600** | Type 2 = **Rs. 500** | Others = **Rs. 400**\n\n**Non-reimbursable:** Alcohol, cigarettes, clothing, personal entertainment, magazines",
+    followUps: ["What is the USA per diem rate?","How do I claim travel expenses?","What cities are Type 1?"]
+  },
+  {
+    keys: ["per diem","daily allowance","usa allowance","international allowance","onsite allowance","usd 80"],
+    section: "Section 16.4 – International Per Diem",
+    answer: "Here's the **per diem allowance** for international travel:\n\n- **USA: USD 80 per day**\n- Covers food and incidental expenses (local travel, laundry, tips, personal calls)\n- **No bills required** for per diem, unless the client specifically asks\n- Per diem starts from the **day you land** at the onsite location and ends the **day you depart**\n- The rate stays the same even if you stay with friends or relatives\n- Additional official expenses (client meals, official calls): claim at actuals with Project Manager approval",
+    followUps: ["What does the company pay for international travel?","How do I claim travel reimbursement?","What is domestic travel policy?"]
+  },
+  {
+    keys: ["type 1 city","type 2 city","city category","hotel limit","lodging limit","domestic hotel","which city type","hyderabad city","mumbai city","delhi city"],
+    section: "Section 16.10 – Domestic Travel Eligibility",
+    answer: "Here's the **city categorisation** for domestic travel:\n\n**Type 1 Cities:**\nMumbai, Delhi, Chennai, Kolkata, Pune, Bangalore, Hyderabad\n- Hotel/day: up to **Rs. 5,000**\n- Food/day: up to **Rs. 600**\n\n**Type 2 Cities:**\nAgra, Ahmedabad, Allahabad, Amritsar, Bhopal, Bhubaneswar, Cochin, Chandigarh, Coimbatore, Cuttack, Dehradun, Ernakulam, Erode, Gandhinagar, Guwahati, Goa, Indore, Jammu, Jaipur, Jalandhar, Jabalpur, Jodhpur, Jhansi, Kanpur, Kodaikanal, Lucknow, Ludhiana, Mysore, Madurai, Mangalore, Nagpur, Nainital, Ooty, Panaji, Patna, Pilani, Pondicherry, Ranchi, Salem, Shimla, Srinagar, Shillong, Trichy, Thiruvananthapuram, Vijayawada, Vadodara, Visakhapatnam\n- Hotel/day: up to **Rs. 4,000**\n- Food/day: up to **Rs. 500**\n\n**Other Cities:**\n- Hotel/day: up to **Rs. 3,000**\n- Food/day: up to **Rs. 400**",
+    followUps: ["What is the travel policy?","How do I claim travel expenses?","What is the private stay allowance?"]
+  },
+  {
+    keys: ["h1b","l1","visa travel","onshore","h1b travel","l1 travel","us visa","work visa"],
+    section: "Section 16.6 – H1B/L1 Travel",
+    answer: "Here's the **H1B/L1 Travel** policy:\n\n- All expenses (visa, air tickets, insurance) paid and arranged by the **Onshore company** prior to travel\n- Company also arranges and pays for **lodging** if required\n- If an advance is needed: received from the **Offshore company** and deducted from succeeding salaries by the Onshore company",
+    followUps: ["What is the international travel policy?","What is the per diem rate?","What is a business visa?"]
+  },
 
-EARNED LEAVE (EL): 10 days/year. Accrual: 0.8 day/month. Carry forward max 30 days (above 30 lapses). Apply via HRMS portal, 2 days advance notice (except emergencies), manager approval required. EL encashed at basic salary on resignation.
+  // ── WORKPLACE PRACTICES ──────────────────────────────────────────────────
+  {
+    keys: ["dress code","attire","clothing","what to wear","uniform","formal","casual friday","friday dress","business casual"],
+    section: "Section 6 – Dress Code",
+    answer: "Here's the **Finzly Dress Code** policy:\n\n**Mon–Thu:** Business Casual\n**Friday:** Casual (but no slippers, flip-flops, or shorts!)\n\n**Women:** Collared shirts/T-shirts (with or without sleeves), denim/skirts/dresses at or below the knee, professional shoes or sandals\n\n**Men:** Collared shirts/T-shirts with sleeves, tailored trousers/khaki/jeans with belt, professional shoes\n\n**Always prohibited:** Miniskirts, tank/tube/halter/transparent tops, worn/torn jeans, flip-flops, slippers",
+    followUps: ["What is the grooming policy?","What are workplace practices?","What is the office timing?"]
+  },
+  {
+    keys: ["grooming","hygiene","personal hygiene","appearance","hair","beard"],
+    section: "Section 6.3 – Grooming",
+    answer: "Here's the **Grooming** policy at Finzly:\n\n- Good **personal hygiene** is essential at all times\n- Hair, beards, and moustaches must be **neatly trimmed** and appropriate to a business environment\n- Employees are expected to maintain a **clean, neat, professional appearance**\n- Improperly groomed employees may face **disciplinary action up to and including termination**",
+    followUps: ["What is the dress code?","What are workplace practices?","What is the office timing?"]
+  },
+  {
+    keys: ["office time","work hours","timing","working hours","start time","login","log in","office hours","9:30","working time","attendance"],
+    section: "Section 5 – Work Timings & Attendance",
+    answer: "Here are **Finzly's work timings**:\n\n- **Monday to Friday**, 45 hours/week (including 1-hour lunch break daily)\n- Minimum **40 working hours/week** (excluding lunch)\n- Minimum **6 hours in office per day** (excluding breaks)\n- Log in by **9:30 AM** on weekdays (unless you have late evening calls)\n- WFH employees must log in/out via the **HRMS portal**\n- Running late? Inform your manager **at least 1 hour before** your start time",
+    followUps: ["What is the attendance policy?","What is the WFH policy?","What is the dress code?"]
+  },
+  {
+    keys: ["attendance","punctuality","absent","absenteeism","late","tardiness","unplanned absence","missed work"],
+    section: "Section 5.2 – Attendance & Punctuality",
+    answer: "Here's the **Attendance & Punctuality** policy:\n\n- Employees must be at their workstations **on time**\n- If late: contact your manager **at least 1 hour before** your start time\n- Unplanned/unscheduled absence = **Loss of Pay** if no leave balance is available\n- Failure to inform = absence counted as leave deducted from EL\n- **Excessive absenteeism or tardiness** can result in disciplinary action up to termination\n- WFH/leave employees must remain available for **pre-notified meetings**",
+    followUps: ["What are the office timings?","What is leave without pay?","What is the leave application process?"]
+  },
+  {
+    keys: ["laptop","computer","equipment","device","company property","lose laptop","lost laptop","damage laptop","company asset"],
+    section: "Section 13.5 – Laptop Security Policy",
+    answer: "Here's the policy on **company equipment**:\n\n- All laptops and equipment remain **Finzly's property**\n- You are **solely responsible** for the safe custody of your laptop at all times\n- If you **lose your laptop** (regardless of the reason): you are liable to **reimburse the full replacement cost**\n- Always **lock your laptop** when you step away (Clean Desk Policy)\n- External storage devices (USB, hard drives) must be stored securely and not left on desks",
+    followUps: ["What is the clean desk policy?","What are workplace practices?","What is information security?"]
+  },
+  {
+    keys: ["clean desk","desk policy","clean workspace","secure desk","workstation","end of day","clear desk"],
+    section: "Section 14 – Clean Desk Policy",
+    answer: "Here's the **Clean Desk Policy**:\n\n- Clear your desk at the **end of each workday**\n- Only items needed for the **current day's work** should be on the desk\n- Confidential documents must be stored in **locked cabinets** when not in use\n- **Lock your laptop** whenever you step away\n- Print-outs must be **collected immediately** — never left unattended at printers\n- Whiteboards must be cleared after meetings if they contain confidential info\n- USB drives and hard drives must be **stored securely**, not left on desks\n- No sensitive information visible to **visitors or unauthorised persons**\n- Non-compliance may result in **disciplinary action**",
+    followUps: ["What is the laptop policy?","What are workplace practices?","What is information security?"]
+  },
+  {
+    keys: ["open door","grievance","complaint","concern","raise issue","escalate","speak up","open door policy"],
+    section: "Section 13.2 – Open Door Policy",
+    answer: "Finzly has an **Open Door Policy** — you're always welcome to raise concerns! 😊\n\n- First: discuss with your **direct manager**\n- If uncomfortable or unresolved: approach **HR** directly\n- If still unresolved: escalate to **Senior Management**\n\nYou can raise concerns about: salary, benefits, performance reviews, work environment, discrimination, harassment, or business operations.\n\nNo retaliation for **good-faith reporting**.",
+    followUps: ["Who do I contact in HR?","What is the POSH policy?","What is EEO?"]
+  },
+  {
+    keys: ["alcohol","drugs","substance","smoking","tobacco","smoke","drink","illegal drugs","controlled substance","drug policy"],
+    section: "Section 13.8 – Illegal Drugs, Controlled Substances & Alcohol Policy",
+    answer: "Here are Finzly's **Substance & Alcohol** policies:\n\n**Strictly Prohibited:**\n- Being under the influence of alcohol or any drug on company/client premises during working time\n- Possessing, using, selling, or transferring alcohol or illegal drugs on the job, company/client property, company vehicles, or personal vehicles during company business\n\n**Prescription Drugs:**\n- If taking medication that may impair performance, inform your supervisor and submit a physician's statement\n\n**Testing:**\n- Finzly reserves the right to conduct **drug/alcohol tests** on reasonable suspicion\n- Searches of company property and personal property may also be conducted\n\n**Rehabilitation:**\n- Employees with dependency issues will be reasonably accommodated for treatment/rehabilitation with unpaid leave\n- Employees returning from rehab may be tested for up to **1 year**\n\n**Smoking/Tobacco:**\n- **Not permitted** inside company premises or the building",
+    followUps: ["What is the clean desk policy?","What are workplace practices?","What is the off-duty conduct policy?"]
+  },
+  {
+    keys: ["off duty","off-duty","personal life","outside work","private life","social media","conduct outside"],
+    section: "Section 13.11 – Off-Duty Conduct",
+    answer: "Here's the **Off-Duty Conduct** policy:\n\n- Finzly generally **does not interfere** with employees' private lives\n- However, if off-duty conduct **negatively impacts Finzly's business or reputation**, the company reserves the right to act\n- Prohibited: any **illegal or immoral conduct** off-duty that affects or has the potential to affect the company or expose it to liability",
+    followUps: ["What are workplace practices?","What is the open door policy?","What is the NDA?"]
+  },
+  {
+    keys: ["one on one","1 on 1","one to one","manager discussion","1-1","manager meeting","skip level"],
+    section: "Section 13.1 – One-to-One Discussion",
+    answer: "Here's the **One-to-One Discussion** policy:\n\n- Practice Managers/Mentors are encouraged to hold **1:1 discussions** with each reporting staff member at regular intervals (**every 1–3 months**)\n- This is in addition to the regular quarterly and annual performance discussions\n- Discussion points are **recorded** and form the basis for the next 1:1\n- If your manager hasn't initiated one, **you can invite your manager** by blocking their calendar",
+    followUps: ["What is the performance review process?","What is the open door policy?","What is the continuous feedback process?"]
+  },
+  {
+    keys: ["personal email","chain email","email policy","internet","computer use","company computer"],
+    section: "Section 13.3 – Personal Emails & Computer Use",
+    answer: "Here's the **Email & Computer Use** policy:\n\n- Company computers are **business tools** — use only for official purposes and urgent personal communications\n- **Chain emails and large non-business attachments** are prohibited (slow down the system)\n- Distribution of **offensive or pornographic material** is strictly prohibited and will result in disciplinary action",
+    followUps: ["What are workplace practices?","What is the laptop security policy?","What is the NDA?"]
+  },
 
-MANAGEMENT LEAVE (ML): 5 days/year. Accrual: 0.4 day/month. Lapses at year end. Onshore team approval mandatory.
+  // ── JOINING & ONBOARDING ─────────────────────────────────────────────────
+  {
+    keys: ["day 1","first day","joining","onboarding","orientation","induction","documents required","joining documents","what to bring","new joinee","new joiner"],
+    section: "Section 4.1 – Employee Orientation / Day 1",
+    answer: "Welcome to Finzly! 🎉 Here's what you need on **Day 1**:\n\n**Documents to bring (originals for verification + photocopies for records):**\n- Date of Birth proof (Class 10th Pass Certificate or Birth Certificate)\n- PAN card photocopy\n- Passport photocopy (if available)\n- Education certificates (10th / 12th / Bachelors / Masters)\n- Any professional course certificates\n- 2 recent passport-size colour photographs\n- UAN number for PF linking (if applicable)\n- Relieving Letter + Experience Letter from previous employer\n- Last 3 months' payslips from previous employer\n\n**Forms to fill on Day 1:**\n- Employee Information Form\n- Information Security Policy\n- Non-Disclosure Agreement (NDA)\n- Gratuity & PF Nomination Forms\n- Insurance Form\n\n**You'll receive:** Employee number, email ID, access card/biometrics",
+    followUps: ["What is the probation period?","What is the NDA?","What is the dress code?"]
+  },
+  {
+    keys: ["probation","probationary","trial period","confirmation","confirmed employee","probation period"],
+    section: "Section 3.6 – Probation",
+    answer: "Here's the **Probation** policy:\n\n- Probation period is as stated in your **Offer Letter**\n- If performance is unsatisfactory, probation can be:\n  - Extended by **1 month**, OR\n  - Service terminated with **1 month's notice** or immediately\n- Employees on probation must apply all leaves as **Leave Without Pay (LOP)**\n- International travel is applicable for probationers with a **positive BGV report**",
+    followUps: ["What are the leave rules during probation?","What is the notice period?","What is the performance review process?"]
+  },
+  {
+    keys: ["nda","non disclosure","confidentiality","confidential","secrecy agreement","non-disclosure"],
+    section: "Section 3.5 – Non-Disclosure Agreement (NDA)",
+    answer: "Here's the **NDA** policy:\n\n- All employees **must sign an NDA** on joining Finzly\n- The NDA protects confidential, proprietary, and trade secret information\n- NDAs can be **mutual** (both parties restricted) or **one-way**\n- Your confidentiality obligations **continue even after you leave** the company\n- Breach of NDA obligations can be grounds for **summary dismissal**",
+    followUps: ["What documents do I need on Day 1?","What are my obligations after leaving?","What is the exit policy?"]
+  },
+  {
+    keys: ["background check","bgv","background verification","verification","criminal check","employment verification"],
+    section: "Section 3.4 – Background Verification",
+    answer: "Finzly conducts **background verification** for all new employees:\n\n- **Employment verification** — previous employers\n- **Address verification**\n- **Identity verification**\n- **Criminal background check**\n\nA **positive BGV report** is required for international travel (including employees on probation).",
+    followUps: ["What documents do I need on Day 1?","What is the NDA?","What is probation?"]
+  },
+  {
+    keys: ["retirement","retire","superannuation","retirement age","age of retirement"],
+    section: "Section 3.7 – Retirement Age",
+    answer: "The **retirement age** at Finzly is **60 years**.\n\nAn employee's service automatically ceases on attaining the age of retirement.",
+    followUps: ["What is the notice period?","What are my exit benefits?","What is leave encashment?"]
+  },
 
-SICK LEAVE (SL): 5 days/year. Medical certificate mandatory if SL exceeds 2 days. Chronic illness beyond 5 continuous days: adjusted in EL first, then LOP.
+  // ── POSH & HARASSMENT ────────────────────────────────────────────────────
+  {
+    keys: ["posh","harassment","sexual harassment","sexual","harassment complaint","icc","complaint","uncomfortable","unsafe","hostile","internal complaint","ic committee","she box","shebox"],
+    section: "Section 15 – POSH Policy",
+    answer: "I hear you, and you're not alone. 💙 Finzly has **zero tolerance** for any form of harassment.\n\n**Please contact the ICC (Internal Complaints Committee) directly:**\n\n**Pune Committee Members:**\n- Vishwata Mayekar — vishwata.mayekar@finzly.com\n- Andleeb Sohail — andleeb.sohail@finzly.com\n- Prashant Choudhary — prashant@finzly.com\n\n**Chennai Committee Members:**\n- Divya Moorthy — divya.moorthy@finzly.com\n- Bharathkumar M — Bharathkumar.m@finzly.com\n- Abirami R — abirami.r@finzly.com\n\n**Key points:**\n- Complaints must be filed **within 15 days** of the incident\n- All complaints are **strictly confidential**\n- You can also raise via **She-Box** (Ministry of Women & Child Development) — Finzly is registered\n- The ICC is appointed for a period of **3 years**\n- Enquiry must be completed within **90 days**",
+    needsHR: true,
+    routingReason: "POSH/Harassment query — requires confidential HR handling via ICC",
+    followUps: []
+  },
 
-COMPENSATORY OFF: For working weekends/holidays due to business demand. Must be availed within 90 days of work date. Cannot be taken in advance. Cannot be encashed. Manager approval required.
+  // ── EEO & DIVERSITY ──────────────────────────────────────────────────────
+  {
+    keys: ["eeo","equal opportunity","discrimination","diversity","inclusion","equal employment","eeo policy"],
+    section: "Section 2 – Equal Employment Opportunity",
+    answer: "Finzly is firmly committed to **Equal Employment Opportunity**:\n\n- Employment is based purely on **merit, ability, and qualifications**\n- No discrimination on the basis of race, colour, gender, age, religion, disability, marital status, sexual orientation, national origin, veteran status, or political affiliation\n- Applies to hiring, training, promotion, compensation, and all other aspects of employment\n- Report any discrimination to your manager or HR — you can do so **without fear of retaliation**\n- Violations may result in corrective action **up to and including termination**",
+    followUps: ["What is the open door policy?","What is the POSH policy?","What are workplace practices?"]
+  },
 
-MATERNITY LEAVE: Female employees with more than 4 months continuous service. 26 weeks with full pay. Notify 15 weeks before due date. Inform manager and HR of start and return dates. Post 26 weeks: WFH subject to work nature + management approval. If WFH unavailable, EL can be combined. After all leaves: LOP up to 2 months. Miscarriage/medical termination: 6 weeks paid leave on proof. Cannot be encashed.
+  // ── REWARDS & RECOGNITION ────────────────────────────────────────────────
+  {
+    keys: ["rewards","recognition","reward","r&r","employee of month","best employee","award","appreciation award"],
+    section: "Section 12 – Rewards & Recognition",
+    answer: "Here's the **Rewards & Recognition** programme:\n\n**Purpose:** Recognise outstanding contributions, improve employee loyalty, motivation, and retention.\n\n**Eligibility:** All **full-time employees**\n\n**How it works:**\n- Different employee categories can **nominate** individuals, teams, or groups\n- Rewards can be **monetary or non-monetary**\n- Assessments and recommendations are done **monthly**\n- Aligned with Company's Values and Mission Objectives",
+    followUps: ["What is the performance review process?","What is the referral bonus?","What is the feedback process?"]
+  }
 
-PATERNITY LEAVE: Male employees with minimum 3 months service. Up to 5 days. Inform manager and HR at least 2 weeks before expected delivery. Can be availed within 1 month of child's birth. Emergency dates adjustable.
+];
 
-BEREAVEMENT LEAVE: Up to 2 days. Immediate family members only. Inform manager and HR.
-
-LEAVE WITHOUT PAY (LOP): For employees who exhausted all leave, with prior manager approval. Probation/notice period employees: all leaves = LOP. Sandwich rule: holiday between two availed leaves with zero balance = merged as LOP.
-
-LEAVE FOR INTERNS/PROBATION: After 1 month service: 1 day total (0.5 SL + 0.5 CL). Lapses at end of period. Cannot be encashed.
-
-LEAVE PROCEDURE: Apply via HRMS portal. Not updated before 15th of next month = treated as absent, deducted from EL. Leaves cannot be adjusted against notice period.
-
-SECTION 8 — HOLIDAY POLICY
-10 public holidays per year. List declared by HR at start of each year (effective Jan 1).
-
-SECTION 9 — COMPENSATION AND BENEFITS
-Financial year: April to March. Payroll period: calendar month. Salary credited: between last working day of month to before 3rd of subsequent month. Deductions: Provident Fund and statutory deductions per Income Tax.
-
-SECTION 10 — PERFORMANCE MANAGEMENT
-Formal review: every quarter. Annual review: November-December. Salary revision: effective January of succeeding year. NOT eligible: employees who joined on or after 31st October. Performance period: January to December.
-PIP: Initiated by reporting manager with HR. Objectives agreed for max 1 month. Interim review at 2 weeks or final at 1 month. Full-time employees only.
-
-SECTION 11 — HEALTH INSURANCE
-MEDICLAIM: Provider: ICICI Lombard GIC Ltd. Coverage: Rs. 5 Lakhs. Covered: Employee + spouse + two children. Includes accidental insurance. Min 24-hour hospitalization for claims. HR informed within 2 days of admission. Discharge summary mandatory.
-
-TERM INSURANCE: Provider: ICICI Prudential Life Insurance. Coverage: Rs. 35 Lakhs. Employee only.
-
-SECTION 12 — REWARDS AND RECOGNITION
-All full-time employees eligible. Monthly assessments. Monetary or non-monetary rewards.
-
-SECTION 13 — WORKPLACE PRACTICES
-1:1 discussions every 1-3 months. Open door policy: Manager then HR then Senior Management.
-Company computers for official use only. Chain emails prohibited.
-Laptop lost = employee liable to reimburse full replacement cost.
-No smoking/tobacco inside premises.
-Illegal drugs/alcohol: prohibited on company premises and during work hours. Company can require drug/alcohol tests on reasonable suspicion.
-
-SECTION 14 — CLEAN DESK POLICY
-Clear desk at end of each workday. Confidential docs in locked cabinets. Laptops locked when unattended. No sensitive info visible to visitors.
-
-SECTION 15 — POSH
-ALWAYS set needsHRRouting to true for ANY POSH or harassment query. Never attempt to answer. Zero tolerance policy. Complaints to ICC within 15 days. Enquiry completed within 90 days. Confidentiality mandatory.
-ICC Chennai: Divya Moorthy (divya.moorthy@finzly.com), Bharathkumar M (Bharathkumar.m@finzly.com), Baskaran Devarasu (baskaran.devarasu@finzly.com).
-ICC Pune: Vishwata Mayekar (vishwata.mayekar@finzly.com), Andleeb Sohail (andleeb.sohail@finzly.com), Prashant Choudhary (prashant@finzly.com).
-Registered on She-Box (Ministry of Women & Child Development).
-
-SECTION 16 — TRAVEL POLICY
-INTERNATIONAL: Company pays visa, air tickets, insurance, lodging. Employee pays + claims actuals: local travel at client site, airport pickup/drop. USA per diem: USD 80/day (food + incidentals, no bills needed).
-
-DOMESTIC: 3 business days advance notice. Air: Economy. Train: AC 2/3 Tier (preferred if under 6 hours). Car: Rs. 8/km + toll if 50-400km and no train. 2-wheeler: Rs. 5/km.
-Hotel per day: Type 1 cities (Mumbai, Delhi, Chennai, Kolkata, Pune, Bangalore, Hyderabad) = Rs. 5,000. Type 2 cities = Rs. 4,000. Other cities = Rs. 3,000.
-Daily food max: Type 1 = Rs. 600. Type 2 = Rs. 500. Other = Rs. 400.
-Private stay allowance: Type 1 = Rs. 1,400/day. Type 2 = Rs. 1,000/day. Other = Rs. 800/day.
-Non-reimbursable: clothing, toiletries, magazines, alcohol, cigarettes.
-
-SECTION 17 — EMPLOYEE BENEFITS (excludes probation employees)
-REFERRAL BONUS: Not for fresher referrals. Paid after candidate joins on permanent rolls. Not paid if non-performer or referring employee was part of hiring decision. Centre Head approval required.
-Development (Java, Angular, Spring Boot): 3-5 yrs = Rs. 20,000 | 5-10 yrs = Rs. 30,000 | 10+ yrs = Rs. 35,000.
-QA/Products/DevOps(AWS)/Digital Marketing/Support: 3-5 yrs = Rs. 15,000 | 5-10 yrs = Rs. 20,000 | 10+ yrs = Rs. 30,000.
-Immediate joiners (within 5-10 days, any position) = Rs. 50,000.
-
-LATE NIGHT DINNER & CAB: Working beyond 8 hours officially. Dinner cap: Rs. 250/person. Cab: actual cost. Weekends/holidays working: lunch OR dinner cap Rs. 250 each. Requires Practice Head or manager approval.
-
-SECTION 18 — EXIT & TERMINATION
-RESIGNATION: Minimum 2 months notice in writing to Practice Lead (forwarded to HR + Country Head). During notice: no leave can be availed. If leave taken, notice period extends by same days. Leave cannot be adjusted against notice period. Early relief: salary forfeited for unworked notice days at full fixed salary. Variable/joining bonus: repaid if resigning within 1 year. Relieving/experience letter withheld until all dues settled. Accrued EL encashed at basic salary. Insurance ends on separation date.
-
-TERMINATION BY EMPLOYER: Summary (no notice): misconduct, negligence, fundamental breach. With notice: 2 months notice or 2 written warnings for non-performance.
-
-EXIT INTERVIEW: Conducted by HR on last working day.
-
-JOB ABANDONMENT: 5 consecutive absent days without reporting = absconded. Two RPAD reminders. No response = deemed abandoned.
-
-ESCALATION RULES — set needsHRRouting true if:
-- ANY POSH or harassment query (ALWAYS)
-- Specific salary figures or individual compensation
-- Individual disciplinary cases
-- Visa/immigration specifics
-- PIP initiation or active PIP case
-- Termination proceedings for specific employee
-- Tax calculations
-- Anything not explicitly in this handbook
-
-RESPONSE FORMAT — return ONLY valid JSON, nothing else:
-{
-  "answer": "Warm empathetic answer. Acknowledge feelings first if stressed. Use - for bullets.",
-  "section": "Section number e.g. Section 7 Earned Leave",
-  "needsHRRouting": false,
-  "routingReason": "",
-  "suggestedFollowUps": ["follow up 1", "follow up 2"]
-}`;
-
-const SUGGESTED_QUESTIONS = [
+// ─────────────────────────────────────────────
+// QUICK QUESTION CHIPS
+// ─────────────────────────────────────────────
+const QUICK_QUESTIONS = [
   "How many earned leaves do I get?",
   "When is salary credited?",
   "What is the notice period?",
   "Can I carry forward unused leaves?",
   "What documents do I need on Day 1?",
-  "What is the referral bonus for a Java developer?",
+  "Referral bonus for a Java developer?",
   "What is the USA per diem rate?",
   "How do I apply for maternity leave?",
   "What is the mediclaim coverage?",
-  "What happens if I lose my laptop?",
+  "What if I lose my company laptop?",
+  "Who are the POSH committee members?",
+  "What is the night shift allowance?",
 ];
 
-function App() {
-  const [messages, setMessages] = useState([{
-    id: 1, role: "assistant",
-    text: "Hey there! 👋 I'm **BuddyFinzler**, your Finzly HR companion.\n\nI'm trained on the **Finzly Employee Handbook v2.1 (Jan 2026)**. Ask me about leaves, payroll, insurance, travel, exit policies, and more — with warmth and zero judgment!\n\nWhat's on your mind today? 😊",
-    needsHRRouting: false, section: "",
-  }]);
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [showSuggestions, setShowSuggestions] = useState(true);
-  const [routingModal, setRoutingModal] = useState(null);
-  const [teamsStatus, setTeamsStatus] = useState(null);
-  const messagesEndRef = useRef(null);
-  const conversationHistory = useRef([]);
+// ─────────────────────────────────────────────
+// SEARCH ENGINE
+// ─────────────────────────────────────────────
+function findAnswer(query) {
+  const q = query.toLowerCase();
 
-  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, loading]);
+  let best = null;
+  let bestScore = 0;
 
-  function renderText(text) {
-    const lines = text.split("\n");
-    const elements = [];
-    let listItems = [];
-    lines.forEach((line, i) => {
-      const isList = line.startsWith("- ") || line.startsWith("• ");
-      if (isList) {
-        listItems.push(line.slice(2));
-      } else {
-        if (listItems.length > 0) {
-          elements.push(React.createElement("ul", { key: "ul"+i, style: { margin: "6px 0 6px 16px", padding: 0 } },
-            listItems.map((item, j) => React.createElement("li", { key: j, style: { marginBottom: 3, lineHeight: 1.5 },
-              dangerouslySetInnerHTML: { __html: item.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") } }))
-          ));
-          listItems = [];
-        }
-        if (line.trim()) {
-          elements.push(React.createElement("p", { key: "p"+i, style: { margin: "4px 0", lineHeight: 1.6 },
-            dangerouslySetInnerHTML: { __html: line.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") } }));
-        }
+  for (const entry of KB) {
+    let score = 0;
+    for (const keyword of entry.keys) {
+      if (q.includes(keyword)) {
+        score += keyword.split(' ').length * 2;
       }
-    });
-    if (listItems.length > 0) {
-      elements.push(React.createElement("ul", { key: "ul-final", style: { margin: "6px 0 6px 16px", padding: 0 } },
-        listItems.map((item, j) => React.createElement("li", { key: j, style: { marginBottom: 3, lineHeight: 1.5 },
-          dangerouslySetInnerHTML: { __html: item.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") } }))
-      ));
     }
-    return elements;
+    if (score > bestScore) {
+      bestScore = score;
+      best = entry;
+    }
   }
 
-  async function sendMessage(text) {
-    const userText = (text || input).trim();
-    if (!userText || loading) return;
-    setInput(""); setShowSuggestions(false);
-    setMessages(prev => [...prev, { id: Date.now(), role: "user", text: userText }]);
-    setLoading(true);
+  if (bestScore > 0) return best;
 
-    // Build Gemini conversation history
-    conversationHistory.current.push({ role: "user", parts: [{ text: userText }] });
-
-    try {
-      const res = await fetch(GEMINI_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
-          contents: conversationHistory.current,
-          generationConfig: { maxOutputTokens: 1000, temperature: 0.7 }
-        })
-      });
-
-      const data = await res.json();
-      console.log("Gemini response:", data);
-
-      if (!res.ok || data.error) {
-        throw new Error(data.error?.message || "HTTP " + res.status);
+  // Fallback: word-level partial match
+  const words = q.split(/\s+/).filter(w => w.length > 3);
+  for (const entry of KB) {
+    for (const keyword of entry.keys) {
+      for (const word of words) {
+        if (keyword.includes(word) && word.length > 3) {
+          return entry;
+        }
       }
-
-      const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
-      let parsed;
-      try { parsed = JSON.parse(raw.replace(/```json|```/g, "").trim()); }
-      catch { parsed = { answer: raw, section: "", needsHRRouting: false, routingReason: "", suggestedFollowUps: [] }; }
-
-      // Push model reply to history
-      conversationHistory.current.push({ role: "model", parts: [{ text: parsed.answer }] });
-
-      setMessages(prev => [...prev, {
-        id: Date.now()+1, role: "assistant",
-        text: parsed.answer, section: parsed.section || "",
-        needsHRRouting: parsed.needsHRRouting,
-        routingReason: parsed.routingReason,
-        suggestedFollowUps: parsed.suggestedFollowUps || []
-      }]);
-
-      if (parsed.needsHRRouting) {
-        setTeamsStatus("sending");
-        try {
-          const now = new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
-          await fetch(TEAMS_WEBHOOK_URL, {
-            method: "POST", mode: "no-cors",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              "@type": "MessageCard", "@context": "http://schema.org/extensions",
-              themeColor: "F4C430", summary: "BuddyFinzler HR Escalation",
-              sections: [{ activityTitle: "🤖 BuddyFinzler — HR Escalation", activitySubtitle: now + " IST",
-                facts: [{ name: "Query", value: userText }, { name: "Reason", value: parsed.routingReason }] }]
-            })
-          });
-        } catch(e) { console.log("Teams webhook error:", e); }
-        setTeamsStatus("sent");
-        setTimeout(() => setTeamsStatus(null), 4000);
-        setTimeout(() => setRoutingModal({ reason: parsed.routingReason, query: userText }), 400);
-      }
-
-    } catch(e) {
-      console.error("API error:", e);
-      setMessages(prev => [...prev, {
-        id: Date.now()+1, role: "assistant",
-        text: "Hmm, I ran into a hiccup 😔 — " + e.message + "\n\nPlease try again or reach out to HR India directly.",
-        needsHRRouting: false, section: ""
-      }]);
     }
-    setLoading(false);
   }
 
-  return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-      <div style={{ width: "100%", maxWidth: 720, height: "94vh", maxHeight: 860, display: "flex", flexDirection: "column", background: "rgba(255,255,255,0.03)", backdropFilter: "blur(24px)", borderRadius: 24, border: "1px solid rgba(255,255,255,0.07)", boxShadow: "0 40px 80px rgba(0,0,0,0.7)", overflow: "hidden" }}>
-
-        {/* HEADER */}
-        <div style={{ background: "linear-gradient(135deg,#122040,#0d1930)", borderBottom: "1px solid rgba(255,255,255,0.06)", padding: "16px 20px", display: "flex", alignItems: "center", gap: 14 }}>
-          <div style={{ position: "relative" }}>
-            <div style={{ width: 46, height: 46, borderRadius: "50%", background: "linear-gradient(135deg,#1d4ed8,#0ea5e9)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, boxShadow: "0 0 20px rgba(29,78,216,0.5)" }}>🤖</div>
-            <div style={{ position: "absolute", bottom: 2, right: 2, width: 11, height: 11, borderRadius: "50%", background: "#22c55e", border: "2px solid #0d1930", boxShadow: "0 0 8px rgba(34,197,94,0.7)" }}></div>
-          </div>
-          <div style={{ flex: 1 }}>
-            <p style={{ color: "#fff", fontWeight: 700, fontSize: 17, margin: 0 }}>BuddyFinzler</p>
-            <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, margin: "2px 0 0" }}>Finzly HR Assistant · Handbook {HANDBOOK_VERSION}</p>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 5, alignItems: "flex-end" }}>
-            <div style={{ background: "rgba(29,78,216,0.15)", border: "1px solid rgba(29,78,216,0.3)", color: "#60a5fa", fontSize: 10, fontWeight: 600, padding: "3px 9px", borderRadius: 20 }}>HR ASSISTANT</div>
-            {teamsStatus && <div style={{ background: teamsStatus === "sent" ? "rgba(34,197,94,0.15)" : "rgba(251,191,36,0.15)", border: "1px solid rgba(34,197,94,0.3)", color: "#86efac", fontSize: 10, fontWeight: 600, padding: "3px 9px", borderRadius: 20 }}>{teamsStatus === "sending" ? "⏳ Notifying..." : "✅ Teams Notified"}</div>}
-          </div>
-        </div>
-
-        {/* MESSAGES */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "18px 18px 8px", display: "flex", flexDirection: "column", gap: 12 }}>
-          {messages.map(msg => (
-            <div key={msg.id} style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start", alignItems: "flex-end", gap: 8 }}>
-              {msg.role === "assistant" && <div style={{ width: 30, height: 30, borderRadius: "50%", background: "linear-gradient(135deg,#1d4ed8,#0ea5e9)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>🤖</div>}
-              <div>
-                <div style={{ maxWidth: "78%", padding: "11px 15px", borderRadius: msg.role === "user" ? "18px 18px 4px 18px" : "18px 18px 18px 4px", background: msg.role === "user" ? "linear-gradient(135deg,#1d4ed8,#1e40af)" : "rgba(255,255,255,0.055)", border: msg.role === "user" ? "none" : "1px solid rgba(255,255,255,0.07)", color: "#f1f5f9", fontSize: 13.5 }}>
-                  <div>{renderText(msg.text)}</div>
-                  {msg.section && <div style={{ marginTop: 7, display: "inline-flex", alignItems: "center", gap: 5, background: "rgba(29,78,216,0.1)", border: "1px solid rgba(29,78,216,0.2)", borderRadius: 8, padding: "3px 9px", fontSize: 11, color: "#93c5fd" }}>📖 {msg.section}</div>}
-                  {msg.needsHRRouting && <div style={{ marginTop: 8, padding: "7px 11px", background: "rgba(251,191,36,0.07)", border: "1px solid rgba(251,191,36,0.2)", borderRadius: 10, fontSize: 12, color: "#fbbf24" }}>⚡ Escalated to HR India — {msg.routingReason}</div>}
-                  {msg.needsHRRouting && <div style={{ marginTop: 5, padding: "6px 11px", background: "rgba(34,197,94,0.07)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 10, fontSize: 11, color: "#86efac" }}>📣 HR India Teams channel notified</div>}
-                </div>
-                {msg.suggestedFollowUps && msg.suggestedFollowUps.length > 0 && (
-                  <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 5 }}>
-                    {msg.suggestedFollowUps.map((q, i) => (
-                      <button key={i} onClick={() => sendMessage(q)} style={{ background: "rgba(29,78,216,0.07)", border: "1px solid rgba(29,78,216,0.18)", borderRadius: 10, color: "#93c5fd", fontSize: 12, padding: "6px 12px", cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}>💬 {q}</button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-          {loading && (
-            <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
-              <div style={{ width: 30, height: 30, borderRadius: "50%", background: "linear-gradient(135deg,#1d4ed8,#0ea5e9)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>🤖</div>
-              <div style={{ padding: "14px 18px", borderRadius: "18px 18px 18px 4px", background: "rgba(255,255,255,0.055)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                <div style={{ display: "flex", gap: 5 }}>
-                  {[0,1,2].map(i => <div key={i} style={{ width: 7, height: 7, borderRadius: "50%", background: "rgba(255,255,255,0.4)", animation: "bounce 1.2s infinite", animationDelay: i*0.2+"s" }}></div>)}
-                </div>
-              </div>
-            </div>
-          )}
-          <div ref={messagesEndRef}></div>
-        </div>
-
-        {/* SUGGESTIONS */}
-        {showSuggestions && (
-          <div style={{ padding: "0 18px 12px" }}>
-            <p style={{ color: "rgba(255,255,255,0.28)", fontSize: 11, fontWeight: 600, letterSpacing: "1px", textTransform: "uppercase", marginBottom: 7 }}>Quick questions</p>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-              {SUGGESTED_QUESTIONS.map((q, i) => (
-                <button key={i} onClick={() => sendMessage(q)} style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)", borderRadius: 20, color: "rgba(255,255,255,0.55)", fontSize: 11.5, padding: "5px 12px", cursor: "pointer", fontFamily: "inherit" }}>{q}</button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* INPUT */}
-        <div style={{ padding: "10px 14px 14px", borderTop: "1px solid rgba(255,255,255,0.05)", background: "rgba(0,0,0,0.15)" }}>
-          <div style={{ display: "flex", gap: 9, alignItems: "flex-end", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.09)", borderRadius: 16, padding: "8px 8px 8px 15px" }}>
-            <textarea style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: "#f1f5f9", fontSize: 13.5, lineHeight: 1.5, resize: "none", fontFamily: "inherit", maxHeight: 100, minHeight: 22 }}
-              placeholder="Ask about leaves, salary, travel, insurance, exit policy..."
-              value={input} onChange={e => setInput(e.target.value)}
-              onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-              rows={1} onInput={e => { e.target.style.height = "auto"; e.target.style.height = Math.min(e.target.scrollHeight, 100)+"px"; }} />
-            <button onClick={() => sendMessage()} disabled={!input.trim() || loading}
-              style={{ width: 38, height: 38, borderRadius: 11, background: (!input.trim() || loading) ? "rgba(29,78,216,0.15)" : "linear-gradient(135deg,#1d4ed8,#1e40af)", border: "none", cursor: (!input.trim() || loading) ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13M22 2L15 22L11 13M11 13L2 9L22 2" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            </button>
-          </div>
-          <p style={{ color: "rgba(255,255,255,0.18)", fontSize: 10.5, textAlign: "center", margin: "7px 0 0" }}>Finzly Handbook {HANDBOOK_VERSION} · Unresolved queries → HR India Teams + {HR_EMAIL}</p>
-        </div>
-      </div>
-
-      {/* ROUTING MODAL */}
-      {routingModal && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 20 }} onClick={() => setRoutingModal(null)}>
-          <div style={{ background: "linear-gradient(135deg,#122040,#0d1930)", border: "1px solid rgba(251,191,36,0.25)", borderRadius: 20, padding: 26, maxWidth: 430, width: "100%", boxShadow: "0 40px 80px rgba(0,0,0,0.7)" }} onClick={e => e.stopPropagation()}>
-            <div style={{ fontSize: 36, textAlign: "center", marginBottom: 10 }}>📨</div>
-            <h3 style={{ color: "#fbbf24", textAlign: "center", margin: "0 0 6px", fontSize: 17, fontWeight: 700 }}>Routed to HR India</h3>
-            <p style={{ color: "rgba(255,255,255,0.5)", textAlign: "center", fontSize: 12.5, margin: "0 0 18px" }}>Your query needs personal attention. HR India has been notified.</p>
-            <div style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12, padding: "11px 14px", marginBottom: 10 }}>
-              <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 10, margin: "0 0 4px", textTransform: "uppercase" }}>Your query</p>
-              <p style={{ color: "#f1f5f9", fontSize: 13, margin: 0 }}>"{routingModal.query}"</p>
-            </div>
-            <div style={{ background: "rgba(251,191,36,0.06)", border: "1px solid rgba(251,191,36,0.15)", borderRadius: 12, padding: "11px 14px", marginBottom: 10 }}>
-              <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 10, margin: "0 0 4px", textTransform: "uppercase" }}>Reason</p>
-              <p style={{ color: "#fbbf24", fontSize: 13, margin: 0 }}>{routingModal.reason}</p>
-            </div>
-            <div style={{ background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.15)", borderRadius: 12, padding: "10px 14px", marginBottom: 18, display: "flex", alignItems: "center", gap: 8 }}>
-              <span>✅</span><p style={{ color: "#86efac", fontSize: 12, margin: 0 }}>HR India Teams channel notified</p>
-            </div>
-            <button onClick={() => { window.open("mailto:"+HR_EMAIL+"?subject=HR Query via BuddyFinzler&body="+encodeURIComponent(routingModal.query)); setRoutingModal(null); }}
-              style={{ width: "100%", padding: 11, background: "linear-gradient(135deg,#1d4ed8,#1e40af)", border: "none", borderRadius: 12, color: "white", fontWeight: 700, fontSize: 13.5, cursor: "pointer", marginBottom: 8, fontFamily: "inherit" }}>
-              📧 Email HR India — {HR_EMAIL}
-            </button>
-            <button onClick={() => setRoutingModal(null)} style={{ width: "100%", padding: 9, background: "transparent", border: "1px solid rgba(255,255,255,0.09)", borderRadius: 12, color: "rgba(255,255,255,0.35)", fontSize: 12.5, cursor: "pointer", fontFamily: "inherit" }}>Close</button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+  return null;
 }
 
-ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));
+// ─────────────────────────────────────────────
+// UI HELPERS
+// ─────────────────────────────────────────────
+const chipsEl = document.getElementById('chips');
+QUICK_QUESTIONS.forEach(q => {
+  const btn = document.createElement('button');
+  btn.className = 'chip';
+  btn.textContent = q;
+  btn.onclick = () => handleSend(q);
+  chipsEl.appendChild(btn);
+});
+
+function formatText(text) {
+  const lines = text.split('\n');
+  let html = '';
+  let inList = false;
+  lines.forEach(line => {
+    const isBullet = line.startsWith('- ') || line.startsWith('• ');
+    if (isBullet) {
+      if (!inList) { html += '<ul>'; inList = true; }
+      html += '<li>' + bold(line.slice(2)) + '</li>';
+    } else {
+      if (inList) { html += '</ul>'; inList = false; }
+      if (line.trim()) html += '<p>' + bold(line) + '</p>';
+    }
+  });
+  if (inList) html += '</ul>';
+  return html;
+}
+
+function bold(t) {
+  return t.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+}
+
+function addBotMessage(text, section, needsHR, routingReason, followUps) {
+  hideSuggestions();
+  const msgs = document.getElementById('messages');
+  const row = document.createElement('div');
+  row.className = 'msg-row';
+
+  const av = document.createElement('div');
+  av.className = 'msg-avatar';
+  av.textContent = '🤖';
+
+  const wrapper = document.createElement('div');
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble bot';
+  bubble.innerHTML = formatText(text);
+
+  if (section) {
+    const tag = document.createElement('div');
+    tag.className = 'section-tag';
+    tag.textContent = '📖 ' + section;
+    bubble.appendChild(tag);
+  }
+  if (needsHR) {
+    const et = document.createElement('div');
+    et.className = 'escalation-tag';
+    et.textContent = '⚡ This needs HR attention — ' + routingReason;
+    bubble.appendChild(et);
+  }
+
+  wrapper.appendChild(bubble);
+
+  if (followUps && followUps.length > 0) {
+    const fu = document.createElement('div');
+    fu.className = 'followups';
+    followUps.forEach(q => {
+      const b = document.createElement('button');
+      b.className = 'followup-btn';
+      b.textContent = '💬 ' + q;
+      b.onclick = () => handleSend(q);
+      fu.appendChild(b);
+    });
+    wrapper.appendChild(fu);
+  }
+
+  row.appendChild(av);
+  row.appendChild(wrapper);
+  msgs.appendChild(row);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function addUserMessage(text) {
+  const msgs = document.getElementById('messages');
+  const row = document.createElement('div');
+  row.className = 'msg-row user';
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble user';
+  bubble.textContent = text;
+  row.appendChild(bubble);
+  msgs.appendChild(row);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function addTyping() {
+  const msgs = document.getElementById('messages');
+  const row = document.createElement('div');
+  row.className = 'msg-row'; row.id = 'typingRow';
+  const av = document.createElement('div');
+  av.className = 'msg-avatar'; av.textContent = '🤖';
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble bot'; bubble.style.padding = '0';
+  bubble.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
+  row.appendChild(av); row.appendChild(bubble);
+  msgs.appendChild(row);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function removeTyping() {
+  const t = document.getElementById('typingRow');
+  if (t) t.remove();
+}
+
+function hideSuggestions() {
+  document.getElementById('suggestions').style.display = 'none';
+}
+
+function handleSend(overrideText) {
+  const inputEl = document.getElementById('userInput');
+  const text = overrideText || inputEl.value.trim();
+  if (!text) return;
+  inputEl.value = '';
+  inputEl.style.height = 'auto';
+  addUserMessage(text);
+  addTyping();
+
+  setTimeout(() => {
+    removeTyping();
+    const result = findAnswer(text);
+    if (result) {
+      addBotMessage(result.answer, result.section, result.needsHR || false, result.routingReason || '', result.followUps || []);
+      if (result.needsHR) {
+        setTimeout(() => showModal(text, result.routingReason), 400);
+      }
+    } else {
+      addBotMessage(
+        "I want to help, but I couldn't find an exact match in the handbook for that. 😊\n\nCould you try rephrasing? Or reach out directly to **HR India** at **hr-india@finzly.com** for a personalised response.\n\nYou can also try asking about: leaves, salary, travel, insurance, resignation, referral bonus, POSH, dress code, or Day 1 documents!",
+        "",
+        true,
+        "Query not found in handbook — needs HR clarification",
+        ["How many earned leaves do I get?","What is the notice period?","What is the mediclaim coverage?"]
+      );
+      setTimeout(() => showModal(text, "Query not found in current handbook configuration"), 400);
+    }
+  }, 600);
+}
+
+function showModal(query, reason) {
+  currentModalQuery = query;
+  document.getElementById('modalQuery').textContent = '"' + query + '"';
+  document.getElementById('modalReason').textContent = reason || 'Needs HR attention';
+  document.getElementById('modal').classList.add('show');
+}
+function closeModal() {
+  document.getElementById('modal').classList.remove('show');
+}
+
+document.getElementById('emailHRBtn').onclick = () => {
+  window.open('mailto:' + HR_EMAIL + '?subject=HR Query via BuddyFinzler&body=' + encodeURIComponent(currentModalQuery));
+  closeModal();
+};
+document.getElementById('modal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+const inputEl = document.getElementById('userInput');
+inputEl.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
+});
+inputEl.addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+});
+document.getElementById('sendBtn').addEventListener('click', () => handleSend());
+
+// ── Welcome message ───────────────────────────────────────────────────────
+window.onload = () => {
+  addBotMessage(
+    "Hey there! 👋 I'm **BuddyFinzler**, your Finzly HR companion.\n\nI'm loaded with the complete **Finzly Employee Handbook v2.1 (Jan 2026)**. Ask me anything about leaves, payroll, insurance, travel, POSH, exit policies, dress code, referral bonuses, and more!\n\nWhat's on your mind today? 😊",
+    "", false, "", []
+  );
+};
 </script>
 </body>
 </html>
