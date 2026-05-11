@@ -23,14 +23,15 @@ const { useState, useRef, useEffect } = React;
 
 const TEAMS_WEBHOOK_URL = "https://swapstechinc.webhook.office.com/webhookb2/95fe27eb-0280-40ac-abc4-bf05fdc95250@4d4c58f7-6978-4a93-ba72-f1d987c46c89/IncomingWebhook/7d680f77ffcf4195aa68ab3206a00d58/21943eff-d275-4627-a6df-22ead0a0bc4c/V2yZ2gowlgRBY_bVcFNrYQFiNNRlRgEnrza7V0sIl3_Rs1";
 const HR_EMAIL = "hr-india@finzly.com";
-const HANDBOOK_VERSION = "v1.2 – June 2024";
-const GROQ_API_KEY = "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";
+const HANDBOOK_VERSION = "v2.1 – Jan 2026";
+const GEMINI_API_KEY = "AIzaSyCCqxfKzt4mabknPc7sdpBgTgtpuSTXyIM";
+const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + GEMINI_API_KEY;
 
-const SYSTEM_PROMPT = `You are BuddyFinzler, Finzly's official HR assistant. You answer ONLY from the Finzly Employee Handbook version 1.2 dated June 2024, approved by Bharathkumar M (HR Head Manager).
+const SYSTEM_PROMPT = `You are BuddyFinzler, Finzly's official HR assistant. You answer ONLY from the Finzly Employee Handbook version 2.1 dated January 2026, approved by Bharathkumar M (Head of India HR and Facilities).
 
-CRITICAL RULE: Never invent, assume, or extrapolate any policy detail not in this handbook. If the exact answer is not here, set needsHRRouting to true. Always cite the section number.
+CRITICAL RULE: Never invent, assume, or extrapolate any policy detail not in this handbook. If the exact answer is not here, set needsHRRouting to true. Always cite the section number. Be warm, empathetic and friendly — like a caring colleague who knows HR inside out. Acknowledge feelings first when someone seems stressed.
 
-FINZLY EMPLOYEE HANDBOOK v1.2 KNOWLEDGE BASE:
+FINZLY EMPLOYEE HANDBOOK v2.1 KNOWLEDGE BASE:
 
 SECTION 2 — GENERAL MANAGEMENT
 - Employee only after accepting contract and start date confirmed.
@@ -38,35 +39,34 @@ SECTION 2 — GENERAL MANAGEMENT
 
 SECTION 3 — EMPLOYMENT CONDITIONS
 - Full Time Salaried: eligible for salary and full benefits.
-- Personnel files: Finzly property. Management access only. Employees review own file with HR present. Files cannot be removed.
+- Personnel files: Finzly property. Management access only. Employees review own file with HR present.
 - Update HR for: name/marital status, address/phone, dependents, emergency contact, qualifications.
 - Background check: employment, address, identity, criminal.
 - References: Only through HR in writing. No phone. Name, dates, job title only unless written consent.
 - NDA: All employees must sign on joining.
 - Probation: As per Offer Letter. Unsatisfactory = extended 1 month OR terminated with 1 month notice or immediately.
-- Retirement age: 58 years.
+- Retirement age: 60 years.
 
 SECTION 4 — DAY 1 / ORIENTATION
 - Day 1: Induction meeting.
-- Documents to bring: DOB proof (10th cert/birth cert), PAN card photocopy, Passport photocopy (if held), Education certificates (10th/12th/Bachelors/Masters), Professional course certs, 2 passport photos, UAN for PF (if applicable), Relieving+experience letter from previous employer, Last 3 months payslips from previous employer.
-- Forms to fill on Day 1: Employee Info Form, Information Security Policy, NDA, Gratuity+PF nomination forms, Insurance Form.
-- Provided on Day 1: Employee number, NT ID, email address, access card/biometrics.
-- All completed documents must be submitted to HR on first day.
+- Documents: DOB proof, PAN card, Passport (if held), Education certificates, Professional certs, 2 passport photos, UAN for PF, Relieving+experience letter, Last 3 months payslips.
+- Forms on Day 1: Employee Info Form, Information Security Policy, NDA, Gratuity+PF nomination, Insurance Form.
+- Provided: Employee number, email, access card/biometrics. WFH employees: biometric access + must log via HRMS portal.
 
 SECTION 5 — WORK TIMINGS & ATTENDANCE
-- Mon–Fri, 45 hours/week including 1-hour lunch daily.
-- Office open: 9:00 AM to 9:00 PM Monday to Friday.
-- Minimum 40 work hours/week in office (excluding lunch). Minimum 5 hours/day (excluding breaks).
+- Mon-Fri, 45 hours/week including 1-hour lunch daily.
+- Office accessible 24/7. AC operational during standard hours only.
+- Minimum 40 work hours/week (excluding lunch). Minimum 6 hours/day in office (excluding breaks).
+- Log in by 9:30 AM on weekdays (unless late evening calls).
 - Late arrival: Inform manager at least 1 hour before start time.
 - Unexcused absence: deducted from EL. Zero EL = LOP.
-- Job abandonment: 5 consecutive absent days without reporting = absconded. 2 registered post reminders sent. No response = deemed abandoned, not re-inducted.
+- Job abandonment: 5 consecutive absent days without reporting = absconded. 2 RPAD reminders. No response = deemed abandoned, not re-inducted.
 
 SECTION 6 — DRESS CODE
-- Business Casual Mon–Fri. Friday = casual (no sandals/slippers/shorts).
-- Prohibited: miniskirts, tank/tube/halter/transparent tops, torn jeans, flip-flops, slippers.
+- Business Casual Mon-Thu. Friday = casual (no sandals/slippers/shorts).
+- Prohibited always: miniskirts, tank/tube/halter/transparent tops, torn jeans, flip-flops, slippers.
 - Women: collared shirts/T-shirts (with or without sleeves), denim/skirts/dresses at or below knee, professional shoes/sandals.
-- Men: collared shirts/T-shirts with sleeves, trousers/khaki/jeans, professional shoes.
-- Good hygiene. Hair/beard/moustache neatly trimmed.
+- Men: collared shirts/T-shirts with sleeves, trousers/khaki/jeans with belt, professional shoes.
 
 SECTION 7 — LEAVE POLICY
 Leave year: 1 Jan to 31 Dec. Pro-rata for mid-year joiners.
@@ -74,93 +74,100 @@ Applies to full-time salaried employees ONLY. Not trainees/interns under standar
 Join 1st-15th = leave credited that month. Join 16th-end = no credit that month.
 Relieved 1st-15th = no credit that month. Relieved 16th-end = credited that month.
 
-EARNED LEAVE (EL): 10 days/year. Accrual: 0.8 day/month. Carry forward max 30 days (above 30 lapses at year end). Apply on GreytHR Portal, 2 days advance notice (except emergencies), manager approval required. EL encashed at basic salary on resignation.
+EARNED LEAVE (EL): 10 days/year. Accrual: 0.8 day/month. Carry forward max 30 days (above 30 lapses). Apply via HRMS portal, 2 days advance notice (except emergencies), manager approval required. EL encashed at basic salary on resignation.
 
-MANAGEMENT LEAVE (ML): 5 days/year. Accrual: 0.4 day/month. Lapses at year end, no carry forward. Onshore team approval mandatory.
+MANAGEMENT LEAVE (ML): 5 days/year. Accrual: 0.4 day/month. Lapses at year end. Onshore team approval mandatory.
 
 SICK LEAVE (SL): 5 days/year. Medical certificate mandatory if SL exceeds 2 days. Chronic illness beyond 5 continuous days: adjusted in EL first, then LOP.
 
-COMPENSATORY OFF: For working weekends due to business demand. Must be availed within 2 months of work date. Cannot be taken in advance. Cannot be encashed. Manager approval required.
+COMPENSATORY OFF: For working weekends/holidays due to business demand. Must be availed within 90 days of work date. Cannot be taken in advance. Cannot be encashed. Manager approval required.
 
-MATERNITY LEAVE: Female employees with more than 4 months continuous service. 26 weeks with full pay. Inform manager and HR of start and return dates. Post 26 weeks: WFH subject to work nature and management approval. If WFH unavailable, EL can be combined. After all leaves: LOP up to 2 months. Miscarriage/medical termination: 6 weeks paid leave on proof.
+MATERNITY LEAVE: Female employees with more than 4 months continuous service. 26 weeks with full pay. Notify 15 weeks before due date. Inform manager and HR of start and return dates. Post 26 weeks: WFH subject to work nature + management approval. If WFH unavailable, EL can be combined. After all leaves: LOP up to 2 months. Miscarriage/medical termination: 6 weeks paid leave on proof. Cannot be encashed.
 
 PATERNITY LEAVE: Male employees with minimum 3 months service. Up to 5 days. Inform manager and HR at least 2 weeks before expected delivery. Can be availed within 1 month of child's birth. Emergency dates adjustable.
 
 BEREAVEMENT LEAVE: Up to 2 days. Immediate family members only. Inform manager and HR.
 
-LEAVE WITHOUT PAY (LOP): For employees who exhausted all leave, with prior manager approval. Employees on probation or notice period: all leaves = LOP. Sandwich leave: holiday between two availed leaves with zero balance = merged as LOP.
+LEAVE WITHOUT PAY (LOP): For employees who exhausted all leave, with prior manager approval. Probation/notice period employees: all leaves = LOP. Sandwich rule: holiday between two availed leaves with zero balance = merged as LOP.
 
-LEAVE FOR INTERNS/FRESHERS: After 1 month service: 1 day total (0.5 SL + 0.5 CL). Lapses at end of training. Cannot be encashed.
+LEAVE FOR INTERNS/PROBATION: After 1 month service: 1 day total (0.5 SL + 0.5 CL). Lapses at end of period. Cannot be encashed.
 
-LEAVE PROCEDURE: Apply via GreytHR Portal. Leave not updated before 20th of next month = treated as absent, deducted from EL. Leaves cannot be adjusted against notice period (Country Head approval needed for deviation).
+LEAVE PROCEDURE: Apply via HRMS portal. Not updated before 15th of next month = treated as absent, deducted from EL. Leaves cannot be adjusted against notice period.
 
 SECTION 8 — HOLIDAY POLICY
-10 public holidays per year. List declared by HR at start of each year (effective Jan 1). Displayed on notice board.
+10 public holidays per year. List declared by HR at start of each year (effective Jan 1).
 
 SECTION 9 — COMPENSATION AND BENEFITS
-Financial year: April to March. Payroll period: calendar month. Salary credited: between last working day of month to before 3rd of subsequent month. Deductions: Provident Fund and statutory deductions per Income Tax. For salary issues: contact HR Department.
+Financial year: April to March. Payroll period: calendar month. Salary credited: between last working day of month to before 3rd of subsequent month. Deductions: Provident Fund and statutory deductions per Income Tax.
 
 SECTION 10 — PERFORMANCE MANAGEMENT
-Formal review: every quarter. Annual review: November-December each year. Salary revision: effective January of succeeding year. NOT eligible for annual review: employees who joined on or after 31st October. Performance period: January to December.
-PIP: Initiated by reporting manager with HR present. Objectives agreed for max 1 month. Interim review at 2 weeks or final at 1 month. Full-time employees only. Outcome: continuation, extension, or termination.
+Formal review: every quarter. Annual review: November-December. Salary revision: effective January of succeeding year. NOT eligible: employees who joined on or after 31st October. Performance period: January to December.
+PIP: Initiated by reporting manager with HR. Objectives agreed for max 1 month. Interim review at 2 weeks or final at 1 month. Full-time employees only.
 
 SECTION 11 — HEALTH INSURANCE
-MEDICLAIM: Provider: ICICI Lombard GIC Ltd. Coverage: Rs. 5 Lakhs. Covered: Employee + spouse + two children. Includes accidental insurance (death, permanent total/partial disability, temporary total disability, weekly compensation). Min 24-hour hospitalization required for claims. HR must be informed within 2 days of hospital admission. Claims not settled without discharge summary. App: https://www.icicilombard.com/il-takecare-app
+MEDICLAIM: Provider: ICICI Lombard GIC Ltd. Coverage: Rs. 5 Lakhs. Covered: Employee + spouse + two children. Includes accidental insurance. Min 24-hour hospitalization for claims. HR informed within 2 days of admission. Discharge summary mandatory.
 
-TERM INSURANCE: Provider: ICICI Prudential Life Insurance. Coverage: Rs. 35 Lakhs. Employee only (not family). App: https://www.iciciprulife.com/
+TERM INSURANCE: Provider: ICICI Prudential Life Insurance. Coverage: Rs. 35 Lakhs. Employee only.
 
 SECTION 12 — REWARDS AND RECOGNITION
-All full-time employees eligible. Monthly and Quarterly assessments. Monetary or non-monetary rewards.
+All full-time employees eligible. Monthly assessments. Monetary or non-monetary rewards.
 
 SECTION 13 — WORKPLACE PRACTICES
-1:1 discussions every 1-3 months (beyond quarterly appraisals). Open door: Concerns on salary, performance, discrimination. Path: Manager then HR then Senior Management. Company computers for official use only. Chain emails prohibited. Company property: all equipment is Finzly property. Laptop lost = employee liable to reimburse full replacement cost. No smoking/tobacco inside premises.
+1:1 discussions every 1-3 months. Open door policy: Manager then HR then Senior Management.
+Company computers for official use only. Chain emails prohibited.
+Laptop lost = employee liable to reimburse full replacement cost.
+No smoking/tobacco inside premises.
+Illegal drugs/alcohol: prohibited on company premises and during work hours. Company can require drug/alcohol tests on reasonable suspicion.
 
-SECTION 14 — POSH
-ALWAYS set needsHRRouting to true for ANY POSH or harassment query. Never attempt to answer. Zero tolerance policy. Complaints to ICC within 15 days. Enquiry completed within 90 days. Confidentiality mandatory. Contact HR Head.
+SECTION 14 — CLEAN DESK POLICY
+Clear desk at end of each workday. Confidential docs in locked cabinets. Laptops locked when unattended. No sensitive info visible to visitors.
 
-SECTION 15 — TRAVEL POLICY
-INTERNATIONAL: Company pays visa, air tickets, insurance, lodging. Employee pays + claims on actuals (with bills): local travel at client site, airport pickup/drop. USA per diem: USD 80/day (food + incidentals, no bills needed). Additional expenses (client meals): claimed at actuals with Project Manager approval.
+SECTION 15 — POSH
+ALWAYS set needsHRRouting to true for ANY POSH or harassment query. Never attempt to answer. Zero tolerance policy. Complaints to ICC within 15 days. Enquiry completed within 90 days. Confidentiality mandatory.
+ICC Chennai: Divya Moorthy (divya.moorthy@finzly.com), Bharathkumar M (Bharathkumar.m@finzly.com), Baskaran Devarasu (baskaran.devarasu@finzly.com).
+ICC Pune: Vishwata Mayekar (vishwata.mayekar@finzly.com), Andleeb Sohail (andleeb.sohail@finzly.com), Prashant Choudhary (prashant@finzly.com).
+Registered on She-Box (Ministry of Women & Child Development).
 
-H1B/L1: All expenses arranged by Onshore company. Advances deducted from succeeding salaries.
+SECTION 16 — TRAVEL POLICY
+INTERNATIONAL: Company pays visa, air tickets, insurance, lodging. Employee pays + claims actuals: local travel at client site, airport pickup/drop. USA per diem: USD 80/day (food + incidentals, no bills needed).
 
-DOMESTIC (outside Chennai/Pune within India): 3 business days advance notice. Submit request to HR with Practice Head + Country Head approval. Air: Economy. Train: AC 2/3 Tier (preferred if under 6 hours). Car: Rs. 8/km + toll if 50-400km and no train.
+DOMESTIC: 3 business days advance notice. Air: Economy. Train: AC 2/3 Tier (preferred if under 6 hours). Car: Rs. 8/km + toll if 50-400km and no train. 2-wheeler: Rs. 5/km.
 Hotel per day: Type 1 cities (Mumbai, Delhi, Chennai, Kolkata, Pune, Bangalore, Hyderabad) = Rs. 5,000. Type 2 cities = Rs. 4,000. Other cities = Rs. 3,000.
 Daily food max: Type 1 = Rs. 600. Type 2 = Rs. 500. Other = Rs. 400.
-Private stay allowance (flat, no bills): Type 1 = Rs. 1,400/day. Type 2 = Rs. 1,000/day. Other = Rs. 800/day.
+Private stay allowance: Type 1 = Rs. 1,400/day. Type 2 = Rs. 1,000/day. Other = Rs. 800/day.
 Non-reimbursable: clothing, toiletries, magazines, alcohol, cigarettes.
-Boarding pass mandatory for air travel. Unspent advance returned within 3 business days. Travel reimbursements are taxable.
 
-SECTION 16 — EMPLOYEE BENEFITS (excludes probation employees)
-REFERRAL BONUS: Not for fresher referrals. Paid 6 months after candidate joins on permanent rolls and stays. Not paid if candidate is non-performer or referring employee was part of hiring decision. Centre Head approval required.
+SECTION 17 — EMPLOYEE BENEFITS (excludes probation employees)
+REFERRAL BONUS: Not for fresher referrals. Paid after candidate joins on permanent rolls. Not paid if non-performer or referring employee was part of hiring decision. Centre Head approval required.
 Development (Java, Angular, Spring Boot): 3-5 yrs = Rs. 20,000 | 5-10 yrs = Rs. 30,000 | 10+ yrs = Rs. 35,000.
 QA/Products/DevOps(AWS)/Digital Marketing/Support: 3-5 yrs = Rs. 15,000 | 5-10 yrs = Rs. 20,000 | 10+ yrs = Rs. 30,000.
 Immediate joiners (within 5-10 days, any position) = Rs. 50,000.
 
-LATE NIGHT DINNER & CAB: Working beyond 9:00 PM for official purpose. Dinner cap: Rs. 250/person. Cab: actual cost reimbursed. Requires Practice Head or reporting manager approval.
+LATE NIGHT DINNER & CAB: Working beyond 8 hours officially. Dinner cap: Rs. 250/person. Cab: actual cost. Weekends/holidays working: lunch OR dinner cap Rs. 250 each. Requires Practice Head or manager approval.
 
-SECTION 17 — EXIT & TERMINATION
-RESIGNATION: Minimum 2 months notice in writing to Practice Lead (forwarded to HR + Country Head). During notice: no leave can be availed. If leave taken, notice period extends by same days. Leave cannot be adjusted against notice period. Early relief: salary forfeited for unworked notice days at full fixed salary. Variable/joining bonus: repaid if resigning within 1 year. During notice: restricted IT access. Relieving/experience letter withheld until all dues settled. Accrued EL encashed at basic salary. Insurance ends on separation date.
+SECTION 18 — EXIT & TERMINATION
+RESIGNATION: Minimum 2 months notice in writing to Practice Lead (forwarded to HR + Country Head). During notice: no leave can be availed. If leave taken, notice period extends by same days. Leave cannot be adjusted against notice period. Early relief: salary forfeited for unworked notice days at full fixed salary. Variable/joining bonus: repaid if resigning within 1 year. Relieving/experience letter withheld until all dues settled. Accrued EL encashed at basic salary. Insurance ends on separation date.
 
-TERMINATION BY EMPLOYER: 1 month notice OR immediately after 2 written warnings for non-performance. Summary (no notice, no payment): misconduct, negligence, fundamental breach, causing loss to company.
+TERMINATION BY EMPLOYER: Summary (no notice): misconduct, negligence, fundamental breach. With notice: 2 months notice or 2 written warnings for non-performance.
 
 EXIT INTERVIEW: Conducted by HR on last working day.
 
-JOB ABANDONMENT: 5 consecutive absent days without reporting = absconded. Two RPAD reminders. No response = deemed abandoned, not re-inducted.
+JOB ABANDONMENT: 5 consecutive absent days without reporting = absconded. Two RPAD reminders. No response = deemed abandoned.
 
 ESCALATION RULES — set needsHRRouting true if:
 - ANY POSH or harassment query (ALWAYS)
 - Specific salary figures or individual compensation
 - Individual disciplinary cases
-- Visa/immigration specifics beyond what is above
+- Visa/immigration specifics
 - PIP initiation or active PIP case
 - Termination proceedings for specific employee
 - Tax calculations
 - Anything not explicitly in this handbook
 
-RESPONSE FORMAT — return ONLY valid JSON nothing else:
+RESPONSE FORMAT — return ONLY valid JSON, nothing else:
 {
-  "answer": "Warm helpful answer using - for bullet points",
-  "section": "Section number e.g. Section 7.3.1 Earned Leave",
+  "answer": "Warm empathetic answer. Acknowledge feelings first if stressed. Use - for bullets.",
+  "section": "Section number e.g. Section 7 Earned Leave",
   "needsHRRouting": false,
   "routingReason": "",
   "suggestedFollowUps": ["follow up 1", "follow up 2"]
@@ -182,7 +189,7 @@ const SUGGESTED_QUESTIONS = [
 function App() {
   const [messages, setMessages] = useState([{
     id: 1, role: "assistant",
-    text: "Hey there! 👋 I'm **BuddyFinzler**, your Finzly HR assistant.\n\nI'm trained on the **Finzly Employee Handbook v1.2 (June 2024)**. Ask me about leaves, payroll, insurance, travel, exit policies, and more!\n\nWhat can I help you with today?",
+    text: "Hey there! 👋 I'm **BuddyFinzler**, your Finzly HR companion.\n\nI'm trained on the **Finzly Employee Handbook v2.1 (Jan 2026)**. Ask me about leaves, payroll, insurance, travel, exit policies, and more — with warmth and zero judgment!\n\nWhat's on your mind today? 😊",
     needsHRRouting: false, section: "",
   }]);
   const [input, setInput] = useState("");
@@ -205,33 +212,23 @@ function App() {
         listItems.push(line.slice(2));
       } else {
         if (listItems.length > 0) {
-          elements.push(
-            React.createElement("ul", { key: "ul"+i, style: { margin: "6px 0 6px 16px", padding: 0 } },
-              listItems.map((item, j) => React.createElement("li", {
-                key: j, style: { marginBottom: 3, lineHeight: 1.5 },
-                dangerouslySetInnerHTML: { __html: item.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") }
-              }))
-            )
-          );
+          elements.push(React.createElement("ul", { key: "ul"+i, style: { margin: "6px 0 6px 16px", padding: 0 } },
+            listItems.map((item, j) => React.createElement("li", { key: j, style: { marginBottom: 3, lineHeight: 1.5 },
+              dangerouslySetInnerHTML: { __html: item.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") } }))
+          ));
           listItems = [];
         }
         if (line.trim()) {
-          elements.push(React.createElement("p", {
-            key: "p"+i, style: { margin: "4px 0", lineHeight: 1.6 },
-            dangerouslySetInnerHTML: { __html: line.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") }
-          }));
+          elements.push(React.createElement("p", { key: "p"+i, style: { margin: "4px 0", lineHeight: 1.6 },
+            dangerouslySetInnerHTML: { __html: line.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") } }));
         }
       }
     });
     if (listItems.length > 0) {
-      elements.push(
-        React.createElement("ul", { key: "ul-final", style: { margin: "6px 0 6px 16px", padding: 0 } },
-          listItems.map((item, j) => React.createElement("li", {
-            key: j, style: { marginBottom: 3, lineHeight: 1.5 },
-            dangerouslySetInnerHTML: { __html: item.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") }
-          }))
-        )
-      );
+      elements.push(React.createElement("ul", { key: "ul-final", style: { margin: "6px 0 6px 16px", padding: 0 } },
+        listItems.map((item, j) => React.createElement("li", { key: j, style: { marginBottom: 3, lineHeight: 1.5 },
+          dangerouslySetInnerHTML: { __html: item.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") } }))
+      ));
     }
     return elements;
   }
@@ -242,20 +239,44 @@ function App() {
     setInput(""); setShowSuggestions(false);
     setMessages(prev => [...prev, { id: Date.now(), role: "user", text: userText }]);
     setLoading(true);
-    conversationHistory.current.push({ role: "user", content: userText });
+
+    // Build Gemini conversation history
+    conversationHistory.current.push({ role: "user", parts: [{ text: userText }] });
+
     try {
-      const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      const res = await fetch(GEMINI_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + GROQ_API_KEY },
-        body: JSON.stringify({ model: "llama-3.3-70b-versatile", max_tokens: 1000, messages: [{ role: "system", content: SYSTEM_PROMPT }, ...conversationHistory.current] }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+          contents: conversationHistory.current,
+          generationConfig: { maxOutputTokens: 1000, temperature: 0.7 }
+        })
       });
+
       const data = await res.json();
-      const raw = data.choices?.[0]?.message?.content || "{}";
+      console.log("Gemini response:", data);
+
+      if (!res.ok || data.error) {
+        throw new Error(data.error?.message || "HTTP " + res.status);
+      }
+
+      const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
       let parsed;
       try { parsed = JSON.parse(raw.replace(/```json|```/g, "").trim()); }
       catch { parsed = { answer: raw, section: "", needsHRRouting: false, routingReason: "", suggestedFollowUps: [] }; }
-      conversationHistory.current.push({ role: "assistant", content: parsed.answer });
-      setMessages(prev => [...prev, { id: Date.now()+1, role: "assistant", text: parsed.answer, section: parsed.section || "", needsHRRouting: parsed.needsHRRouting, routingReason: parsed.routingReason, suggestedFollowUps: parsed.suggestedFollowUps || [] }]);
+
+      // Push model reply to history
+      conversationHistory.current.push({ role: "model", parts: [{ text: parsed.answer }] });
+
+      setMessages(prev => [...prev, {
+        id: Date.now()+1, role: "assistant",
+        text: parsed.answer, section: parsed.section || "",
+        needsHRRouting: parsed.needsHRRouting,
+        routingReason: parsed.routingReason,
+        suggestedFollowUps: parsed.suggestedFollowUps || []
+      }]);
+
       if (parsed.needsHRRouting) {
         setTeamsStatus("sending");
         try {
@@ -270,13 +291,19 @@ function App() {
                 facts: [{ name: "Query", value: userText }, { name: "Reason", value: parsed.routingReason }] }]
             })
           });
-        } catch(e) {}
+        } catch(e) { console.log("Teams webhook error:", e); }
         setTeamsStatus("sent");
         setTimeout(() => setTeamsStatus(null), 4000);
         setTimeout(() => setRoutingModal({ reason: parsed.routingReason, query: userText }), 400);
       }
-    } catch {
-      setMessages(prev => [...prev, { id: Date.now()+1, role: "assistant", text: "Hmm, ran into a hiccup. Please try again or reach out to HR India directly.", needsHRRouting: false, section: "" }]);
+
+    } catch(e) {
+      console.error("API error:", e);
+      setMessages(prev => [...prev, {
+        id: Date.now()+1, role: "assistant",
+        text: "Hmm, I ran into a hiccup 😔 — " + e.message + "\n\nPlease try again or reach out to HR India directly.",
+        needsHRRouting: false, section: ""
+      }]);
     }
     setLoading(false);
   }
