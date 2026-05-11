@@ -41,8 +41,6 @@ body{background:linear-gradient(135deg,#07101f,#0d1a32 60%,#06111e);min-height:1
 .followups{display:flex;flex-direction:column;gap:5px;margin-top:4px;margin-left:38px;animation:fadeSlideIn 0.3s ease}
 .followup-btn{background:rgba(29,78,216,0.07);border:1px solid rgba(29,78,216,0.18);border-radius:10px;color:#93c5fd;font-size:12px;padding:7px 12px;cursor:pointer;text-align:left;font-family:inherit;transition:background 0.2s}
 .followup-btn:hover{background:rgba(29,78,216,0.18)}
-
-/* YES/NO + QUICK REPLY BUTTONS */
 .quick-replies{display:flex;flex-wrap:wrap;gap:7px;margin-top:4px;margin-left:38px;animation:fadeSlideIn 0.3s ease}
 .qr-btn{padding:7px 16px;border-radius:20px;font-size:12.5px;cursor:pointer;font-family:inherit;font-weight:600;transition:all 0.2s;border:none}
 .qr-btn.yes{background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.3);color:#4ade80}
@@ -51,19 +49,12 @@ body{background:linear-gradient(135deg,#07101f,#0d1a32 60%,#06111e);min-height:1
 .qr-btn.no:hover{background:rgba(239,68,68,0.2)}
 .qr-btn.neutral{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.65)}
 .qr-btn.neutral:hover{background:rgba(255,255,255,0.12);color:#fff}
-
-/* Typing indicator */
 .typing-row{display:flex;align-items:flex-end;gap:8px;animation:fadeSlideIn 0.2s ease}
 .typing-bubble{background:rgba(255,255,255,0.055);border:1px solid rgba(255,255,255,0.08);border-radius:18px 18px 18px 4px;padding:12px 16px;display:flex;gap:5px}
 .typing-bubble span{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,0.45);animation:bounce 1.2s infinite}
 .typing-bubble span:nth-child(2){animation-delay:0.2s}
 .typing-bubble span:nth-child(3){animation-delay:0.4s}
-
-#suggestions{padding:0 18px 12px;flex-shrink:0}
-.suggestions-label{color:rgba(255,255,255,0.28);font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:7px}
-.chips{display:flex;flex-wrap:wrap;gap:6px}
-.chip{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:20px;color:rgba(255,255,255,0.55);font-size:11.5px;padding:5px 12px;cursor:pointer;font-family:inherit;transition:all 0.2s}
-.chip:hover{background:rgba(255,255,255,0.09);color:#fff}
+#suggestions{display:none}
 .input-area{padding:10px 14px 14px;border-top:1px solid rgba(255,255,255,0.05);background:rgba(0,0,0,0.15);flex-shrink:0}
 .input-box{display:flex;gap:9px;align-items:flex-end;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.09);border-radius:16px;padding:8px 8px 8px 15px}
 #userInput{flex:1;background:transparent;border:none;outline:none;color:#f1f5f9;font-size:13.5px;line-height:1.5;resize:none;font-family:inherit;max-height:100px;min-height:22px}
@@ -101,18 +92,15 @@ body{background:linear-gradient(135deg,#07101f,#0d1a32 60%,#06111e);min-height:1
     <div class="badge">HR ASSISTANT</div>
   </div>
   <div id="messages"></div>
-  <div id="suggestions">
-    <div class="suggestions-label">Quick questions</div>
-    <div class="chips" id="chips"></div>
-  </div>
+  <div id="suggestions" style="display:none"><div class="chips" id="chips"></div></div>
   <div class="input-area">
     <div class="input-box">
-      <textarea id="userInput" rows="1" placeholder="Ask me anything about HR policies..."></textarea>
+      <textarea id="userInput" rows="1" placeholder="Ask me anything about Finzly or HR policies..."></textarea>
       <button id="sendBtn">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13M22 2L15 22L11 13M11 13L2 9L22 2" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
     </div>
-    <div class="input-footer">Finzly Handbook v2.1 · For personal queries → hr-india@finzly.com</div>
+    <div class="input-footer">Finzly HR Assistant v2.1 · hr-india@finzly.com · www.finzly.com</div>
   </div>
 </div>
 <div id="modal">
@@ -131,1087 +119,520 @@ body{background:linear-gradient(135deg,#07101f,#0d1a32 60%,#06111e);min-height:1
 const HR_EMAIL = "hr-india@finzly.com";
 let currentModalQuery = "";
 let isBotTyping = false;
+let conversationState = { flow:null, step:null, context:{} };
+function setFlow(f,s,c={}){ conversationState={flow:f,step:s,context:c}; }
+function clearFlow(){ conversationState={flow:null,step:null,context:{}}; }
 
 // ─────────────────────────────────────────────────────────────────
-// CONVERSATION STATE — tracks multi-turn dialogues
+// FINZLY COMPANY KNOWLEDGE BASE
 // ─────────────────────────────────────────────────────────────────
-let conversationState = {
-  flow: null,       // which flow is active e.g. "resign", "harassment", "sick", etc.
-  step: null,       // which step within that flow
-  context: {}       // any stored data about the user's answers
-};
-
-function setFlow(flow, step, context={}) {
-  conversationState = { flow, step, context };
-}
-function clearFlow() {
-  conversationState = { flow: null, step: null, context: {} };
-}
-
-// ─────────────────────────────────────────────────────────────────
-// MULTI-TURN CONVERSATION FLOWS
-// Each flow is a function that receives the user's reply text
-// and returns a bot response object (lines[], quickReplies[], followUps[], etc.)
-// ─────────────────────────────────────────────────────────────────
-const FLOWS = {
-
-  // ── RESIGNATION FLOW ────────────────────────────────────────────
-  resign_ask_manager: (userReply) => {
-    const yes = /\b(yes|yeah|yep|yup|i did|spoke|talked|discussed|already|have)\b/i.test(userReply);
-    const no  = /\b(no|nope|not yet|haven't|didn't|don't|never|na)\b/i.test(userReply);
-    if (yes) {
-      setFlow("resign", "ask_resolved");
-      return {
-        lines:[
-          "I'm glad you've already had that conversation. 😊",
-          "Was your concern addressed, or do you still wish to move forward with the resignation?"
-        ],
-        quickReplies:[
-          { label:"My concern was resolved ✅", type:"yes", reply:"concern resolved" },
-          { label:"Still want to resign", type:"no", reply:"still want to resign" }
-        ]
-      };
-    } else if (no) {
-      setFlow("resign", "nudge_to_manager");
-      return {
-        lines:[
-          "I understand — and I truly respect your decision. 💙",
-          "Before you submit, I'd gently encourage one conversation with your **manager or HR**.",
-          "Sometimes a role change, project shift, or support can make a big difference.",
-          "Would you like to try that first, or do you still wish to proceed with resignation?"
-        ],
-        quickReplies:[
-          { label:"I'll talk to HR/Manager first", type:"yes", reply:"will talk to manager" },
-          { label:"I still want to resign", type:"no", reply:"still want to resign" }
-        ]
-      };
-    } else {
-      // Unclear answer — treat as "proceed"
-      setFlow("resign", "process");
-      return FLOWS.resign_process();
-    }
+const COMPANY_KB = [
+  {
+    keys:["what is finzly","about finzly","tell me about finzly","what does finzly do","finzly company","what company is this","who is finzly","finzly overview"],
+    section:"About Finzly",
+    lines:[
+      "Great question — let me tell you about the company you're part of! 😊",
+      "**Finzly** is a leading financial technology company founded in **2012** by **Booshan Rengachari** — a former Wells Fargo International Banking leader turned fintech visionary.",
+      "Our mission? **To free banks from their core banking limitations** — enabling them to move at fintech speed without ripping out their existing systems.",
+      "We do this through our flagship platform: **Finzly BankOS** — a cloud-native, API-first operating system for banks and credit unions.",
+      "Today, Finzly is trusted by financial institutions across the US to modernise payments, accounts, FX, and digital banking. 🚀\n\nWebsite: **www.finzly.com**"
+    ],
+    followUps:["What is BankOS?","Where are Finzly's offices?","Who is the CEO of Finzly?"]
   },
-
-  resign_ask_resolved: (userReply) => {
-    const resolved = /\b(yes|resolved|sorted|fine|ok|better|good|no longer|not anymore)\b/i.test(userReply);
-    if (resolved) {
-      clearFlow();
-      return {
-        lines:[
-          "That's wonderful to hear! 😊 Really glad things got sorted.",
-          "If you ever need anything else — leave, policies, or just a chat — I'm right here for you!"
-        ],
-        followUps:["What are my office timings?","How many leaves do I get?","What is the referral bonus?"]
-      };
-    } else {
-      setFlow("resign", "process");
-      return FLOWS.resign_process();
-    }
+  {
+    keys:["bankos","bank os","what is bankos","finzly bankos","finzly platform","finzly product","our platform","what do we build"],
+    section:"Finzly BankOS Platform",
+    lines:[
+      "Here's a look at what we build — and it's pretty exciting! 🚀",
+      "**Finzly BankOS** is our cloud-native bank operating system. Think of it as the modern backbone for a bank's entire money movement operations.",
+      "BankOS is built around **Galaxies** — each galaxy is a specialised set of services:\n- **Payment Galaxy** — ACH, Fedwire, RTP, FedNow, SWIFT on one platform\n- **Accounts Galaxy** — Virtual accounts, multi-currency ledgers, real-time reconciliation\n- **Open Galaxy** — Embedded banking APIs for fintechs and BaaS\n- **Trade Galaxy** — Foreign exchange and trade finance\n- **Token Galaxy** — Tokenised assets, stablecoins, digital deposits (launched 2025)\n- **Agentic Galaxy** — AI agents embedded directly inside payment workflows (launched Oct 2025)",
+      "Banks can deploy **one galaxy or all of them** — without replacing their existing core.",
+      "It's live on **AWS Marketplace** too, making it even easier for banks to adopt. 😊"
+    ],
+    followUps:["What is the Payment Galaxy?","What is BaaS?","What is Agentic Galaxy?"]
   },
-
-  resign_nudge_to_manager: (userReply) => {
-    const talkFirst = /\b(yes|ok|okay|sure|will|i'll|let me|first|try)\b/i.test(userReply);
-    if (talkFirst) {
-      clearFlow();
-      return {
-        lines:[
-          "That's a great step. 😊 I'm rooting for a positive outcome for you!",
-          "HR is always available at **hr-india@finzly.com** — reach out anytime.",
-          "I'm here if you need anything else. 💙"
-        ],
-        followUps:["What is the open door policy?","What is the performance review process?"]
-      };
-    } else {
-      setFlow("resign", "process");
-      return FLOWS.resign_process();
-    }
+  {
+    keys:["payment galaxy","payment hub","payments","ach","fedwire","fednow","rtp","swift","payment rails","what payments","payment products"],
+    section:"Finzly Payment Galaxy",
+    lines:[
+      "As a Finzly employee, you're working at the heart of modern US banking payments! 💳",
+      "Our **Payment Galaxy** unifies all major payment rails on a single platform:\n- **ACH** — Automated Clearing House (batch payments)\n- **Fedwire** — High-value wire transfers\n- **RTP** — Real-Time Payments (The Clearing House)\n- **FedNow** — The Federal Reserve's instant payment network\n- **SWIFT** — International cross-border payments",
+      "All rails are **ISO 20022 certified**, with smart routing, real-time monitoring, and fraud controls built in.",
+      "Finzly was actually one of the **first API connections to FedNow** — and Booshan personally proposed our faster payments vision to the Faster Payments Task Force in **2016**! 🎉"
+    ],
+    followUps:["What is BankOS?","What is Agentic Galaxy?","What is BaaS?"]
   },
-
-  resign_process: () => {
-    clearFlow();
-    return {
-      section:"Section 18.1 – Resignation",
-      needsHR: true,
-      routingReason:"Resignation process — HR to guide through formalities",
-      lines:[
-        "Understood. I respect your decision and I'm here to make it as smooth as possible. 💙",
-        "Here's the **resignation process** at Finzly:\n- Give a minimum **2 months written notice**\n- Submit to your **Practice Lead** → forwarded to HR + Country Head\n- **No leaves** can be availed during the notice period (if taken, notice extends by those days)\n- Shortage of notice **cannot** be adjusted with EL",
-        "On your exit:\n- **Variable/joining bonus** returned if resigning within 1 year\n- **EL balance** encashed at basic salary\n- Relieving letter issued once all dues are cleared\n- **Insurance ends** on separation date",
-        "**Next step:** Email hr-india@finzly.com — HR will handle the rest with care. 💙"
-      ],
-      followUps:["What is the exit interview process?","What happens to my leaves when I resign?"]
-    };
+  {
+    keys:["agentic galaxy","ai","artificial intelligence","ai agents","machine learning","finzly ai","ai in payments"],
+    section:"Finzly Agentic Galaxy",
+    lines:[
+      "This is one of our most exciting innovations! 🤖✨",
+      "In **October 2025**, Finzly launched the **Agentic Galaxy** — AI agents that work **inside the payment flow itself**, not just as a layer on top.",
+      "These agents:\n- Predict payment friction before it happens\n- Optimise routing across rails automatically\n- Automate manual payment review processes\n- Make payment operations faster, smarter, and more reliable",
+      "It's a big deal — most banks still process payments on **decades-old mainframe technology**. Finzly is changing that with intelligence built right in. 🚀"
+    ],
+    followUps:["What is BankOS?","What is Token Galaxy?","What does Finzly do?"]
   },
-
-  // ── HARASSMENT FLOW ─────────────────────────────────────────────
-  harassment_immediate: () => {
-    clearFlow();
-    return {
-      section:"Section 15 – POSH Policy",
-      needsHR: true,
-      routingReason:"Harassment/POSH — requires immediate confidential ICC support",
-      lines:[
-        "I'm really sorry this is happening to you. Please know — **you are not alone**, and Finzly stands firmly by you. 💙",
-        "You don't have to go through this alone. Here's exactly what you can do **right now**.",
-        "**Contact your ICC (Internal Complaints Committee) directly:**",
-        "**Chennai:** Divya Moorthy (divya.moorthy@finzly.com) · Bharathkumar M (Bharathkumar.m@finzly.com) · Abirami R (abirami.r@finzly.com)\n\n**Pune:** Vishwata Mayekar (vishwata.mayekar@finzly.com) · Andleeb Sohail (andleeb.sohail@finzly.com) · Prashant Choudhary (prashant@finzly.com)",
-        "You can also raise it via **She-Box** (Ministry of Women & Child Development) — Finzly is officially registered.",
-        "- File complaint **within 15 days** of the incident\n- Everything is **strictly confidential**\n- You are **fully protected** — no retaliation of any kind is permitted\n- Enquiry will be completed within **90 days**",
-        "You are heard. You are safe here. Please reach out to ICC today. 💙"
-      ],
-      followUps:[]
-    };
+  {
+    keys:["token galaxy","tokenised","tokenized","stablecoin","digital assets","blockchain","programmable money"],
+    section:"Finzly Token Galaxy",
+    lines:[
+      "Finzly is also stepping into the future of money! 🌐",
+      "The **Token Galaxy** (launched 2025) lets banks manage **tokenised assets, stablecoins, and tokenised deposits** — all within the same BankOS environment.",
+      "It connects to **multiple blockchains, issuers, and consortia simultaneously** — so banks don't need custom integrations for each network.",
+      "This means the banks we serve can participate in the tokenised economy today, alongside their traditional payment operations. Pretty forward-thinking! 😊"
+    ],
+    followUps:["What is BankOS?","What is Agentic Galaxy?","What is BaaS?"]
   },
-
-  // ── SICK LEAVE FLOW ─────────────────────────────────────────────
-  sick_ask_days: (userReply) => {
-    const moreThan2 = /\b(3|4|5|6|7|8|9|10|more|week|weeks|few days|many|long|several)\b/i.test(userReply);
-    const oneTwoDay = /\b(1|2|one|two|day|today|just|single)\b/i.test(userReply);
-    if (moreThan2) {
-      clearFlow();
-      return {
-        section:"Section 7.4.3 – Sick Leave",
-        lines:[
-          "Oh no — please make sure you're taking good care of yourself first. 🙏",
-          "Since it's more than 2 days, here's what you need to do:\n- Apply via the **HRMS portal** and select Sick Leave\n- A **medical certificate is mandatory** for sick leave beyond 2 days\n- If it extends beyond **5 continuous days**, it adjusts against your **Earned Leave** first, then Loss of Pay",
-          "Keep your manager informed — a quick message from you (or someone on your behalf) is enough.",
-          "**Next step:** Apply on HRMS and share the medical certificate once you have it. HR is here if you need anything. 💙"
-        ],
-        followUps:["What is earned leave?","What is leave without pay?","When do I need a medical certificate?"]
-      };
-    } else if (oneTwoDay) {
-      clearFlow();
-      return {
-        section:"Section 7.4.3 – Sick Leave",
-        lines:[
-          "I hope you feel better soon! 🙏",
-          "For **1–2 days** of sick leave:\n- Apply via the **HRMS portal** and select Sick Leave\n- Keep your **manager informed**\n- No medical certificate needed for up to 2 days",
-          "**Next step:** Apply on HRMS and rest well. Take care! 💙"
-        ],
-        followUps:["What is earned leave?","How do I apply for leave?"]
-      };
-    } else {
-      clearFlow();
-      return {
-        section:"Section 7.4.3 – Sick Leave",
-        lines:[
-          "I hope you're okay. 🙏 Here's the sick leave policy regardless of duration:",
-          "- **5 days** of Sick Leave per year\n- **Medical certificate mandatory** if more than 2 continuous days\n- Beyond **5 days**: adjusts against Earned Leave, then Loss of Pay\n- Apply via **HRMS portal** and inform your manager",
-          "**Next step:** Apply on HRMS. If in doubt about your balance, check the portal. 😊"
-        ],
-        followUps:["What is earned leave?","What is leave without pay?"]
-      };
-    }
+  {
+    keys:["baas","banking as a service","open galaxy","embedded banking","api","fintech partner","open api","developer"],
+    section:"Finzly Open Galaxy (BaaS)",
+    lines:[
+      "Our **Open Galaxy** is all about powering the embedded banking revolution! 🔌",
+      "It gives fintechs and banks a **unified API** for:\n- All payment types (ACH, wires, FedNow, RTP)\n- Virtual accounts and multi-currency deposits\n- Foreign exchange\n- KYC, compliance, and risk tools",
+      "The big advantage? It's **core-independent** — it runs alongside a bank's existing core system. No risky or costly core replacement needed.",
+      "Banks can attract fintech partners and launch new embedded finance products **without waiting on their legacy systems**. 😊"
+    ],
+    followUps:["What is BankOS?","What is the Payment Galaxy?","What does Finzly do?"]
   },
-
-  // ── PERFORMANCE CONCERN FLOW ────────────────────────────────────
-  performance_ask_type: (userReply) => {
-    const pip = /\b(pip|improvement plan|poor|bad|performance issue|not meeting|below)\b/i.test(userReply);
-    const appraisal = /\b(appraisal|increment|hike|review|rating|salary revision|assessment)\b/i.test(userReply);
-    const feedback = /\b(feedback|appreciation|recognition|praise|improve)\b/i.test(userReply);
-    if (pip) {
-      clearFlow();
-      return FLOWS.pip_info();
-    } else if (appraisal) {
-      clearFlow();
-      return {
-        section:"Section 10.2 – Performance Review",
-        lines:[
-          "Of course! 😊 Here's how the **annual appraisal** works at Finzly.",
-          "- Annual review happens in **November–December**\n- **Salary revision** is effective from **January** of the following year\n- Employees who joined **on or after 31st October** are not eligible for that cycle's revision\n- Performance period considered: **January to December**",
-          "At the review meeting, your manager discusses results, strengths, development areas, and career plans.",
-          "**Next step:** If you feel your review wasn't fair, you can raise it under the **Open Door Policy** with HR. 😊"
-        ],
-        followUps:["What is the open door policy?","What is a PIP?","What is the continuous feedback process?"]
-      };
-    } else if (feedback) {
-      clearFlow();
-      return {
-        section:"Section 10.3 – Continuous Feedback",
-        lines:[
-          "Great that you're thinking about feedback! 😊",
-          "**Appreciation feedback** — visible to everyone — can be given by your Manager, HR, Practice Lead, Final Authority, or Skip Level Manager.",
-          "**Area of Improvement feedback** is only visible to you, your Manager, HR, and senior leads — so it stays private and constructive.",
-          "**Next step:** Don't wait for appraisal season — proactively ask your manager for feedback anytime! 😊"
-        ],
-        followUps:["What is the annual review process?","What is a PIP?"]
-      };
-    } else {
-      clearFlow();
-      return {
-        section:"Section 10 – Performance Management",
-        lines:[
-          "Happy to help! 😊 Finzly's performance process has a few aspects — let me cover the key ones.",
-          "- **Quarterly** formal reviews with your manager\n- **Annual review** in Nov–Dec | **Salary revision** effective January\n- **Continuous feedback** through the PMS tool\n- **PIP** for employees who need structured support to improve",
-          "**Next step:** Which part would you like to know more about — appraisal, PIP, or feedback? Just ask! 😊"
-        ],
-        followUps:["What is a PIP?","What is the annual review process?","What is the feedback process?"]
-      };
-    }
+  {
+    keys:["ceo","booshan","founder","who founded finzly","booshan rengachari","leadership","who started finzly","ceo of finzly"],
+    section:"Finzly Founder & CEO",
+    lines:[
+      "Here's a bit about the person who started it all! 😊",
+      "**Booshan Rengachari** founded Finzly in **2012**. Before Finzly, he led International Banking at **Wells Fargo**.",
+      "In **2016**, Booshan presented a revolutionary proposal to the US **Faster Payments Task Force** — it was widely acclaimed by industry experts and put Finzly on the map.",
+      "He's been elected to the **Board of Directors of the US Faster Payments Council**, and has won multiple industry honours including:\n- 2024 Innovation in Payments Award (ePayConnect)\n- 2024 Best Innovation Award (Finsider Fintech Awards)\n- Finovate Awards Finalist",
+      "His educational background: **Computer Science Engineering**, plus **ML from Stanford** and **Accounting from Wharton**. 🎓\n\nA genuinely inspiring founder to work for! 💙"
+    ],
+    followUps:["What is Finzly's mission?","What awards has Finzly won?","Where are Finzly's offices?"]
   },
-
-  pip_info: () => {
-    clearFlow();
-    return {
-      section:"Section 10.4 – Performance Improvement Plan",
-      lines:[
-        "I understand this can feel stressful. 💙 Let me explain how the **PIP process** works.",
-        "- Your reporting manager initiates the PIP with **HR present**\n- You and your manager **agree on clear, tangible objectives**\n- Duration: **maximum 1 month**\n- Optional **interim review at 2 weeks**",
-        "The goal of a PIP is genuinely to **help you succeed** — not just to document issues.",
-        "Based on the outcome, your service may be continued or, in serious cases, it may not.",
-        "**Next step:** If you're on a PIP or concerned about one, speak openly with HR at hr-india@finzly.com — they're there to support you, not just the process. 💙"
-      ],
-      needsHR: true,
-      routingReason:"PIP concern — HR can provide personalised guidance",
-      followUps:["What is the open door policy?","What is the annual appraisal?"]
-    };
+  {
+    keys:["office","offices","where is finzly","headquarters","hq","charlotte","india office","chennai office","pune office","location","where are we based"],
+    section:"Finzly Offices",
+    lines:[
+      "Here's where the Finzly team works! 😊",
+      "**Headquarters:** Charlotte, North Carolina, USA\n(2815 Coliseum Centre Drive, Charlotte, NC 28245)",
+      "**India Offices:**\n- **Chennai**, Tamil Nadu\n- **Pune**, Maharashtra",
+      "The India offices are home to our engineering, product, QA, and support teams who power the tech behind our global banking clients. You're part of that! 🙌",
+      "Visit us at **www.finzly.com** or reach out to the team at sales@finzly.com 😊"
+    ],
+    followUps:["Who is the CEO of Finzly?","What does Finzly do?","What is BankOS?"]
   },
-
-  // ── LEAVE BALANCE CONCERN FLOW ──────────────────────────────────
-  leave_balance_ask: (userReply) => {
-    const noBalance = /\b(no|zero|exhausted|used up|finish|finished|none left|0|over)\b/i.test(userReply);
-    const hasBalance = /\b(yes|some|few|have|still|left|remaining|days)\b/i.test(userReply);
-    if (noBalance) {
-      clearFlow();
-      return {
-        section:"Section 7.4.8 – Leave Without Pay",
-        lines:[
-          "No worries — this is manageable! 😊",
-          "When you've exhausted all your leaves, you can apply for **Leave Without Pay (LOP)**.",
-          "- Requires **prior manager approval**\n- Will reflect as a salary deduction for those days\n- During **probation or notice period**, all leaves are automatically LOP",
-          "**Next step:** Apply on HRMS, select 'Leave Without Pay', and get your manager's approval. 😊"
-        ],
-        followUps:["What is the notice period?","How do I apply for leave?"]
-      };
-    } else if (hasBalance) {
-      clearFlow();
-      return {
-        section:"Section 7.4.10 – Leave Procedure",
-        lines:[
-          "Great — you still have leave balance! 😊",
-          "Apply via the **HRMS portal**, select the leave type and dates, and submit for your manager's approval.",
-          "Remember: apply **at least 2 days in advance** for Earned Leave (except emergencies).",
-          "**Next step:** Head to HRMS and apply! 😊"
-        ],
-        followUps:["What is earned leave?","What is sick leave?"]
-      };
-    } else {
-      clearFlow();
-      return {
-        section:"Section 7 – Leave",
-        lines:[
-          "No problem! 😊 You can check your leave balance anytime on the **HRMS portal**.",
-          "You have: **10 days EL**, **5 days Sick Leave**, **5 days Management Leave** per year (pro-rated if you joined mid-year).",
-          "**Next step:** Log into HRMS for your live balance. 😊"
-        ],
-        followUps:["How do I apply for leave?","What is carry forward?"]
-      };
-    }
+  {
+    keys:["awards","recognition","best company","best place to work","accolades","finzly award","nacha","finovate","great company"],
+    section:"Finzly Awards & Recognition",
+    lines:[
+      "Finzly has a proud track record of recognition — and you're part of a winning team! 🏆",
+      "**Workplace Awards:**\n- 🏅 Best and Brightest Companies to Work For — 2022 & 2023\n- 🏅 Great Companies to Work For in North Carolina — 2024",
+      "**Industry Awards:**\n- 🏆 Best Parallel Core Technology — NACHA Smarter Faster Payments Conference 2023\n- 🏆 Innovation in Payments Award — ePayConnect Conference 2024 (Booshan Rengachari)\n- 🏆 Best Innovation Award — Finsider Fintech Awards 2024\n- 🎖️ Finovate Awards Finalist — Multiple categories",
+      "These awards recognise Finzly's innovation **and** the culture we've built together. 😊"
+    ],
+    followUps:["Who is the CEO of Finzly?","What does Finzly do?","Tell me about BankOS"]
   },
-
-  // ── UNHAPPY / CONCERN FLOW ──────────────────────────────────────
-  concern_ask_type: (userReply) => {
-    const workload  = /\b(work|workload|overwork|pressure|stress|burnout|too much|overwhelm)\b/i.test(userReply);
-    const salary    = /\b(salary|pay|comp|compensation|money|hike|increment|paid)\b/i.test(userReply);
-    const manager   = /\b(manager|boss|lead|reporting|my manager|team lead|supervisor)\b/i.test(userReply);
-    const culture   = /\b(culture|environment|toxic|team|colleague|coworker|atmosphere)\b/i.test(userReply);
-    const personal  = /\b(personal|family|health|mental|anxiety|stress|wellbeing)\b/i.test(userReply);
-
-    if (workload) {
-      setFlow("concern","ask_spoken_manager");
-      return {
-        lines:[
-          "I'm really sorry to hear you're feeling overwhelmed. 💙 That's not easy, and it matters.",
-          "Have you had a chance to speak with your **manager** about the workload?"
-        ],
-        quickReplies:[
-          { label:"Yes, I spoke to them", type:"yes", reply:"yes spoke to manager" },
-          { label:"No, not yet", type:"no", reply:"no not yet" }
-        ]
-      };
-    } else if (salary) {
-      clearFlow();
-      return {
-        section:"Section 9 – Compensation",
-        lines:[
-          "I understand — compensation concerns are important and you deserve clarity. 😊",
-          "At Finzly, compensation reviews happen **annually in November–December**, with revisions effective **January**.",
-          "If you feel your compensation isn't fair or there's a discrepancy, you can raise it formally under the **Open Door Policy**.",
-          "**Next step:** Have a direct conversation with your manager first. If unsatisfied, email **hr-india@finzly.com** — HR will treat it confidentially. 💙"
-        ],
-        needsHR: true,
-        routingReason:"Salary concern — HR can review and advise",
-        followUps:["What is the open door policy?","What is the performance review?"]
-      };
-    } else if (manager) {
-      setFlow("concern","manager_concern");
-      return {
-        lines:[
-          "I hear you — concerns about your manager can be really tough to navigate. 💙",
-          "Can you share a little more? Is this about:\n- **Work style or communication** differences?\n- **Unfair treatment or bias?**\n- Something else?"
-        ],
-        quickReplies:[
-          { label:"Work style/communication", type:"neutral", reply:"work style communication" },
-          { label:"Unfair treatment", type:"no", reply:"unfair treatment bias" },
-          { label:"Something else", type:"neutral", reply:"something else" }
-        ]
-      };
-    } else if (culture) {
-      clearFlow();
-      return {
-        section:"Section 13 – Workplace Practices",
-        lines:[
-          "I'm sorry you're experiencing this. A good work environment matters deeply. 💙",
-          "Finzly's **Open Door Policy** ensures you can raise any workplace concern without fear of retaliation.",
-          "If you've experienced discrimination or harassment, those are covered under separate policies with full protection.",
-          "**Next step:** Speak with HR at **hr-india@finzly.com** — they can mediate, investigate, or simply listen in confidence. 💙"
-        ],
-        needsHR: true,
-        routingReason:"Workplace culture concern — HR support needed",
-        followUps:["What is the open door policy?","What is the POSH policy?","What is EEO?"]
-      };
-    } else if (personal) {
-      clearFlow();
-      return {
-        lines:[
-          "I'm really glad you felt comfortable sharing this. 💙 Your wellbeing matters — not just your work.",
-          "Finzly understands personal challenges happen. You can speak confidentially with HR about your situation.",
-          "Depending on what you need, options include: **Leave Without Pay**, **Sick Leave**, **flexible arrangements**, or simply a supportive conversation.",
-          "**Next step:** Reach out to HR at hr-india@finzly.com — they're here for you as a person, not just an employee. 💙"
-        ],
-        needsHR: true,
-        routingReason:"Personal wellbeing concern — HR can support with care",
-        followUps:["What is leave without pay?","What is sick leave?"]
-      };
-    } else {
-      setFlow("concern","ask_spoken_manager");
-      return {
-        lines:[
-          "Thank you for sharing this with me. 💙 I want to make sure you get the right support.",
-          "Have you had a chance to speak with your **manager or HR** about this yet?"
-        ],
-        quickReplies:[
-          { label:"Yes, I spoke to them", type:"yes", reply:"yes spoke already" },
-          { label:"No, not yet", type:"no", reply:"no not yet" }
-        ]
-      };
-    }
+  {
+    keys:["mission","vision","values","company culture","finzly culture","why finzly","what we stand for","company values","what finzly believes","our mission"],
+    section:"Finzly Mission & Culture",
+    lines:[
+      "Here's the heart of why Finzly exists. 💙",
+      "**Our Mission:** To free banks from core banking limitations — empowering them to launch products and serve customers at **fintech speed**, without being held back by legacy technology.",
+      "**The problem we solve:** Most US banks still run on mainframe technology built for a world of business hours and overnight settlement. Finzly gives them a modern, real-time, 24/7 alternative.",
+      "**Our culture:** Finzly has won 'Best and Brightest Companies to Work For' multiple years in a row. We're a place that values:\n- Innovation and speed\n- Giving employees a voice\n- Integrity and customer obsession\n- Collaboration across Charlotte, Chennai, and Pune",
+      "As the CEO Booshan says — **every bank needs an edge. Finzly is that edge.** 🚀"
+    ],
+    followUps:["What awards has Finzly won?","Who is the CEO?","What is BankOS?"]
   },
-
-  concern_ask_spoken_manager: (userReply) => {
-    const yes = /\b(yes|yeah|yep|did|spoke|talked|told|raised|discussed)\b/i.test(userReply);
-    if (yes) {
-      clearFlow();
-      return {
-        lines:[
-          "Good — I'm glad you've already taken that step. 😊",
-          "If the concern is still unresolved, the **next step** under Finzly's Open Door Policy is to escalate to **HR directly**.",
-          "Email **hr-india@finzly.com** with the details — they will handle it with full confidentiality and no retaliation. 💙"
-        ],
-        needsHR: true,
-        routingReason:"Unresolved workplace concern — HR escalation needed",
-        followUps:["What is the open door policy?","What is the POSH policy?"]
-      };
-    } else {
-      clearFlow();
-      return {
-        lines:[
-          "That's okay — it can feel difficult to bring these things up. 💙",
-          "I'd encourage you to start with your **direct manager** when you feel comfortable.",
-          "If that doesn't feel safe or right for your situation, you can go **directly to HR** — they are equally approachable.",
-          "**Next step:** Email **hr-india@finzly.com** — your concern will be treated with complete respect and confidentiality. 💙"
-        ],
-        needsHR: true,
-        routingReason:"Unspoken workplace concern — HR can provide safe first step",
-        followUps:["What is the open door policy?","What is the POSH policy?"]
-      };
-    }
+  {
+    keys:["clients","customers","banks","who uses finzly","frost bank","metropolitan commercial","finzly customers","which banks","who are our clients"],
+    section:"Finzly's Banking Clients",
+    lines:[
+      "Finzly works with some great financial institutions across the US! 🏦",
+      "Notable clients and partners include:\n- **Frost Bank** — selected Finzly BankOS to modernise payment operations and launch FedNow\n- **Metropolitan Commercial Bank** — completed ACH Cloud Migration powered by Finzly (Feb 2026)\n- **PCBB** — partnership to boost international payment services",
+      "Our clients are typically **banks and credit unions** looking to modernise their payment infrastructure without going through a risky and costly core replacement.",
+      "The work you do every day directly powers these banks' ability to serve their customers better. 😊"
+    ],
+    followUps:["What is BankOS?","What is the Payment Galaxy?","What does Finzly do?"]
   },
-
-  concern_manager_concern: (userReply) => {
-    const unfair = /\b(unfair|bias|biased|discriminat|treat|favour|favour|bully|harsh|rude|shout)\b/i.test(userReply);
-    if (unfair) {
-      clearFlow();
-      return {
-        section:"Section 2 – EEO & Section 15 – POSH",
-        needsHR: true,
-        routingReason:"Unfair treatment / potential discrimination — HR & ICC to be involved",
-        lines:[
-          "I'm really sorry you're experiencing this. That should not be happening, and you deserve to be treated fairly. 💙",
-          "Finzly's **Equal Employment Opportunity** policy strictly prohibits unfair treatment or discrimination of any kind.",
-          "If it has crossed into harassment, the **POSH / ICC process** is available to you with full protection.",
-          "**Next step:** Please email **hr-india@finzly.com** or contact an ICC member directly — your identity and complaint will be fully protected. 💙"
-        ],
-        followUps:["Who are the ICC members?","What is EEO?","What is the open door policy?"]
-      };
-    } else {
-      clearFlow();
-      return {
-        lines:[
-          "Work style differences with a manager can be really draining. 💙 You're not alone in this.",
-          "The **Open Door Policy** allows you to raise this with HR directly if you feel your manager isn't the right person to speak to.",
-          "HR can facilitate a constructive conversation or suggest a resolution without it becoming a formal complaint.",
-          "**Next step:** Email **hr-india@finzly.com** — sometimes a simple conversation with HR changes everything. 😊"
-        ],
-        needsHR: true,
-        routingReason:"Manager relationship concern — HR mediation may help",
-        followUps:["What is the open door policy?","What is EEO?"]
-      };
-    }
+  {
+    keys:["funding","investment","series a","investors","raised","tzp group","how much funding","finzly funding"],
+    section:"Finzly Funding",
+    lines:[
+      "Here's a quick overview of Finzly's funding journey! 😊",
+      "Finzly has raised **$10 million** in a **Series A round**, led by **TZP Group**.",
+      "Other early supporters include Spark!, the Veteran-Owned Small Business Accelerator, and the Arkansas Lithium Technology Accelerator.",
+      "It's a lean, focused team building something significant — and the growth has been strong, with revenue nearly **doubling in 2023**. 🚀"
+    ],
+    followUps:["Who is the CEO of Finzly?","What does Finzly do?","What is BankOS?"]
   },
-
-  // ── MATERNITY FLOW ──────────────────────────────────────────────
-  maternity_ask_service: (userReply) => {
-    const moreThan4 = /\b(yes|more|4|5|6|7|8|9|10|11|12|year|long|months|joining)\b/i.test(userReply);
-    const lessThan4  = /\b(no|less|new|joined|recently|3|2|1|few|just|month)\b/i.test(userReply);
-    if (moreThan4) {
-      clearFlow();
-      return {
-        section:"Section 7.4.5 – Maternity Leave",
-        lines:[
-          "Wonderful — you're fully eligible! 🎉",
-          "You're entitled to **26 weeks of paid Maternity Leave**.",
-          "- Notify HR **no later than 15 weeks before** your due date\n- Provide your intended start date and expected return date to your manager and HR\n- After 26 weeks, you may request **Work From Home** (subject to management approval)\n- If WFH isn't available, combine **Earned Leave** → then **Leave Without Pay** (up to 2 months)",
-          "In case of miscarriage or medical termination: **6 weeks paid leave** with supporting proof.",
-          "**Next step:** Inform HR as early as you can — they'll take care of the paperwork and support you all the way. 💙"
-        ],
-        followUps:["What is paternity leave?","What is leave without pay?","What is earned leave?"]
-      };
-    } else if (lessThan4) {
-      clearFlow();
-      return {
-        section:"Section 7.4.5 – Maternity Leave",
-        lines:[
-          "Thank you for checking! 😊",
-          "To be eligible for the full **26 weeks of paid Maternity Leave**, you need **more than 4 months of continuous service** with Finzly.",
-          "If you haven't completed 4 months yet, please speak with HR — they can advise on the best approach for your specific situation.",
-          "**Next step:** Email **hr-india@finzly.com** — they'll work through the options with you. 💙"
-        ],
-        needsHR: true,
-        routingReason:"Maternity leave eligibility under 4 months service — HR guidance needed",
-        followUps:["What is leave without pay?","What is earned leave?"]
-      };
-    } else {
-      clearFlow();
-      return {
-        section:"Section 7.4.5 – Maternity Leave",
-        lines:[
-          "Congratulations! 🎉 Here's the **Maternity Leave** policy.",
-          "You need **more than 4 months of continuous service** to be eligible for the full **26 weeks of paid leave**.",
-          "- Notify HR **at least 15 weeks before** your due date\n- Share intended start and return dates with your manager and HR\n- After 26 weeks: request **WFH** (management approval) → then **EL** → then **LOP** (up to 2 months)",
-          "In case of miscarriage: **6 weeks paid leave** with proof. Maternity leave cannot be encashed.",
-          "**Next step:** Reach out to HR early — they'll make this process easy for you. 💙"
-        ],
-        followUps:["What is leave without pay?","What is paternity leave?"]
-      };
-    }
+  {
+    keys:["website","finzly website","www.finzly.com","company website","finzly link","finzly url"],
+    section:"Finzly Website",
+    lines:[
+      "You can learn more about Finzly and explore all our products at **www.finzly.com** 😊",
+      "The website covers everything: BankOS, all Galaxies, resources, blogs, press releases, and our AWS Marketplace listing.",
+      "For business enquiries: **sales@finzly.com** | For HR: **hr-india@finzly.com**"
+    ],
+    followUps:["What does Finzly do?","What is BankOS?","Who is the CEO?"]
   },
-
-};
-
-// ─────────────────────────────────────────────────────────────────
-// FLOW ENTRY DETECTORS — what starts a multi-turn conversation
-// ─────────────────────────────────────────────────────────────────
-function detectFlowTrigger(q) {
-  const lower = q.toLowerCase();
-
-  // HARASSMENT — immediate, no waiting
-  if (/\b(harass|posh|unsafe|hostile|abuse|assault|inappropriate|uncomfortable at work|being harassed|someone haras|sexual)\b/i.test(lower)) {
-    return { flow:"harassment", step:"immediate" };
-  }
-  // RESIGNATION
-  if (/\b(resign|quit|leaving|put in papers|want to leave|notice period|thinking of leaving|thinking of resign)\b/i.test(lower)) {
-    return { flow:"resign", step:"ask_manager" };
-  }
-  // SICK LEAVE SCENARIO
-  if (/\b(not feeling well|feeling sick|unwell|sick today|sick leave today|want to take sick|need sick|apply sick)\b/i.test(lower)) {
-    return { flow:"sick", step:"ask_days" };
-  }
-  // WORKPLACE UNHAPPINESS
-  if (/\b(not happy|unhappy|dissatisfied|have a concern|worried|concern about|trouble at work|problem at work|stressed at work|issue at work)\b/i.test(lower)) {
-    return { flow:"concern", step:"ask_type" };
-  }
-  // PERFORMANCE CONCERN
-  if (/\b(performance|pip|appraisal|rating|increment concern|review concern|not performing|under performing)\b/i.test(lower)) {
-    return { flow:"performance", step:"ask_type" };
-  }
-  // MATERNITY ELIGIBILITY
-  if (/\b(maternity|pregnant|expecting|pregnancy)\b/i.test(lower)) {
-    return { flow:"maternity", step:"ask_service" };
-  }
-  // LEAVE BALANCE CONCERN
-  if (/\b(no leave|no leaves|leaves exhausted|run out of leave|used all leave|leave balance|check leave|how many leaves left)\b/i.test(lower)) {
-    return { flow:"leave_balance", step:"ask" };
-  }
-  return null;
-}
-
-// ─────────────────────────────────────────────────────────────────
-// FLOW STEP ROUTER — called when we're in an active flow
-// ─────────────────────────────────────────────────────────────────
-function routeFlowStep(userReply) {
-  const { flow, step } = conversationState;
-  if (!flow) return null;
-
-  if (flow === "resign") {
-    if (step === "ask_manager")     return FLOWS.resign_ask_manager(userReply);
-    if (step === "ask_resolved")    return FLOWS.resign_ask_resolved(userReply);
-    if (step === "nudge_to_manager")return FLOWS.resign_nudge_to_manager(userReply);
-    if (step === "process")         return FLOWS.resign_process();
-  }
-  if (flow === "harassment" && step === "immediate") return FLOWS.harassment_immediate();
-  if (flow === "sick" && step === "ask_days")        return FLOWS.sick_ask_days(userReply);
-  if (flow === "performance" && step === "ask_type") return FLOWS.performance_ask_type(userReply);
-  if (flow === "leave_balance" && step === "ask")    return FLOWS.leave_balance_ask(userReply);
-  if (flow === "maternity" && step === "ask_service")return FLOWS.maternity_ask_service(userReply);
-  if (flow === "concern") {
-    if (step === "ask_type")            return FLOWS.concern_ask_type(userReply);
-    if (step === "ask_spoken_manager")  return FLOWS.concern_ask_spoken_manager(userReply);
-    if (step === "manager_concern")     return FLOWS.concern_manager_concern(userReply);
-  }
-  return null;
-}
-
-// ─────────────────────────────────────────────────────────────────
-// STATIC KNOWLEDGE BASE — for non-flow questions
-// ─────────────────────────────────────────────────────────────────
-const KB = [
-  { keys:["office timing","work hours","working hours","timing","start time","login time","office hours","9:30","what are my office timings","when do i start"],
-    section:"Section 5 – Work Timings",
-    lines:["Great question! 😊 Here are your **office timings** at Finzly.","**Working days:** Monday to Friday\n**Weekly hours:** 45 hrs/week (including 1-hr lunch)\n**Min in office per day:** 6 hours (excluding breaks)\n**Log-in by:** 9:30 AM on weekdays","WFH employees must log in/out via the **HRMS portal** for attendance compliance.","Running late? Inform your manager **at least 1 hour before** your start time. 😊"],
-    followUps:["What is the attendance policy?","What is the dress code?","What is the WFH policy?"]
+  {
+    keys:["finzpire","user conference","finzly event","finzpire1.0","company event","annual event"],
+    section:"Finzly Events",
+    lines:[
+      "Finzly hosted its first major user conference — **finzpire 1.0** — to celebrate our **10th anniversary**! 🎉",
+      "It was a 3-day event (June 8–10) at The Hilton Charlotte Airport, featuring:\n- Industry leaders and subject matter experts\n- Finzly founders and users\n- Bank executives from across the US",
+      "Events like this reflect Finzly's commitment to building a real community around modern banking — not just a product. 😊"
+    ],
+    followUps:["What does Finzly do?","What awards has Finzly won?","Who is the CEO?"]
   },
-  { keys:["earned leave","el","annual leave","how many leave","how many leaves","leave entitlement","leave balance","casual leave","leaves do i get","leave policy","types of leave","what leaves"],
-    section:"Section 7.4.1 – Earned Leave",
-    lines:["Of course! 😊 Happy to help with your leave questions.","Here's your **Earned Leave (EL)** entitlement:\n- **10 days** per calendar year\n- Accrued at **0.8 days per month** worked\n- Apply **at least 2 days in advance** (emergencies excepted)\n- Apply via **HRMS portal** with manager approval","Unused EL carries forward — maximum **30 days**. Above 30 lapses at year end.","On **resignation**, unused EL is **encashed at your basic salary**. 😊","**Next step:** Check your live balance anytime on HRMS!"],
-    followUps:["Can I carry forward my earned leaves?","How do I apply for leave?","What is sick leave?"]
+  {
+    keys:["what is my role","what do i do","my job","my work","what does my team do","what are we building","what am i working on"],
+    section:"Your Role at Finzly",
+    lines:[
+      "Whatever role you're in — you're contributing to something meaningful! 😊",
+      "Finzly's India teams in **Chennai and Pune** are the engineering and product backbone of BankOS.",
+      "Whether you're in **development, QA, product, DevOps, support, or any other function** — your work directly powers the payment infrastructure of real US banks.",
+      "When a bank processes a FedNow instant payment, an ACH transaction, or a SWIFT wire — there's a very good chance your code, testing, or support made that happen. 🙌",
+      "That's something to be proud of every single day."
+    ],
+    followUps:["What is BankOS?","What is the Payment Galaxy?","What does Finzly do?"]
   },
-  { keys:["sick leave","how many sick leaves","sick leave policy","medical leave","ill","illness","unwell","doctor","fever"],
-    section:"Section 7.4.3 – Sick Leave",
-    lines:["I hope you're feeling okay. 🙏 Your health comes first!","- **5 days** Sick Leave per year\n- **Medical certificate mandatory** if more than 2 continuous days\n- Beyond **5 days**: adjusts against EL, then Loss of Pay\n- Unused sick leave **lapses** at year end — cannot be encashed","Apply via **HRMS portal** and keep your manager informed. 💙"],
-    followUps:["What if my sick leave exceeds 5 days?","What is earned leave?","What is leave without pay?"]
-  },
-  { keys:["management leave","ml","management leave policy"],
-    section:"Section 7.4.2 – Management Leave",
-    lines:["Here's the **Management Leave** policy! 😊","- **5 days** per year | Accrued at **0.4 days/month**\n- **Onshore team approval is mandatory**\n- All unused leaves **lapse at year end** — no carry forward or encashment","**Next step:** Apply via HRMS with onshore approval."],
-    followUps:["What is earned leave?","How do I apply for leave?"]
-  },
-  { keys:["comp off","compensatory","comp-off","weekend work","worked weekend","worked on holiday","worked sunday","worked saturday"],
-    section:"Section 7.4.4 – Compensatory Off",
-    lines:["You deserve a break after working extra! 🙌","- Entitled for working on **weekends or company holidays** due to business need\n- Must be availed within **90 days** — no advance, no encashment\n- Requires **manager approval** via HRMS","**Next step:** Raise the request on HRMS right after your extra work! 😊"],
-    followUps:["How many earned leaves do I get?","What is leave without pay?"]
-  },
-  { keys:["how to apply leave","apply leave","leave application","hrms","leave portal","leave procedure","leave process","apply for leave"],
-    section:"Section 7.4.10 – Leave Procedure",
-    lines:["Happy to walk you through it! 😊","**Steps:** Log into **HRMS portal** → Select leave type → Submit for Lead/Manager approval","Apply **at least 2 days in advance** for EL. ⚠️ If leave is not updated before the **15th of the following month**, it gets marked as absent and deducted from your EL.","Leaves **cannot** be adjusted against your notice period.","**Next step:** Open HRMS and submit your request! 😊"],
-    followUps:["What happens if I take leave without approval?","What is leave without pay?"]
-  },
-  { keys:["leave without approval","unapproved leave","absent without notice","leave not approved","absent without informing"],
-    section:"Section 7.4.10 – Leave Procedure",
-    lines:["Really good to know about this! 😊","If leave is taken **without prior approval**:\n- Deducted from **Earned Leave balance**\n- If no EL left → **Loss of Pay**\n- Not updated by **15th of following month** → automatically marked absent","Repeated unapproved absences can lead to **disciplinary action** including termination.","**Next step:** Always apply in advance. For emergencies, inform your manager immediately and regularise on HRMS ASAP. 😊"],
-    followUps:["How do I apply for leave?","What is leave without pay?"]
-  },
-  { keys:["carry forward","carry over","lapse","leave expire","unused leave","can i carry forward"],
-    section:"Section 7 – Leave Carry Forward",
-    lines:["Great question! 😊","- **EL:** carries forward — max **30 days**. Above 30 lapses\n- **Management Leave:** all unused lapses at year end\n- **Sick Leave:** lapses — cannot be carried forward or encashed\n- **Comp Off:** must be used within **90 days**","**Next step:** Check your balance on HRMS before year end and plan your leaves! 😊"],
-    followUps:["How many earned leaves do I get?","What is management leave?"]
-  },
-  { keys:["paternity","father","dad","newborn","paternity leave","paternity leave policy","child birth"],
-    section:"Section 7.4.6 – Paternity Leave",
-    lines:["Congratulations! 👶 So happy for you!","- **Up to 5 days** of paid Paternity Leave\n- Eligible after **minimum 3 months** of service\n- Inform manager and HR **at least 2 weeks** before expected delivery\n- Must be availed **within 1 month** of the child's birth","**Next step:** Give HR and manager a heads-up 2 weeks in advance, then apply via HRMS. 😊"],
-    followUps:["What is maternity leave?","What is bereavement leave?"]
-  },
-  { keys:["bereavement","death","passed away","loss","funeral","family member died","demise","bereavement leave"],
-    section:"Section 7.4.7 – Bereavement Leave",
-    lines:["I'm truly sorry for your loss. 💙 Please take all the time you need.","Finzly provides **up to 2 days of Bereavement Leave** for immediate family members.","Simply inform your **manager or HR** when you're able to — they'll take care of the rest.","We're here for you. 💙"],
-    followUps:["What is leave without pay?","Who do I contact in HR?"]
-  },
-  { keys:["leave without pay","lop","loss of pay","lwp","unpaid leave","no leave balance","leave exhausted"],
-    section:"Section 7.4.8 – Leave Without Pay",
-    lines:["No worries — this is manageable! 😊","**Leave Without Pay (LOP)** is available after exhausting all other leaves.","- Requires **prior manager approval**\n- Probation/notice period employees: all leaves are LOP\n- **Sandwich rule:** holiday between two leave days with zero balance → also LOP","**Next step:** Apply on HRMS, select 'Leave Without Pay', get manager approval. 😊"],
-    followUps:["What is earned leave?","What is the notice period?"]
-  },
-  { keys:["holiday","public holiday","national holiday","holidays list","how many holidays","company holidays"],
-    section:"Section 8 – Holiday Policy",
-    lines:["Great news! 😊 Finzly grants **10 public holidays** per year.","Declared by HR at the **beginning of each year** — aligned with national, religious, and important days.","Watch the **Notice Board** and HR announcements for the full list! 😊"],
-    followUps:["What is compensatory off?","How many earned leaves do I get?"]
-  },
-  { keys:["salary","pay","payroll","when salary","salary date","salary credited","pay day","when do i get paid"],
-    section:"Section 9 – Compensation & Payroll",
-    lines:["Of course! 😊 Salary is credited between the **last working day** of the month and the **3rd of the following month**.","Financial year: **April to March** | Payroll period: **calendar month**","Deductions: **PF** + statutory deductions as per Income Tax. Submit investment declarations to Finance for correct tax computation.","For any discrepancy, contact the **Finance Department** directly. 😊"],
-    followUps:["What are the payroll deductions?","What is the financial year?"]
-  },
-  { keys:["mediclaim","health insurance","medical insurance","hospitalization","hospital","claim","insurance coverage","how do i claim medical insurance","medical claim"],
-    section:"Section 11.1 – Mediclaim Insurance",
-    lines:["I hope everything is okay. 😊 Here's your **Mediclaim** coverage.","- **Coverage: Rs. 5 Lakhs** | **Covered:** You + spouse + 2 children\n- Also includes **Accidental Insurance**","**To make a claim:**\n- Minimum **24 hours hospitalization**\n- Inform **HR within 2 days** of admission\n- Submit discharge summary + test reports\n- ⚠️ Claims **will not settle** without discharge summary","**Next step:** Email HR at hr-india@finzly.com as soon as hospitalisation happens. 💙"],
-    followUps:["What is term insurance?","What happens to insurance when I leave?"]
-  },
-  { keys:["term insurance","life insurance","death benefit","term cover"],
-    section:"Section 11.2 – Term Insurance",
-    lines:["Here's your **Term Insurance** at Finzly. 😊","- **Coverage: Rs. 35 Lakhs** | **Employee only** (family not included)\n- Provided by the company at no cost to you","For queries, contact HR at hr-india@finzly.com. 😊"],
-    followUps:["What is mediclaim?","What happens to insurance when I leave?"]
-  },
-  { keys:["dress code","attire","clothing","what to wear","casual friday","business casual","dress policy"],
-    section:"Section 6 – Dress Code",
-    lines:["Great question! 😊 Here's the **Finzly Dress Code**.","**Mon–Thu:** Business Casual | **Fri:** Casual (no slippers, flip-flops, or shorts!)","**Women:** Collared shirts, denim/skirts/dresses at or below knee, professional shoes\n**Men:** Collared shirts with sleeves, trousers/jeans with belt, professional shoes","**Always prohibited:** Miniskirts, tank/tube tops, transparent tops, torn jeans, flip-flops","When in doubt — go business casual! 😊"],
-    followUps:["What is the grooming policy?","What are office timings?"]
-  },
-  { keys:["laptop","lose laptop","lost laptop","laptop security","laptop security policy","company property"],
-    section:"Section 13.5 – Laptop Security",
-    lines:["Really important to know! 😊 Here's the **Laptop Security Policy**.","- All laptops remain **Finzly's property**\n- You are **solely responsible** for safe custody at all times\n- **Lost laptop** (any reason) = liable to **reimburse full replacement cost**\n- Always **lock your laptop** when stepping away","External storage devices must be stored securely — never left on desks.","Lost/damaged? Inform manager and HR **immediately**. 😊"],
-    followUps:["What is the clean desk policy?","What is information security?"]
-  },
-  { keys:["open door","open door policy","grievance","speak up","who do i speak to","who can i talk to"],
-    section:"Section 13.2 – Open Door Policy",
-    lines:["Every voice matters at Finzly. 😊 Here's the **Open Door Policy**.","- First: speak with your **direct manager**\n- Unresolved/uncomfortable → go to **HR** directly\n- Still unresolved → escalate to **Senior Management**","Topics: salary, performance, environment, discrimination, harassment — anything work-related.","**No retaliation** for good-faith reporting. Email hr-india@finzly.com anytime. 😊"],
-    followUps:["What is the POSH policy?","What is EEO?"]
-  },
-  { keys:["probation","probation period","what happens during probation","during probation","trial period"],
-    section:"Section 3.6 – Probation",
-    lines:["Great to ask about this! 😊 Here's what happens **during probation** at Finzly.","- Probation period as stated in your **Offer Letter**\n- If unsatisfactory: extended by **1 month** or terminated with **1 month's notice**\n- All leaves during probation → **Leave Without Pay (LOP)**\n- International travel requires a **positive BGV report**","**Next step:** Use this time to settle in and build strong foundations. Your manager and HR are here to support you! 😊"],
-    followUps:["What are leave rules during probation?","What is the notice period?","What is the performance review?"]
-  },
-  { keys:["day 1","first day","joining","onboarding","orientation","documents required","joining documents","what documents should i submit during joining"],
-    section:"Section 4.1 – Employee Orientation / Day 1",
-    lines:["Welcome to Finzly! 🎉 So excited to have you here!","**Documents to bring (originals for verification + photocopies):**\n- DOB proof (10th certificate or Birth Certificate)\n- PAN card photocopy | Passport (if available)\n- Education certificates (10th/12th/Degree/Masters)\n- Professional course certificates\n- 2 passport-size photos | UAN number for PF\n- Relieving + Experience Letter from previous employer\n- Last 3 months' payslips","**Forms to fill:** Employee Information Form · Information Security Policy · NDA · Gratuity & PF Nomination Forms · Insurance Form","**You'll receive:** Employee number, email ID, access card/biometrics. Keep originals safe — you may need them for travel! 😊"],
-    followUps:["What is the probation period?","What is the NDA?","What is the dress code?"]
-  },
-  { keys:["referral","refer","referral bonus","refer a friend","candidate referral","employee referral"],
-    section:"Section 17.1 – Referral Bonus",
-    lines:["Love that you're thinking about referring! 🎁","**Development (Java, Angular, Spring Boot):**\n- 3–5 yrs: Rs. 20,000 | 5–10 yrs: Rs. 30,000 | 10+ yrs: Rs. 35,000\n\n**QA / DevOps / Digital Marketing / Support:**\n- 3–5 yrs: Rs. 15,000 | 5–10 yrs: Rs. 20,000 | 10+ yrs: Rs. 30,000\n\n**Immediate joiners (5–10 days, any role): Rs. 50,000** 🎉","Conditions: Not for freshers · Paid after FTE joining · Requires **Centre Head approval** · Not paid if you were part of the hiring decision.","**Next step:** Submit your referral and inform HR! 😊"],
-    followUps:["When is the referral bonus paid?","What is the late night benefit?"]
-  },
-  { keys:["late night","dinner","cab","working late","beyond 8","night cab","food allowance","dinner allowance"],
-    section:"Section 17.2 – Late Night Dinner & Cab",
-    lines:["Thank you for putting in the extra hours! 😊","**Beyond 8 hours on weekdays:** Dinner up to **Rs. 250** + cab at actuals\n**Weekends/holidays:** Lunch OR Dinner up to **Rs. 250** per meal","⚠️ Prior **email approval** from Practice Head/Lead/Manager is required before claiming.","**Next step:** Get email approval, then submit your claim. 😊"],
-    followUps:["What is the referral bonus?","What is the travel policy?"]
-  },
-  { keys:["travel","business travel","domestic travel","international travel","trip","outstation","travel policy"],
-    section:"Section 16 – Travel Policy",
-    lines:["Happy to help! 😊 Here's a summary of the **Travel Policy**.","**International:** Company pays visa, flights, insurance, lodging | **USA per diem: USD 80/day** (no bills needed)","**Domestic (outside Chennai/Pune):** 3 days notice | Air: Economy | Train: AC 2/3 Tier | Hotel: Type 1 = Rs. 5,000 | Type 2 = Rs. 4,000 | Others = Rs. 3,000 | Food: Rs. 600 / 500 / 400 respectively","**Non-reimbursable:** Alcohol, cigarettes, clothing, personal entertainment.","**Next step:** Submit travel request to HR with Practice Head approval 3 days in advance. 😊"],
-    followUps:["What is the USA per diem rate?","Which cities are Type 1?"]
-  },
-  { keys:["per diem","daily allowance","usa allowance","international allowance","onsite allowance","usd 80"],
-    section:"Section 16.4 – International Per Diem",
-    lines:["Here's the **per diem allowance** for international travel. 😊","- **USA: USD 80 per day** — covers food + incidentals (no bills needed)\n- Starts from **day you land**, ends **day you depart**\n- Same rate even if staying with friends/relatives","Additional official expenses (client meals): claim at actuals with **PM approval**. 😊"],
-    followUps:["What does company pay for international travel?","What is domestic travel policy?"]
-  },
-  { keys:["nda","non disclosure","confidentiality","confidential","non-disclosure"],
-    section:"Section 3.5 – NDA",
-    lines:["Great to check this early! 😊 Here's the **NDA** policy.","All employees must sign an NDA on joining. It protects confidential, proprietary, and trade secret information.","Confidentiality obligations **continue even after you leave**. Breach = grounds for **summary dismissal**.","**Next step:** Sign it as part of Day 1 formalities. Questions? Ask HR. 😊"],
-    followUps:["What documents do I need on Day 1?","What are my obligations after leaving?"]
-  },
-  { keys:["bgv","background verification","background check","criminal check"],
-    section:"Section 3.4 – Background Verification",
-    lines:["Here's what the **BGV** process covers. 😊","Employment verification · Address verification · Identity verification · Criminal background check","A **positive BGV report** is required for international travel (including probationers).","Ensure all joining documents are accurate for a smooth BGV. 😊"],
-    followUps:["What documents do I need on Day 1?","What is probation?"]
-  },
-  { keys:["eeo","equal opportunity","discrimination","diversity","inclusion","equal employment"],
-    section:"Section 2 – Equal Employment Opportunity",
-    lines:["Finzly is deeply committed to **Equal Employment Opportunity**. 💙","No discrimination on basis of race, colour, gender, age, religion, disability, marital status, sexual orientation, or political affiliation.","Report discrimination to manager or HR — **no retaliation** guaranteed. Violations = corrective action up to termination.","**Next step:** Email hr-india@finzly.com for full confidential support. 💙"],
-    followUps:["What is the open door policy?","What is POSH?"]
-  },
-  { keys:["clean desk","desk policy","clean workspace","workstation","clear desk"],
-    section:"Section 14 – Clean Desk Policy",
-    lines:["Here's the **Clean Desk Policy**! 😊","- Clear your desk at **end of each workday**\n- Confidential docs in **locked cabinets** when not in use\n- **Lock your laptop** when stepping away\n- Print-outs collected immediately | USB drives stored securely","No sensitive information visible to visitors or unauthorised persons.","Quick desk sweep before you leave = big protection for everyone! 😊"],
-    followUps:["What is the laptop policy?","What are workplace practices?"]
-  },
-  { keys:["performance review","appraisal","increment","salary hike","annual review","how does appraisal work"],
-    section:"Section 10 – Performance Management",
-    lines:["Great question! 😊 Here's how **performance management** works.","**Quarterly** formal reviews + **Annual review** in Nov–Dec | **Salary revision** effective January","Employees who joined **on or after 31st October** are not eligible for that year's revision.","**PIP:** Max 1 month | Initiated by manager + HR | Objectives agreed mutually | Only for full-time employees.","Stay connected through regular 1:1s with your manager — it's the best growth tool! 😊"],
-    followUps:["What is a PIP?","What is the feedback process?","What is the open door policy?"]
-  },
-  { keys:["exit interview","last day","relieving letter","experience letter","full and final","fnf","exit process"],
-    section:"Section 18.3 – Exit Interview",
-    lines:["Here's what happens when you **leave Finzly**. 😊","Exit interview on **last working day** | Relieving letter after all dues cleared | EL encashed at basic salary","Insurance ends on **separation date** | Confidentiality obligations continue after leaving.","Return all company assets for a smooth exit. 😊"],
-    followUps:["What is the notice period?","What is leave encashment?"]
-  },
-  { keys:["job abandonment","absconding","absent without","5 days absent","abscond"],
-    section:"Section 18.4 – Job Abandonment",
-    lines:["This is really important to know! 😊","Absent **5 consecutive days** without informing → treated as **absconded**.","Finzly sends **2 reminders via Registered Post** to your permanent address. No response → **job abandoned** → not re-inducted.","Always inform your manager or HR if you need to be away unexpectedly! 😊"],
-    followUps:["What is the notice period?","What is leave without pay?"]
-  },
-  { keys:["retirement","retire","retirement age","superannuation"],
-    section:"Section 3.7 – Retirement Age",
-    lines:["Retirement age at Finzly is **60 years**. Service **automatically ceases** on attaining that age. 😊","For retirement planning queries, reach out to HR. 😊"],
-    followUps:["What is the notice period?","What are my exit benefits?"]
-  },
-  { keys:["night shift","night shift allowance","night allowance","shift allowance"],
-    section:"Section 17 – Night Shift Allowance",
-    needsHR:true,
-    routingReason:"Night shift allowance is role/band specific — HR can confirm exact entitlement",
-    lines:["Good question! 😊 Finzly has a **Night Shift Allowance** policy (updated Nov 2025).","Specific rates depend on your **role and designation** — I'd recommend checking with HR directly for your exact entitlement.","**Next step:** Email **hr-india@finzly.com** with your employee ID and designation. 😊"],
-    followUps:["What is the late night dinner benefit?","What are office timings?"]
-  },
-  { keys:["intern leave","probation leave","fresher leave","trainee leave","leave during probation","leave as intern"],
-    section:"Section 7.4.9 – Intern / Probation Leave",
-    lines:["Great that you're checking early! 😊","After **more than 1 month** of continuous service: **1 day of leave per month** (0.5 Sick + 0.5 Casual)","Any unused leave **lapses** at end of probation/internship — cannot be encashed.","Apply via HRMS with manager approval. 😊"],
-    followUps:["What is probation?","How do I apply for leave?","What is leave without pay?"]
+  {
+    keys:["why should i work","why should i stay","why finzly","why work here","what makes finzly special","finzly different","proud to work","why join finzly","should i work at finzly","worth working","convince me","is finzly good","why choose finzly","reason to work"],
+    section:"Why Finzly",
+    lines:[
+      "I'm really glad you asked this — let me give you a honest and real answer. 😊",
+      "**You're not just writing code or testing software here.**\n\nWhen a US bank processes a FedNow instant payment at 2am, an ACH payroll transfer for thousands of employees, or a SWIFT wire for a corporate client — there's a very real chance that **your work made that happen**.\n\nThat's not a small thing. That's the real economy running on what you build.",
+      "**Here's what makes Finzly genuinely different:**\n\n🏆 **Award-winning workplace** — Best and Brightest Companies to Work For (2022 & 2023), Great Companies to Work For in North Carolina (2024)\n\n🚀 **Cutting-edge product** — BankOS is a cloud-native, AI-powered platform solving a problem that even the largest US banks struggle with. You're working on the frontier of fintech.\n\n💡 **Real innovation** — Finzly launched Agentic Galaxy (AI inside payments) in Oct 2025 and Token Galaxy for stablecoins. This isn't a legacy company maintaining old software.\n\n🌍 **Global team, real impact** — Charlotte + Chennai + Pune working as one. Your work ships to real US banks — not internal tools.\n\n👨‍💼 **A CEO who means it** — Booshan Rengachari built this from scratch, won the 2024 Innovation in Payments Award, and sits on the US Faster Payments Council board. He's in the trenches, not just the boardroom.\n\n📈 **Growing fast** — Revenue nearly doubled in 2023. Series A funded. Real banks. Real customers. Real growth.",
+      "And most importantly — Finzly gives **every employee a voice**. That's not just a policy line. It's why we've won those workplace awards year after year.",
+      "Is there something specific that's making you question this? I'm happy to talk through it with you. 💙"
+    ],
+    followUps:["What is Finzly's mission?","What awards has Finzly won?","What is BankOS?","Who is the CEO?"]
   }
 ];
 
-function findKB(query) {
-  const q = query.toLowerCase();
-  let best = null, bestScore = 0;
-  for (const e of KB) {
-    let s = 0;
-    for (const kw of e.keys) if (q.includes(kw)) s += kw.split(' ').length * 2;
-    if (s > bestScore) { bestScore = s; best = e; }
+// ─────────────────────────────────────────────────────────────────
+// MULTI-TURN FLOWS (same as before)
+// ─────────────────────────────────────────────────────────────────
+const FLOWS = {
+  resign_ask_manager:(u)=>{
+    const yes=/\b(yes|yeah|yep|did|spoke|talked|discussed|already|have)\b/i.test(u);
+    const no=/\b(no|nope|not yet|haven't|didn't|don't|never|na)\b/i.test(u);
+    if(yes){setFlow("resign","ask_resolved");return{lines:["I'm glad you've already had that conversation. 😊","Was your concern addressed, or do you still wish to move forward with the resignation?"],quickReplies:[{label:"My concern was resolved ✅",type:"yes",reply:"concern resolved"},{label:"Still want to resign",type:"no",reply:"still want to resign"}]};}
+    else if(no){setFlow("resign","nudge_to_manager");return{lines:["I understand — and I truly respect your decision. 💙","Before you submit, I'd gently encourage one conversation with your **manager or HR**. Sometimes a role change, project shift, or support can make a real difference.","Would you like to try that first, or still proceed?"],quickReplies:[{label:"I'll talk to HR/Manager first",type:"yes",reply:"will talk to manager"},{label:"I still want to resign",type:"no",reply:"still want to resign"}]};}
+    else{setFlow("resign","process");return FLOWS.resign_process();}
+  },
+  resign_ask_resolved:(u)=>{
+    const r=/\b(yes|resolved|sorted|fine|ok|better|good|no longer|not anymore)\b/i.test(u);
+    if(r){clearFlow();return{lines:["That's wonderful to hear! 😊 Really glad things got sorted.","If you ever need anything — leaves, policies, or just a chat — I'm right here for you!"]};}
+    else{setFlow("resign","process");return FLOWS.resign_process();}
+  },
+  resign_nudge_to_manager:(u)=>{
+    const t=/\b(yes|ok|okay|sure|will|i'll|let me|first|try)\b/i.test(u);
+    if(t){clearFlow();return{lines:["That's a great step. 😊 I'm rooting for a positive outcome for you!","HR is always at **hr-india@finzly.com** — reach out anytime. I'm here for you too. 💙"]};}
+    else{setFlow("resign","process");return FLOWS.resign_process();}
+  },
+  resign_process:()=>{
+    clearFlow();
+    return{section:"Section 18.1 – Resignation",needsHR:true,routingReason:"Resignation process — HR to guide through formalities",
+    lines:["Understood. I respect your decision and I'm here to make it as smooth as possible. 💙","**Resignation process at Finzly:**\n- Minimum **2 months written notice**\n- Submit to your **Practice Lead** → forwarded to HR + Country Head\n- **No leaves** during notice period (if taken, notice extends by those days)","On exit:\n- **Variable/joining bonus** returned if resigning within 1 year\n- **EL balance** encashed at basic salary\n- Relieving letter issued once all dues are cleared\n- **Insurance ends** on separation date","**Next step:** Email hr-india@finzly.com — HR will handle the rest with care. 💙"],
+    followUps:["What is the exit interview process?","What happens to my leaves when I resign?"]};
+  },
+  harassment_immediate:()=>{
+    clearFlow();
+    return{section:"Section 15 – POSH Policy",needsHR:true,routingReason:"Harassment/POSH — requires immediate confidential ICC support",
+    lines:["I'm really sorry this is happening to you. Please know — **you are not alone**, and Finzly stands firmly by you. 💙","You don't have to go through this alone. Here's what you can do **right now**.","**Contact your ICC (Internal Complaints Committee) directly:**","**Chennai:** Divya Moorthy (divya.moorthy@finzly.com) · Bharathkumar M (Bharathkumar.m@finzly.com) · Abirami R (abirami.r@finzly.com)\n\n**Pune:** Vishwata Mayekar (vishwata.mayekar@finzly.com) · Andleeb Sohail (andleeb.sohail@finzly.com) · Prashant Choudhary (prashant@finzly.com)","- File complaint **within 15 days** of the incident\n- Everything is **strictly confidential**\n- You are **fully protected** — zero retaliation permitted\n- You can also raise via **She-Box** (Ministry of Women & Child Development)","You are heard. You are safe here. Please reach out today. 💙"],
+    followUps:[]};
+  },
+  sick_ask_days:(u)=>{
+    const more=/\b(3|4|5|6|7|8|9|10|more|week|weeks|several|long|many)\b/i.test(u);
+    const few=/\b(1|2|one|two|day|today|just|single)\b/i.test(u);
+    if(more){clearFlow();return{section:"Section 7.4.3 – Sick Leave",lines:["Please make sure you're taking good care of yourself first. 🙏","Since it's more than 2 days:\n- Apply via **HRMS portal** and select Sick Leave\n- A **medical certificate is mandatory**\n- Beyond **5 continuous days**: adjusts against Earned Leave, then Loss of Pay","Keep your manager informed. If too unwell, ask someone to inform them on your behalf.","**Next step:** Apply on HRMS and share the medical certificate once available. 💙"],followUps:["What is earned leave?","What is leave without pay?"]};}
+    else if(few){clearFlow();return{section:"Section 7.4.3 – Sick Leave",lines:["I hope you feel better soon! 🙏","For **1–2 days**:\n- Apply via **HRMS portal** → select Sick Leave\n- Keep your **manager informed**\n- No medical certificate needed for up to 2 days","Rest well! Take care. 💙"],followUps:["What is earned leave?","How do I apply for leave?"]};}
+    else{clearFlow();return{section:"Section 7.4.3 – Sick Leave",lines:["I hope you're okay. 🙏 Here's the sick leave policy:\n- **5 days** Sick Leave per year\n- **Medical certificate mandatory** for more than 2 continuous days\n- Beyond **5 days**: adjusts against EL, then Loss of Pay","Apply via **HRMS portal** and inform your manager. 😊"],followUps:["What is earned leave?","What is leave without pay?"]};}
+  },
+  performance_ask_type:(u)=>{
+    const pip=/\b(pip|improvement|poor|bad|not meeting|below|underperform)\b/i.test(u);
+    const appraisal=/\b(appraisal|increment|hike|review|rating|revision|annual)\b/i.test(u);
+    if(pip){clearFlow();return FLOWS.pip_info();}
+    else if(appraisal){clearFlow();return{section:"Section 10.2 – Performance Review",lines:["Of course! 😊 Here's how the **annual appraisal** works.","- Annual review: **November–December**\n- Salary revision effective: **January** of the following year\n- Joined on or after **31st October**? Not eligible for that cycle's revision","At the review, your manager discusses results, strengths, development, and career plans.","If you feel your review wasn't fair, you can raise it under the **Open Door Policy** with HR. 😊"],followUps:["What is a PIP?","What is the open door policy?","What is the feedback process?"]};}
+    else{clearFlow();return{section:"Section 10 – Performance Management",lines:["Happy to help! 😊 Finzly's performance process covers:","- **Quarterly** formal reviews\n- **Annual review** Nov–Dec | **Salary revision** effective January\n- **Continuous feedback** via the PMS tool\n- **PIP** for structured improvement support","Which part would you like to know more about? 😊"],followUps:["What is a PIP?","What is the annual appraisal?","What is the feedback process?"]};}
+  },
+  pip_info:()=>{
+    clearFlow();
+    return{section:"Section 10.4 – PIP",needsHR:true,routingReason:"PIP concern — HR can provide personalised guidance",
+    lines:["I understand this can feel stressful. 💙 Here's how the **PIP process** works.","- Reporting manager initiates with **HR present**\n- You and your manager **agree on clear objectives**\n- Duration: **maximum 1 month** | Optional interim review at **2 weeks**","The goal of a PIP is genuinely to **help you succeed** — not just to document issues.","**Next step:** If you're on a PIP or worried about one, speak openly with HR at hr-india@finzly.com — they're there to support you. 💙"],
+    followUps:["What is the open door policy?","What is the annual appraisal?"]};
+  },
+  leave_balance_ask:(u)=>{
+    const no=/\b(no|zero|exhausted|used up|none left|0|over|finished)\b/i.test(u);
+    const yes=/\b(yes|some|few|have|still|left|remaining|days)\b/i.test(u);
+    if(no){clearFlow();return{section:"Section 7.4.8 – Leave Without Pay",lines:["No worries — this is manageable! 😊","When all leaves are exhausted, apply for **Leave Without Pay (LOP)**:\n- Requires **prior manager approval**\n- Reflects as salary deduction for those days\n- Probation/notice period: all leaves are LOP","**Next step:** Apply on HRMS, select 'Leave Without Pay', get manager approval. 😊"],followUps:["What is the notice period?","How do I apply for leave?"]};}
+    else if(yes){clearFlow();return{section:"Section 7.4.10 – Leave Procedure",lines:["Great — you still have balance! 😊","Apply via the **HRMS portal**, select leave type and dates, submit for manager approval.","Remember: apply **at least 2 days in advance** for EL (except emergencies). 😊"],followUps:["What is earned leave?","What is sick leave?"]};}
+    else{clearFlow();return{lines:["You can check your live balance anytime on the **HRMS portal**! 😊","You have: **10 days EL**, **5 days Sick Leave**, **5 days Management Leave** per year (pro-rated for mid-year joiners).","**Next step:** Log into HRMS for your exact balance. 😊"],followUps:["How do I apply for leave?","What is carry forward?"]};}
+  },
+  concern_ask_type:(u)=>{
+    const workload=/\b(work|workload|overwork|pressure|stress|burnout|overwhelm|too much)\b/i.test(u);
+    const salary=/\b(salary|pay|comp|money|hike|increment|paid)\b/i.test(u);
+    const manager=/\b(manager|boss|lead|reporting|supervisor|my manager)\b/i.test(u);
+    const culture=/\b(culture|environment|toxic|team|colleague|atmosphere)\b/i.test(u);
+    const personal=/\b(personal|family|health|mental|anxiety|wellbeing)\b/i.test(u);
+    if(workload){setFlow("concern","ask_spoken_manager");return{lines:["I'm really sorry you're feeling overwhelmed. 💙 That's not easy and it matters.","Have you had a chance to speak with your **manager** about the workload?"],quickReplies:[{label:"Yes, I spoke to them",type:"yes",reply:"yes spoke to manager"},{label:"No, not yet",type:"no",reply:"no not yet"}]};}
+    else if(salary){clearFlow();return{section:"Section 9",needsHR:true,routingReason:"Salary concern — HR can review and advise",lines:["Compensation concerns are important and you deserve clarity. 😊","At Finzly, reviews happen **annually in Nov–Dec**, with revisions effective **January**.","If you feel your compensation isn't fair, raise it formally under the **Open Door Policy**.","**Next step:** Speak with your manager first. If unsatisfied, email **hr-india@finzly.com** — treated confidentially. 💙"],followUps:["What is the open door policy?","What is the performance review?"]};}
+    else if(manager){setFlow("concern","manager_concern");return{lines:["I hear you — concerns about your manager can be tough to navigate. 💙","Is this about:"],quickReplies:[{label:"Work style / communication",type:"neutral",reply:"work style communication"},{label:"Unfair treatment",type:"no",reply:"unfair treatment bias"},{label:"Something else",type:"neutral",reply:"something else"}]};}
+    else if(culture){clearFlow();return{section:"Section 13 – Workplace Practices",needsHR:true,routingReason:"Workplace culture concern — HR support needed",lines:["I'm sorry you're experiencing this. A good work environment matters deeply. 💙","Finzly's **Open Door Policy** ensures you can raise any concern without fear of retaliation.","**Next step:** Email **hr-india@finzly.com** — HR can mediate, investigate, or simply listen in confidence. 💙"],followUps:["What is the open door policy?","What is POSH?","What is EEO?"]};}
+    else if(personal){clearFlow();return{needsHR:true,routingReason:"Personal wellbeing concern — HR can support with care",lines:["I'm really glad you felt comfortable sharing this. 💙 Your wellbeing matters — not just your work.","Options depending on what you need: **Leave Without Pay**, **Sick Leave**, **flexible arrangements**, or just a supportive conversation with HR.","**Next step:** Reach out to HR at hr-india@finzly.com — they're here for you as a person, not just an employee. 💙"],followUps:["What is leave without pay?","What is sick leave?"]};}
+    else{setFlow("concern","ask_spoken_manager");return{lines:["Thank you for sharing this with me. 💙","Have you had a chance to speak with your **manager or HR** about this yet?"],quickReplies:[{label:"Yes, I spoke to them",type:"yes",reply:"yes spoke already"},{label:"No, not yet",type:"no",reply:"no not yet"}]};}
+  },
+  concern_ask_spoken_manager:(u)=>{
+    const yes=/\b(yes|yeah|did|spoke|talked|told|raised|discussed)\b/i.test(u);
+    if(yes){clearFlow();return{needsHR:true,routingReason:"Unresolved workplace concern — HR escalation needed",lines:["Good — I'm glad you've already taken that step. 😊","If still unresolved, the **next step** under Finzly's Open Door Policy is to escalate to **HR directly**.","Email **hr-india@finzly.com** — handled with full confidentiality and no retaliation. 💙"],followUps:["What is the open door policy?","What is POSH?"]};}
+    else{clearFlow();return{needsHR:true,routingReason:"Unspoken concern — HR can provide safe first step",lines:["That's okay — it can feel difficult to bring things up. 💙","You can go **directly to HR** if speaking to your manager doesn't feel right.","**Next step:** Email **hr-india@finzly.com** — your concern will be treated with complete respect and confidentiality. 💙"],followUps:["What is the open door policy?","What is POSH?"]};}
+  },
+  concern_manager_concern:(u)=>{
+    const unfair=/\b(unfair|bias|discriminat|treat|bully|harsh|rude|shout)\b/i.test(u);
+    if(unfair){clearFlow();return{section:"Section 2 – EEO & Section 15 – POSH",needsHR:true,routingReason:"Unfair treatment — HR & ICC to be involved",lines:["I'm really sorry you're experiencing this. That should not be happening. 💙","Finzly's **EEO policy** strictly prohibits unfair treatment or discrimination of any kind.","**Next step:** Email **hr-india@finzly.com** or contact an ICC member directly — fully protected. 💙"],followUps:["Who are the ICC members?","What is EEO?","What is the open door policy?"]};}
+    else{clearFlow();return{needsHR:true,routingReason:"Manager relationship concern — HR mediation may help",lines:["Work style differences can be really draining. 💙 You're not alone in this.","The **Open Door Policy** allows you to raise this with HR directly if needed. HR can facilitate a constructive conversation without making it a formal complaint.","**Next step:** Email **hr-india@finzly.com** — sometimes a simple conversation with HR changes everything. 😊"],followUps:["What is the open door policy?","What is EEO?"]};}
+  },
+  maternity_ask_service:(u)=>{
+    const more=/\b(yes|more|4|5|6|7|8|9|10|11|12|year|long|months)\b/i.test(u);
+    const less=/\b(no|less|new|joined|recently|3|2|1|few|just|month)\b/i.test(u);
+    if(more){clearFlow();return{section:"Section 7.4.5 – Maternity Leave",lines:["Wonderful — you're fully eligible! 🎉","You're entitled to **26 weeks of paid Maternity Leave**.\n- Notify HR **at least 15 weeks before** your due date\n- Share intended start and return date with manager and HR\n- After 26 weeks: request **WFH** (management approval) → then **EL** → then **LOP** (up to 2 months)","Miscarriage or medical termination: **6 weeks paid leave** with proof.","**Next step:** Inform HR as early as you can — they'll support you all the way. 💙"],followUps:["What is paternity leave?","What is leave without pay?"]};}
+    else if(less){clearFlow();return{section:"Section 7.4.5 – Maternity Leave",needsHR:true,routingReason:"Maternity leave eligibility under 4 months — HR guidance needed",lines:["Thank you for checking! 😊","For full **26 weeks paid Maternity Leave**, you need **more than 4 months of continuous service**.","If you haven't completed 4 months yet, please speak with HR — they'll advise on the best approach for your situation.","**Next step:** Email **hr-india@finzly.com** — they'll work through options with you. 💙"],followUps:["What is leave without pay?","What is earned leave?"]};}
+    else{clearFlow();return{section:"Section 7.4.5 – Maternity Leave",lines:["Congratulations! 🎉 Here's the **Maternity Leave** policy.\n- Eligible if you have **more than 4 months** of continuous service\n- **26 weeks of paid leave**\n- Notify HR **at least 15 weeks** before due date","After 26 weeks: WFH → EL → LOP (up to 2 months). Miscarriage = 6 weeks paid with proof.","**Next step:** Reach out to HR early — they'll make this process easy for you. 💙"],followUps:["What is leave without pay?","What is paternity leave?"]};}
   }
-  if (bestScore > 0) return best;
-  const words = q.split(/\s+/).filter(w => w.length > 3);
-  for (const e of KB) for (const kw of e.keys) for (const w of words) if (kw.includes(w)) return e;
+};
+
+function routeFlowStep(u){
+  const{flow,step}=conversationState;
+  if(!flow)return null;
+  if(flow==="resign"){
+    if(step==="ask_manager")return FLOWS.resign_ask_manager(u);
+    if(step==="ask_resolved")return FLOWS.resign_ask_resolved(u);
+    if(step==="nudge_to_manager")return FLOWS.resign_nudge_to_manager(u);
+    if(step==="process")return FLOWS.resign_process();
+  }
+  if(flow==="harassment")return FLOWS.harassment_immediate();
+  if(flow==="sick"&&step==="ask_days")return FLOWS.sick_ask_days(u);
+  if(flow==="performance"&&step==="ask_type")return FLOWS.performance_ask_type(u);
+  if(flow==="leave_balance"&&step==="ask")return FLOWS.leave_balance_ask(u);
+  if(flow==="maternity"&&step==="ask_service")return FLOWS.maternity_ask_service(u);
+  if(flow==="concern"){
+    if(step==="ask_type")return FLOWS.concern_ask_type(u);
+    if(step==="ask_spoken_manager")return FLOWS.concern_ask_spoken_manager(u);
+    if(step==="manager_concern")return FLOWS.concern_manager_concern(u);
+  }
+  return null;
+}
+
+function detectFlowTrigger(q){
+  const l=q.toLowerCase();
+  if(/\b(harass|posh|unsafe|hostile|abuse|assault|inappropriate|uncomfortable at work|being harassed|sexual)\b/i.test(l))return{flow:"harassment",step:"immediate"};
+  if(/\b(resign|quit|leaving|put in papers|want to leave|notice period|thinking of leaving|thinking of resign)\b/i.test(l))return{flow:"resign",step:"ask_manager"};
+  if(/\b(not feeling well|feeling sick|unwell|sick today|sick leave today|want to take sick|need sick|apply sick)\b/i.test(l))return{flow:"sick",step:"ask_days"};
+  if(/\b(not happy|unhappy|dissatisfied|have a concern|worried|concern about|trouble at work|problem at work|stressed at work|issue at work)\b/i.test(l))return{flow:"concern",step:"ask_type"};
+  if(/\b(performance|pip|appraisal|rating|increment concern|review concern|not performing|under performing)\b/i.test(l))return{flow:"performance",step:"ask_type"};
+  if(/\b(maternity|pregnant|expecting|pregnancy)\b/i.test(l))return{flow:"maternity",step:"ask_service"};
+  if(/\b(no leave|no leaves|leaves exhausted|run out of leave|used all leave|leave balance|check leave|how many leaves left)\b/i.test(l))return{flow:"leave_balance",step:"ask"};
+  return null;
+}
+
+function getFlowOpeningQuestion(flow){
+  if(flow==="resign"){setFlow("resign","ask_manager");return{lines:["I'm sorry to hear you're thinking of resigning. 💙","Before you proceed, I genuinely care about making sure you've had the right support.","Have you had a chance to speak with your **manager or HR** about what's been troubling you?"],quickReplies:[{label:"Yes, I spoke to them",type:"yes",reply:"yes spoke to manager"},{label:"No, not yet",type:"no",reply:"no not yet"}]};}
+  if(flow==="sick"){setFlow("sick","ask_days");return{lines:["Oh no — I hope you feel better soon! 🙏 Please take good care of yourself.","To give you the right info — how many days of sick leave are you looking at?"],quickReplies:[{label:"1–2 days",type:"neutral",reply:"1 or 2 days sick"},{label:"More than 2 days",type:"neutral",reply:"more than 2 days sick"}]};}
+  if(flow==="concern"){setFlow("concern","ask_type");return{lines:["I'm sorry to hear you're going through something difficult. 💙 Thank you for trusting me.","Could you share a bit more? Is it about:"],quickReplies:[{label:"Workload / stress",type:"neutral",reply:"workload stress pressure"},{label:"Salary / compensation",type:"neutral",reply:"salary concern"},{label:"My manager",type:"neutral",reply:"my manager"},{label:"Workplace culture",type:"neutral",reply:"work culture environment"}]};}
+  if(flow==="performance"){setFlow("performance","ask_type");return{lines:["Of course — happy to help with performance questions! 😊","What would you like to know about?"],quickReplies:[{label:"Annual appraisal / increment",type:"neutral",reply:"appraisal increment annual review"},{label:"PIP (Performance Improvement)",type:"neutral",reply:"pip performance improvement plan"},{label:"Feedback / ratings",type:"neutral",reply:"feedback appreciation ratings"}]};}
+  if(flow==="maternity"){setFlow("maternity","ask_service");return{lines:["Congratulations on your wonderful news! 🎉 Wishing you a healthy and happy journey!","To confirm your eligibility — have you completed **more than 4 months** of continuous service with Finzly?"],quickReplies:[{label:"Yes, more than 4 months",type:"yes",reply:"yes more than 4 months"},{label:"No, less than 4 months",type:"no",reply:"no less than 4 months"}]};}
+  if(flow==="leave_balance"){setFlow("leave_balance","ask");return{lines:["Of course! 😊 Let me help you figure out your options.","Do you still have some leave balance left, or have you used it all up?"],quickReplies:[{label:"I still have some leaves",type:"yes",reply:"yes have some leave balance"},{label:"All leaves exhausted",type:"no",reply:"no leaves exhausted"}]};}
+  return null;
+}
+
+// ─────────────────────────────────────────────────────────────────
+// HR POLICY KB
+// ─────────────────────────────────────────────────────────────────
+const KB = [
+  {keys:["office timing","work hours","working hours","timing","start time","login time","office hours","9:30","what are my office timings","when do i start"],section:"Section 5 – Work Timings",lines:["Great question! 😊 Here are your **office timings** at Finzly.","**Mon–Fri**, 45 hrs/week (including 1-hr lunch) | Minimum **40 hrs/week** (excl. lunch) | **6 hrs in office/day** (excl. breaks) | Log in by **9:30 AM**","WFH employees log in/out via the **HRMS portal**. Late? Inform manager **at least 1 hr before** start time. 😊"],followUps:["What is the attendance policy?","What is the dress code?"]},
+  {keys:["earned leave","el","annual leave","how many leave","how many leaves","leave entitlement","leave balance","leaves do i get","leave policy","types of leave"],section:"Section 7.4.1 – Earned Leave",lines:["Of course! 😊 Happy to help with your leave questions.","**Earned Leave (EL):** 10 days/year | Accrued at 0.8 days/month | Apply **2 days in advance** via **HRMS portal** with manager approval","EL carries forward — max **30 days**. Above 30 lapses. On **resignation**, unused EL encashed at basic salary. 😊"],followUps:["Can I carry forward my earned leaves?","How do I apply for leave?","What is sick leave?"]},
+    {
+    keys:["career growth","career development","grow at finzly","learning opportunities","skill development","training","upskill","promotion path","career path","how to grow","career progression","can i grow","future at finzly","what is my career","career at finzly","development opportunities","career opportunity","how can i grow","career goals","learn at finzly"],
+    section:"Section 10 – Career & Performance Management",
+    lines:[
+      "Great question — the fact that you\'re thinking about this shows real ambition! 😊",
+      "At Finzly, career growth is built into the culture:\n\n- **Quarterly formal reviews** with your manager — goals and performance discussed regularly\n- **Annual appraisal** in Nov–Dec with salary revision effective January\n- **Continuous feedback** through the PMS tool — appreciation and areas of improvement\n- **1:1 discussions** every 1–3 months to align on career direction and goals",
+      "Beyond the process, here\'s what actually drives growth here:\n\n🚀 Work on **cutting-edge fintech** — BankOS, Payment Galaxy, Agentic AI, Token Galaxy\n🌍 **Exposure to real US banking clients** — Frost Bank, Metropolitan Commercial Bank\n💡 **International travel opportunities** for eligible employees\n🎯 **Referral bonuses + Rewards & Recognition** programmes that acknowledge contributions monthly\n📈 **Fast-growing company** — revenue nearly doubled in 2023, Series A funded",
+      "Finzly has won **Best and Brightest Companies to Work For** 2022 & 2023 — that doesn\'t happen without investing in people.",
+      "**Next step:** Have an honest conversation with your manager about your career goals — Finzly genuinely encourages it! Or email **hr-india@finzly.com** to explore development opportunities. 😊"
+    ],
+    followUps:["What is the performance review process?","What is the feedback process?","Why should I work at Finzly?","What is BankOS?"]
+  },
+  {keys:["sick leave","how many sick leaves","sick leave policy","medical leave","ill","illness","unwell","doctor","fever"],section:"Section 7.4.3 – Sick Leave",lines:["I hope you're feeling okay. 🙏 Your health comes first!","**5 days** Sick Leave/year | **Medical certificate** mandatory if >2 continuous days | Beyond 5 days → EL first, then Loss of Pay | Unused leave lapses at year end.","Apply via **HRMS portal** and keep your manager informed. 💙"],followUps:["What if my sick leave exceeds 5 days?","What is earned leave?"]},
+  {keys:["management leave","ml","management leave policy"],section:"Section 7.4.2 – Management Leave",lines:["**Management Leave:** 5 days/year | Accrued at 0.4 days/month | **Onshore approval mandatory** | All unused leaves lapse at year end — no carry forward or encashment.","Apply via HRMS with onshore approval. 😊"],followUps:["What is earned leave?","How do I apply for leave?"]},
+  {keys:["comp off","compensatory","comp-off","weekend work","worked weekend","worked on holiday","worked sunday","worked saturday"],section:"Section 7.4.4 – Compensatory Off",lines:["You deserve a break after working extra! 🙌","Entitled for working on **weekends or company holidays** due to business need. Avail within **90 days** | Requires **manager approval** | Cannot be taken in advance or encashed.","Raise the request on HRMS right after your extra work! 😊"],followUps:["How many earned leaves do I get?","What is leave without pay?"]},
+  {keys:["how to apply leave","apply leave","leave application","hrms","leave portal","leave procedure","apply for leave"],section:"Section 7.4.10 – Leave Procedure",lines:["Happy to walk you through it! 😊","**HRMS portal** → select leave type → submit for Lead/Manager approval. Apply **2 days in advance** for EL. ⚠️ Not updated before **15th of following month** → marked absent and deducted from EL.","Leaves **cannot** be adjusted against notice period. 😊"],followUps:["What happens if I take leave without approval?","What is leave without pay?"]},
+  {keys:["leave without approval","unapproved leave","absent without notice","leave not approved","absent without informing"],section:"Section 7.4.10 – Leave Procedure",lines:["Really good to know! 😊","Unapproved absence → deducted from **Earned Leave** → if no EL, becomes **Loss of Pay**. Not updated by 15th of following month → automatically marked absent.","Repeated unapproved absences → **disciplinary action** up to termination.","Always apply in advance. Emergency? Inform manager immediately and regularise on HRMS ASAP. 😊"],followUps:["How do I apply for leave?","What is leave without pay?"]},
+  {keys:["carry forward","carry over","lapse","leave expire","unused leave","can i carry forward"],section:"Section 7 – Leave Carry Forward",lines:["Great question! 😊 Carry forward summary:","- **EL:** max **30 days** → above 30 lapses | **Management Leave:** all lapses at year end | **Sick Leave:** lapses, no encashment | **Comp Off:** use within **90 days**","Check HRMS before year end and plan accordingly! 😊"],followUps:["How many earned leaves do I get?","What is management leave?"]},
+  {keys:["paternity","father","dad","newborn","paternity leave","child birth"],section:"Section 7.4.6 – Paternity Leave",lines:["Congratulations! 👶 So happy for you!","**Up to 5 days** paid | Eligible after **3 months** of service | Inform manager + HR **2 weeks** before expected delivery | Avail within **1 month** of birth.","Apply via HRMS 2 weeks in advance. 😊"],followUps:["What is maternity leave?","What is bereavement leave?"]},
+  {keys:["bereavement","death","passed away","loss","funeral","family member died","bereavement leave"],section:"Section 7.4.7 – Bereavement Leave",lines:["I'm truly sorry for your loss. 💙 Please take all the time you need.","**Up to 2 days** of Bereavement Leave for immediate family members. Simply inform your **manager or HR** — they'll take care of the rest.","We're here for you. 💙"],followUps:["What is leave without pay?","Who do I contact in HR?"]},
+  {keys:["leave without pay","lop","loss of pay","lwp","unpaid leave","no leave balance","leave exhausted"],section:"Section 7.4.8 – Leave Without Pay",lines:["No worries — manageable! 😊","**LOP** available after exhausting all leaves. Requires **prior manager approval**. Probation/notice period → all leaves are LOP. **Sandwich rule:** holiday between two leave days with zero balance → also LOP.","Apply on HRMS, select 'Leave Without Pay'. 😊"],followUps:["What is earned leave?","What is the notice period?"]},
+  {keys:["holiday","public holiday","national holiday","holidays list","how many holidays","company holidays"],section:"Section 8 – Holiday Policy",lines:["Finzly grants **10 public holidays** per year! 🎉","Declared by HR at the **beginning of each year** — national, religious, and important days. Watch the Notice Board and HR announcements! 😊"],followUps:["What is compensatory off?","How many earned leaves do I get?"]},
+  {keys:["salary","pay","payroll","when salary","salary date","salary credited","pay day","when do i get paid"],section:"Section 9 – Compensation & Payroll",lines:["Of course! 😊 Salary credited between **last working day** of the month and **3rd of following month**. Financial year: **April–March**. Deductions: PF + statutory deductions.","For discrepancies, contact the **Finance Department**. 😊"],followUps:["What are the payroll deductions?","What is the financial year?"]},
+  {keys:["mediclaim","health insurance","medical insurance","hospitalization","hospital","claim","insurance coverage","how do i claim medical insurance","medical claim"],section:"Section 11.1 – Mediclaim Insurance",lines:["I hope everything is okay. 😊 **Mediclaim Coverage: Rs. 5 Lakhs** | Covered: You + spouse + 2 children | Includes **Accidental Insurance**.","**To claim:** Min 24 hrs hospitalisation | Inform **HR within 2 days** | Submit discharge summary + test reports | ⚠️ No discharge summary = no settlement.","Email HR at hr-india@finzly.com as soon as hospitalisation happens. 💙"],followUps:["What is term insurance?","What happens to insurance when I leave?"]},
+  {keys:["term insurance","life insurance","death benefit","term cover"],section:"Section 11.2 – Term Insurance",lines:["**Term Insurance: Rs. 35 Lakhs** | Employee only (family not included) | Provided by company at no cost to you. 😊","For queries, contact HR at hr-india@finzly.com. 😊"],followUps:["What is mediclaim?","What happens to insurance when I leave?"]},
+  {keys:["dress code","attire","clothing","what to wear","casual friday","business casual","dress policy"],section:"Section 6 – Dress Code",lines:["**Mon–Thu:** Business Casual | **Fri:** Casual (no slippers, flip-flops, or shorts!)","**Women:** Collared shirts, denim/skirts/dresses at or below knee, professional shoes\n**Men:** Collared shirts with sleeves, trousers/jeans with belt, professional shoes","**Always prohibited:** Miniskirts, tank/tube tops, transparent tops, torn jeans, flip-flops","When in doubt — go business casual! 😊"],followUps:["What is the grooming policy?","What are office timings?"]},
+  {keys:["laptop","lose laptop","lost laptop","laptop security","laptop security policy","company property"],section:"Section 13.5 – Laptop Security",lines:["Really important! 😊 **Laptop Security Policy:**","All laptops are Finzly's property. You are **solely responsible** for safe custody at all times. **Lost laptop** → liable to **reimburse full replacement cost**.","Always **lock your laptop** when stepping away. Lost/damaged? Inform manager + HR **immediately**. 😊"],followUps:["What is the clean desk policy?","What is information security?"]},
+  {keys:["open door","open door policy","grievance","speak up","who do i speak to","who can i talk to"],section:"Section 13.2 – Open Door Policy",lines:["Every voice matters at Finzly. 😊 **Open Door Policy:**","1. Speak with your **direct manager** | 2. Unresolved → go to **HR** | 3. Still unresolved → **Senior Management**.","Topics: salary, performance, environment, discrimination, harassment — anything work-related. **No retaliation** for good-faith reporting. 😊"],followUps:["What is POSH?","What is EEO?"]},
+  {keys:["probation","probation period","what happens during probation","during probation","trial period"],section:"Section 3.6 – Probation",lines:["Great to ask! 😊 **During probation:**","- Period as per **Offer Letter** | Unsatisfactory: extended by **1 month** or terminated with 1 month's notice | All leaves → **Leave Without Pay (LOP)**","International travel requires a **positive BGV report**. Use this time to settle in — your manager and HR are here to support you! 😊"],followUps:["What are leave rules during probation?","What is the notice period?"]},
+  {keys:["day 1","first day","joining","onboarding","orientation","documents required","joining documents","what documents should i submit during joining"],section:"Section 4.1 – Employee Orientation / Day 1",lines:["Welcome to Finzly! 🎉 So excited to have you here!","**Bring (originals + photocopies):** DOB proof · PAN card · Passport (if available) · Education certificates · Professional course certificates · 2 passport photos · UAN number · Relieving + Experience Letter · Last 3 months' payslips","**Forms to fill:** Employee Info Form · Information Security Policy · NDA · Gratuity & PF Nomination · Insurance Form","**You'll receive:** Employee number, email ID, access card/biometrics. Keep originals safe! 😊"],followUps:["What is the probation period?","What is the NDA?","What is the dress code?"]},
+  {keys:["notice period","resign","resignation","leaving","quit","put in papers","notice","want to resign"],section:"Section 18.1 – Resignation",needsHR:true,routingReason:"Resignation — HR to guide through the full process",lines:["Here's the **resignation process** at Finzly:","- Minimum **2 months written notice** | Submit to **Practice Lead** → HR + Country Head | No leaves during notice (taken = notice extends)","On exit: Variable/joining bonus returned if <1 year | EL encashed | Relieving letter after dues cleared | Insurance ends on separation date.","**Next step:** Email hr-india@finzly.com — HR will handle with care. 💙"],followUps:["What is the exit interview?","What happens to my leaves when I resign?"]},
+  {keys:["exit interview","last day","relieving letter","experience letter","full and final","fnf","exit process"],section:"Section 18.3 – Exit Interview",lines:["**When you leave Finzly:** Exit interview on last day | Relieving letter after dues cleared | EL encashed at basic salary | Insurance ends on separation | Confidentiality obligations continue.","Return all company assets for a smooth exit. 😊"],followUps:["What is the notice period?","What is leave encashment?"]},
+  {keys:["job abandonment","absconding","absent without","5 days absent","abscond"],section:"Section 18.4 – Job Abandonment",lines:["**5 consecutive absent days** without informing → treated as **absconded**. 2 reminders via Registered Post. No response → job abandoned → not re-inducted.","Always inform manager or HR if you need to be away unexpectedly! 😊"],followUps:["What is the notice period?","What is leave without pay?"]},
+  {keys:["referral","refer","referral bonus","refer a friend","candidate referral","employee referral"],section:"Section 17.1 – Referral Bonus",lines:["Love that you're thinking about referring! 🎁","**Dev (Java/Angular/Spring Boot):** 3–5 yrs: Rs.20K | 5–10 yrs: Rs.30K | 10+: Rs.35K\n**QA/DevOps/Support:** 3–5 yrs: Rs.15K | 5–10 yrs: Rs.20K | 10+: Rs.30K\n**Immediate joiners (5–10 days): Rs.50,000** 🎉","Not for freshers · Paid after FTE joining · Centre Head approval required · Not paid if you were part of hiring decision. Submit referral and inform HR! 😊"],followUps:["When is the referral bonus paid?","What is the late night benefit?"]},
+  {keys:["late night","dinner","cab","working late","beyond 8","food allowance","dinner allowance"],section:"Section 17.2 – Late Night Dinner & Cab",lines:["Thank you for putting in the extra hours! 😊","**Beyond 8 hrs weekdays:** Dinner up to **Rs.250** + cab at actuals | **Weekends/holidays:** Lunch OR Dinner up to **Rs.250** per meal","⚠️ Prior **email approval** from Practice Head/Lead/Manager required before claiming. 😊"],followUps:["What is the referral bonus?","What is the travel policy?"]},
+  {keys:["travel","business travel","domestic travel","international travel","trip","outstation","travel policy"],section:"Section 16 – Travel Policy",lines:["Happy to help! 😊 **Travel Policy summary:**","**International:** Company pays visa, flights, insurance, lodging | **USA per diem: USD 80/day** (no bills needed)","**Domestic:** 3 days notice | Air: Economy | Train: AC 2/3 Tier | Hotel Type 1: Rs.5K | Type 2: Rs.4K | Others: Rs.3K | Food: Rs.600/500/400","**Non-reimbursable:** Alcohol, cigarettes, clothing, personal entertainment. 😊"],followUps:["What is the USA per diem rate?","Which cities are Type 1?"]},
+  {keys:["performance review","appraisal","increment","salary hike","annual review","how does appraisal work"],section:"Section 10 – Performance Management",lines:["**Performance management at Finzly:**","Quarterly reviews + Annual review **Nov–Dec** | Salary revision effective **January** | Joined after **31st Oct** → not eligible for that cycle.","**PIP:** Max 1 month | Manager + HR initiated | Objectives agreed mutually. Stay connected through regular 1:1s! 😊"],followUps:["What is a PIP?","What is the feedback process?"]},
+  {keys:["clean desk","desk policy","workstation","clear desk","clean desk policy"],section:"Section 14 – Clean Desk Policy",lines:["**Clean Desk Policy:** Clear desk at **end of each workday** | Confidential docs in **locked cabinets** | **Lock laptop** when stepping away | Print-outs collected immediately | USB drives stored securely.","Quick desk sweep before you leave = big protection for everyone! 😊"],followUps:["What is the laptop policy?"]},
+  {keys:["eeo","equal opportunity","discrimination","diversity","inclusion","equal employment"],section:"Section 2 – EEO",lines:["Finzly is committed to **Equal Employment Opportunity**. 💙","No discrimination on basis of race, colour, gender, age, religion, disability, marital status, or sexual orientation. Report to manager or HR — **no retaliation** guaranteed.","Email hr-india@finzly.com for full confidential support. 💙"],followUps:["What is the open door policy?","What is POSH?"]},
+  {keys:["nda","non disclosure","confidentiality","confidential","non-disclosure"],section:"Section 3.5 – NDA",lines:["All employees must **sign an NDA** on joining Finzly. It protects confidential, proprietary, and trade secret information.","Confidentiality obligations **continue even after you leave**. Breach = grounds for **summary dismissal**. 😊"],followUps:["What documents do I need on Day 1?"]},
+  {keys:["retirement","retire","retirement age"],section:"Section 3.7 – Retirement Age",lines:["Retirement age at Finzly is **60 years**. Service automatically ceases on attaining that age. For queries, reach out to HR. 😊"],followUps:["What is the notice period?"]},
+  {keys:["night shift","night shift allowance","night allowance","shift allowance"],section:"Section 17 – Night Shift Allowance",needsHR:true,routingReason:"Night shift allowance is role/band specific — HR can confirm your exact entitlement",lines:["Finzly has a **Night Shift Allowance** policy (updated Nov 2025). Specific rates depend on your **role and designation**.","Email **hr-india@finzly.com** with your employee ID and designation for exact details. 😊"],followUps:["What is the late night dinner benefit?","What are office timings?"]},
+  {keys:["bgv","background verification","background check","criminal check"],section:"Section 3.4 – Background Verification",lines:["**BGV covers:** Employment verification · Address · Identity · Criminal background check.","A **positive BGV report** is required for international travel (including probationers). Ensure all joining documents are accurate for a smooth process. 😊"],followUps:["What documents do I need on Day 1?","What is probation?"]},
+  {keys:["intern leave","probation leave","fresher leave","leave during probation","leave as intern"],section:"Section 7.4.9 – Intern/Probation Leave",lines:["After **more than 1 month** of continuous service: **1 day of leave per month** (0.5 Sick + 0.5 Casual). Any unused leave **lapses** at end of period — cannot be encashed.","Apply via HRMS with manager approval. 😊"],followUps:["What is probation?","How do I apply for leave?"]}
+];
+
+function findKB(q){
+  const low=q.toLowerCase();
+  // Score BOTH company KB and HR KB together — best score wins (prevents wrong matches)
+  let best=null, bestScore=0;
+  for(const e of [...COMPANY_KB, ...KB]){
+    let s=0;
+    for(const k of e.keys){
+      if(low===k) s+=k.split(' ').length*10;       // exact match = highest priority
+      else if(low.includes(k)) s+=k.split(' ').length*2;
+    }
+    if(s>bestScore){bestScore=s;best=e;}
+  }
+  if(bestScore>0)return best;
+  // Fallback: partial word match
+  const words=low.split(/\s+/).filter(w=>w.length>3);
+  for(const e of [...COMPANY_KB,...KB])
+    for(const k of e.keys)
+      for(const w of words)
+        if(k.includes(w)&&w.length>4)return e;
   return null;
 }
 
 // ─────────────────────────────────────────────────────────────────
 // TYPEWRITER ENGINE
 // ─────────────────────────────────────────────────────────────────
-const CHAR_SPEED = 16;
-const BUBBLE_GAP = 280;
-const FOLLOWUP_DELAY = 350;
-
-function bold(t) { return t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>'); }
-
-function renderHTML(text) {
-  const lines = text.split('\n');
-  let html = '', inList = false;
-  for (const line of lines) {
-    const isBullet = /^[-•]/.test(line.trim());
-    if (isBullet) {
-      if (!inList) { html += '<ul>'; inList = true; }
-      html += '<li>' + bold(line.replace(/^[-•]\s*/,'')) + '</li>';
-    } else {
-      if (inList) { html += '</ul>'; inList = false; }
-      if (line.trim()) html += (html && !html.endsWith('</ul>') ? '<br>' : '') + bold(line);
-    }
+const CHAR_SPEED=16,BUBBLE_GAP=280,FOLLOWUP_DELAY=350;
+function bold(t){return t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');}
+function renderHTML(text){
+  const lines=text.split('\n');let html='',inList=false;
+  for(const line of lines){
+    const isBullet=/^[-•]/.test(line.trim());
+    if(isBullet){if(!inList){html+='<ul>';inList=true;}html+='<li>'+bold(line.replace(/^[-•]\s*/,''))+'</li>';}
+    else{if(inList){html+='</ul>';inList=false;}if(line.trim())html+=(html&&!html.endsWith('</ul>')?'<br>':'')+bold(line);}
   }
-  if (inList) html += '</ul>';
-  return html;
+  if(inList)html+='</ul>';return html;
 }
-
-function typewriteBubble(el, text, speed) {
-  return new Promise(resolve => {
-    const cursor = document.createElement('span');
-    cursor.className = 'cursor';
-    el.appendChild(cursor);
-    const chars = [...text];
-    let i = 0, raw = '';
-    function tick() {
-      if (i >= chars.length) {
-        cursor.remove();
-        el.innerHTML = renderHTML(raw);
-        resolve(); return;
-      }
-      raw += chars[i++];
-      el.innerHTML = '';
-      const s = document.createElement('span');
-      s.textContent = raw;
-      el.appendChild(s);
-      el.appendChild(cursor);
-      scrollToBottom();
-      setTimeout(tick, speed);
+function typewriteBubble(el,text,speed){
+  return new Promise(resolve=>{
+    const cursor=document.createElement('span');cursor.className='cursor';el.appendChild(cursor);
+    const chars=[...text];let i=0,raw='';
+    function tick(){
+      if(i>=chars.length){cursor.remove();el.innerHTML=renderHTML(raw);resolve();return;}
+      raw+=chars[i++];el.innerHTML='';const s=document.createElement('span');s.textContent=raw;el.appendChild(s);el.appendChild(cursor);
+      scrollToBottom();setTimeout(tick,speed);
     }
     tick();
   });
 }
+function delay(ms){return new Promise(r=>setTimeout(r,ms));}
+function scrollToBottom(){const m=document.getElementById('messages');m.scrollTop=m.scrollHeight;}
+function hideSuggestions(){document.getElementById('suggestions').style.display='none';}
 
-function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
-function scrollToBottom() {
-  const m = document.getElementById('messages');
-  m.scrollTop = m.scrollHeight;
-}
-function hideSuggestions() { document.getElementById('suggestions').style.display='none'; }
-
-async function streamResponse(entry, originalQuery) {
-  const msgs = document.getElementById('messages');
-
-  // Typing indicator
-  const typingRow = document.createElement('div'); typingRow.className='typing-row'; typingRow.id='typingRow';
-  const tAv = document.createElement('div'); tAv.className='msg-avatar'; tAv.textContent='🤖';
-  const tBub = document.createElement('div'); tBub.className='typing-bubble';
-  tBub.innerHTML='<span></span><span></span><span></span>';
-  typingRow.appendChild(tAv); typingRow.appendChild(tBub);
-  msgs.appendChild(typingRow); scrollToBottom();
-  await delay(650);
-  typingRow.remove();
-
-  // Wrapper
-  const wrapper = document.createElement('div'); wrapper.className='bot-msg-wrapper';
-  const av = document.createElement('div'); av.className='msg-avatar'; av.textContent='🤖';
-  const col = document.createElement('div'); col.className='bot-bubbles';
-  wrapper.appendChild(av); wrapper.appendChild(col);
-  msgs.appendChild(wrapper); scrollToBottom();
-
-  const lines = entry.lines || ["Sorry, I couldn't find the right answer."];
-  for (let i = 0; i < lines.length; i++) {
-    if (i > 0) await delay(BUBBLE_GAP);
-    const bub = document.createElement('div'); bub.className='bubble bot';
-    col.appendChild(bub); scrollToBottom();
-    await typewriteBubble(bub, lines[i], CHAR_SPEED);
+async function streamResponse(entry,originalQuery){
+  const msgs=document.getElementById('messages');
+  const typingRow=document.createElement('div');typingRow.className='typing-row';typingRow.id='typingRow';
+  const tAv=document.createElement('div');tAv.className='msg-avatar';tAv.textContent='🤖';
+  const tBub=document.createElement('div');tBub.className='typing-bubble';tBub.innerHTML='<span></span><span></span><span></span>';
+  typingRow.appendChild(tAv);typingRow.appendChild(tBub);msgs.appendChild(typingRow);scrollToBottom();
+  await delay(650);typingRow.remove();
+  const wrapper=document.createElement('div');wrapper.className='bot-msg-wrapper';
+  const av=document.createElement('div');av.className='msg-avatar';av.textContent='🤖';
+  const col=document.createElement('div');col.className='bot-bubbles';
+  wrapper.appendChild(av);wrapper.appendChild(col);msgs.appendChild(wrapper);scrollToBottom();
+  const lines=entry.lines||["Sorry, I couldn't find the right answer."];
+  for(let i=0;i<lines.length;i++){
+    if(i>0)await delay(BUBBLE_GAP);
+    const bub=document.createElement('div');bub.className='bubble bot';col.appendChild(bub);scrollToBottom();
+    await typewriteBubble(bub,lines[i],CHAR_SPEED);
   }
-
-  if (entry.section) {
-    await delay(180);
-    const tag = document.createElement('div'); tag.className='section-tag';
-    tag.textContent='📖 ' + entry.section; tag.style.animation='fadeSlideIn 0.3s ease';
-    col.appendChild(tag); scrollToBottom();
+  if(entry.section){await delay(180);const tag=document.createElement('div');tag.className='section-tag';tag.textContent='📖 '+entry.section;tag.style.animation='fadeSlideIn 0.3s ease';col.appendChild(tag);scrollToBottom();}
+  if(entry.needsHR){await delay(150);const et=document.createElement('div');et.className='escalation-tag';et.textContent='⚡ This needs HR attention — '+entry.routingReason;et.style.animation='fadeSlideIn 0.3s ease';col.appendChild(et);scrollToBottom();await delay(400);showModal(originalQuery,entry.routingReason);}
+  if(entry.quickReplies&&entry.quickReplies.length>0){
+    await delay(FOLLOWUP_DELAY);const qrDiv=document.createElement('div');qrDiv.className='quick-replies';
+    entry.quickReplies.forEach(qr=>{const btn=document.createElement('button');btn.className='qr-btn '+qr.type;btn.textContent=qr.label;btn.onclick=()=>{document.querySelectorAll('.quick-replies').forEach(el=>el.remove());handleSend(qr.reply);};qrDiv.appendChild(btn);});
+    msgs.appendChild(qrDiv);scrollToBottom();
   }
-  if (entry.needsHR) {
-    await delay(150);
-    const et = document.createElement('div'); et.className='escalation-tag';
-    et.textContent='⚡ This needs HR attention — ' + entry.routingReason;
-    et.style.animation='fadeSlideIn 0.3s ease';
-    col.appendChild(et); scrollToBottom();
-    await delay(400);
-    showModal(originalQuery, entry.routingReason);
+  if(entry.followUps&&entry.followUps.length>0){
+    await delay(FOLLOWUP_DELAY);const fu=document.createElement('div');fu.className='followups';
+    entry.followUps.forEach(q=>{const b=document.createElement('button');b.className='followup-btn';b.textContent='💬 '+q;b.onclick=()=>handleSend(q);fu.appendChild(b);});
+    msgs.appendChild(fu);scrollToBottom();
   }
-
-  // Quick replies (yes/no buttons)
-  if (entry.quickReplies && entry.quickReplies.length > 0) {
-    await delay(FOLLOWUP_DELAY);
-    const qrDiv = document.createElement('div'); qrDiv.className='quick-replies';
-    entry.quickReplies.forEach(qr => {
-      const btn = document.createElement('button');
-      btn.className='qr-btn ' + qr.type;
-      btn.textContent = qr.label;
-      btn.onclick = () => {
-        // Remove all quick reply rows to keep chat clean
-        document.querySelectorAll('.quick-replies').forEach(el => el.remove());
-        handleSend(qr.reply);
-      };
-      qrDiv.appendChild(btn);
-    });
-    msgs.appendChild(qrDiv); scrollToBottom();
-  }
-
-  // Follow-up suggestions
-  if (entry.followUps && entry.followUps.length > 0) {
-    await delay(FOLLOWUP_DELAY);
-    const fu = document.createElement('div'); fu.className='followups';
-    entry.followUps.forEach(q => {
-      const b = document.createElement('button'); b.className='followup-btn';
-      b.textContent='💬 ' + q;
-      b.onclick = () => handleSend(q);
-      fu.appendChild(b);
-    });
-    msgs.appendChild(fu); scrollToBottom();
-  }
-
-  isBotTyping = false;
+  isBotTyping=false;
 }
 
-// ─────────────────────────────────────────────────────────────────
-// USER MESSAGE RENDERER
-// ─────────────────────────────────────────────────────────────────
-function addUserMessage(text) {
-  const msgs = document.getElementById('messages');
-  const row = document.createElement('div'); row.className='msg-row user';
-  const bub = document.createElement('div'); bub.className='bubble user';
-  bub.textContent = text;
-  row.appendChild(bub); msgs.appendChild(row); scrollToBottom();
+function addUserMessage(text){
+  const msgs=document.getElementById('messages');
+  const row=document.createElement('div');row.className='msg-row user';
+  const bub=document.createElement('div');bub.className='bubble user';bub.textContent=text;
+  row.appendChild(bub);msgs.appendChild(row);scrollToBottom();
 }
 
-// ─────────────────────────────────────────────────────────────────
-// MAIN SEND HANDLER
-// ─────────────────────────────────────────────────────────────────
-function handleSend(overrideText) {
-  if (isBotTyping) return;
-  const inputEl = document.getElementById('userInput');
-  const text = (overrideText || inputEl.value).trim();
-  if (!text) return;
-  inputEl.value=''; inputEl.style.height='auto';
-  hideSuggestions();
-  addUserMessage(text);
-  isBotTyping = true;
-
-  // 1. If we're inside a multi-turn flow, route to flow handler
-  if (conversationState.flow) {
-    const flowResponse = routeFlowStep(text);
-    if (flowResponse) { streamResponse(flowResponse, text); return; }
+function handleSend(overrideText){
+  if(isBotTyping)return;
+  const inputEl=document.getElementById('userInput');
+  const text=(overrideText||inputEl.value).trim();
+  if(!text)return;
+  inputEl.value='';inputEl.style.height='auto';
+  hideSuggestions();addUserMessage(text);isBotTyping=true;
+  if(conversationState.flow){const fr=routeFlowStep(text);if(fr){streamResponse(fr,text);return;}}
+  const trigger=detectFlowTrigger(text);
+  if(trigger){
+    setFlow(trigger.flow,trigger.step);
+    if(trigger.flow==="harassment"){streamResponse(FLOWS.harassment_immediate(),text);return;}
+    const fq=getFlowOpeningQuestion(trigger.flow);
+    if(fq){streamResponse(fq,text);return;}
   }
-
-  // 2. Check if this message triggers a new flow
-  const trigger = detectFlowTrigger(text);
-  if (trigger) {
-    setFlow(trigger.flow, trigger.step);
-    // For flows that fire immediately (harassment, flow entry questions)
-    if (trigger.flow === "harassment") {
-      streamResponse(FLOWS.harassment_immediate(), text);
-      return;
-    }
-    // For flows that need a first question asked BY the bot
-    const firstQuestion = getFlowOpeningQuestion(trigger.flow);
-    if (firstQuestion) { streamResponse(firstQuestion, text); return; }
-  }
-
-  // 3. Static KB lookup
-  const result = findKB(text);
-  if (result) { streamResponse(result, text); return; }
-
-  // 4. Fallback
-  streamResponse({
-    section:"",
-    needsHR:true,
-    routingReason:"Query not found in handbook — HR can provide the correct answer",
-    lines:[
-      "I appreciate you asking, and I want to make sure you get the right answer. 😊",
-      "I couldn't find this specific topic in the current handbook. Could you try rephrasing?",
-      "Or reach out to **HR India** at **hr-india@finzly.com** — they'll be happy to help!",
-      "You can also try: office timings, sick leave, maternity leave, notice period, insurance claim, harassment, dress code, probation, or joining documents."
-    ],
-    followUps:["What are my office timings?","What is the notice period?","How do I claim medical insurance?"]
-  }, text);
+  const result=findKB(text);
+  if(result){streamResponse(result,text);return;}
+  streamResponse({section:"",needsHR:true,routingReason:"Query not found — HR can provide the correct answer",lines:["I appreciate you asking, and I want to make sure you get the right answer. 😊","I couldn't find this specific topic in the current handbook. Could you try rephrasing?","Or reach out to **HR India** at **hr-india@finzly.com** — they'll be happy to help!","You can also try: office timings, sick leave, maternity, notice period, insurance, harassment, dress code, probation, what is Finzly, or BankOS!"],followUps:["What is Finzly?","What is BankOS?","What are my office timings?"]},text);
 }
 
-// Opening question for each flow (what the bot asks first)
-function getFlowOpeningQuestion(flow) {
-  if (flow === "resign") {
-    setFlow("resign","ask_manager");
-    return {
-      lines:[
-        "I'm sorry to hear you're thinking of resigning. 💙",
-        "Before you proceed, I genuinely care about making sure you've had the right support.",
-        "Have you had a chance to speak with your **manager or HR** about what's troubling you?"
-      ],
-      quickReplies:[
-        { label:"Yes, I spoke to them", type:"yes", reply:"yes spoke to manager" },
-        { label:"No, not yet", type:"no", reply:"no not yet" }
-      ]
-    };
-  }
-  if (flow === "sick") {
-    setFlow("sick","ask_days");
-    return {
-      lines:[
-        "Oh no — I hope you feel better soon! 🙏 Please take good care of yourself.",
-        "To give you the right information — how many days of sick leave are you looking at?"
-      ],
-      quickReplies:[
-        { label:"1–2 days", type:"neutral", reply:"1 or 2 days sick" },
-        { label:"More than 2 days", type:"neutral", reply:"more than 2 days sick" }
-      ]
-    };
-  }
-  if (flow === "concern") {
-    setFlow("concern","ask_type");
-    return {
-      lines:[
-        "I'm sorry to hear you're going through something difficult. 💙 Thank you for trusting me with this.",
-        "Could you share a bit more about what's on your mind? Is it about:"
-      ],
-      quickReplies:[
-        { label:"Workload / stress", type:"neutral", reply:"workload stress pressure" },
-        { label:"Salary / compensation", type:"neutral", reply:"salary concern" },
-        { label:"My manager", type:"neutral", reply:"my manager" },
-        { label:"Workplace culture", type:"neutral", reply:"work culture environment" }
-      ]
-    };
-  }
-  if (flow === "performance") {
-    setFlow("performance","ask_type");
-    return {
-      lines:[
-        "Of course — happy to help with performance-related questions! 😊",
-        "What would you like to know more about?"
-      ],
-      quickReplies:[
-        { label:"Annual appraisal / increment", type:"neutral", reply:"appraisal increment annual review" },
-        { label:"PIP (Performance Improvement)", type:"neutral", reply:"pip performance improvement plan" },
-        { label:"Feedback / ratings", type:"neutral", reply:"feedback appreciation ratings" }
-      ]
-    };
-  }
-  if (flow === "maternity") {
-    setFlow("maternity","ask_service");
-    return {
-      lines:[
-        "Congratulations on your wonderful news! 🎉 Wishing you a healthy and happy journey ahead.",
-        "To confirm your eligibility — have you completed **more than 4 months** of continuous service with Finzly?"
-      ],
-      quickReplies:[
-        { label:"Yes, more than 4 months", type:"yes", reply:"yes more than 4 months" },
-        { label:"No, less than 4 months", type:"no", reply:"no less than 4 months" }
-      ]
-    };
-  }
-  if (flow === "leave_balance") {
-    setFlow("leave_balance","ask");
-    return {
-      lines:[
-        "Of course! 😊 Let me help you figure out your options.",
-        "Do you still have some leave balance left, or have you used it all up?"
-      ],
-      quickReplies:[
-        { label:"I still have some leaves", type:"yes", reply:"yes have some leave balance" },
-        { label:"All leaves exhausted", type:"no", reply:"no leaves exhausted" }
-      ]
-    };
-  }
-  return null;
-}
+function showModal(q,r){currentModalQuery=q;document.getElementById('modalQuery').textContent='"'+q+'"';document.getElementById('modalReason').textContent=r||'Needs HR attention';document.getElementById('modal').classList.add('show');}
+function closeModal(){document.getElementById('modal').classList.remove('show');}
+document.getElementById('emailHRBtn').onclick=()=>{window.open('mailto:'+HR_EMAIL+'?subject=HR Query via BuddyFinzler&body='+encodeURIComponent(currentModalQuery));closeModal();};
+document.getElementById('modal').addEventListener('click',e=>{if(e.target===document.getElementById('modal'))closeModal();});
 
-// ─────────────────────────────────────────────────────────────────
-// MODAL
-// ─────────────────────────────────────────────────────────────────
-function showModal(query, reason) {
-  currentModalQuery = query;
-  document.getElementById('modalQuery').textContent = '"' + query + '"';
-  document.getElementById('modalReason').textContent = reason || 'Needs HR attention';
-  document.getElementById('modal').classList.add('show');
-}
-function closeModal() { document.getElementById('modal').classList.remove('show'); }
-document.getElementById('emailHRBtn').onclick = () => {
-  window.open('mailto:' + HR_EMAIL + '?subject=HR Query via BuddyFinzler&body=' + encodeURIComponent(currentModalQuery));
-  closeModal();
-};
-document.getElementById('modal').addEventListener('click', e => { if (e.target===document.getElementById('modal')) closeModal(); });
+const inputEl=document.getElementById('userInput');
+inputEl.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();handleSend();}});
+inputEl.addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px';});
+document.getElementById('sendBtn').addEventListener('click',()=>handleSend());
 
-// ─────────────────────────────────────────────────────────────────
-// INPUT BINDINGS
-// ─────────────────────────────────────────────────────────────────
-const inputEl = document.getElementById('userInput');
-inputEl.addEventListener('keydown', e => { if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } });
-inputEl.addEventListener('input', function() { this.style.height='auto'; this.style.height=Math.min(this.scrollHeight,100)+'px'; });
-document.getElementById('sendBtn').addEventListener('click', () => handleSend());
+const QUICK_QUESTIONS=["What is Finzly?","What is BankOS?","Why should I work at Finzly?","What is my career growth?","What are my office timings?","How many sick leaves do I get?","How do I apply for sick leave?","Can I carry forward my earned leave?","What happens if I take leave without approval?","What is the maternity leave policy?","What is the paternity leave policy?","How do I claim medical insurance?","What is the notice period?","Whom should I contact for a workplace concern?","How can I report harassment?","What is the dress code?","What is the laptop security policy?","What happens during probation?","What documents should I submit during joining?","Who is the CEO of Finzly?"];
+const chipsEl=document.getElementById('chips');
+QUICK_QUESTIONS.forEach(q=>{const btn=document.createElement('button');btn.className='chip';btn.textContent=q;btn.onclick=()=>handleSend(q);chipsEl.appendChild(btn);});
 
-// ─────────────────────────────────────────────────────────────────
-// CHIPS
-// ─────────────────────────────────────────────────────────────────
-const QUICK_QUESTIONS = [
-  "What are my office timings?","How many sick leaves do I get?","How do I apply for sick leave?",
-  "Can I carry forward my earned leave?","What happens if I take leave without approval?",
-  "What is the maternity leave policy?","What is the paternity leave policy?",
-  "How do I claim medical insurance?","What is the notice period?",
-  "Whom should I contact for a workplace concern?","How can I report harassment?",
-  "What is the dress code?","What is the laptop security policy?",
-  "What is the open-door policy?","What happens during probation?",
-  "What documents should I submit during joining?"
-];
-const chipsEl = document.getElementById('chips');
-QUICK_QUESTIONS.forEach(q => {
-  const btn = document.createElement('button'); btn.className='chip'; btn.textContent=q;
-  btn.onclick = () => handleSend(q);
-  chipsEl.appendChild(btn);
-});
-
-// ─────────────────────────────────────────────────────────────────
-// WELCOME
-// ─────────────────────────────────────────────────────────────────
-window.onload = () => {
-  isBotTyping = true;
-  streamResponse({
-    section:"", needsHR:false,
-    lines:[
-      "Hey there! 👋 I'm **BuddyFinzler**, your Finzly HR companion.",
-      "I'm here to have a real conversation with you — not just throw policy paragraphs at you. 😊",
-      "I'm loaded with the **Finzly Employee Handbook v2.1 (Jan 2026)**.",
-      "Ask me about leaves, payroll, travel, insurance, POSH, exit policies, referral bonuses, and more.",
-      "And for sensitive topics like resignations or concerns — I'll walk with you through it, step by step. 💙",
-      "What's on your mind today? 😊"
-    ],
-    followUps:[]
-  }, "");
+window.onload=()=>{
+  isBotTyping=true;
+  streamResponse({section:"",needsHR:false,
+  lines:[
+    "Hey there! 👋 I'm **BuddyFinzler**, your Finzly HR companion.",
+    "I'm here to have a real conversation with you — about our policies, your benefits, and anything about the company. 😊",
+    "Feel free to ask me anything — whether it's about our workplace policies, your career, or just to know more about Finzly. 🚀",
+    "For anything personal or sensitive — I'm here to walk with you through it, with care. 💙",
+    "What's on your mind today? 😊"
+  ],followUps:[]},"");
 };
 </script>
 </body>
