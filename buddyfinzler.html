@@ -3,115 +3,526 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>BuddyFinzler – Finzly HR Assistant</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<title>BuddyFinzler – Finzly</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet"/>
 <style>
+/* ── BRAND TOKENS ──────────────────────────────────────────── */
+:root{
+  /* Finzly brand — black wordmark + purple gradient wing */
+  --brand-purple:#7c3aed;
+  --brand-violet:#4f46e5;
+  --brand-purple-light:#a78bfa;
+  --brand-gradient:linear-gradient(135deg,#7c3aed,#4f46e5);
+  --brand-gradient-soft:linear-gradient(135deg,#ede9fe,#eef2ff);
+
+  /* Surfaces */
+  --bg:#f8f8fc;
+  --surface:#ffffff;
+  --surface-2:#f3f4f8;
+  --border:#e5e7f0;
+  --border-mid:#d1d5e8;
+
+  /* Text */
+  --text-900:#0f0f1a;
+  --text-700:#374151;
+  --text-500:#6b7280;
+  --text-300:#d1d5db;
+
+  /* User bubble */
+  --user-bg:linear-gradient(135deg,#1e1b4b,#312e81,#3730a3);
+
+  --r-2xl:28px;
+  --r-xl:20px;
+  --r-lg:16px;
+  --r-md:12px;
+  --r-sm:8px;
+
+  --font:'Inter',system-ui,sans-serif;
+  --font-brand:'Space Grotesk',sans-serif;
+}
+
+/* ── RESET ─────────────────────────────────────────────────── */
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:linear-gradient(135deg,#07101f,#0d1a32 60%,#06111e);min-height:100vh;font-family:'DM Sans','Segoe UI',sans-serif;display:flex;align-items:center;justify-content:center;padding:20px}
-@keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
-@keyframes fadeSlideIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
-::-webkit-scrollbar{width:4px}
-::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:4px}
-#app{width:100%;max-width:720px;height:94vh;max-height:860px;display:flex;flex-direction:column;background:rgba(255,255,255,0.03);backdrop-filter:blur(24px);border-radius:24px;border:1px solid rgba(255,255,255,0.07);box-shadow:0 40px 80px rgba(0,0,0,0.7);overflow:hidden}
-.header{background:linear-gradient(135deg,#122040,#0d1930);border-bottom:1px solid rgba(255,255,255,0.06);padding:16px 20px;display:flex;align-items:center;gap:14px;flex-shrink:0}
-.bot-avatar{position:relative}
-.bot-icon{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,#1d4ed8,#0ea5e9);display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 0 20px rgba(29,78,216,0.5)}
-.online-dot{position:absolute;bottom:2px;right:2px;width:11px;height:11px;border-radius:50%;background:#22c55e;border:2px solid #0d1930;box-shadow:0 0 8px rgba(34,197,94,0.7);animation:pulse 2s infinite}
-.header-info{flex:1}
-.header-name{color:#fff;font-weight:700;font-size:17px}
-.header-sub{color:rgba(255,255,255,0.4);font-size:12px;margin-top:2px}
-.badge{font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;background:rgba(29,78,216,0.15);border:1px solid rgba(29,78,216,0.3);color:#60a5fa}
-#messages{flex:1;overflow-y:auto;padding:18px 18px 8px;display:flex;flex-direction:column;gap:6px;scroll-behavior:smooth}
-.msg-row{display:flex;align-items:flex-end;gap:8px;animation:fadeSlideIn 0.25s ease}
-.msg-row.user{justify-content:flex-end}
-.bot-msg-wrapper{display:flex;align-items:flex-end;gap:8px;animation:fadeSlideIn 0.25s ease}
-.bot-bubbles{display:flex;flex-direction:column;gap:4px;max-width:78%}
-.msg-avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#1d4ed8,#0ea5e9);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;align-self:flex-end}
-.bubble{padding:10px 14px;font-size:13.5px;color:#f1f5f9;line-height:1.6;display:inline-block}
-.bubble.bot{background:rgba(255,255,255,0.055);border:1px solid rgba(255,255,255,0.08);border-radius:18px 18px 18px 4px;max-width:100%}
-.bubble.user{background:linear-gradient(135deg,#1d4ed8,#1e40af);border-radius:18px 18px 4px 18px;max-width:78%}
-.bubble strong{color:#93c5fd;font-weight:600}
-.bubble ul{margin:4px 0 4px 16px}
-.bubble li{margin-bottom:3px}
-.cursor{display:inline-block;width:2px;height:14px;background:#93c5fd;margin-left:2px;vertical-align:middle;animation:blink 0.7s infinite}
-.section-tag{margin-top:6px;display:inline-flex;align-items:center;gap:5px;background:rgba(29,78,216,0.1);border:1px solid rgba(29,78,216,0.2);border-radius:8px;padding:3px 9px;font-size:11px;color:#93c5fd}
-.escalation-tag{margin-top:6px;padding:7px 11px;background:rgba(251,191,36,0.07);border:1px solid rgba(251,191,36,0.2);border-radius:10px;font-size:12px;color:#fbbf24}
-.followups{display:flex;flex-direction:column;gap:5px;margin-top:4px;margin-left:38px;animation:fadeSlideIn 0.3s ease}
-.followup-btn{background:rgba(29,78,216,0.07);border:1px solid rgba(29,78,216,0.18);border-radius:10px;color:#93c5fd;font-size:12px;padding:7px 12px;cursor:pointer;text-align:left;font-family:inherit;transition:background 0.2s}
-.followup-btn:hover{background:rgba(29,78,216,0.18)}
-.quick-replies{display:flex;flex-wrap:wrap;gap:7px;margin-top:4px;margin-left:38px;animation:fadeSlideIn 0.3s ease}
-.qr-btn{padding:7px 16px;border-radius:20px;font-size:12.5px;cursor:pointer;font-family:inherit;font-weight:600;transition:all 0.2s;border:none}
-.qr-btn.yes{background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.3);color:#4ade80}
-.qr-btn.yes:hover{background:rgba(34,197,94,0.22)}
-.qr-btn.no{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);color:#f87171}
-.qr-btn.no:hover{background:rgba(239,68,68,0.2)}
-.qr-btn.neutral{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.65)}
-.qr-btn.neutral:hover{background:rgba(255,255,255,0.12);color:#fff}
-.typing-row{display:flex;align-items:flex-end;gap:8px;animation:fadeSlideIn 0.2s ease}
-.typing-bubble{background:rgba(255,255,255,0.055);border:1px solid rgba(255,255,255,0.08);border-radius:18px 18px 18px 4px;padding:12px 16px;display:flex;gap:5px}
-.typing-bubble span{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,0.45);animation:bounce 1.2s infinite}
-.typing-bubble span:nth-child(2){animation-delay:0.2s}
-.typing-bubble span:nth-child(3){animation-delay:0.4s}
+html,body{height:100%;overflow:hidden}
+body{
+  font-family:var(--font);
+  background:var(--bg);
+  display:flex;align-items:center;justify-content:center;
+  position:relative;
+}
+
+/* Soft ambient background */
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 70% 60% at 15% 10%, rgba(124,58,237,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 50% at 85% 90%, rgba(79,70,229,0.05) 0%, transparent 60%),
+    linear-gradient(160deg, #f5f3ff 0%, #f8f8fc 40%, #eef2ff 100%);
+}
+
+/* ── APP SHELL ──────────────────────────────────────────────── */
+#app{
+  position:relative;z-index:1;
+  width:100%;max-width:800px;
+  height:100vh;max-height:920px;
+  display:flex;flex-direction:column;
+  background:var(--surface);
+  border-radius:var(--r-2xl);
+  overflow:hidden;
+  box-shadow:
+    0 0 0 1px rgba(124,58,237,0.08),
+    0 8px 32px rgba(15,15,26,0.08),
+    0 32px 80px rgba(15,15,26,0.12);
+}
+
+/* ── HEADER ─────────────────────────────────────────────────── */
+.header{
+  flex-shrink:0;
+  height:80px;
+  padding:0 28px;
+  display:flex;align-items:center;gap:16px;
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+  position:relative;
+}
+/* Purple gradient underline accent */
+.header::after{
+  content:'';
+  position:absolute;bottom:0;left:0;right:0;height:2.5px;
+  background:linear-gradient(90deg,var(--brand-purple),var(--brand-violet),rgba(79,70,229,0.1));
+}
+
+/* ── AVATAR  — friendly illustrated face ───────────────────── */
+.av-shell{
+  position:relative;flex-shrink:0;
+}
+.av-bg{
+  width:56px;height:56px;border-radius:18px;
+  background:linear-gradient(145deg,#7c3aed,#6d28d9,#4f46e5);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:
+    0 4px 16px rgba(124,58,237,0.35),
+    inset 0 1px 0 rgba(255,255,255,0.2);
+  position:relative;overflow:hidden;
+}
+.av-bg::before{
+  content:'';position:absolute;inset:0;border-radius:inherit;
+  background:linear-gradient(145deg,rgba(255,255,255,0.18) 0%,transparent 55%);
+}
+/* The SVG face itself */
+.av-face{
+  width:42px;height:42px;position:relative;z-index:1;
+}
+/* Online dot */
+.av-dot{
+  position:absolute;bottom:-1px;right:-1px;
+  width:15px;height:15px;border-radius:50%;
+  background:#22c55e;
+  border:2.5px solid white;
+  box-shadow:0 0 0 1px rgba(34,197,94,0.3),0 2px 8px rgba(34,197,94,0.4);
+  animation:breathe 2.8s ease-in-out infinite;
+}
+@keyframes breathe{
+  0%,100%{box-shadow:0 0 0 1px rgba(34,197,94,0.3),0 2px 8px rgba(34,197,94,0.4)}
+  50%{box-shadow:0 0 0 3px rgba(34,197,94,0.15),0 2px 12px rgba(34,197,94,0.6)}
+}
+
+/* ── HEADER TEXT ────────────────────────────────────────────── */
+.hd-text{flex:1;min-width:0}
+.hd-name{
+  font-family:var(--font-brand);
+  font-size:18px;font-weight:700;
+  color:var(--text-900);letter-spacing:-0.4px;
+}
+.hd-row{display:flex;align-items:center;gap:8px;margin-top:3px}
+.hd-badge{
+  font-size:10px;font-weight:700;letter-spacing:0.7px;
+  padding:2px 9px;border-radius:20px;
+  color:#16a34a;background:#dcfce7;
+  border:1px solid #bbf7d0;
+  display:flex;align-items:center;gap:4px;
+}
+.hd-badge::before{
+  content:'';width:5px;height:5px;border-radius:50%;
+  background:#16a34a;
+  animation:breathe 2.5s ease-in-out infinite;
+}
+.hd-sub{font-size:12px;color:var(--text-500);font-weight:400}
+
+/* ── FINZLY LOGO — inline SVG recreation ───────────────────── */
+.hd-finzly-logo{
+  flex-shrink:0;display:flex;align-items:center;
+}
+/* Inline SVG wordmark matching real Finzly logo */
+.finzly-svg-logo{height:28px;width:auto}
+
+/* ── MESSAGES ──────────────────────────────────────────────── */
+#messages{
+  flex:1;overflow-y:auto;
+  padding:28px 28px 12px;
+  display:flex;flex-direction:column;gap:6px;
+  background:var(--bg);
+  /* Subtle dot grid */
+  background-image:radial-gradient(circle,rgba(124,58,237,0.055) 1px,transparent 1px);
+  background-size:24px 24px;
+}
+#messages::-webkit-scrollbar{width:3px}
+#messages::-webkit-scrollbar-thumb{background:var(--border-mid);border-radius:3px}
+
+/* ── BOT MESSAGE ────────────────────────────────────────────── */
+.bot-msg-wrapper{
+  display:flex;align-items:flex-end;gap:10px;
+  animation:slideUp 0.28s cubic-bezier(0.34,1.56,0.64,1);
+}
+.bot-bubbles{display:flex;flex-direction:column;gap:5px;max-width:76%}
+
+/* Small avatar repeat in chat */
+.chat-av{
+  width:34px;height:34px;border-radius:10px;flex-shrink:0;align-self:flex-end;
+  background:linear-gradient(145deg,#7c3aed,#4f46e5);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 3px 10px rgba(124,58,237,0.3);
+  overflow:hidden;position:relative;
+}
+.chat-av::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(145deg,rgba(255,255,255,0.18),transparent 50%);
+}
+.chat-av-face{width:26px;height:26px;position:relative;z-index:1}
+
+/* Bot bubbles */
+.bubble{padding:12px 16px;font-size:13.5px;line-height:1.7;display:inline-block;font-weight:400}
+.bubble.bot{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:4px 18px 18px 18px;
+  color:var(--text-900);
+  box-shadow:0 1px 4px rgba(15,15,26,0.05),0 2px 12px rgba(15,15,26,0.04);
+  max-width:100%;
+}
+.bubble.bot strong{color:#1e1b4b;font-weight:700}
+.bubble.bot ul{margin:6px 0 4px 18px}
+.bubble.bot li{margin-bottom:4px;color:var(--text-700)}
+
+/* User bubble */
+.msg-row{display:flex;justify-content:flex-end;animation:slideUp 0.22s cubic-bezier(0.34,1.56,0.64,1)}
+.bubble.user{
+  background:var(--user-bg);
+  border-radius:18px 4px 18px 18px;
+  color:#fff;max-width:72%;font-weight:500;
+  box-shadow:0 4px 16px rgba(49,46,129,0.28),0 1px 4px rgba(49,46,129,0.15);
+}
+
+@keyframes slideUp{
+  from{opacity:0;transform:translateY(12px) scale(0.97)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+
+/* ── TYPING ────────────────────────────────────────────────── */
+.typing-row{display:flex;align-items:flex-end;gap:10px;animation:slideUp 0.2s ease}
+.typing-bub{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:4px 18px 18px 18px;
+  padding:14px 18px;display:flex;gap:5px;
+  box-shadow:0 1px 4px rgba(15,15,26,0.05);
+}
+.typing-bub span{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--brand-purple);
+  animation:tdot 1.3s ease-in-out infinite;opacity:0.4;
+}
+.typing-bub span:nth-child(2){animation-delay:0.18s}
+.typing-bub span:nth-child(3){animation-delay:0.36s}
+@keyframes tdot{0%,60%,100%{transform:translateY(0);opacity:0.35}30%{transform:translateY(-6px);opacity:1}}
+
+/* ── CURSOR ─────────────────────────────────────────────────── */
+.cursor{
+  display:inline-block;width:2px;height:14px;
+  background:var(--brand-purple);margin-left:2px;
+  vertical-align:middle;border-radius:1px;
+  animation:cblink 0.8s ease-in-out infinite;
+}
+@keyframes cblink{0%,44%{opacity:1}55%,100%{opacity:0}}
+
+/* ── TAGS ───────────────────────────────────────────────────── */
+.section-tag{
+  margin-top:8px;display:inline-flex;align-items:center;gap:6px;
+  background:#f5f3ff;border:1px solid #ddd6fe;
+  border-radius:6px;padding:4px 10px;
+  font-size:10.5px;font-weight:600;color:#5b21b6;letter-spacing:0.1px;
+}
+.section-tag::before{content:'📋';font-size:11px}
+
+.escalation-tag{
+  margin-top:8px;padding:9px 13px;
+  background:#fffbeb;border:1px solid #fde68a;
+  border-radius:var(--r-sm);font-size:11.5px;font-weight:500;color:#92400e;
+  display:flex;align-items:center;gap:7px;
+}
+.escalation-tag::before{content:'⚡';font-size:13px}
+
+/* ── FOLLOW-UPS ─────────────────────────────────────────────── */
+.followups{
+  display:flex;flex-direction:column;gap:6px;
+  margin-top:6px;margin-left:44px;
+  animation:fuSlide 0.35s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes fuSlide{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:translateX(0)}}
+
+.followup-btn{
+  background:var(--surface);border:1.5px solid var(--border);
+  border-radius:var(--r-sm);color:var(--text-700);
+  font-size:12.5px;font-weight:500;padding:9px 14px;
+  cursor:pointer;text-align:left;font-family:var(--font);
+  transition:all 0.18s cubic-bezier(0.34,1.56,0.64,1);
+  display:flex;align-items:center;gap:8px;
+  box-shadow:0 1px 3px rgba(15,15,26,0.04);
+}
+.followup-btn::before{
+  content:'→';font-size:13px;color:var(--brand-purple);
+  font-weight:700;transition:transform 0.18s;
+}
+.followup-btn:hover{
+  border-color:var(--brand-purple);background:#f5f3ff;
+  color:#1e1b4b;transform:translateX(4px);
+  box-shadow:0 4px 12px rgba(124,58,237,0.12);
+}
+.followup-btn:hover::before{transform:translateX(3px)}
+
+/* ── QUICK REPLIES ──────────────────────────────────────────── */
+.quick-replies{
+  display:flex;flex-wrap:wrap;gap:8px;
+  margin-top:6px;margin-left:44px;
+  animation:fuSlide 0.35s cubic-bezier(0.34,1.56,0.64,1);
+}
+.qr-btn{
+  padding:8px 20px;border-radius:24px;
+  font-size:12.5px;font-weight:600;cursor:pointer;
+  font-family:var(--font);border:none;
+  transition:all 0.18s cubic-bezier(0.34,1.56,0.64,1);
+}
+.qr-btn.yes{background:#f0fdf4;border:1.5px solid #86efac;color:#166534}
+.qr-btn.yes:hover{background:#dcfce7;transform:translateY(-2px);box-shadow:0 5px 14px rgba(22,163,74,0.18)}
+.qr-btn.no{background:#fff1f2;border:1.5px solid #fca5a5;color:#991b1b}
+.qr-btn.no:hover{background:#fee2e2;transform:translateY(-2px);box-shadow:0 5px 14px rgba(239,68,68,0.15)}
+.qr-btn.neutral{background:var(--surface);border:1.5px solid var(--border-mid);color:var(--text-700)}
+.qr-btn.neutral:hover{background:#f5f3ff;border-color:#c4b5fd;color:#1e1b4b;transform:translateY(-2px)}
+
+/* ── INPUT AREA ─────────────────────────────────────────────── */
+.input-area{
+  flex-shrink:0;
+  padding:16px 24px 20px;
+  background:var(--surface);
+  border-top:1px solid var(--border);
+}
+.input-wrap{
+  display:flex;align-items:flex-end;gap:10px;
+  background:var(--surface-2);
+  border:1.5px solid var(--border-mid);
+  border-radius:var(--r-lg);
+  padding:10px 10px 10px 18px;
+  transition:border-color 0.2s,box-shadow 0.2s,background 0.2s;
+}
+.input-wrap:focus-within{
+  border-color:var(--brand-purple);
+  box-shadow:0 0 0 3px rgba(124,58,237,0.1);
+  background:var(--surface);
+}
+#userInput{
+  flex:1;background:transparent;border:none;outline:none;
+  color:var(--text-900);font-size:14px;line-height:1.6;
+  resize:none;font-family:var(--font);
+  max-height:120px;min-height:22px;font-weight:400;
+}
+#userInput::placeholder{color:var(--text-300)}
+#sendBtn{
+  width:42px;height:42px;border-radius:12px;
+  background:var(--brand-gradient);
+  border:none;cursor:pointer;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 14px rgba(124,58,237,0.38);
+  transition:all 0.2s cubic-bezier(0.34,1.56,0.64,1);
+  position:relative;overflow:hidden;
+}
+#sendBtn::before{
+  content:'';position:absolute;inset:0;border-radius:inherit;
+  background:linear-gradient(145deg,rgba(255,255,255,0.18),transparent 55%);
+}
+#sendBtn:hover{transform:scale(1.08) translateY(-1px);box-shadow:0 6px 20px rgba(124,58,237,0.48)}
+#sendBtn:active{transform:scale(0.95)}
+#sendBtn svg{position:relative;z-index:1}
+
+.input-footer{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px}
+.footer-dot{width:3px;height:3px;border-radius:50%;background:var(--text-300)}
+.footer-txt{color:var(--text-500);font-size:10.5px;font-weight:500}
+.footer-lnk{color:var(--brand-purple);font-size:10.5px;font-weight:600;text-decoration:none;opacity:0.7;transition:opacity 0.2s}
+.footer-lnk:hover{opacity:1}
+
+/* ── MODAL ──────────────────────────────────────────────────── */
+#modal{
+  display:none;position:fixed;inset:0;
+  background:rgba(15,15,26,0.5);backdrop-filter:blur(14px);
+  align-items:center;justify-content:center;z-index:1000;padding:20px;
+}
+#modal.show{display:flex;animation:mIn 0.28s cubic-bezier(0.34,1.56,0.64,1)}
+@keyframes mIn{from{opacity:0;transform:scale(0.92)}to{opacity:1;transform:scale(1)}}
+.modal-box{
+  background:var(--surface);border-radius:var(--r-2xl);
+  padding:32px;max-width:440px;width:100%;
+  box-shadow:0 24px 80px rgba(15,15,26,0.2),0 0 0 1px var(--border);
+  position:relative;overflow:hidden;
+}
+.modal-box::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:var(--brand-gradient);
+}
+.modal-icon{
+  width:52px;height:52px;border-radius:14px;margin:0 auto 16px;
+  background:#f5f3ff;border:1px solid #ddd6fe;
+  display:flex;align-items:center;justify-content:center;font-size:22px;
+}
+.modal-title{color:var(--text-900);text-align:center;margin:0 0 6px;font-family:var(--font-brand);font-size:18px;font-weight:700;letter-spacing:-0.3px}
+.modal-sub{color:var(--text-500);text-align:center;font-size:13px;margin:0 0 22px}
+.modal-card{border-radius:var(--r-md);padding:13px 16px;margin-bottom:10px}
+.card-query{background:var(--surface-2);border:1px solid var(--border)}
+.card-query p{color:var(--text-700);font-size:13px;margin:0;font-style:italic}
+.card-reason{background:#fffbeb;border:1px solid #fde68a}
+.card-reason p{color:#92400e;font-size:13px;margin:0}
+.card-label{color:var(--text-300);font-size:9.5px;margin:0 0 5px;text-transform:uppercase;letter-spacing:1px;font-weight:600}
+.modal-btn-primary{
+  width:100%;padding:13px;background:var(--brand-gradient);
+  border:none;border-radius:var(--r-md);color:white;font-weight:700;font-size:14px;
+  cursor:pointer;margin-bottom:10px;font-family:var(--font);
+  box-shadow:0 4px 14px rgba(124,58,237,0.3);
+  transition:all 0.2s;letter-spacing:0.1px;
+}
+.modal-btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(124,58,237,0.4)}
+.modal-btn-secondary{
+  width:100%;padding:11px;background:transparent;
+  border:1.5px solid var(--border-mid);border-radius:var(--r-md);
+  color:var(--text-500);font-size:13px;cursor:pointer;font-family:var(--font);transition:all 0.2s;
+}
+.modal-btn-secondary:hover{background:var(--surface-2);color:var(--text-700)}
+
 #suggestions{display:none}
-.input-area{padding:10px 14px 14px;border-top:1px solid rgba(255,255,255,0.05);background:rgba(0,0,0,0.15);flex-shrink:0}
-.input-box{display:flex;gap:9px;align-items:flex-end;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.09);border-radius:16px;padding:8px 8px 8px 15px}
-#userInput{flex:1;background:transparent;border:none;outline:none;color:#f1f5f9;font-size:13.5px;line-height:1.5;resize:none;font-family:inherit;max-height:100px;min-height:22px}
-#userInput::placeholder{color:rgba(255,255,255,0.3)}
-#sendBtn{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,#1d4ed8,#1e40af);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-#sendBtn:hover{opacity:0.85}
-.input-footer{color:rgba(255,255,255,0.18);font-size:10.5px;text-align:center;margin-top:7px}
-#modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);align-items:center;justify-content:center;z-index:1000;padding:20px}
-#modal.show{display:flex}
-.modal-box{background:linear-gradient(135deg,#122040,#0d1930);border:1px solid rgba(251,191,36,0.25);border-radius:20px;padding:26px;max-width:430px;width:100%;box-shadow:0 40px 80px rgba(0,0,0,0.7)}
-.modal-icon{font-size:36px;text-align:center;margin-bottom:10px}
-.modal-title{color:#fbbf24;text-align:center;margin:0 0 6px;font-size:17px;font-weight:700}
-.modal-sub{color:rgba(255,255,255,0.5);text-align:center;font-size:12.5px;margin:0 0 18px}
-.modal-card{border-radius:12px;padding:11px 14px;margin-bottom:10px}
-.card-query{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07)}
-.card-query p{color:#f1f5f9;font-size:13px;margin:0}
-.card-reason{background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.15)}
-.card-reason p{color:#fbbf24;font-size:13px;margin:0}
-.card-label{color:rgba(255,255,255,0.35);font-size:10px;margin:0 0 4px;text-transform:uppercase}
-.modal-btn-primary{width:100%;padding:11px;background:linear-gradient(135deg,#1d4ed8,#1e40af);border:none;border-radius:12px;color:white;font-weight:700;font-size:13.5px;cursor:pointer;margin-bottom:8px;font-family:inherit}
-.modal-btn-secondary{width:100%;padding:9px;background:transparent;border:1px solid rgba(255,255,255,0.09);border-radius:12px;color:rgba(255,255,255,0.35);font-size:12.5px;cursor:pointer;font-family:inherit}
 </style>
 </head>
 <body>
+
 <div id="app">
+
+  <!-- ═══════════ HEADER ═══════════ -->
   <div class="header">
-    <div class="bot-avatar">
-      <div class="bot-icon">🤖</div>
-      <div class="online-dot"></div>
+
+    <!-- Avatar: friendly illustrated face, no robot -->
+    <div class="av-shell">
+      <div class="av-bg">
+        <!-- Friendly face SVG -->
+        <svg class="av-face" viewBox="0 0 42 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Face -->
+          <ellipse cx="21" cy="22" rx="14" ry="13" fill="white" fill-opacity="0.96"/>
+          <!-- Hair / top -->
+          <path d="M8 20 Q9 10 21 9 Q33 10 34 20" fill="white" fill-opacity="0.3"/>
+          <!-- Eyes -->
+          <circle cx="16" cy="21" r="3.2" fill="#1e1b4b"/>
+          <circle cx="26" cy="21" r="3.2" fill="#1e1b4b"/>
+          <!-- Eye shine -->
+          <circle cx="17.2" cy="19.8" r="1.1" fill="white"/>
+          <circle cx="27.2" cy="19.8" r="1.1" fill="white"/>
+          <!-- Eyebrows — friendly raised -->
+          <path d="M13 17.5 Q16 16 19 17.5" stroke="#1e1b4b" stroke-width="1.4" stroke-linecap="round" fill="none"/>
+          <path d="M23 17.5 Q26 16 29 17.5" stroke="#1e1b4b" stroke-width="1.4" stroke-linecap="round" fill="none"/>
+          <!-- Smile -->
+          <path d="M15.5 26 Q21 31 26.5 26" stroke="#1e1b4b" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+          <!-- Cheeks -->
+          <ellipse cx="12.5" cy="25" rx="2.5" ry="1.6" fill="#f9a8d4" fill-opacity="0.5"/>
+          <ellipse cx="29.5" cy="25" rx="2.5" ry="1.6" fill="#f9a8d4" fill-opacity="0.5"/>
+          <!-- Ears -->
+          <ellipse cx="7" cy="22" rx="2.2" ry="3.2" fill="white" fill-opacity="0.8"/>
+          <ellipse cx="35" cy="22" rx="2.2" ry="3.2" fill="white" fill-opacity="0.8"/>
+        </svg>
+      </div>
+      <div class="av-dot"></div>
     </div>
-    <div class="header-info">
-      <div class="header-name">BuddyFinzler</div>
-      <div class="header-sub">Finzly HR Assistant · Handbook v2.1 – Jan 2026</div>
+
+    <!-- Name + status -->
+    <div class="hd-text">
+      <div class="hd-name">BuddyFinzler</div>
+      <div class="hd-row">
+        <span class="hd-badge">ONLINE</span>
+        <span class="hd-sub">Your HR Companion</span>
+      </div>
     </div>
-    <div class="badge">HR ASSISTANT</div>
+
+    <!-- Finzly Logo — inline SVG matching real brand exactly -->
+    <div class="hd-finzly-logo">
+      <svg class="finzly-svg-logo" viewBox="0 0 120 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- "f" -->
+        <path d="M4 30V12.5C4 8.9 6.6 6 10.2 6H14v5H11c-1.4 0-2 .8-2 2V15h5v5H9V30H4z" fill="#0f0f1a"/>
+        <!-- "i" dot — purple gradient wing shape matching Finzly brand -->
+        <defs>
+          <linearGradient id="wing" x1="18" y1="3" x2="28" y2="10" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#7c3aed"/>
+            <stop offset="100%" stop-color="#4f46e5"/>
+          </linearGradient>
+        </defs>
+        <!-- Wing/flame on i -->
+        <path d="M21.5 3 C21.5 3 19 6.5 19.5 9 C20 11.5 22.5 11 23.5 9 C24.5 7 23.5 4 21.5 3Z" fill="url(#wing)"/>
+        <path d="M23 5 C24.5 4 27 5.5 26.5 8 C26 10 23.5 10.5 22.5 9" fill="url(#wing)" fill-opacity="0.6"/>
+        <!-- "i" stem -->
+        <rect x="20" y="13" width="5" height="17" rx="1.5" fill="#0f0f1a"/>
+        <!-- "n" -->
+        <path d="M29 30V13h4.8v2.2c1-1.6 2.7-2.7 5-2.7 3.4 0 5.5 2.2 5.5 6V30h-5V19.8c0-1.8-.8-2.8-2.4-2.8-1.6 0-2.9 1.2-2.9 3.2V30H29z" fill="#0f0f1a"/>
+        <!-- "z" -->
+        <path d="M47 30V26.5l7-9H47.4V13H60v3.5l-7 9H60V30H47z" fill="#0f0f1a"/>
+        <!-- "l" -->
+        <rect x="63" y="5" width="5" height="25" rx="1.5" fill="#0f0f1a"/>
+        <!-- "y" -->
+        <path d="M72 13h5.2l3.4 10.5L84 13h5.2L82 34c-1 2.8-2.6 4-5.2 4H74v-4.5h2c.9 0 1.4-.4 1.7-1.2l.3-.8L72 13z" fill="#0f0f1a"/>
+      </svg>
+    </div>
   </div>
+
+  <!-- ═══════════ MESSAGES ═══════════ -->
   <div id="messages"></div>
-  <div id="suggestions" style="display:none"><div class="chips" id="chips"></div></div>
+
+  <!-- hidden chips -->
+  <div id="suggestions" style="display:none"><div id="chips"></div></div>
+
+  <!-- ═══════════ INPUT ═══════════ -->
   <div class="input-area">
-    <div class="input-box">
-      <textarea id="userInput" rows="1" placeholder="Ask me anything about Finzly or HR policies..."></textarea>
+    <div class="input-wrap">
+      <textarea id="userInput" rows="1" placeholder="Ask me anything about policies, your benefits, or Finzly…"></textarea>
       <button id="sendBtn">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13M22 2L15 22L11 13M11 13L2 9L22 2" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+          <path d="M22 2L11 13M22 2L15 22L11 13M11 13L2 9L22 2" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
       </button>
     </div>
-    <div class="input-footer">Finzly HR Assistant v2.1 · hr-india@finzly.com · www.finzly.com</div>
+    <div class="input-footer">
+      <span class="footer-txt">hr-india@finzly.com</span>
+      <div class="footer-dot"></div>
+      <a class="footer-lnk" href="https://www.finzly.com" target="_blank">www.finzly.com</a>
+    </div>
   </div>
 </div>
+
+<!-- ═══════════ MODAL ═══════════ -->
 <div id="modal">
   <div class="modal-box">
     <div class="modal-icon">📨</div>
     <div class="modal-title">Connect with HR India</div>
-    <div class="modal-sub">This query needs personal attention from HR.</div>
-    <div class="modal-card card-query"><div class="card-label">Your query</div><p id="modalQuery"></p></div>
-    <div class="modal-card card-reason"><div class="card-label">Why HR needs to help</div><p id="modalReason"></p></div>
+    <div class="modal-sub">This query needs personal attention from our HR team.</div>
+    <div class="modal-card card-query">
+      <div class="card-label">Your Query</div>
+      <p id="modalQuery"></p>
+    </div>
+    <div class="modal-card card-reason">
+      <div class="card-label">Why HR Needs to Help</div>
+      <p id="modalReason"></p>
+    </div>
     <button class="modal-btn-primary" id="emailHRBtn">📧 Email HR India — hr-india@finzly.com</button>
-    <button class="modal-btn-secondary" onclick="closeModal()">Close</button>
+    <button class="modal-btn-secondary" onclick="closeModal()">Maybe later</button>
   </div>
 </div>
 
@@ -299,14 +710,19 @@ const COMPANY_KB = [
   {
     keys:["why should i work","why should i stay","why finzly","why work here","what makes finzly special","finzly different","proud to work","why join finzly","should i work at finzly","worth working","convince me","is finzly good","why choose finzly","reason to work"],
     section:"Why Finzly",
+    isRoleAwareWhy: true,
     lines:[
-      "I'm really glad you asked this — let me give you a honest and real answer. 😊",
-      "**You're not just writing code or testing software here.**\n\nWhen a US bank processes a FedNow instant payment at 2am, an ACH payroll transfer for thousands of employees, or a SWIFT wire for a corporate client — there's a very real chance that **your work made that happen**.\n\nThat's not a small thing. That's the real economy running on what you build.",
-      "**Here's what makes Finzly genuinely different:**\n\n🏆 **Award-winning workplace** — Best and Brightest Companies to Work For (2022 & 2023), Great Companies to Work For in North Carolina (2024)\n\n🚀 **Cutting-edge product** — BankOS is a cloud-native, AI-powered platform solving a problem that even the largest US banks struggle with. You're working on the frontier of fintech.\n\n💡 **Real innovation** — Finzly launched Agentic Galaxy (AI inside payments) in Oct 2025 and Token Galaxy for stablecoins. This isn't a legacy company maintaining old software.\n\n🌍 **Global team, real impact** — Charlotte + Chennai + Pune working as one. Your work ships to real US banks — not internal tools.\n\n👨‍💼 **A CEO who means it** — Booshan Rengachari built this from scratch, won the 2024 Innovation in Payments Award, and sits on the US Faster Payments Council board. He's in the trenches, not just the boardroom.\n\n📈 **Growing fast** — Revenue nearly doubled in 2023. Series A funded. Real banks. Real customers. Real growth.",
-      "And most importantly — Finzly gives **every employee a voice**. That's not just a policy line. It's why we've won those workplace awards year after year.",
-      "Is there something specific that's making you question this? I'm happy to talk through it with you. 💙"
+      "I'm really glad you asked — and I want to give you an answer that actually means something to **you**, not just a generic script. 😊",
+      "Could you tell me a little about your role at Finzly? That way I can speak to what makes this place special for someone in your shoes."
     ],
-    followUps:["What is Finzly's mission?","What awards has Finzly won?","What is BankOS?","Who is the CEO?"]
+    quickReplies:[
+      {label:"Engineering / Development", type:"neutral", reply:"I am in engineering development"},
+      {label:"QA / Testing", type:"neutral", reply:"I am in QA testing"},
+      {label:"HR / People", type:"neutral", reply:"I am in HR people team"},
+      {label:"Product / Design", type:"neutral", reply:"I am in product design"},
+      {label:"Finance / Operations", type:"neutral", reply:"I am in finance operations"},
+      {label:"Support / DevOps", type:"neutral", reply:"I am in support devops"}
+    ]
   }
 ];
 
@@ -399,6 +815,58 @@ const FLOWS = {
     if(more){clearFlow();return{section:"Section 7.4.5 – Maternity Leave",lines:["Wonderful — you're fully eligible! 🎉","You're entitled to **26 weeks of paid Maternity Leave**.\n- Notify HR **at least 15 weeks before** your due date\n- Share intended start and return date with manager and HR\n- After 26 weeks: request **WFH** (management approval) → then **EL** → then **LOP** (up to 2 months)","Miscarriage or medical termination: **6 weeks paid leave** with proof.","**Next step:** Inform HR as early as you can — they'll support you all the way. 💙"],followUps:["What is paternity leave?","What is leave without pay?"]};}
     else if(less){clearFlow();return{section:"Section 7.4.5 – Maternity Leave",needsHR:true,routingReason:"Maternity leave eligibility under 4 months — HR guidance needed",lines:["Thank you for checking! 😊","For full **26 weeks paid Maternity Leave**, you need **more than 4 months of continuous service**.","If you haven't completed 4 months yet, please speak with HR — they'll advise on the best approach for your situation.","**Next step:** Email **hr-india@finzly.com** — they'll work through options with you. 💙"],followUps:["What is leave without pay?","What is earned leave?"]};}
     else{clearFlow();return{section:"Section 7.4.5 – Maternity Leave",lines:["Congratulations! 🎉 Here's the **Maternity Leave** policy.\n- Eligible if you have **more than 4 months** of continuous service\n- **26 weeks of paid leave**\n- Notify HR **at least 15 weeks** before due date","After 26 weeks: WFH → EL → LOP (up to 2 months). Miscarriage = 6 weeks paid with proof.","**Next step:** Reach out to HR early — they'll make this process easy for you. 💙"],followUps:["What is leave without pay?","What is paternity leave?"]};}
+  },
+  why_finzly_role:(u)=>{
+    clearFlow();
+    const eng  = /engineer|develop|java|angular|spring|frontend|backend|fullstack|coding|code|tech/i.test(u);
+    const qa   = /qa|test|quality|automation|manual|bug|testing/i.test(u);
+    const hr   = /hr|human resource|people|recruit|talent|payroll|culture|posh|policy|onboard/i.test(u);
+    const prod = /product|design|ux|ui|pm|manager|roadmap|feature|figma/i.test(u);
+    const fin  = /finance|account|ops|operation|payroll|billing|budget|vendor|admin/i.test(u);
+    const sup  = /support|devops|aws|infra|cloud|deployment|incident|sre|ops/i.test(u);
+
+    if(eng) return {section:"Why Finzly – Engineering",lines:[
+      "As an engineer at Finzly — you're not maintaining old code. You're **building the payment infrastructure** that real US banks depend on. 🚀",
+      "Here's what that means for you:\n\n- You work on **FedNow, RTP, ACH, SWIFT, Fedwire** — every major US payment rail, on one modern platform\n- Our **Agentic Galaxy** (Oct 2025) puts AI agents directly inside payment workflows — you're building the future of fintech, not catching up to it\n- Our stack is **cloud-native on AWS**, API-first, ISO 20022 — the kind of experience that makes your profile stand out anywhere\n- You ship features that go live at **real banks** with real customers — not internal prototypes",
+      "🏆 **Best and Brightest Companies to Work For** — 2022 & 2023\n📈 Revenue nearly **doubled in 2023** — a growing company with stable funding\n🌍 Work alongside teams in **Charlotte, Chennai, and Pune** — global exposure from day one",
+      "Engineers here don't just follow tickets — they shape the product. Is there something specific you'd like to explore or change about your role? I'm here. 💙"
+    ],followUps:["What is BankOS?","What is the Agentic Galaxy?","What is my career growth?"]};
+
+    if(qa) return {section:"Why Finzly – QA",lines:[
+      "As a QA professional at Finzly — your work is the last line of defense before a payment reaches a real US bank. That's not a small responsibility. 🙌",
+      "Here's what makes it meaningful:\n\n- You test **FedNow, RTP, ACH, SWIFT** flows that process millions of dollars in real transactions\n- Your test cases directly prevent issues from reaching **live banking clients** like Frost Bank and Metropolitan Commercial Bank\n- Finzly's quality bar is high — and that means your expertise is genuinely valued, not just tolerated\n- You work on **cloud-native, API-driven** systems — modern testing for modern infrastructure",
+      "🏆 **Best and Brightest Companies to Work For** — 2022 & 2023\n💡 The **Agentic Galaxy** (AI in payments) and **Token Galaxy** (stablecoins) mean there's always something new to test and learn\n🌍 Global teams across Charlotte, Chennai, and Pune",
+      "QA at Finzly is a career — not just a stepping stone. What's on your mind? 💙"
+    ],followUps:["What is BankOS?","What is my career growth?","What awards has Finzly won?"]};
+
+    if(hr) return {section:"Why Finzly – HR & People",lines:[
+      "As someone in HR — you're the heartbeat of the employee experience here. And Finzly gives you a lot to work with. 💙",
+      "Here's what makes Finzly special for an HR professional:\n\n- You're part of a company that has **genuinely won** Best and Brightest Companies to Work For (2022 & 2023) — that's built on real HR work, not just a marketing claim\n- Finzly's culture values **giving employees a real voice** — the open door policy, POSH committee, feedback culture — these aren't checkbox exercises\n- As a growing Series A company, **you help shape policies**, not just implement them\n- You work across **Chennai and Pune** — two offices, a diverse team, and a direct line to leadership",
+      "The company is evolving fast — **new products, new hires, new challenges** — and HR is at the centre of all of it.\n\nYou're not just administering policies. You're building a culture. 😊",
+      "Is there something specific about your role or the culture you'd like to talk about? I'm all ears. 💙"
+    ],followUps:["What is Finzly's mission?","What awards has Finzly won?","Who is the CEO?"]};
+
+    if(prod) return {section:"Why Finzly – Product & Design",lines:[
+      "As someone in Product or Design at Finzly — you're shaping how modern banking feels. That's a genuinely rare opportunity. 😊",
+      "Here's what stands out:\n\n- Finzly's product vision is **years ahead** of where most banking software is — BankOS, Agentic Galaxy, Token Galaxy — you're not iterating on something stale\n- You work directly with **real US bank clients** — Frost Bank, Metropolitan Commercial Bank — so your decisions have real-world consequences\n- The team is small enough that **your voice shapes the roadmap**, not just executes it\n- Design and product decisions here carry real weight — not layers of committee approval",
+      "🚀 **Agentic Galaxy** (AI in payments) launched Oct 2025 — product decisions happening right now\n🌍 Global context — US banking requirements, India execution — uniquely broadening\n🏆 Award-winning workplace — people stay because they're genuinely engaged",
+      "Is there a specific part of the product or your role you'd like to explore? 💙"
+    ],followUps:["What is BankOS?","What is the Agentic Galaxy?","What is my career growth?"]};
+
+    if(fin) return {section:"Why Finzly – Finance & Operations",lines:[
+      "In Finance or Operations at Finzly — you're the backbone that keeps a fast-growing fintech company running. 😊",
+      "Here's what makes this place meaningful for you:\n\n- Finzly is **Series A funded**, revenue growing fast — you're part of a financially healthy, scaling company, not a startup burning cash with no plan\n- Operations here are **real** — you support two India offices (Chennai & Pune) and coordinate with the US HQ in Charlotte\n- The team is lean, which means **you have real ownership** — not a cog in a 10,000-person finance department\n- You're exposed to **international business operations**, US banking regulations, and a genuinely complex, interesting business",
+      "🏆 Best and Brightest Companies to Work For — 2022 & 2023\n📈 Revenue nearly doubled in 2023 — a company worth being part of",
+      "What's something specific you'd like to understand better about your role here? I'm happy to help. 💙"
+    ],followUps:["What is Finzly's mission?","What awards has Finzly won?","Who is the CEO?"]};
+
+    // support/devops or fallback
+    return {section:"Why Finzly",lines:[
+      "Whatever your function — you're supporting a platform that powers **real US banking payments**. That's not trivial. 😊",
+      "**What makes Finzly genuinely worth it:**\n\n🏆 Best and Brightest Companies to Work For — 2022 & 2023\n🚀 Cloud-native, AI-powered fintech on the frontier of US banking\n💡 Real products, real clients (Frost Bank, Metropolitan Commercial Bank)\n🌍 Global team — Charlotte, Chennai, Pune\n👨‍💼 CEO Booshan Rengachari — hands-on, visionary, award-winning\n📈 Revenue nearly doubled in 2023 — growing fast with Series A funding",
+      "Every role at Finzly matters — when payments work seamlessly at a US bank, it's because every function did their job right. 🙌",
+      "Is there something specific on your mind? I'm here to talk through it. 💙"
+    ],followUps:["What is Finzly's mission?","What awards has Finzly won?","What is my career growth?"]};
   }
 };
 
@@ -414,8 +882,9 @@ function routeFlowStep(u){
   if(flow==="harassment")return FLOWS.harassment_immediate();
   if(flow==="sick"&&step==="ask_days")return FLOWS.sick_ask_days(u);
   if(flow==="performance"&&step==="ask_type")return FLOWS.performance_ask_type(u);
-  if(flow==="leave_balance"&&step==="ask")return FLOWS.leave_balance_ask(u);
+  // leave_balance flow removed
   if(flow==="maternity"&&step==="ask_service")return FLOWS.maternity_ask_service(u);
+  if(flow==="why_role"&&step==="pick_dept")return FLOWS.why_finzly_role(u);
   if(flow==="concern"){
     if(step==="ask_type")return FLOWS.concern_ask_type(u);
     if(step==="ask_spoken_manager")return FLOWS.concern_ask_spoken_manager(u);
@@ -432,7 +901,7 @@ function detectFlowTrigger(q){
   if(/\b(not happy|unhappy|dissatisfied|have a concern|worried|concern about|trouble at work|problem at work|stressed at work|issue at work)\b/i.test(l))return{flow:"concern",step:"ask_type"};
   if(/\b(performance|pip|appraisal|rating|increment concern|review concern|not performing|under performing)\b/i.test(l))return{flow:"performance",step:"ask_type"};
   if(/\b(maternity|pregnant|expecting|pregnancy)\b/i.test(l))return{flow:"maternity",step:"ask_service"};
-  if(/\b(no leave|no leaves|leaves exhausted|run out of leave|used all leave|leave balance|check leave|how many leaves left)\b/i.test(l))return{flow:"leave_balance",step:"ask"};
+  // leave balance — handled directly by KB, no flow needed
   return null;
 }
 
@@ -442,7 +911,7 @@ function getFlowOpeningQuestion(flow){
   if(flow==="concern"){setFlow("concern","ask_type");return{lines:["I'm sorry to hear you're going through something difficult. 💙 Thank you for trusting me.","Could you share a bit more? Is it about:"],quickReplies:[{label:"Workload / stress",type:"neutral",reply:"workload stress pressure"},{label:"Salary / compensation",type:"neutral",reply:"salary concern"},{label:"My manager",type:"neutral",reply:"my manager"},{label:"Workplace culture",type:"neutral",reply:"work culture environment"}]};}
   if(flow==="performance"){setFlow("performance","ask_type");return{lines:["Of course — happy to help with performance questions! 😊","What would you like to know about?"],quickReplies:[{label:"Annual appraisal / increment",type:"neutral",reply:"appraisal increment annual review"},{label:"PIP (Performance Improvement)",type:"neutral",reply:"pip performance improvement plan"},{label:"Feedback / ratings",type:"neutral",reply:"feedback appreciation ratings"}]};}
   if(flow==="maternity"){setFlow("maternity","ask_service");return{lines:["Congratulations on your wonderful news! 🎉 Wishing you a healthy and happy journey!","To confirm your eligibility — have you completed **more than 4 months** of continuous service with Finzly?"],quickReplies:[{label:"Yes, more than 4 months",type:"yes",reply:"yes more than 4 months"},{label:"No, less than 4 months",type:"no",reply:"no less than 4 months"}]};}
-  if(flow==="leave_balance"){setFlow("leave_balance","ask");return{lines:["Of course! 😊 Let me help you figure out your options.","Do you still have some leave balance left, or have you used it all up?"],quickReplies:[{label:"I still have some leaves",type:"yes",reply:"yes have some leave balance"},{label:"All leaves exhausted",type:"no",reply:"no leaves exhausted"}]};}
+  // leave_balance flow removed — handled by KB directly
   return null;
 }
 
@@ -450,9 +919,20 @@ function getFlowOpeningQuestion(flow){
 // HR POLICY KB
 // ─────────────────────────────────────────────────────────────────
 const KB = [
-  {keys:["office timing","work hours","working hours","timing","start time","login time","office hours","9:30","what are my office timings","when do i start"],section:"Section 5 – Work Timings",lines:["Great question! 😊 Here are your **office timings** at Finzly.","**Mon–Fri**, 45 hrs/week (including 1-hr lunch) | Minimum **40 hrs/week** (excl. lunch) | **6 hrs in office/day** (excl. breaks) | Log in by **9:30 AM**","WFH employees log in/out via the **HRMS portal**. Late? Inform manager **at least 1 hr before** start time. 😊"],followUps:["What is the attendance policy?","What is the dress code?"]},
-  {keys:["earned leave","el","annual leave","how many leave","how many leaves","leave entitlement","leave balance","leaves do i get","leave policy","types of leave"],section:"Section 7.4.1 – Earned Leave",lines:["Of course! 😊 Happy to help with your leave questions.","**Earned Leave (EL):** 10 days/year | Accrued at 0.8 days/month | Apply **2 days in advance** via **HRMS portal** with manager approval","EL carries forward — max **30 days**. Above 30 lapses. On **resignation**, unused EL encashed at basic salary. 😊"],followUps:["Can I carry forward my earned leaves?","How do I apply for leave?","What is sick leave?"]},
+  {keys:["office timing","work hours","working hours","timing","start time","login time","office hours","9:30","what are my office timings","when do i start"],section:"Section 5 – Work Timings",lines:["Great question! 😊 Here are your **office timings** at Finzly.","**Mon–Fri**, 45 hrs/week (including 1-hr lunch) | Minimum **40 hrs/week** (excl. lunch) | **6 hrs in office/day** (excl. breaks) | Log in by **9:30 AM**","WFH employees log in/out via **ADP** for attendance compliance. Late? Inform manager **at least 1 hr before** start time. 😊"],followUps:["What is the attendance policy?","What is the dress code?"]},
+  {keys:["earned leave","el","annual leave","how many leave","how many leaves","leave entitlement","leave balance","leaves do i get","leave policy","types of leave","how many el","earned leave balance","how many days leave"],section:"Section 7.4.1 – Earned Leave",lines:["Of course! 😊 Happy to help with your leave questions.","**Earned Leave (EL):** 10 days/year | Accrued at 0.8 days/month | Apply **2 days in advance** via **HRMS portal** with manager approval","EL carries forward — max **30 days**. Above 30 lapses. On **resignation**, unused EL encashed at basic salary. 😊"],followUps:["Can I carry forward my earned leaves?","How do I apply for leave?","What is sick leave?"]},
     {
+    keys:["udemy","udemy business","learning","online learning","course","courses","training","e-learning","skill","upskill","learn","certification","finzly udemy","how to learn","study","development course","free course","finzly.udemy"],
+    section:"Learning & Development",
+    lines:[
+      "Great that you want to keep learning! 😊 Finzly gives you access to **Udemy Business** — thousands of courses, completely free for you.",
+      "🎓 **Your Udemy Business portal:**\n<a href=\"https://finzly.udemy.com\" target=\"_blank\" style=\"color:#7c3aed;font-weight:700;text-decoration:underline;\">finzly.udemy.com</a>\n\nLog in with your Finzly work email to get started.",
+      "You can explore courses on:\n- Technical skills (Java, AWS, Python, React, SQL, DevOps)\n- Soft skills (Leadership, Communication, Project Management)\n- Finance, HR, Product, Design — whatever your role needs\n- Certifications and specialisations at your own pace",
+      "🔐 **Can't log in to Udemy?**\n- **Chennai employees:** Contact **Abirami R** — abirami.r@finzly.com\n- **Pune employees:** Contact **Vishwata Mayekar** — vishwata.mayekar@finzly.com"
+    ],
+    followUps:["What is my career growth?","What is the performance review process?","Why should I work at Finzly?"]
+  },
+  {
     keys:["career growth","career development","grow at finzly","learning opportunities","skill development","training","upskill","promotion path","career path","how to grow","career progression","can i grow","future at finzly","what is my career","career at finzly","development opportunities","career opportunity","how can i grow","career goals","learn at finzly"],
     section:"Section 10 – Career & Performance Management",
     lines:[
@@ -462,19 +942,31 @@ const KB = [
       "Finzly has won **Best and Brightest Companies to Work For** 2022 & 2023 — that doesn\'t happen without investing in people.",
       "**Next step:** Have an honest conversation with your manager about your career goals — Finzly genuinely encourages it! Or email **hr-india@finzly.com** to explore development opportunities. 😊"
     ],
-    followUps:["What is the performance review process?","What is the feedback process?","Why should I work at Finzly?","What is BankOS?"]
+    followUps:["What is the performance review process?","Why should I work at Finzly?","What is BankOS?","What is Udemy Business?"]
   },
-  {keys:["sick leave","how many sick leaves","sick leave policy","medical leave","ill","illness","unwell","doctor","fever"],section:"Section 7.4.3 – Sick Leave",lines:["I hope you're feeling okay. 🙏 Your health comes first!","**5 days** Sick Leave/year | **Medical certificate** mandatory if >2 continuous days | Beyond 5 days → EL first, then Loss of Pay | Unused leave lapses at year end.","Apply via **HRMS portal** and keep your manager informed. 💙"],followUps:["What if my sick leave exceeds 5 days?","What is earned leave?"]},
+  {keys:["sick leave","how many sick leaves","sick leave policy","medical leave","ill","illness","unwell","doctor","fever"],section:"Section 7.4.3 – Sick Leave",lines:["I hope you're feeling okay. 🙏 Your health comes first!","**5 days** Sick Leave/year | **Medical certificate** mandatory if >2 continuous days | Beyond 5 days → EL first, then Loss of Pay | Unused leave lapses at year end.","Apply via **ADP** → Time Off section, and keep your manager informed. 💙"],followUps:["What if my sick leave exceeds 5 days?","What is earned leave?"]},
   {keys:["management leave","ml","management leave policy"],section:"Section 7.4.2 – Management Leave",lines:["**Management Leave:** 5 days/year | Accrued at 0.4 days/month | **Onshore approval mandatory** | All unused leaves lapse at year end — no carry forward or encashment.","Apply via HRMS with onshore approval. 😊"],followUps:["What is earned leave?","How do I apply for leave?"]},
   {keys:["comp off","compensatory","comp-off","weekend work","worked weekend","worked on holiday","worked sunday","worked saturday"],section:"Section 7.4.4 – Compensatory Off",lines:["You deserve a break after working extra! 🙌","Entitled for working on **weekends or company holidays** due to business need. Avail within **90 days** | Requires **manager approval** | Cannot be taken in advance or encashed.","Raise the request on HRMS right after your extra work! 😊"],followUps:["How many earned leaves do I get?","What is leave without pay?"]},
-  {keys:["how to apply leave","apply leave","leave application","hrms","leave portal","leave procedure","apply for leave"],section:"Section 7.4.10 – Leave Procedure",lines:["Happy to walk you through it! 😊","**HRMS portal** → select leave type → submit for Lead/Manager approval. Apply **2 days in advance** for EL. ⚠️ Not updated before **15th of following month** → marked absent and deducted from EL.","Leaves **cannot** be adjusted against notice period. 😊"],followUps:["What happens if I take leave without approval?","What is leave without pay?"]},
+  {keys:["how to apply leave","apply leave","leave application","hrms","leave portal","leave procedure","apply for leave","adp","adp login","how to login adp","payslip","pay slip","view payslip","check payslip","salary slip","check leave","check leave balance","leave balance","view leave","how many leaves left","no leave","leaves exhausted","run out of leave","used all leave","how to check leave","see leave balance","remaining leave","leave remaining","apply leaves","how do i apply"],section:"Section 7.4.10 – Leave & ADP Portal",
+    lines:[
+      "Of course! 😊 Everything leave-related is managed through **ADP** — Finzly's HR portal.",
+      "👉 **Log in to ADP here:**\n<a href=\"https://online.apac.adp.com/signin/v1/?APPID=ADPVISTA-IN&productId=ff803a24-0ee0-47fc-e053-f282530bfabe&returnURL=https://www.vista.adp.com/in/&callingAppId=ADPVISTA&TARGET=-SM-https://www.vista.adp.com/IN\" target=\"_blank\" style=\"color:#7c3aed;font-weight:700;text-decoration:underline;\">ADP VISTA — Click to Sign In</a>",
+      "Once you're in, here's where to go:\n- 📋 **Check leave balance** → Time Off section\n- ✅ **Apply for leave** → Time & Attendance section\n- 💰 **View payslips** → Pay section\n- 🕐 **Check attendance** → Time & Attendance section",
+      "When applying leave, remember:\n- Apply **at least 2 days in advance** for Earned Leave\n- Leave not updated before the **15th of the following month** → marked absent and deducted from EL",
+      "🔐 **Can't log in to ADP?**\n- **Chennai employees:** Contact **Abirami R** — abirami.r@finzly.com\n- **Pune employees:** Contact **Vishwata Mayekar** — vishwata.mayekar@finzly.com"
+    ],followUps:["What is earned leave?","Can I carry forward my leaves?","What happens if I take leave without approval?"]},
   {keys:["leave without approval","unapproved leave","absent without notice","leave not approved","absent without informing"],section:"Section 7.4.10 – Leave Procedure",lines:["Really good to know! 😊","Unapproved absence → deducted from **Earned Leave** → if no EL, becomes **Loss of Pay**. Not updated by 15th of following month → automatically marked absent.","Repeated unapproved absences → **disciplinary action** up to termination.","Always apply in advance. Emergency? Inform manager immediately and regularise on HRMS ASAP. 😊"],followUps:["How do I apply for leave?","What is leave without pay?"]},
-  {keys:["carry forward","carry over","lapse","leave expire","unused leave","can i carry forward"],section:"Section 7 – Leave Carry Forward",lines:["Great question! 😊 Carry forward summary:","- **EL:** max **30 days** → above 30 lapses | **Management Leave:** all lapses at year end | **Sick Leave:** lapses, no encashment | **Comp Off:** use within **90 days**","Check HRMS before year end and plan accordingly! 😊"],followUps:["How many earned leaves do I get?","What is management leave?"]},
+  {keys:["carry forward","carry over","lapse","leave expire","unused leave","can i carry forward"],section:"Section 7 – Leave Carry Forward",lines:["Great question! 😊 Carry forward summary:","- **EL:** max **30 days** → above 30 lapses | **Management Leave:** all lapses at year end | **Sick Leave:** lapses, no encashment | **Comp Off:** use within **90 days**","Check **ADP** before year end and plan your leaves accordingly! 😊"],followUps:["How many earned leaves do I get?","What is management leave?"]},
   {keys:["paternity","father","dad","newborn","paternity leave","child birth"],section:"Section 7.4.6 – Paternity Leave",lines:["Congratulations! 👶 So happy for you!","**Up to 5 days** paid | Eligible after **3 months** of service | Inform manager + HR **2 weeks** before expected delivery | Avail within **1 month** of birth.","Apply via HRMS 2 weeks in advance. 😊"],followUps:["What is maternity leave?","What is bereavement leave?"]},
   {keys:["bereavement","death","passed away","loss","funeral","family member died","bereavement leave"],section:"Section 7.4.7 – Bereavement Leave",lines:["I'm truly sorry for your loss. 💙 Please take all the time you need.","**Up to 2 days** of Bereavement Leave for immediate family members. Simply inform your **manager or HR** — they'll take care of the rest.","We're here for you. 💙"],followUps:["What is leave without pay?","Who do I contact in HR?"]},
-  {keys:["leave without pay","lop","loss of pay","lwp","unpaid leave","no leave balance","leave exhausted"],section:"Section 7.4.8 – Leave Without Pay",lines:["No worries — manageable! 😊","**LOP** available after exhausting all leaves. Requires **prior manager approval**. Probation/notice period → all leaves are LOP. **Sandwich rule:** holiday between two leave days with zero balance → also LOP.","Apply on HRMS, select 'Leave Without Pay'. 😊"],followUps:["What is earned leave?","What is the notice period?"]},
+  {keys:["leave without pay","lop","loss of pay","lwp","unpaid leave","no leave balance","leave exhausted"],section:"Section 7.4.8 – Leave Without Pay",lines:["No worries — manageable! 😊","**LOP** available after exhausting all leaves. Requires **prior manager approval**. Probation/notice period → all leaves are LOP. **Sandwich rule:** holiday between two leave days with zero balance → also LOP.","Apply on **ADP**, select 'Leave Without Pay'. 😊"],followUps:["What is earned leave?","What is the notice period?"]},
   {keys:["holiday","public holiday","national holiday","holidays list","how many holidays","company holidays"],section:"Section 8 – Holiday Policy",lines:["Finzly grants **10 public holidays** per year! 🎉","Declared by HR at the **beginning of each year** — national, religious, and important days. Watch the Notice Board and HR announcements! 😊"],followUps:["What is compensatory off?","How many earned leaves do I get?"]},
-  {keys:["salary","pay","payroll","when salary","salary date","salary credited","pay day","when do i get paid"],section:"Section 9 – Compensation & Payroll",lines:["Of course! 😊 Salary credited between **last working day** of the month and **3rd of following month**. Financial year: **April–March**. Deductions: PF + statutory deductions.","For discrepancies, contact the **Finance Department**. 😊"],followUps:["What are the payroll deductions?","What is the financial year?"]},
+  {keys:["salary","pay","payroll","when salary","salary date","salary credited","pay day","when do i get paid","payslip","pay slip","view salary","check salary"],section:"Section 9 – Compensation & Payroll",lines:[
+      "Of course! 😊 Here's everything about your salary.",
+      "Salary is credited between the **last working day** of the month and the **3rd of the following month**.\n\n- Financial year: **April to March**\n- Deductions: **PF** + statutory deductions per Income Tax",
+      "📄 **To view your payslip**, log in to **ADP VISTA**:\n<a href=\"https://online.apac.adp.com/signin/v1/?APPID=ADPVISTA-IN&productId=ff803a24-0ee0-47fc-e053-f282530bfabe&returnURL=https://www.vista.adp.com/in/&callingAppId=ADPVISTA&TARGET=-SM-https://www.vista.adp.com/IN\" target=\"_blank\" style=\"color:#7c3aed;font-weight:700;text-decoration:underline;\">Click here to open ADP → Pay section</a>",
+      "🔐 **Can't log in to ADP?**\n- **Chennai:** Contact **Abirami R** — abirami.r@finzly.com\n- **Pune:** Contact **Vishwata Mayekar** — vishwata.mayekar@finzly.com\n\nFor salary discrepancies, contact the **Finance Department**. 😊"
+    ],followUps:["How do I apply for leave on ADP?","What are the payroll deductions?"]},
   {keys:["mediclaim","health insurance","medical insurance","hospitalization","hospital","claim","insurance coverage","how do i claim medical insurance","medical claim"],section:"Section 11.1 – Mediclaim Insurance",lines:["I hope everything is okay. 😊 **Mediclaim Coverage: Rs. 5 Lakhs** | Covered: You + spouse + 2 children | Includes **Accidental Insurance**.","**To claim:** Min 24 hrs hospitalisation | Inform **HR within 2 days** | Submit discharge summary + test reports | ⚠️ No discharge summary = no settlement.","Email HR at hr-india@finzly.com as soon as hospitalisation happens. 💙"],followUps:["What is term insurance?","What happens to insurance when I leave?"]},
   {keys:["term insurance","life insurance","death benefit","term cover"],section:"Section 11.2 – Term Insurance",lines:["**Term Insurance: Rs. 35 Lakhs** | Employee only (family not included) | Provided by company at no cost to you. 😊","For queries, contact HR at hr-india@finzly.com. 😊"],followUps:["What is mediclaim?","What happens to insurance when I leave?"]},
   {keys:["dress code","attire","clothing","what to wear","casual friday","business casual","dress policy"],section:"Section 6 – Dress Code",lines:["**Mon–Thu:** Business Casual | **Fri:** Casual (no slippers, flip-flops, or shorts!)","**Women:** Collared shirts, denim/skirts/dresses at or below knee, professional shoes\n**Men:** Collared shirts with sleeves, trousers/jeans with belt, professional shoes","**Always prohibited:** Miniskirts, tank/tube tops, transparent tops, torn jeans, flip-flops","When in doubt — go business casual! 😊"],followUps:["What is the grooming policy?","What are office timings?"]},
@@ -495,7 +987,7 @@ const KB = [
   {keys:["retirement","retire","retirement age"],section:"Section 3.7 – Retirement Age",lines:["Retirement age at Finzly is **60 years**. Service automatically ceases on attaining that age. For queries, reach out to HR. 😊"],followUps:["What is the notice period?"]},
   {keys:["night shift","night shift allowance","night allowance","shift allowance"],section:"Section 17 – Night Shift Allowance",needsHR:true,routingReason:"Night shift allowance is role/band specific — HR can confirm your exact entitlement",lines:["Finzly has a **Night Shift Allowance** policy (updated Nov 2025). Specific rates depend on your **role and designation**.","Email **hr-india@finzly.com** with your employee ID and designation for exact details. 😊"],followUps:["What is the late night dinner benefit?","What are office timings?"]},
   {keys:["bgv","background verification","background check","criminal check"],section:"Section 3.4 – Background Verification",lines:["**BGV covers:** Employment verification · Address · Identity · Criminal background check.","A **positive BGV report** is required for international travel (including probationers). Ensure all joining documents are accurate for a smooth process. 😊"],followUps:["What documents do I need on Day 1?","What is probation?"]},
-  {keys:["intern leave","probation leave","fresher leave","leave during probation","leave as intern"],section:"Section 7.4.9 – Intern/Probation Leave",lines:["After **more than 1 month** of continuous service: **1 day of leave per month** (0.5 Sick + 0.5 Casual). Any unused leave **lapses** at end of period — cannot be encashed.","Apply via HRMS with manager approval. 😊"],followUps:["What is probation?","How do I apply for leave?"]}
+  {keys:["intern leave","probation leave","fresher leave","leave during probation","leave as intern"],section:"Section 7.4.9 – Intern/Probation Leave",lines:["After **more than 1 month** of continuous service: **1 day of leave per month** (0.5 Sick + 0.5 Casual). Any unused leave **lapses** at end of period — cannot be encashed.","Apply via **ADP** with manager approval. 😊"],followUps:["What is probation?","How do I apply for leave?"]}
 ];
 
 function findKB(q){
@@ -553,12 +1045,14 @@ function hideSuggestions(){document.getElementById('suggestions').style.display=
 async function streamResponse(entry,originalQuery){
   const msgs=document.getElementById('messages');
   const typingRow=document.createElement('div');typingRow.className='typing-row';typingRow.id='typingRow';
-  const tAv=document.createElement('div');tAv.className='msg-avatar';tAv.textContent='🤖';
-  const tBub=document.createElement('div');tBub.className='typing-bubble';tBub.innerHTML='<span></span><span></span><span></span>';
+  const tAv=document.createElement('div');tAv.className='chat-av';
+  tAv.innerHTML='<svg class="chat-av-face" viewBox="0 0 42 42" fill="none"><ellipse cx="21" cy="22" rx="14" ry="13" fill="white" fill-opacity="0.96"/><circle cx="16" cy="21" r="3.2" fill="#1e1b4b"/><circle cx="26" cy="21" r="3.2" fill="#1e1b4b"/><circle cx="17.2" cy="19.8" r="1.1" fill="white"/><circle cx="27.2" cy="19.8" r="1.1" fill="white"/><path d="M15.5 26 Q21 31 26.5 26" stroke="#1e1b4b" stroke-width="1.8" stroke-linecap="round" fill="none"/></svg>';
+  const tBub=document.createElement('div');tBub.className='typing-bub';tBub.innerHTML='<span></span><span></span><span></span>';
   typingRow.appendChild(tAv);typingRow.appendChild(tBub);msgs.appendChild(typingRow);scrollToBottom();
   await delay(650);typingRow.remove();
   const wrapper=document.createElement('div');wrapper.className='bot-msg-wrapper';
-  const av=document.createElement('div');av.className='msg-avatar';av.textContent='🤖';
+  const av=document.createElement('div');av.className='chat-av';
+    av.innerHTML='<svg class="chat-av-face" viewBox="0 0 42 42" fill="none"><ellipse cx="21" cy="22" rx="14" ry="13" fill="white" fill-opacity="0.96"/><circle cx="16" cy="21" r="3.2" fill="#1e1b4b"/><circle cx="26" cy="21" r="3.2" fill="#1e1b4b"/><circle cx="17.2" cy="19.8" r="1.1" fill="white"/><circle cx="27.2" cy="19.8" r="1.1" fill="white"/><path d="M15.5 26 Q21 31 26.5 26" stroke="#1e1b4b" stroke-width="1.8" stroke-linecap="round" fill="none"/><ellipse cx="12.5" cy="25" rx="2.5" ry="1.6" fill="#f9a8d4" fill-opacity="0.5"/><ellipse cx="29.5" cy="25" rx="2.5" ry="1.6" fill="#f9a8d4" fill-opacity="0.5"/></svg>';
   const col=document.createElement('div');col.className='bot-bubbles';
   wrapper.appendChild(av);wrapper.appendChild(col);msgs.appendChild(wrapper);scrollToBottom();
   const lines=entry.lines||["Sorry, I couldn't find the right answer."];
@@ -605,7 +1099,10 @@ function handleSend(overrideText){
     if(fq){streamResponse(fq,text);return;}
   }
   const result=findKB(text);
-  if(result){streamResponse(result,text);return;}
+  if(result){
+    if(result.isRoleAwareWhy){setFlow("why_role","pick_dept");}
+    streamResponse(result,text);return;
+  }
   streamResponse({section:"",needsHR:true,routingReason:"Query not found — HR can provide the correct answer",lines:["I appreciate you asking, and I want to make sure you get the right answer. 😊","I couldn't find this specific topic in the current handbook. Could you try rephrasing?","Or reach out to **HR India** at **hr-india@finzly.com** — they'll be happy to help!","You can also try: office timings, sick leave, maternity, notice period, insurance, harassment, dress code, probation, what is Finzly, or BankOS!"],followUps:["What is Finzly?","What is BankOS?","What are my office timings?"]},text);
 }
 
@@ -619,7 +1116,7 @@ inputEl.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preven
 inputEl.addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px';});
 document.getElementById('sendBtn').addEventListener('click',()=>handleSend());
 
-const QUICK_QUESTIONS=["What is Finzly?","What is BankOS?","Why should I work at Finzly?","What is my career growth?","What are my office timings?","How many sick leaves do I get?","How do I apply for sick leave?","Can I carry forward my earned leave?","What happens if I take leave without approval?","What is the maternity leave policy?","What is the paternity leave policy?","How do I claim medical insurance?","What is the notice period?","Whom should I contact for a workplace concern?","How can I report harassment?","What is the dress code?","What is the laptop security policy?","What happens during probation?","What documents should I submit during joining?","Who is the CEO of Finzly?"];
+const QUICK_QUESTIONS=["What is Finzly?","What is BankOS?","Why should I work at Finzly?","What is my career growth?","How do I access Udemy Business?","How do I login to ADP?","How do I view my payslip?","What are my office timings?","How many sick leaves do I get?","How do I apply for sick leave?","Can I carry forward my earned leave?","What is the maternity leave policy?","What is the paternity leave policy?","How do I claim medical insurance?","What is the notice period?","Whom should I contact for a workplace concern?","How can I report harassment?","What is the dress code?","What happens during probation?","What documents should I submit during joining?","Who is the CEO of Finzly?"];
 const chipsEl=document.getElementById('chips');
 QUICK_QUESTIONS.forEach(q=>{const btn=document.createElement('button');btn.className='chip';btn.textContent=q;btn.onclick=()=>handleSend(q);chipsEl.appendChild(btn);});
 
@@ -635,5 +1132,11 @@ window.onload=()=>{
   ],followUps:[]},"");
 };
 </script>
+</body>
+</html>
+
+</body>
+</html>
+
 </body>
 </html>
