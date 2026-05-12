@@ -553,13 +553,6 @@ const FLOWS = {
     lines:["I understand this can feel stressful. 💙 Here's how the **PIP process** works.","- Reporting manager initiates with **HR present**\n- You and your manager **agree on clear objectives**\n- Duration: **maximum 1 month** | Optional interim review at **2 weeks**","The goal of a PIP is genuinely to **help you succeed** — not just to document issues.","**Next step:** If you're on a PIP or worried about one, speak openly with HR at hr-india@finzly.com — they're there to support you. 💙"],
     followUps:["What is the open door policy?","What is the annual appraisal?"]};
   },
-  leave_balance_ask:(u)=>{
-    const no=/\b(no|zero|exhausted|used up|none left|0|over|finished)\b/i.test(u);
-    const yes=/\b(yes|some|few|have|still|left|remaining|days)\b/i.test(u);
-    if(no){clearFlow();return{section:"Section 7.4.8 – Leave Without Pay",lines:["No worries — this is manageable! 😊","When all leaves are exhausted, apply for **Leave Without Pay (LOP)**:\n- Requires **prior manager approval**\n- Reflects as salary deduction for those days\n- Probation/notice period: all leaves are LOP","**Next step:** Apply on HRMS, select 'Leave Without Pay', get manager approval. 😊"],followUps:["What is the notice period?","How do I apply for leave?"]};}
-    else if(yes){clearFlow();return{section:"Section 7.4.10 – Leave Procedure",lines:["Great — you still have balance! 😊","Apply via the **HRMS portal**, select leave type and dates, submit for manager approval.","Remember: apply **at least 2 days in advance** for EL (except emergencies). 😊"],followUps:["What is earned leave?","What is sick leave?"]};}
-    else{clearFlow();return{lines:["You can check your live balance anytime on the **HRMS portal**! 😊","You have: **10 days EL**, **5 days Sick Leave**, **5 days Management Leave** per year (pro-rated for mid-year joiners).","**Next step:** Log into HRMS for your exact balance. 😊"],followUps:["How do I apply for leave?","What is carry forward?"]};}
-  },
   concern_ask_type:(u)=>{
     const workload=/\b(work|workload|overwork|pressure|stress|burnout|overwhelm|too much)\b/i.test(u);
     const salary=/\b(salary|pay|comp|money|hike|increment|paid)\b/i.test(u);
@@ -597,7 +590,6 @@ const FLOWS = {
     const hr   = /hr|human resource|people|recruit|talent|payroll|culture|posh|policy|onboard/i.test(u);
     const prod = /product|design|ux|ui|pm|manager|roadmap|feature|figma/i.test(u);
     const fin  = /finance|account|ops|operation|payroll|billing|budget|vendor|admin/i.test(u);
-    const sup  = /support|devops|aws|infra|cloud|deployment|incident|sre|ops/i.test(u);
 
     if(eng) return {section:"Why Finzly – Engineering",lines:[
       "As an engineer at Finzly — you're not maintaining old code. You're **building the payment infrastructure** that real US banks depend on. 🚀",
@@ -634,7 +626,6 @@ const FLOWS = {
       "What's something specific you'd like to understand better about your role here? I'm happy to help. 💙"
     ],followUps:["What is Finzly's mission?","What awards has Finzly won?","Who is the CEO?"]};
 
-    // support/devops or fallback
     return {section:"Why Finzly",lines:[
       "Whatever your function — you're supporting a platform that powers **real US banking payments**. That's not trivial. 😊",
       "**What makes Finzly genuinely worth it:**\n\n🏆 Best and Brightest Companies to Work For — 2022 & 2023\n🚀 Cloud-native, AI-powered fintech on the frontier of US banking\n💡 Real products, real clients (Frost Bank, Metropolitan Commercial Bank)\n🌍 Global team — Charlotte, Chennai, Pune\n👨‍💼 CEO Booshan Rengachari — hands-on, visionary, award-winning\n📈 Revenue nearly doubled in 2023 — growing fast with Series A funding",
@@ -898,6 +889,575 @@ function addUserMessage(text){
   row.appendChild(bub);msgs.appendChild(row);scrollToBottom();
 }
 
+
+function detectFlowTrigger(q){
+  const l=q.toLowerCase();
+  if(/\b(harass|posh|unsafe|hostile|abuse|assault|inappropriate|uncomfortable at work|being harassed|sexual)\b/i.test(l))return{flow:"harassment",step:"immediate"};
+  if(/\b(resign|quit|leaving|put in papers|want to leave|notice period|thinking of leaving|thinking of resign)\b/i.test(l))return{flow:"resign",step:"ask_manager"};
+  if(/\b(not feeling well|feeling sick|unwell|sick today|sick leave today|want to take sick|need sick|apply sick)\b/i.test(l))return{flow:"sick",step:"ask_days"};
+  if(/\b(not happy|unhappy|dissatisfied|have a concern|worried|concern about|trouble at work|problem at work|stressed at work|issue at work)\b/i.test(l))return{flow:"concern",step:"ask_type"};
+  if(/\b(performance|pip|appraisal|rating|increment concern|review concern|not performing|under performing)\b/i.test(l))return{flow:"performance",step:"ask_type"};
+  if(/\b(maternity|pregnant|expecting|pregnancy)\b/i.test(l))return{flow:"maternity",step:"ask_service"};
+  // leave balance — handled directly by KB, no flow needed
+  return null;
+}
+
+function getFlowOpeningQuestion(flow){
+  if(flow==="resign"){setFlow("resign","ask_manager");return{lines:["I'm sorry to hear you're thinking of resigning. 💙","Before you proceed, I genuinely care about making sure you've had the right support.","Have you had a chance to speak with your **manager or HR** about what's been troubling you?"],quickReplies:[{label:"Yes, I spoke to them",type:"yes",reply:"yes spoke to manager"},{label:"No, not yet",type:"no",reply:"no not yet"}]};}
+  if(flow==="sick"){setFlow("sick","ask_days");return{lines:["Oh no — I hope you feel better soon! 🙏 Please take good care of yourself.","To give you the right info — how many days of sick leave are you looking at?"],quickReplies:[{label:"1–2 days",type:"neutral",reply:"1 or 2 days sick"},{label:"More than 2 days",type:"neutral",reply:"more than 2 days sick"}]};}
+  if(flow==="concern"){setFlow("concern","ask_type");return{lines:["I'm sorry to hear you're going through something difficult. 💙 Thank you for trusting me.","Could you share a bit more? Is it about:"],quickReplies:[{label:"Workload / stress",type:"neutral",reply:"workload stress pressure"},{label:"Salary / compensation",type:"neutral",reply:"salary concern"},{label:"My manager",type:"neutral",reply:"my manager"},{label:"Workplace culture",type:"neutral",reply:"work culture environment"}]};}
+  if(flow==="performance"){setFlow("performance","ask_type");return{lines:["Of course — happy to help with performance questions! 😊","What would you like to know about?"],quickReplies:[{label:"Annual appraisal / increment",type:"neutral",reply:"appraisal increment annual review"},{label:"PIP (Performance Improvement)",type:"neutral",reply:"pip performance improvement plan"},{label:"Feedback / ratings",type:"neutral",reply:"feedback appreciation ratings"}]};}
+  if(flow==="maternity"){setFlow("maternity","ask_service");return{lines:["Congratulations on your wonderful news! 🎉 Wishing you a healthy and happy journey!","To confirm your eligibility — have you completed **more than 4 months** of continuous service with Finzly?"],quickReplies:[{label:"Yes, more than 4 months",type:"yes",reply:"yes more than 4 months"},{label:"No, less than 4 months",type:"no",reply:"no less than 4 months"}]};}
+  // leave_balance flow removed — handled by KB directly
+  return null;
+}
+
+// ─────────────────────────────────────────────────────────────────
+// HR POLICY KB
+// ─────────────────────────────────────────────────────────────────
+function bold(t){return t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');}
+function renderHTML(text){
+  const lines=text.split('\n');let html='',inList=false;
+  for(const line of lines){
+    const isBullet=/^[-•]/.test(line.trim());
+    if(isBullet){if(!inList){html+='<ul>';inList=true;}html+='<li>'+bold(line.replace(/^[-•]\s*/,''))+'</li>';}
+    else{if(inList){html+='</ul>';inList=false;}if(line.trim())html+=(html&&!html.endsWith('</ul>')?'<br>':'')+bold(line);}
+  }
+  if(inList)html+='</ul>';return html;
+}
+function typewriteBubble(el,text,speed){
+  return new Promise(resolve=>{
+    const cursor=document.createElement('span');cursor.className='cursor';el.appendChild(cursor);
+    const chars=[...text];let i=0,raw='';
+    function tick(){
+      if(i>=chars.length){cursor.remove();el.innerHTML=renderHTML(raw);resolve();return;}
+      raw+=chars[i++];el.innerHTML='';const s=document.createElement('span');s.textContent=raw;el.appendChild(s);el.appendChild(cursor);
+      scrollToBottom();setTimeout(tick,speed);
+    }
+    tick();
+  });
+}
+function delay(ms){return new Promise(r=>setTimeout(r,ms));}
+function scrollToBottom(){const m=document.getElementById('messages');m.scrollTop=m.scrollHeight;}
+function hideSuggestions(){document.getElementById('suggestions').style.display='none';}
+
+async function streamResponse(entry,originalQuery){
+  const msgs=document.getElementById('messages');
+  const typingRow=document.createElement('div');typingRow.className='typing-row';typingRow.id='typingRow';
+  const tAv=document.createElement('div');tAv.className='chat-av';
+  tAv.innerHTML='<svg class=\"chat-av-face\" viewBox=\"0 0 100 100\" fill=\"none\"><defs><linearGradient id=\"fi1t\" x1=\"0\" y1=\"40\" x2=\"100\" y2=\"60\" gradientUnits=\"userSpaceOnUse\"><stop offset=\"0%\" stop-color=\"#00b8d4\"/><stop offset=\"50%\" stop-color=\"#00d8e8\"/><stop offset=\"100%\" stop-color=\"#00e8cc\"/></linearGradient><linearGradient id=\"fi2t\" x1=\"0\" y1=\"55\" x2=\"90\" y2=\"65\" gradientUnits=\"userSpaceOnUse\"><stop offset=\"0%\" stop-color=\"#0088b8\"/><stop offset=\"100%\" stop-color=\"#00bcd4\"/></linearGradient><linearGradient id=\"fi3t\" x1=\"5\" y1=\"72\" x2=\"65\" y2=\"80\" gradientUnits=\"userSpaceOnUse\"><stop offset=\"0%\" stop-color=\"#006090\"/><stop offset=\"100%\" stop-color=\"#0090b8\"/></linearGradient></defs><path d=\"M 12 72 C 8 48 16 20 48 10 C 70 4 90 12 94 22 C 72 15 46 22 28 46 C 20 56 15 64 12 72 Z\" fill=\"url(#fi1t)\"/><path d=\"M 12 81 C 16 62 30 44 58 36 C 74 30 88 36 88 44 C 70 39 50 46 34 64 C 26 73 18 79 12 81 Z\" fill=\"url(#fi2t)\"/><path d=\"M 12 88 C 16 78 26 70 42 68 C 54 66 63 70 61 76 C 52 72 40 74 30 82 C 22 87 16 90 12 88 Z\" fill=\"url(#fi3t)\"/></svg>';
+  const tBub=document.createElement('div');tBub.className='typing-bub';tBub.innerHTML='<span></span><span></span><span></span>';
+  typingRow.appendChild(tAv);typingRow.appendChild(tBub);msgs.appendChild(typingRow);scrollToBottom();
+  await delay(650);typingRow.remove();
+  const wrapper=document.createElement('div');wrapper.className='bot-msg-wrapper';
+  const av=document.createElement('div');av.className='chat-av';
+    av.innerHTML='<svg class=\"chat-av-face\" viewBox=\"0 0 100 100\" fill=\"none\"><defs><linearGradient id=\"fi1c\" x1=\"0\" y1=\"40\" x2=\"100\" y2=\"60\" gradientUnits=\"userSpaceOnUse\"><stop offset=\"0%\" stop-color=\"#00b8d4\"/><stop offset=\"50%\" stop-color=\"#00d8e8\"/><stop offset=\"100%\" stop-color=\"#00e8cc\"/></linearGradient><linearGradient id=\"fi2c\" x1=\"0\" y1=\"55\" x2=\"90\" y2=\"65\" gradientUnits=\"userSpaceOnUse\"><stop offset=\"0%\" stop-color=\"#0088b8\"/><stop offset=\"100%\" stop-color=\"#00bcd4\"/></linearGradient><linearGradient id=\"fi3c\" x1=\"5\" y1=\"72\" x2=\"65\" y2=\"80\" gradientUnits=\"userSpaceOnUse\"><stop offset=\"0%\" stop-color=\"#006090\"/><stop offset=\"100%\" stop-color=\"#0090b8\"/></linearGradient></defs><path d=\"M 12 72 C 8 48 16 20 48 10 C 70 4 90 12 94 22 C 72 15 46 22 28 46 C 20 56 15 64 12 72 Z\" fill=\"url(#fi1c)\"/><path d=\"M 12 81 C 16 62 30 44 58 36 C 74 30 88 36 88 44 C 70 39 50 46 34 64 C 26 73 18 79 12 81 Z\" fill=\"url(#fi2c)\"/><path d=\"M 12 88 C 16 78 26 70 42 68 C 54 66 63 70 61 76 C 52 72 40 74 30 82 C 22 87 16 90 12 88 Z\" fill=\"url(#fi3c)\"/></svg>';
+  const col=document.createElement('div');col.className='bot-bubbles';
+  wrapper.appendChild(av);wrapper.appendChild(col);msgs.appendChild(wrapper);scrollToBottom();
+  const lines=entry.lines||["Sorry, I couldn't find the right answer."];
+  for(let i=0;i<lines.length;i++){
+    if(i>0)await delay(BUBBLE_GAP);
+    const bub=document.createElement('div');bub.className='bubble bot';col.appendChild(bub);scrollToBottom();
+    await typewriteBubble(bub,lines[i],CHAR_SPEED);
+  }
+  if(entry.section){await delay(180);const tag=document.createElement('div');tag.className='section-tag';tag.textContent='📖 '+entry.section;tag.style.animation='fadeSlideIn 0.3s ease';col.appendChild(tag);scrollToBottom();}
+  if(entry.needsHR){await delay(150);const et=document.createElement('div');et.className='escalation-tag';et.textContent='⚡ This needs HR attention — '+entry.routingReason;et.style.animation='fadeSlideIn 0.3s ease';col.appendChild(et);scrollToBottom();await delay(400);showModal(originalQuery,entry.routingReason);}
+  if(entry.quickReplies&&entry.quickReplies.length>0){
+    await delay(FOLLOWUP_DELAY);const qrDiv=document.createElement('div');qrDiv.className='quick-replies';
+    entry.quickReplies.forEach(qr=>{const btn=document.createElement('button');btn.className='qr-btn '+qr.type;btn.textContent=qr.label;btn.onclick=()=>{document.querySelectorAll('.quick-replies').forEach(el=>el.remove());handleSend(qr.reply);};qrDiv.appendChild(btn);});
+    msgs.appendChild(qrDiv);scrollToBottom();
+  }
+  if(entry.followUps&&entry.followUps.length>0){
+    await delay(FOLLOWUP_DELAY);const fu=document.createElement('div');fu.className='followups';
+    entry.followUps.forEach(q=>{const b=document.createElement('button');b.className='followup-btn';b.textContent='💬 '+q;b.onclick=()=>handleSend(q);fu.appendChild(b);});
+    msgs.appendChild(fu);scrollToBottom();
+  }
+  isBotTyping=false;
+}
+
+function addUserMessage(text){
+  const msgs=document.getElementById('messages');
+  const row=document.createElement('div');row.className='msg-row user';
+  const bub=document.createElement('div');bub.className='bubble user';bub.textContent=text;
+  row.appendChild(bub);msgs.appendChild(row);scrollToBottom();
+}
+
+
+
+// ═══════════════════════════════════════════════════════════════
+// SMART CONTEXT & EMOTIONAL INTELLIGENCE ENGINE v2
+// Behaves like a real HRBP — not a scripted FAQ bot
+// ═══════════════════════════════════════════════════════════════
+
+const CTX = {
+  role: null,
+  emotion: null,
+  topic: null,
+  location: null,
+  history: [],
+  lastBotReply: null
+};
+
+function updateCTX(text) {
+  const t = text.toLowerCase();
+
+  const roleMap = [
+    { regex:/\b(engineer|developer|dev|java|angular|spring|frontend|backend|fullstack|coding|programmer|tech)\b/, role:"engineering" },
+    { regex:/\b(qa|tester|testing|quality|automation|manual tester)\b/, role:"qa" },
+    { regex:/\b(hr|human resource|people|talent|recruit|hrbp|posh|culture)\b/, role:"hr" },
+    { regex:/\b(product|pm|product manager|ux|ui|design|designer|figma|roadmap)\b/, role:"product" },
+    { regex:/\b(finance|accounts|accounting|billing|budget|ops|operations|vendor|admin)\b/, role:"finance" },
+    { regex:/\b(support|devops|infra|cloud|aws|deployment|sre|incident|helpdesk)\b/, role:"support" },
+    { regex:/\b(fresher|trainee|intern|new joiner|just joined|recently joined)\b/, role:"fresher" },
+    { regex:/\b(manager|lead|practice lead|team lead|scrum master)\b/, role:"manager" },
+  ];
+  for (const r of roleMap) {
+    if (r.regex.test(t)) { CTX.role = r.role; break; }
+  }
+
+  if (/chennai|madras/i.test(t)) CTX.location = "chennai";
+  if (/pune|pcmc/i.test(t)) CTX.location = "pune";
+
+  const emotions = [
+    { regex:/\b(burnout|burn out|exhausted|drained|tired|mentally tired|too tired|cant take|can't take)\b/, e:"burnout" },
+    { regex:/\b(stressed|stress|pressure|overwhelm|too much|heavy|drowning)\b/, e:"stressed" },
+    { regex:/\b(frustrated|frustrat|angry|pissed|fed up|fed-up|annoyed)\b/, e:"frustrated" },
+    { regex:/\b(sad|depress|low|down|unhappy|hopeless|not ok|not okay)\b/, e:"sad" },
+    { regex:/\b(anxious|anxiety|nervous|scared|fear|worried|worry)\b/, e:"anxious" },
+    { regex:/\b(stuck|stagnant|no growth|going nowhere|not growing|bored)\b/, e:"stuck" },
+    { regex:/\b(disconnect|not connected|don't belong|lonely|isolated|alone|invisible)\b/, e:"disconnected" },
+    { regex:/\b(confused|not sure|unsure|don't know|dont know|lost|unclear)\b/, e:"confused" },
+    { regex:/\b(thinking of leaving|want to leave|should i leave|considering leaving|looking out)\b/, e:"disengaged" },
+    { regex:/\b(not fair|unfair|biased|bias|treated badly|bad treatment)\b/, e:"unfairlyTreated" },
+  ];
+  for (const em of emotions) {
+    if (em.regex.test(t)) { CTX.emotion = em.e; break; }
+  }
+
+  const topics = [
+    { regex:/\b(resign|quit|leaving|put in papers|notice)\b/, topic:"resignation" },
+    { regex:/\b(salary|pay|hike|increment|compensation|underpaid)\b/, topic:"salary" },
+    { regex:/\b(manager|boss|lead|my manager|reporting)\b/, topic:"manager" },
+    { regex:/\b(leave|vacation|holiday|sick|maternity|paternity)\b/, topic:"leave" },
+    { regex:/\b(career|growth|promotion|next level|future|learn|skill)\b/, topic:"career" },
+    { regex:/\b(harass|posh|unsafe|abuse|inappropriate|sexual)\b/, topic:"harassment" },
+    { regex:/\b(performance|appraisal|pip|review|rating)\b/, topic:"performance" },
+    { regex:/\b(why stay|why work|worth staying|should i stay|is this worth)\b/, topic:"why_finzly" },
+    { regex:/\b(workload|too much work|overworked|no time|late nights|long hours)\b/, topic:"workload" },
+    { regex:/\b(team|colleague|coworker|culture|environment|toxic|atmosphere)\b/, topic:"culture" },
+  ];
+  for (const tp of topics) {
+    if (tp.regex.test(t)) { CTX.topic = tp.topic; break; }
+  }
+
+  CTX.history.push(text);
+  if (CTX.history.length > 6) CTX.history.shift();
+}
+
+function emotionAck() {
+  const e = CTX.emotion;
+  if (!e) return null;
+  const acks = {
+    burnout: ["I can hear that you're really exhausted — and that's completely valid. 💙", "That level of depletion is real and it matters. Please don't push through it alone. 💙"],
+    stressed: ["That sounds like a lot of pressure. I'm here with you. 💙", "Stress at this level shouldn't be carried alone — let's figure this out together. 😊"],
+    frustrated: ["Your frustration makes complete sense. Let's see what we can actually do about this. 💙"],
+    sad: ["I'm really sorry you're feeling this way. You matter here, and so does how you feel. 💙"],
+    anxious: ["That anxious feeling is really uncomfortable — I hear you. Let's slow down and work through this. 💙"],
+    stuck: ["Feeling stuck can be one of the loneliest professional feelings. But it's also often the start of something changing. 😊"],
+    disconnected: ["Feeling disconnected at work is actually more common than people admit — and it's worth addressing. 💙"],
+    confused: ["It's okay to not have clarity — let's work through this together one step at a time. 😊"],
+    disengaged: ["The fact that you're asking this question tells me you still care — and that matters. 💙"],
+    unfairlyTreated: ["What you're describing isn't okay, and you deserve better than that. Let's not let this slide. 💙"],
+  };
+  const options = acks[e] || [];
+  return options[Math.floor(Math.random() * options.length)] || null;
+}
+
+function roleContext() {
+  const roleMap = {
+    engineering: "as someone in engineering",
+    qa: "as someone in QA",
+    hr: "as someone in HR",
+    product: "as someone in Product",
+    finance: "as someone in Finance or Operations",
+    support: "as someone in Support or DevOps",
+    fresher: "as a new joiner",
+    manager: "as a team lead or manager",
+  };
+  return CTX.role ? roleMap[CTX.role] : null;
+}
+
+function smartConversationalResponse(text) {
+  const t = text.toLowerCase();
+  const ack = emotionAck();
+
+  // WHY FINZLY — if role is already known, skip the question and go direct
+  if (CTX.topic === "why_finzly" || /\b(why should i work|why stay|why finzly|worth staying|is finzly good|convince me|should i stay)\b/i.test(t)) {
+    if (CTX.role) {
+      setFlow("why_role","pick_dept");
+      return FLOWS.why_finzly_role(text);
+    }
+    setFlow("why_role","pick_dept");
+    return {
+      lines:[
+        ack || "That's a very honest question, and I want to give you a real answer — not a generic one. 😊",
+        "Can I ask — is this coming from workload pressure, career growth concerns, or feeling a bit disconnected lately?\n\nBecause depending on what you're going through, my answer would be very different.",
+        "And if it helps — what's your role at Finzly? I'd love to speak to what makes your work here meaningful specifically."
+      ],
+      quickReplies:[
+        {label:"Engineering / Development", type:"neutral", reply:"I am in engineering development"},
+        {label:"QA / Testing", type:"neutral", reply:"I am in QA testing"},
+        {label:"HR / People", type:"neutral", reply:"I am in HR people team"},
+        {label:"Product / Design", type:"neutral", reply:"I am in product design"},
+        {label:"Finance / Operations", type:"neutral", reply:"I am in finance operations"},
+        {label:"Support / DevOps", type:"neutral", reply:"I am in support devops"}
+      ]
+    };
+  }
+
+  // BURNOUT
+  if (CTX.emotion === "burnout") {
+    return {
+      lines:[
+        ack || "What you're feeling is real — and it deserves to be taken seriously. 💙",
+        "Burnout usually comes from one of three places: too much work with not enough support, feeling like the work isn't meaningful, or relationship friction — with a manager, team, or the company.",
+        "Which of those resonates most with what you're going through right now?"
+      ],
+      quickReplies:[
+        {label:"Too much work / no bandwidth", type:"neutral", reply:"too much work no bandwidth burnout"},
+        {label:"Work doesn't feel meaningful", type:"neutral", reply:"work doesnt feel meaningful disconnected"},
+        {label:"Friction with manager or team", type:"neutral", reply:"friction with manager or team issue"}
+      ]
+    };
+  }
+
+  // FEELING STUCK / CAREER
+  if (CTX.emotion === "stuck" || CTX.topic === "career") {
+    const roleSpecific = {
+      engineering: "In engineering, growth at Finzly often comes from the work itself — FedNow, RTP, Agentic AI. These aren't legacy projects.",
+      qa: "In QA, you own quality on real financial transactions. The exposure to modern cloud-native systems is genuinely rare.",
+      hr: "In HR at Finzly, you're not just administering policies — at a Series A company, HR actually shapes the culture.",
+      product: "In Product, you're working on AI in payments, embedded banking, real-time fintech. The scale and impact are very real.",
+      finance: "In Finance/Ops, running the back-office of a fast-growing fintech gives you exposure you simply won't find elsewhere.",
+    };
+    const roleMsg = CTX.role && roleSpecific[CTX.role] ? roleSpecific[CTX.role] : "Growth at Finzly is real — but it often looks different from what people expect. It's about ownership and actual impact, less about job titles.";
+    return {
+      lines:[
+        ack || "Feeling stuck is one of the hardest professional feelings — because it's quiet and hard to explain. 💙",
+        roleMsg,
+        "When you say stuck — is it more about what you're working on, how you're being recognised, or where you see yourself going?\n\nThat would help me give you something actually useful."
+      ],
+      followUps:["What is my career growth?","Why should I work at Finzly?","What is the performance review?"]
+    };
+  }
+
+  // MANAGER ISSUE
+  if (CTX.topic === "manager") {
+    const spokenToManager = /spoke|talked|told|discussed|raised|already|tried/i.test(text);
+    if (spokenToManager) {
+      return {
+        lines:[
+          ack || "I'm glad you tried — it takes courage to have those conversations. 💙",
+          "If things haven't improved, this is exactly what Finzly's Open Door Policy is designed for.\n\nYou can speak with HR directly — it doesn't have to be a formal complaint. A quiet, confidential conversation with HR can create shifts that direct conversations sometimes can't.",
+          "Would you feel comfortable reaching out to HR at hr-india@finzly.com — just a conversation, nothing formal unless you want it to be?"
+        ],
+        needsHR: true,
+        routingReason: "Manager concern raised — HR mediation or support may help",
+        followUps:["What is the open door policy?","What is EEO?"]
+      };
+    }
+    return {
+      lines:[
+        ack || "Manager-related pressure is one of the most common — and most underreported — issues at work. 💙",
+        "These conversations are genuinely hard to have, especially with someone you report to.",
+        "Have you had any direct conversation with your manager about this, even informally?"
+      ],
+      quickReplies:[
+        {label:"Yes, I've spoken to them", type:"yes", reply:"yes spoke to my manager about it"},
+        {label:"No, not yet", type:"no", reply:"no havent spoken to manager yet"}
+      ]
+    };
+  }
+
+  // SALARY
+  if (CTX.topic === "salary") {
+    return {
+      lines:[
+        ack || "Feeling like your compensation doesn't match your effort is genuinely demoralising. 💙",
+        "At Finzly, salary reviews happen annually in Nov–Dec, with revisions effective January.\n\nBut if you feel there's a real mismatch — not just timing but actual value — that's worth raising through the Open Door Policy.",
+        "Would you be comfortable starting with your manager, or would you prefer to go to HR directly?"
+      ],
+      quickReplies:[
+        {label:"I'll speak to my manager first", type:"neutral", reply:"will speak to manager about salary"},
+        {label:"I'd prefer to go to HR", type:"neutral", reply:"prefer to go directly to HR about salary"}
+      ]
+    };
+  }
+
+  // WORKLOAD
+  if (CTX.topic === "workload") {
+    return {
+      lines:[
+        ack || "That level of workload is genuinely unsustainable if it's been going on for a while. 💙",
+        "Finzly's Open Door Policy exists exactly for situations like this — you can raise workload concerns with your manager or HR without it becoming a formal issue.",
+        "Has your manager acknowledged the workload, or does it feel like it's not visible to them?"
+      ],
+      quickReplies:[
+        {label:"They know but nothing changes", type:"neutral", reply:"manager knows about workload but nothing changes"},
+        {label:"They don't seem to notice", type:"neutral", reply:"manager doesnt notice the workload pressure"}
+      ]
+    };
+  }
+
+  // CULTURE / DISCONNECTION
+  if (CTX.topic === "culture" || CTX.emotion === "disconnected") {
+    return {
+      lines:[
+        ack || "Feeling disconnected from the culture or team quietly affects everything — motivation, performance, even sleep. 💙",
+        "Can you tell me more about what's driving that? Is it the team dynamics, the nature of the work, or something about how things are communicated at Finzly?"
+      ],
+      quickReplies:[
+        {label:"Team dynamics aren't great", type:"neutral", reply:"team dynamics issue culture problem"},
+        {label:"Work feels disconnected from impact", type:"neutral", reply:"work feels disconnected no impact feeling"},
+        {label:"Communication is poor", type:"neutral", reply:"communication culture problem at finzly"}
+      ]
+    };
+  }
+
+  // RESIGNATION INTENT
+  if (CTX.topic === "resignation" || CTX.emotion === "disengaged") {
+    const alreadySpoke = /spoke|talked|manager|hr|raised|discussed/i.test(CTX.history.join(" "));
+    if (!alreadySpoke) {
+      setFlow("resign","ask_manager");
+      return {
+        lines:[
+          ack || "I'm sorry to hear you're at this point. 💙 That feeling is real and I respect it.",
+          "Before we talk about the process — what's brought you here? Is this a decision you've been sitting with for a while, or has something specific happened recently?",
+          "Have you had a chance to speak with your manager or HR about what's been troubling you?"
+        ],
+        quickReplies:[
+          {label:"Yes, I have spoken to them", type:"yes", reply:"yes spoke to manager"},
+          {label:"No, not yet", type:"no", reply:"no not yet"}
+        ]
+      };
+    }
+  }
+
+  // GENERIC EMOTIONAL (no specific topic)
+  if (CTX.emotion && !CTX.topic) {
+    const rc = roleContext();
+    const rcPhrase = rc ? rc : "at work";
+    return {
+      lines:[
+        ack || "Thank you for sharing this with me. 💙",
+        "It sounds like things aren't feeling right " + rcPhrase + ". I want to make sure I'm actually helpful — not just give you a generic answer.",
+        "What's weighing on you the most right now? Is it the work, the team, or something more personal?"
+      ],
+      quickReplies:[
+        {label:"Work / role", type:"neutral", reply:"its about my work and role"},
+        {label:"My manager / team", type:"neutral", reply:"its about my manager or team dynamics"},
+        {label:"Career / future", type:"neutral", reply:"its about career and where im going"},
+        {label:"Something personal", type:"neutral", reply:"something personal affecting my work"}
+      ]
+    };
+  }
+
+  return null;
+}
+
+
+function detectFlowTrigger(q){
+  const l=q.toLowerCase();
+  if(/\b(harass|posh|unsafe|hostile|abuse|assault|inappropriate|uncomfortable at work|being harassed|sexual)\b/i.test(l))return{flow:"harassment",step:"immediate"};
+  if(/\b(resign|quit|leaving|put in papers|want to leave|notice period|thinking of leaving|thinking of resign)\b/i.test(l))return{flow:"resign",step:"ask_manager"};
+  if(/\b(not feeling well|feeling sick|unwell|sick today|sick leave today|want to take sick|need sick|apply sick)\b/i.test(l))return{flow:"sick",step:"ask_days"};
+  if(/\b(not happy|unhappy|dissatisfied|have a concern|worried|concern about|trouble at work|problem at work|stressed at work|issue at work)\b/i.test(l))return{flow:"concern",step:"ask_type"};
+  if(/\b(performance|pip|appraisal|rating|increment concern|review concern|not performing|under performing)\b/i.test(l))return{flow:"performance",step:"ask_type"};
+  if(/\b(maternity|pregnant|expecting|pregnancy)\b/i.test(l))return{flow:"maternity",step:"ask_service"};
+  // leave balance — handled directly by KB, no flow needed
+  return null;
+}
+
+function getFlowOpeningQuestion(flow){
+  if(flow==="resign"){setFlow("resign","ask_manager");return{lines:["I'm sorry to hear you're thinking of resigning. 💙","Before you proceed, I genuinely care about making sure you've had the right support.","Have you had a chance to speak with your **manager or HR** about what's been troubling you?"],quickReplies:[{label:"Yes, I spoke to them",type:"yes",reply:"yes spoke to manager"},{label:"No, not yet",type:"no",reply:"no not yet"}]};}
+  if(flow==="sick"){setFlow("sick","ask_days");return{lines:["Oh no — I hope you feel better soon! 🙏 Please take good care of yourself.","To give you the right info — how many days of sick leave are you looking at?"],quickReplies:[{label:"1–2 days",type:"neutral",reply:"1 or 2 days sick"},{label:"More than 2 days",type:"neutral",reply:"more than 2 days sick"}]};}
+  if(flow==="concern"){setFlow("concern","ask_type");return{lines:["I'm sorry to hear you're going through something difficult. 💙 Thank you for trusting me.","Could you share a bit more? Is it about:"],quickReplies:[{label:"Workload / stress",type:"neutral",reply:"workload stress pressure"},{label:"Salary / compensation",type:"neutral",reply:"salary concern"},{label:"My manager",type:"neutral",reply:"my manager"},{label:"Workplace culture",type:"neutral",reply:"work culture environment"}]};}
+  if(flow==="performance"){setFlow("performance","ask_type");return{lines:["Of course — happy to help with performance questions! 😊","What would you like to know about?"],quickReplies:[{label:"Annual appraisal / increment",type:"neutral",reply:"appraisal increment annual review"},{label:"PIP (Performance Improvement)",type:"neutral",reply:"pip performance improvement plan"},{label:"Feedback / ratings",type:"neutral",reply:"feedback appreciation ratings"}]};}
+  if(flow==="maternity"){setFlow("maternity","ask_service");return{lines:["Congratulations on your wonderful news! 🎉 Wishing you a healthy and happy journey!","To confirm your eligibility — have you completed **more than 4 months** of continuous service with Finzly?"],quickReplies:[{label:"Yes, more than 4 months",type:"yes",reply:"yes more than 4 months"},{label:"No, less than 4 months",type:"no",reply:"no less than 4 months"}]};}
+  // leave_balance flow removed — handled by KB directly
+  return null;
+}
+
+// ─────────────────────────────────────────────────────────────────
+// HR POLICY KB
+// ─────────────────────────────────────────────────────────────────
+function bold(t){return t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');}
+function renderHTML(text){
+  const lines=text.split('\n');let html='',inList=false;
+  for(const line of lines){
+    const isBullet=/^[-•]/.test(line.trim());
+    if(isBullet){if(!inList){html+='<ul>';inList=true;}html+='<li>'+bold(line.replace(/^[-•]\s*/,''))+'</li>';}
+    else{if(inList){html+='</ul>';inList=false;}if(line.trim())html+=(html&&!html.endsWith('</ul>')?'<br>':'')+bold(line);}
+  }
+  if(inList)html+='</ul>';return html;
+}
+function typewriteBubble(el,text,speed){
+  return new Promise(resolve=>{
+    const cursor=document.createElement('span');cursor.className='cursor';el.appendChild(cursor);
+    const chars=[...text];let i=0,raw='';
+    function tick(){
+      if(i>=chars.length){cursor.remove();el.innerHTML=renderHTML(raw);resolve();return;}
+      raw+=chars[i++];el.innerHTML='';const s=document.createElement('span');s.textContent=raw;el.appendChild(s);el.appendChild(cursor);
+      scrollToBottom();setTimeout(tick,speed);
+    }
+    tick();
+  });
+}
+function delay(ms){return new Promise(r=>setTimeout(r,ms));}
+function scrollToBottom(){const m=document.getElementById('messages');m.scrollTop=m.scrollHeight;}
+function hideSuggestions(){document.getElementById('suggestions').style.display='none';}
+
+async function streamResponse(entry,originalQuery){
+  const msgs=document.getElementById('messages');
+  const typingRow=document.createElement('div');typingRow.className='typing-row';typingRow.id='typingRow';
+  const tAv=document.createElement('div');tAv.className='chat-av';
+  tAv.innerHTML='<svg class=\"chat-av-face\" viewBox=\"0 0 100 100\" fill=\"none\"><defs><linearGradient id=\"fi1t\" x1=\"0\" y1=\"40\" x2=\"100\" y2=\"60\" gradientUnits=\"userSpaceOnUse\"><stop offset=\"0%\" stop-color=\"#00b8d4\"/><stop offset=\"50%\" stop-color=\"#00d8e8\"/><stop offset=\"100%\" stop-color=\"#00e8cc\"/></linearGradient><linearGradient id=\"fi2t\" x1=\"0\" y1=\"55\" x2=\"90\" y2=\"65\" gradientUnits=\"userSpaceOnUse\"><stop offset=\"0%\" stop-color=\"#0088b8\"/><stop offset=\"100%\" stop-color=\"#00bcd4\"/></linearGradient><linearGradient id=\"fi3t\" x1=\"5\" y1=\"72\" x2=\"65\" y2=\"80\" gradientUnits=\"userSpaceOnUse\"><stop offset=\"0%\" stop-color=\"#006090\"/><stop offset=\"100%\" stop-color=\"#0090b8\"/></linearGradient></defs><path d=\"M 12 72 C 8 48 16 20 48 10 C 70 4 90 12 94 22 C 72 15 46 22 28 46 C 20 56 15 64 12 72 Z\" fill=\"url(#fi1t)\"/><path d=\"M 12 81 C 16 62 30 44 58 36 C 74 30 88 36 88 44 C 70 39 50 46 34 64 C 26 73 18 79 12 81 Z\" fill=\"url(#fi2t)\"/><path d=\"M 12 88 C 16 78 26 70 42 68 C 54 66 63 70 61 76 C 52 72 40 74 30 82 C 22 87 16 90 12 88 Z\" fill=\"url(#fi3t)\"/></svg>';
+  const tBub=document.createElement('div');tBub.className='typing-bub';tBub.innerHTML='<span></span><span></span><span></span>';
+  typingRow.appendChild(tAv);typingRow.appendChild(tBub);msgs.appendChild(typingRow);scrollToBottom();
+  await delay(650);typingRow.remove();
+  const wrapper=document.createElement('div');wrapper.className='bot-msg-wrapper';
+  const av=document.createElement('div');av.className='chat-av';
+    av.innerHTML='<svg class=\"chat-av-face\" viewBox=\"0 0 100 100\" fill=\"none\"><defs><linearGradient id=\"fi1c\" x1=\"0\" y1=\"40\" x2=\"100\" y2=\"60\" gradientUnits=\"userSpaceOnUse\"><stop offset=\"0%\" stop-color=\"#00b8d4\"/><stop offset=\"50%\" stop-color=\"#00d8e8\"/><stop offset=\"100%\" stop-color=\"#00e8cc\"/></linearGradient><linearGradient id=\"fi2c\" x1=\"0\" y1=\"55\" x2=\"90\" y2=\"65\" gradientUnits=\"userSpaceOnUse\"><stop offset=\"0%\" stop-color=\"#0088b8\"/><stop offset=\"100%\" stop-color=\"#00bcd4\"/></linearGradient><linearGradient id=\"fi3c\" x1=\"5\" y1=\"72\" x2=\"65\" y2=\"80\" gradientUnits=\"userSpaceOnUse\"><stop offset=\"0%\" stop-color=\"#006090\"/><stop offset=\"100%\" stop-color=\"#0090b8\"/></linearGradient></defs><path d=\"M 12 72 C 8 48 16 20 48 10 C 70 4 90 12 94 22 C 72 15 46 22 28 46 C 20 56 15 64 12 72 Z\" fill=\"url(#fi1c)\"/><path d=\"M 12 81 C 16 62 30 44 58 36 C 74 30 88 36 88 44 C 70 39 50 46 34 64 C 26 73 18 79 12 81 Z\" fill=\"url(#fi2c)\"/><path d=\"M 12 88 C 16 78 26 70 42 68 C 54 66 63 70 61 76 C 52 72 40 74 30 82 C 22 87 16 90 12 88 Z\" fill=\"url(#fi3c)\"/></svg>';
+  const col=document.createElement('div');col.className='bot-bubbles';
+  wrapper.appendChild(av);wrapper.appendChild(col);msgs.appendChild(wrapper);scrollToBottom();
+  const lines=entry.lines||["Sorry, I couldn't find the right answer."];
+  for(let i=0;i<lines.length;i++){
+    if(i>0)await delay(BUBBLE_GAP);
+    const bub=document.createElement('div');bub.className='bubble bot';col.appendChild(bub);scrollToBottom();
+    await typewriteBubble(bub,lines[i],CHAR_SPEED);
+  }
+  if(entry.section){await delay(180);const tag=document.createElement('div');tag.className='section-tag';tag.textContent='📖 '+entry.section;tag.style.animation='fadeSlideIn 0.3s ease';col.appendChild(tag);scrollToBottom();}
+  if(entry.needsHR){await delay(150);const et=document.createElement('div');et.className='escalation-tag';et.textContent='⚡ This needs HR attention — '+entry.routingReason;et.style.animation='fadeSlideIn 0.3s ease';col.appendChild(et);scrollToBottom();await delay(400);showModal(originalQuery,entry.routingReason);}
+  if(entry.quickReplies&&entry.quickReplies.length>0){
+    await delay(FOLLOWUP_DELAY);const qrDiv=document.createElement('div');qrDiv.className='quick-replies';
+    entry.quickReplies.forEach(qr=>{const btn=document.createElement('button');btn.className='qr-btn '+qr.type;btn.textContent=qr.label;btn.onclick=()=>{document.querySelectorAll('.quick-replies').forEach(el=>el.remove());handleSend(qr.reply);};qrDiv.appendChild(btn);});
+    msgs.appendChild(qrDiv);scrollToBottom();
+  }
+  if(entry.followUps&&entry.followUps.length>0){
+    await delay(FOLLOWUP_DELAY);const fu=document.createElement('div');fu.className='followups';
+    entry.followUps.forEach(q=>{const b=document.createElement('button');b.className='followup-btn';b.textContent='💬 '+q;b.onclick=()=>handleSend(q);fu.appendChild(b);});
+    msgs.appendChild(fu);scrollToBottom();
+  }
+  isBotTyping=false;
+}
+
+function addUserMessage(text){
+  const msgs=document.getElementById('messages');
+  const row=document.createElement('div');row.className='msg-row user';
+  const bub=document.createElement('div');bub.className='bubble user';bub.textContent=text;
+  row.appendChild(bub);msgs.appendChild(row);scrollToBottom();
+}
+
+
+function detectFlowTrigger(q){
+  const l=q.toLowerCase();
+  if(/\b(harass|posh|unsafe|hostile|abuse|assault|inappropriate|uncomfortable at work|being harassed|sexual)\b/i.test(l))return{flow:"harassment",step:"immediate"};
+  if(/\b(resign|quit|leaving|put in papers|want to leave|notice period|thinking of leaving|thinking of resign)\b/i.test(l))return{flow:"resign",step:"ask_manager"};
+  if(/\b(not feeling well|feeling sick|unwell|sick today|sick leave today|want to take sick|need sick|apply sick)\b/i.test(l))return{flow:"sick",step:"ask_days"};
+  if(/\b(not happy|unhappy|dissatisfied|have a concern|worried|concern about|trouble at work|problem at work|stressed at work|issue at work)\b/i.test(l))return{flow:"concern",step:"ask_type"};
+  if(/\b(performance|pip|appraisal|rating|increment concern|review concern|not performing|under performing)\b/i.test(l))return{flow:"performance",step:"ask_type"};
+  if(/\b(maternity|pregnant|expecting|pregnancy)\b/i.test(l))return{flow:"maternity",step:"ask_service"};
+  // leave balance — handled directly by KB, no flow needed
+  return null;
+}
+
+function getFlowOpeningQuestion(flow){
+  if(flow==="resign"){setFlow("resign","ask_manager");return{lines:["I'm sorry to hear you're thinking of resigning. 💙","Before you proceed, I genuinely care about making sure you've had the right support.","Have you had a chance to speak with your **manager or HR** about what's been troubling you?"],quickReplies:[{label:"Yes, I spoke to them",type:"yes",reply:"yes spoke to manager"},{label:"No, not yet",type:"no",reply:"no not yet"}]};}
+  if(flow==="sick"){setFlow("sick","ask_days");return{lines:["Oh no — I hope you feel better soon! 🙏 Please take good care of yourself.","To give you the right info — how many days of sick leave are you looking at?"],quickReplies:[{label:"1–2 days",type:"neutral",reply:"1 or 2 days sick"},{label:"More than 2 days",type:"neutral",reply:"more than 2 days sick"}]};}
+  if(flow==="concern"){setFlow("concern","ask_type");return{lines:["I'm sorry to hear you're going through something difficult. 💙 Thank you for trusting me.","Could you share a bit more? Is it about:"],quickReplies:[{label:"Workload / stress",type:"neutral",reply:"workload stress pressure"},{label:"Salary / compensation",type:"neutral",reply:"salary concern"},{label:"My manager",type:"neutral",reply:"my manager"},{label:"Workplace culture",type:"neutral",reply:"work culture environment"}]};}
+  if(flow==="performance"){setFlow("performance","ask_type");return{lines:["Of course — happy to help with performance questions! 😊","What would you like to know about?"],quickReplies:[{label:"Annual appraisal / increment",type:"neutral",reply:"appraisal increment annual review"},{label:"PIP (Performance Improvement)",type:"neutral",reply:"pip performance improvement plan"},{label:"Feedback / ratings",type:"neutral",reply:"feedback appreciation ratings"}]};}
+  if(flow==="maternity"){setFlow("maternity","ask_service");return{lines:["Congratulations on your wonderful news! 🎉 Wishing you a healthy and happy journey!","To confirm your eligibility — have you completed **more than 4 months** of continuous service with Finzly?"],quickReplies:[{label:"Yes, more than 4 months",type:"yes",reply:"yes more than 4 months"},{label:"No, less than 4 months",type:"no",reply:"no less than 4 months"}]};}
+  // leave_balance flow removed — handled by KB directly
+  return null;
+}
+
+// ─────────────────────────────────────────────────────────────────
+// HR POLICY KB
+// ─────────────────────────────────────────────────────────────────
+function bold(t){return t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');}
+function renderHTML(text){
+  const lines=text.split('\n');let html='',inList=false;
+  for(const line of lines){
+    const isBullet=/^[-•]/.test(line.trim());
+    if(isBullet){if(!inList){html+='<ul>';inList=true;}html+='<li>'+bold(line.replace(/^[-•]\s*/,''))+'</li>';}
+    else{if(inList){html+='</ul>';inList=false;}if(line.trim())html+=(html&&!html.endsWith('</ul>')?'<br>':'')+bold(line);}
+  }
+  if(inList)html+='</ul>';return html;
+}
+function typewriteBubble(el,text,speed){
+  return new Promise(resolve=>{
+    const cursor=document.createElement('span');cursor.className='cursor';el.appendChild(cursor);
+    const chars=[...text];let i=0,raw='';
+    function tick(){
+      if(i>=chars.length){cursor.remove();el.innerHTML=renderHTML(raw);resolve();return;}
+      raw+=chars[i++];el.innerHTML='';const s=document.createElement('span');s.textContent=raw;el.appendChild(s);el.appendChild(cursor);
+      scrollToBottom();setTimeout(tick,speed);
+    }
+    tick();
+  });
+}
+function delay(ms){return new Promise(r=>setTimeout(r,ms));}
+function scrollToBottom(){const m=document.getElementById('messages');m.scrollTop=m.scrollHeight;}
+function hideSuggestions(){document.getElementById('suggestions').style.display='none';}
+
+async function streamResponse(entry,originalQuery){
+  const msgs=document.getElementById('messages');
+  const typingRow=document.createElement('div');typingRow.className='typing-row';typingRow.id='typingRow';
+  const tAv=document.createElement('div');tAv.className='chat-av';
+  tAv.innerHTML='<svg class=\"chat-av-face\" viewBox=\"0 0 100 100\" fill=\"none\"><defs><linearGradient id=\"fi1t\" x1=\"0\" y1=\"40\" x2=\"100\" y2=\"60\" gradientUnits=\"userSpaceOnUse\"><stop offset=\"0%\" stop-color=\"#00b8d4\"/><stop offset=\"50%\" stop-color=\"#00d8e8\"/><stop offset=\"100%\" stop-color=\"#00e8cc\"/></linearGradient><linearGradient id=\"fi2t\" x1=\"0\" y1=\"55\" x2=\"90\" y2=\"65\" gradientUnits=\"userSpaceOnUse\"><stop offset=\"0%\" stop-color=\"#0088b8\"/><stop offset=\"100%\" stop-color=\"#00bcd4\"/></linearGradient><linearGradient id=\"fi3t\" x1=\"5\" y1=\"72\" x2=\"65\" y2=\"80\" gradientUnits=\"userSpaceOnUse\"><stop offset=\"0%\" stop-color=\"#006090\"/><stop offset=\"100%\" stop-color=\"#0090b8\"/></linearGradient></defs><path d=\"M 12 72 C 8 48 16 20 48 10 C 70 4 90 12 94 22 C 72 15 46 22 28 46 C 20 56 15 64 12 72 Z\" fill=\"url(#fi1t)\"/><path d=\"M 12 81 C 16 62 30 44 58 36 C 74 30 88 36 88 44 C 70 39 50 46 34 64 C 26 73 18 79 12 81 Z\" fill=\"url(#fi2t)\"/><path d=\"M 12 88 C 16 78 26 70 42 68 C 54 66 63 70 61 76 C 52 72 40 74 30 82 C 22 87 16 90 12 88 Z\" fill=\"url(#fi3t)\"/></svg>';
+  const tBub=document.createElement('div');tBub.className='typing-bub';tBub.innerHTML='<span></span><span></span><span></span>';
+  typingRow.appendChild(tAv);typingRow.appendChild(tBub);msgs.appendChild(typingRow);scrollToBottom();
+  await delay(650);typingRow.remove();
+  const wrapper=document.createElement('div');wrapper.className='bot-msg-wrapper';
+  const av=document.createElement('div');av.className='chat-av';
+    av.innerHTML='<svg class=\"chat-av-face\" viewBox=\"0 0 100 100\" fill=\"none\"><defs><linearGradient id=\"fi1c\" x1=\"0\" y1=\"40\" x2=\"100\" y2=\"60\" gradientUnits=\"userSpaceOnUse\"><stop offset=\"0%\" stop-color=\"#00b8d4\"/><stop offset=\"50%\" stop-color=\"#00d8e8\"/><stop offset=\"100%\" stop-color=\"#00e8cc\"/></linearGradient><linearGradient id=\"fi2c\" x1=\"0\" y1=\"55\" x2=\"90\" y2=\"65\" gradientUnits=\"userSpaceOnUse\"><stop offset=\"0%\" stop-color=\"#0088b8\"/><stop offset=\"100%\" stop-color=\"#00bcd4\"/></linearGradient><linearGradient id=\"fi3c\" x1=\"5\" y1=\"72\" x2=\"65\" y2=\"80\" gradientUnits=\"userSpaceOnUse\"><stop offset=\"0%\" stop-color=\"#006090\"/><stop offset=\"100%\" stop-color=\"#0090b8\"/></linearGradient></defs><path d=\"M 12 72 C 8 48 16 20 48 10 C 70 4 90 12 94 22 C 72 15 46 22 28 46 C 20 56 15 64 12 72 Z\" fill=\"url(#fi1c)\"/><path d=\"M 12 81 C 16 62 30 44 58 36 C 74 30 88 36 88 44 C 70 39 50 46 34 64 C 26 73 18 79 12 81 Z\" fill=\"url(#fi2c)\"/><path d=\"M 12 88 C 16 78 26 70 42 68 C 54 66 63 70 61 76 C 52 72 40 74 30 82 C 22 87 16 90 12 88 Z\" fill=\"url(#fi3c)\"/></svg>';
+  const col=document.createElement('div');col.className='bot-bubbles';
+  wrapper.appendChild(av);wrapper.appendChild(col);msgs.appendChild(wrapper);scrollToBottom();
+  const lines=entry.lines||["Sorry, I couldn't find the right answer."];
+  for(let i=0;i<lines.length;i++){
+    if(i>0)await delay(BUBBLE_GAP);
+    const bub=document.createElement('div');bub.className='bubble bot';col.appendChild(bub);scrollToBottom();
+    await typewriteBubble(bub,lines[i],CHAR_SPEED);
+  }
+  if(entry.section){await delay(180);const tag=document.createElement('div');tag.className='section-tag';tag.textContent='📖 '+entry.section;tag.style.animation='fadeSlideIn 0.3s ease';col.appendChild(tag);scrollToBottom();}
+  if(entry.needsHR){await delay(150);const et=document.createElement('div');et.className='escalation-tag';et.textContent='⚡ This needs HR attention — '+entry.routingReason;et.style.animation='fadeSlideIn 0.3s ease';col.appendChild(et);scrollToBottom();await delay(400);showModal(originalQuery,entry.routingReason);}
+  if(entry.quickReplies&&entry.quickReplies.length>0){
+    await delay(FOLLOWUP_DELAY);const qrDiv=document.createElement('div');qrDiv.className='quick-replies';
+    entry.quickReplies.forEach(qr=>{const btn=document.createElement('button');btn.className='qr-btn '+qr.type;btn.textContent=qr.label;btn.onclick=()=>{document.querySelectorAll('.quick-replies').forEach(el=>el.remove());handleSend(qr.reply);};qrDiv.appendChild(btn);});
+    msgs.appendChild(qrDiv);scrollToBottom();
+  }
+  if(entry.followUps&&entry.followUps.length>0){
+    await delay(FOLLOWUP_DELAY);const fu=document.createElement('div');fu.className='followups';
+    entry.followUps.forEach(q=>{const b=document.createElement('button');b.className='followup-btn';b.textContent='💬 '+q;b.onclick=()=>handleSend(q);fu.appendChild(b);});
+    msgs.appendChild(fu);scrollToBottom();
+  }
+  isBotTyping=false;
+}
+
+function addUserMessage(text){
+  const msgs=document.getElementById('messages');
+  const row=document.createElement('div');row.className='msg-row user';
+  const bub=document.createElement('div');bub.className='bubble user';bub.textContent=text;
+  row.appendChild(bub);msgs.appendChild(row);scrollToBottom();
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// SMART CONTEXT & EMOTIONAL INTELLIGENCE ENGINE
+// Behaves like a real HRBP — not a scripted FAQ bot
+// ═══════════════════════════════════════════════════════════════
+
+// Conversation memory — persists context across turns
 function handleSend(overrideText){
   if(isBotTyping)return;
   const inputEl=document.getElementById('userInput');
@@ -905,7 +1465,17 @@ function handleSend(overrideText){
   if(!text)return;
   inputEl.value='';inputEl.style.height='auto';
   hideSuggestions();addUserMessage(text);isBotTyping=true;
-  if(conversationState.flow){const fr=routeFlowStep(text);if(fr){streamResponse(fr,text);return;}}
+
+  // 1. Update conversation context (role, emotion, topic, location, history)
+  updateCTX(text);
+
+  // 2. If we're inside an active flow, route to it
+  if(conversationState.flow){
+    const fr=routeFlowStep(text);
+    if(fr){streamResponse(fr,text);return;}
+  }
+
+  // 3. Check for immediate triggers (harassment, sick, performance, maternity)
   const trigger=detectFlowTrigger(text);
   if(trigger){
     setFlow(trigger.flow,trigger.step);
@@ -913,13 +1483,28 @@ function handleSend(overrideText){
     const fq=getFlowOpeningQuestion(trigger.flow);
     if(fq){streamResponse(fq,text);return;}
   }
+
+  // 4. Smart conversational engine — emotional + contextual intelligence
+  const smart=smartConversationalResponse(text);
+  if(smart){streamResponse(smart,text);return;}
+
+  // 5. KB lookup
   const result=findKB(text);
   if(result){
     if(result.isRoleAwareWhy){setFlow("why_role","pick_dept");}
     streamResponse(result,text);return;
   }
-  streamResponse({section:"",needsHR:true,routingReason:"Query not found — HR can provide the correct answer",lines:["I appreciate you asking, and I want to make sure you get the right answer. 😊","I couldn't find this specific topic in the current handbook. Could you try rephrasing?","Or reach out to **HR India** at **hr-india@finzly.com** — they'll be happy to help!","You can also try: office timings, sick leave, maternity, notice period, insurance, harassment, dress code, probation, what is Finzly, or BankOS!"],followUps:["What is Finzly?","What is BankOS?","What are my office timings?"]},text);
+
+  // 6. Intelligent fallback
+  const fallbacks=[
+    {lines:["Hmm, I want to make sure I give you the right answer and not guess. 😊","Could you tell me a little more about what you're looking for? I'm happy to dig in."],followUps:["What are my office timings?","How do I apply for leave?","What is BankOS?"]},
+    {lines:["I didn't quite catch that — but I'm here and listening. 😊","Try asking me about leaves, insurance, salary, career growth, or anything about Finzly. Or just tell me how you're feeling — I'm here for that too. 💙"]},
+    {lines:["I want to give you a thoughtful answer, not a generic one. 😊","Could you rephrase, or give me a bit more context? I promise I'll be more helpful with a little more to go on."]},
+  ];
+  const fallback=fallbacks[Math.floor(Math.random()*fallbacks.length)];
+  streamResponse({section:"",needsHR:false,...fallback},text);
 }
+
 
 function showModal(q,r){currentModalQuery=q;document.getElementById('modalQuery').textContent='"'+q+'"';document.getElementById('modalReason').textContent=r||'Needs HR attention';document.getElementById('modal').classList.add('show');}
 function closeModal(){document.getElementById('modal').classList.remove('show');}
