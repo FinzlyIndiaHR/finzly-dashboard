@@ -486,8 +486,8 @@ const COMPANY_KB = [
     section:"Why Finzly",
     isRoleAwareWhy: true,
     lines:[
-      "I'm really glad you asked — and I want to give you an answer that actually means something to **you**, not just a generic script. 😊",
-      "Could you tell me a little about your role at Finzly? That way I can speak to what makes this place special for someone in your shoes."
+      "Great question — and there's genuinely a lot to love about Finzly! 😊",
+      "Could you tell me a little about your role? I'd love to give you a personalised answer rather than a generic one — because what makes Finzly special looks different depending on what you do here."
     ],
     quickReplies:[
       {label:"Engineering / Development", type:"neutral", reply:"I am in engineering development"},
@@ -1182,9 +1182,10 @@ function smartConversationalResponse(text) {
     setFlow("why_role","pick_dept");
     return {
       lines:[
-        ack || "That's a very honest question, and I want to give you a real answer — not a generic one. 😊",
-        "Can I ask — is this coming from workload pressure, career growth concerns, or feeling a bit disconnected lately?\n\nBecause depending on what you're going through, my answer would be very different.",
-        "And if it helps — what's your role at Finzly? I'd love to speak to what makes your work here meaningful specifically."
+        "Great question — and honestly, there's a lot to be excited about here! 😊",
+        "Finzly is a **cloud-native fintech** powering real US banking payments — FedNow, RTP, ACH, SWIFT — for clients like Frost Bank and Metropolitan Commercial Bank. You're not just at a company, you're building infrastructure that moves money for real banks. 🚀",
+        "🏆 **Best and Brightest Companies to Work For** — 2022 & 2023\n🌍 Global team — Charlotte, Chennai, Pune\n💡 Agentic AI, Token Galaxy, real fintech innovation\n📈 Revenue nearly doubled in 2023",
+        "And I'd love to make this even more personal for you — what's your role at Finzly? That way I can tell you exactly what makes **your work** here meaningful."
       ],
       quickReplies:[
         {label:"Engineering / Development", type:"neutral", reply:"I am in engineering development"},
