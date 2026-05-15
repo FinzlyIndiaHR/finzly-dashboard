@@ -585,44 +585,47 @@ const FLOWS = {
   },
   why_finzly_role:(u)=>{
     clearFlow();
-    const eng  = /engineer|develop|java|angular|spring|frontend|backend|fullstack|coding|code|tech/i.test(u);
-    const qa   = /qa|test|quality|automation|manual|bug|testing/i.test(u);
-    const hr   = /hr|human resource|people|recruit|talent|payroll|culture|posh|policy|onboard/i.test(u);
-    const prod = /product|design|ux|ui|pm|manager|roadmap|feature|figma/i.test(u);
-    const fin  = /finance|account|ops|operation|payroll|billing|budget|vendor|admin/i.test(u);
+    const sup  = /\bsupport\b|\bdevops\b|\bdev ops\b|\binfra\b|\bcloud\b|\baws\b|\bdeployment\b|\bsre\b|\bincident\b|\bhelpdesk\b/i.test(u);
+    const eng  = !sup && /engineer|develop|java|angular|spring|frontend|backend|fullstack|coding|code|\btech\b/i.test(u);
+    const qa   = /\bqa\b|\btester\b|\btesting\b|\bquality\b|automation|manual tester/i.test(u);
+    const hr   = /\bhr\b|human resource|people|recruit|talent|hrbp|\bposh\b|\bpolicy\b|onboard/i.test(u);
+    const prod = /\bproduct\b|\bdesign\b|\bux\b|\bui\b|\bpm\b|roadmap|\bfigma\b/i.test(u);
+    const fin  = !sup && /finance|accounting|\bbilling\b|\bbudget\b|\bvendor\b|\badmin\b/i.test(u);
 
     if(eng) return {section:"Why Finzly – Engineering",lines:[
       "As an engineer at Finzly — you're not maintaining old code. You're **building the payment infrastructure** that real US banks depend on. 🚀",
       "Here's what that means for you:\n\n- You work on **FedNow, RTP, ACH, SWIFT, Fedwire** — every major US payment rail, on one modern platform\n- Our **Agentic Galaxy** (Oct 2025) puts AI agents directly inside payment workflows — you're building the future of fintech, not catching up to it\n- Our stack is **cloud-native on AWS**, API-first, ISO 20022 — the kind of experience that makes your profile stand out anywhere\n- You ship features that go live at **real banks** with real customers — not internal prototypes",
-      "🏆 **Best and Brightest Companies to Work For** — 2022 & 2023\n📈 Revenue nearly **doubled in 2023** — a growing company with stable funding\n🌍 Work alongside teams in **Charlotte, Chennai, and Pune** — global exposure from day one",
-      "Engineers here don't just follow tickets — they shape the product. Is there something specific you'd like to explore or change about your role? I'm here. 💙"
+      "Engineers here don't just follow tickets — they **shape the product**. And working on real US banking infrastructure gives your profile a depth that's hard to get elsewhere. Is there something specific about your role you'd like to explore? I'm here. 💙"
     ],followUps:["What is BankOS?","What is the Agentic Galaxy?","What is my career growth?"]};
 
     if(qa) return {section:"Why Finzly – QA",lines:[
       "As a QA professional at Finzly — your work is the last line of defense before a payment reaches a real US bank. That's not a small responsibility. 🙌",
       "Here's what makes it meaningful:\n\n- You test **FedNow, RTP, ACH, SWIFT** flows that process millions of dollars in real transactions\n- Your test cases directly prevent issues from reaching **live banking clients** like Frost Bank and Metropolitan Commercial Bank\n- Finzly's quality bar is high — and that means your expertise is genuinely valued, not just tolerated\n- You work on **cloud-native, API-driven** systems — modern testing for modern infrastructure",
-      "🏆 **Best and Brightest Companies to Work For** — 2022 & 2023\n💡 The **Agentic Galaxy** (AI in payments) and **Token Galaxy** (stablecoins) mean there's always something new to test and learn\n🌍 Global teams across Charlotte, Chennai, and Pune",
-      "QA at Finzly is a career — not just a stepping stone. What's on your mind? 💙"
+      "And it's never static — the **Agentic Galaxy** (AI in payments) and **Token Galaxy** (stablecoins) mean there's always something new to test and learn.\n\nQA at Finzly is a career — not just a stepping stone. What's on your mind? 💙"
     ],followUps:["What is BankOS?","What is my career growth?","What awards has Finzly won?"]};
 
     if(hr) return {section:"Why Finzly – HR & People",lines:[
       "As someone in HR — you're the heartbeat of the employee experience here. And Finzly gives you a lot to work with. 💙",
       "Here's what makes Finzly special for an HR professional:\n\n- You're part of a company that has **genuinely won** Best and Brightest Companies to Work For (2022 & 2023) — that's built on real HR work, not just a marketing claim\n- Finzly's culture values **giving employees a real voice** — the open door policy, POSH committee, feedback culture — these aren't checkbox exercises\n- As a growing Series A company, **you help shape policies**, not just implement them\n- You work across **Chennai and Pune** — two offices, a diverse team, and a direct line to leadership",
-      "The company is evolving fast — **new products, new hires, new challenges** — and HR is at the centre of all of it.\n\nYou're not just administering policies. You're building a culture. 😊",
-      "Is there something specific about your role or the culture you'd like to talk about? I'm all ears. 💙"
+      "The company is evolving fast — new products, new hires, new challenges — and HR is at the centre of all of it. You're not just administering policies. You're **building a culture**. Is there something specific you'd like to talk about? I'm all ears. 💙"
     ],followUps:["What is Finzly's mission?","What awards has Finzly won?","Who is the CEO?"]};
 
     if(prod) return {section:"Why Finzly – Product & Design",lines:[
       "As someone in Product or Design at Finzly — you're shaping how modern banking feels. That's a genuinely rare opportunity. 😊",
       "Here's what stands out:\n\n- Finzly's product vision is **years ahead** of where most banking software is — BankOS, Agentic Galaxy, Token Galaxy — you're not iterating on something stale\n- You work directly with **real US bank clients** — Frost Bank, Metropolitan Commercial Bank — so your decisions have real-world consequences\n- The team is small enough that **your voice shapes the roadmap**, not just executes it\n- Design and product decisions here carry real weight — not layers of committee approval",
-      "🚀 **Agentic Galaxy** (AI in payments) launched Oct 2025 — product decisions happening right now\n🌍 Global context — US banking requirements, India execution — uniquely broadening\n🏆 Award-winning workplace — people stay because they're genuinely engaged",
       "Is there a specific part of the product or your role you'd like to explore? 💙"
+    ],followUps:["What is BankOS?","What is the Agentic Galaxy?","What is my career growth?"]};
+
+    if(sup) return {section:"Why Finzly – Support & DevOps",lines:[
+      "As someone in Support or DevOps — you're the invisible force that keeps everything running. Without you, nothing ships. 🙌",
+      "Here's what makes it meaningful at Finzly:\n\n- You're supporting a **cloud-native, AWS-hosted platform** that powers real banking transactions 24/7\n- Finzly's Agentic Galaxy (AI in payments) and Token Galaxy are continuously evolving — you'll never be bored\n- The infrastructure you maintain directly impacts **US banking clients** like Frost Bank and Metropolitan Commercial Bank\n- Lean team = **real ownership** — you're not just running tickets, you're shaping how the platform operates",
+      "🏆 Best and Brightest Companies to Work For — 2022 & 2023\n🚀 Cloud-native fintech at the frontier of US banking\n🌍 Global team — Charlotte, Chennai, Pune",
+      "Is there something specific about your role or growth here you'd like to explore? 💙"
     ],followUps:["What is BankOS?","What is the Agentic Galaxy?","What is my career growth?"]};
 
     if(fin) return {section:"Why Finzly – Finance & Operations",lines:[
       "In Finance or Operations at Finzly — you're the backbone that keeps a fast-growing fintech company running. 😊",
       "Here's what makes this place meaningful for you:\n\n- Finzly is **Series A funded**, revenue growing fast — you're part of a financially healthy, scaling company, not a startup burning cash with no plan\n- Operations here are **real** — you support two India offices (Chennai & Pune) and coordinate with the US HQ in Charlotte\n- The team is lean, which means **you have real ownership** — not a cog in a 10,000-person finance department\n- You're exposed to **international business operations**, US banking regulations, and a genuinely complex, interesting business",
-      "🏆 Best and Brightest Companies to Work For — 2022 & 2023\n📈 Revenue nearly doubled in 2023 — a company worth being part of",
       "What's something specific you'd like to understand better about your role here? I'm happy to help. 💙"
     ],followUps:["What is Finzly's mission?","What awards has Finzly won?","Who is the CEO?"]};
 
@@ -1082,12 +1085,12 @@ function updateCTX(text) {
   const t = text.toLowerCase();
 
   const roleMap = [
-    { regex:/\b(engineer|developer|dev|java|angular|spring|frontend|backend|fullstack|coding|programmer|tech)\b/, role:"engineering" },
+    { regex:/\b(support|devops|dev ops|infra|cloud|aws|deployment|sre|incident|helpdesk)\b/, role:"support" },
+    { regex:/\b(engineer|developer|\bdev\b|java|angular|spring|frontend|backend|fullstack|coding|programmer|\btech\b)\b/, role:"engineering" },
     { regex:/\b(qa|tester|testing|quality|automation|manual tester)\b/, role:"qa" },
     { regex:/\b(hr|human resource|people|talent|recruit|hrbp|posh|culture)\b/, role:"hr" },
-    { regex:/\b(product|pm|product manager|ux|ui|design|designer|figma|roadmap)\b/, role:"product" },
-    { regex:/\b(finance|accounts|accounting|billing|budget|ops|operations|vendor|admin)\b/, role:"finance" },
-    { regex:/\b(support|devops|infra|cloud|aws|deployment|sre|incident|helpdesk)\b/, role:"support" },
+    { regex:/\b(product|\bpm\b|product manager|ux|ui|design|designer|figma|roadmap)\b/, role:"product" },
+    { regex:/\b(finance|accounts|accounting|billing|budget|vendor|admin)\b/, role:"finance" },
     { regex:/\b(fresher|trainee|intern|new joiner|just joined|recently joined)\b/, role:"fresher" },
     { regex:/\b(manager|lead|practice lead|team lead|scrum master)\b/, role:"manager" },
   ];
