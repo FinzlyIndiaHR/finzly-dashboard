@@ -473,6 +473,7 @@ async function listSheets(token){
 }
 
 
+async function graphFetch(token, sheet){
   const url=`https://graph.microsoft.com/v1.0/users/${OWNER_UPN}/drive/items/${FILE_ID}/workbook/worksheets('${encodeURIComponent(sheet)}')/usedRange`;
   const res=await fetch(url,{headers:{Authorization:'Bearer '+token}});
   if(!res.ok){
