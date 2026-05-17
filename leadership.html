@@ -867,8 +867,21 @@ function render(){
   const active=D.filter(d=>d.ActiveFlag===1);
   const inactive=D.filter(d=>d.ActiveFlag===0);
 
-  // Recompute attrition from filtered data — respects country/city/squad filters
-  const A=computeAttrition(D);
+  // For attrition: ALWAYS include both active + inactive
+  // Apply country/city/squad filters but IGNORE status filter
+  // (you need exits from inactive employees to calculate attrition)
+  const fCountry=document.getElementById('f-country').value;
+  const fCity   =document.getElementById('f-city').value;
+  const fSquad  =document.getElementById('f-squad').value;
+  const attrPool=EMP_DATA.filter(d=>{
+    if(fCountry!=='all'&&d.Country!==fCountry)return false;
+    if(fCity   !=='all'&&d.City   !==fCity)   return false;
+    if(fSquad  !=='all'&&d.Squad  !==fSquad)  return false;
+    return true; // includes both Active and Inactive
+  });
+  const A=computeAttrition(attrPool);
+  console.log(`📊 Attrition pool: ${attrPool.length} (${attrPool.filter(d=>d.ActiveFlag===1).length} active + ${attrPool.filter(d=>d.ActiveFlag===0).length} inactive)`);
+  console.log(`📊 Attrition months computed: ${A.length}, exits sample:`, A.slice(0,3).map(r=>r.month+' exits='+r.exits));
   const india=active.filter(d=>d.Country==='India');
   const usa=active.filter(d=>d.Country==='USA');
   const male=active.filter(d=>d.Gender==='Male');
@@ -983,29 +996,28 @@ function render(){
   }).join('');
 
   // P4 ATTRITION — computed from filtered data (A already set at top of render)
+  // Use attrPool inactive for all exit-based charts (not filtered by status)
+  const attrInactive=attrPool.filter(d=>d.ActiveFlag===0);
 
   // ── Year-wise exits ────────────────────────────────────────
   const exitYrMap={};
-  inactive.forEach(d=>{
-    // Use Termination Date Str (YYYY-MM-DD) — reliable string format
-    const td = d['Termination Date Str'] || dateStr(d['Termination Date']);
-    const typ = d['Termination Type']||'Unknown';
-    if(td&&/^\d{4}/.test(td)){
-      const yr=td.slice(0,4);
-      if(parseInt(yr)>=2019){
-        if(!exitYrMap[yr])exitYrMap[yr]={Voluntary:0,Involuntary:0,Unknown:0};
-        exitYrMap[yr][typ==='Voluntary'?'Voluntary':typ==='Involuntary'?'Involuntary':'Unknown']++;
-      }
+  attrInactive.forEach(d=>{
+    // Parse termination date — handles serial numbers and ISO strings
+    const termD=parseEmpDate(d['Termination Date']);
+    if(!termD)return;
+    const yr=String(termD.getFullYear());
+    const typ=d['Termination Type']||'Unknown';
+    if(parseInt(yr)>=2019){
+      if(!exitYrMap[yr])exitYrMap[yr]={Voluntary:0,Involuntary:0,Unknown:0};
+      exitYrMap[yr][typ==='Voluntary'?'Voluntary':typ==='Involuntary'?'Involuntary':'Unknown']++;
     }
   });
-  // Debug: log exit year map
   console.log('📅 Exits by year:', JSON.stringify(exitYrMap));
-  console.log('📅 Sample inactive term dates:',
-    inactive.slice(0,5).map(d=>({
-      name: d['First Name'],
-      raw: d['Termination Date'],
-      str: d['Termination Date Str'],
-      parsed: String(parseEmpDate(d['Termination Date']))
+  console.log('📅 Sample attrInactive term dates:',
+    attrInactive.slice(0,5).map(d=>({
+      name:d['First Name'],
+      raw:d['Termination Date'],
+      parsed:String(parseEmpDate(d['Termination Date']))
     }))
   );
   const exitYrs=Object.keys(exitYrMap).sort();
@@ -1013,8 +1025,8 @@ function render(){
   const total2026=exits2026.Voluntary+exits2026.Involuntary+exits2026.Unknown;
   const moSoFar=new Date().getMonth()+1; // months elapsed in 2026
   const proj2026=moSoFar>0?Math.round(total2026/moSoFar*12):0;
-  const totalInactive=inactive.length;
-  const volCount=inactive.filter(d=>d['Termination Type']==='Voluntary').length;
+  const totalInactive=attrInactive.length;
+  const volCount=attrInactive.filter(d=>d['Termination Type']==='Voluntary').length;
   const volPct=totalInactive?Math.round(volCount/totalInactive*100):0;
 
   // KPI cards — computed from filtered data
@@ -1040,9 +1052,9 @@ function render(){
     ]
   },{scales:{y:{stacked:true,beginAtZero:true,ticks:{stepSize:5,font:{family:'Fira Code',size:10}}},x:{stacked:true}}});
 
-  // Cohort retention chart
+  // Cohort retention chart — uses attrPool (respects filters, includes both active+inactive)
   const cohortMap={};
-  EMP_DATA.forEach(d=>{
+  attrPool.forEach(d=>{
     const yr=d['Start Year']?Math.floor(Number(d['Start Year'])):null;
     if(!yr||yr<2015||yr>2025)return;
     if(!cohortMap[yr])cohortMap[yr]={joined:0,active:0,exited:0};
@@ -1063,7 +1075,7 @@ function render(){
 
   // Termination type donut — always from EMP_DATA
   const termMap={};
-  inactive.forEach(d=>{if(d['Termination Type']){const t=d['Termination Type'];termMap[t]=(termMap[t]||0)+1;}});
+  attrInactive.forEach(d=>{if(d['Termination Type']){const t=d['Termination Type'];termMap[t]=(termMap[t]||0)+1;}});
   document.getElementById('inf-tt').innerHTML=`<strong>Voluntary = ${volPct}% of exits.</strong> Focus on retention triggers: growth path, recognition, manager quality, compensation.`;
   mkChart('ch-tt','doughnut',{
     labels:Object.keys(termMap).length?Object.keys(termMap):['No data'],
@@ -1072,7 +1084,7 @@ function render(){
 
   // Exit reasons — always from EMP_DATA
   const reasons={};
-  inactive.forEach(d=>{const r=d['Reason of Termination']||'Not Stated';reasons[r]=(reasons[r]||0)+1;});
+  attrInactive.forEach(d=>{const r=d['Reason of Termination']||'Not Stated';reasons[r]=(reasons[r]||0)+1;});
   const maxR=Math.max(...Object.values(reasons),1);
   document.getElementById('exit-reasons').innerHTML=Object.entries(reasons).sort((a,b)=>b[1]-a[1])
     .map(([r,n])=>`<div class="brow"><div class="blbl">${r}</div><div class="btrack"><div class="bfill" style="width:${Math.round(n/maxR*100)}%;background:var(--red);opacity:.75"></div></div><div class="bval">${n}</div></div>`).join('')
@@ -1175,9 +1187,9 @@ function render(){
   // P7 SUMMARY
   const lastAnnNum=A.length?+A[A.length-1].ann_pct:0;
   const avgTenure=avg(active.filter(d=>typeof d['Finzly Experience']==='number').map(d=>d['Finzly Experience']));
-  const inact2026=inactive.filter(d=>{
-    const td=d['Termination Date Str']||dateStr(d['Termination Date']);
-    return td&&td.startsWith('2026');
+  const inact2026=attrInactive.filter(d=>{
+    const td=parseEmpDate(d['Termination Date']);
+    return td&&td.getFullYear()===2026;
   }).length;
   document.getElementById('sum-sub').textContent=`${active.length} active · ${india.length} India · ${usa.length} USA · ${squads.length} squads · Live: SharePoint`;
   document.getElementById('sum-kpis').innerHTML=`
