@@ -462,7 +462,17 @@ function setStep(id,state){
 }
 
 // ── GRAPH FETCH ───────────────────────────────────────────────
-async function graphFetch(token, sheet){
+async function listSheets(token){
+  try{
+    const url=`https://graph.microsoft.com/v1.0/users/${OWNER_UPN}/drive/items/${FILE_ID}/workbook/worksheets`;
+    const res=await fetch(url,{headers:{Authorization:'Bearer '+token}});
+    if(!res.ok)return[];
+    const d=await res.json();
+    return(d.value||[]).map(s=>s.name);
+  }catch(e){return[];}
+}
+
+
   const url=`https://graph.microsoft.com/v1.0/users/${OWNER_UPN}/drive/items/${FILE_ID}/workbook/worksheets('${encodeURIComponent(sheet)}')/usedRange`;
   const res=await fetch(url,{headers:{Authorization:'Bearer '+token}});
   if(!res.ok){
@@ -476,87 +486,85 @@ async function graphFetch(token, sheet){
 function processEmpMaster(values){
   if(!values||values.length<2)return[];
   const hdrs=values[0].map(h=>String(h||'').trim());
-  // Find key column indices
-  const ci=kw=>hdrs.findIndex(h=>kw.some(k=>h.toLowerCase().includes(k)));
+  const ci=kw=>hdrs.findIndex(h=>kw.some(k=>h.toLowerCase().includes(k.toLowerCase())));
+  console.log('📋 Headers detected:', hdrs.join(' | '));
+
   const I={
-    id:    ci(['emp id','emp_id']),
-    fname: ci(['first name']),
-    lname: ci(['last name']),
-    status:ci(['status']),
-    type:  ci(['type']),
-    practice:ci(['practice']),
-    squad: 6,   // original Squads col
-    scrumMaster:ci(['scrum master']),
-    subSquad:8, // original Sub Squads col
-    email: ci(['email']),
-    city:  ci(['city']),
-    l1id:  ci(['l1 employee']),
-    l1mgr: ci(['l1 manager']),
-    l2mgr: ci(['l2 manager']),
-    title: ci(['corporate title']),
-    gender:ci(['gender']),
-    entity:ci(['entity']),
-    country:ci(['country']),
-    startDate:ci(['start date']),
-    startMonth:ci(['start month']),
-    startYear:ci(['start year']),
-    todayDate:ci([`today`]),
-    termDate:ci(['termination date']),
-    exitClean:ci(['exit clean']),
-    termType:ci(['termination type']),
-    termReason:ci(['reason of termination']),
-    careerBegin:ci(['career beginning']),
-    totalExp:ci(['total experience']),
-    finzlyExp:ci(['finzly experience']),
-    level:ci(['level']),
-    rag:  ci(['rag status','rag']),
-    perf24:ci(['performance rating 2024']),
-    apprDate24:ci(['last year appraisal']),
-    perf25:ci(['performance rating 2025']),
-    apprDate25:ci(['2026 appraisal']),
-    activeFlag:ci(['activeflag']),
-    exitLTM:ci(['exit_ltm']),
+    id:       ci(['Emp ID']),
+    fname:    ci(['First Name']),
+    lname:    ci(['Last Name']),
+    status:   ci(['Status']),          // "Active" / "Inactive" — source of truth
+    type:     ci(['Type']),
+    practice: ci(['Practice']),
+    squad:    ci(['Squad']),
+    scrumMaster: ci(['Scrum Master']),
+    subSquad: ci(['Sub Squad']),
+    email:    ci(['Email']),
+    city:     ci(['City']),
+    l1mgr:    ci(['L1 Manager']),
+    l2mgr:    ci(['L2 Manager']),
+    title:    ci(['Corporate Title']),
+    gender:   ci(['Gender']),
+    country:  ci(['Country']),
+    startDate:ci(['Start Date']),
+    startYear:ci(['Start Year']),
+    termDate: ci(['Termination Date']),
+    termType: ci(['Termination Type']),
+    termReason:ci(['Reason of Termination']),
+    totalExp: ci(['Total Experience']),
+    finzlyExp:ci(['Finzly Experience']),
+    level:    ci(['Level']),
+    rag:      ci(['Rag Status']),
+    perf24:   ci(['Performance Rating 2024']),
+    perf25:   ci(['Performance Rating 2025']),
   };
+  console.log('🗂 Key cols — Squad:',I.squad,'SubSquad:',I.subSquad,'Status:',I.status,'Gender:',I.gender,'Country:',I.country,'RAG:',I.rag);
 
   const data=[];
   for(let i=1;i<values.length;i++){
     const r=values[i];
     if(!r.some(v=>v!==null&&v!==''))continue;
-    const g=j=>j>=0&&j<r.length?r[j]:null;
-    const gn=j=>{ const v=g(j); return(typeof v==='number'&&!isNaN(v))?v:null; };
+    const g =j=>(j>=0&&j<r.length)?r[j]:null;
+    const gn=j=>{const v=g(j);return(typeof v==='number'&&!isNaN(v))?v:null;};
 
-    const squad   = cleanSquad(String(g(I.squad)||'').trim());
-    const subSquad= cleanSub(String(g(I.subSquad)||'').trim());
-    const rag     = cleanRag(String(g(I.rag)||'').trim());
-    const af      = gn(I.activeFlag);
+    // Status is the source of truth — no need for ActiveFlag column
+    const statusVal=String(g(I.status)||'').trim();
+    const activeFlag=statusVal.toLowerCase()==='active'?1:statusVal.toLowerCase()==='inactive'?0:null;
 
     data.push({
       'Emp ID':      g(I.id),
       'First Name':  g(I.fname),
       'Last Name':   g(I.lname),
-      Status:        g(I.status),
+      Status:        statusVal,
+      ActiveFlag:    activeFlag,        // derived from Status — 1=Active, 0=Inactive
       Type:          g(I.type),
       Practice:      g(I.practice),
-      Squad:         squad,
+      Squad:         cleanSquad(String(g(I.squad)||'').trim()),
       'Scrum Master':g(I.scrumMaster),
-      'Sub Squad':   subSquad,
+      'Sub Squad':   cleanSub(String(g(I.subSquad)||'').trim()),
       'Email Address':g(I.email),
       City:          g(I.city),
       Country:       g(I.country),
+      Gender:        g(I.gender),
+      'L1 Manager':  g(I.l1mgr),
+      'L2 Manager':  g(I.l2mgr),
+      'Corporate Title': g(I.title),
       'Start Date':  g(I.startDate),
-      'Start Year':  gn(I.startYear)||( g(I.startDate)?String(g(I.startDate)).slice(0,4):null),
-      'Termination Date': g(I.termDate),
-      'Termination Type': g(I.termType),
+      'Start Year':  gn(I.startYear)||(g(I.startDate)?String(g(I.startDate)).slice(0,4):null),
+      'Termination Date':    g(I.termDate),
+      'Termination Type':    g(I.termType),
       'Reason of Termination': g(I.termReason),
-      'Total Experience':  gn(I.totalExp),
-      'Finzly Experience': gn(I.finzlyExp),
+      'Total Experience':   gn(I.totalExp),
+      'Finzly Experience':  gn(I.finzlyExp),
       Level:         g(I.level),
-      'Rag Status':  rag,
+      'Rag Status':  cleanRag(String(g(I.rag)||'').trim()),
       'Performance Rating 2024': gn(I.perf24),
       'Performance Rating 2025': gn(I.perf25),
-      ActiveFlag:    af,
     });
   }
+  const active=data.filter(d=>d.ActiveFlag===1).length;
+  const inactive=data.filter(d=>d.ActiveFlag===0).length;
+  console.log(`✅ Emp Master: ${data.length} total | ${active} Active | ${inactive} Inactive`);
   return data;
 }
 
@@ -627,22 +635,61 @@ async function loadData(){
     const me=await fetch('https://graph.microsoft.com/v1.0/me',{headers:{Authorization:'Bearer '+token}}).then(r=>r.json());
     document.getElementById('h-user').textContent=me.displayName||me.mail||'Leadership';
 
+    // List all sheets first — logs to console so we know exact names
+    const allSheets=await listSheets(token);
+    console.log('📋 All sheets in workbook:', allSheets);
+
     setStep('ls-auth','done'); setStep('ls-emp','active');
 
-    // Load Emp Master
-    const empRaw=await graphFetch(token,'Emp Master');
+    // Load Emp Master — try multiple possible names
+    const empNames=['Emp Master','EmpMaster','Employee Master','Emp_Master','Master','Sheet1'];
+    let empRaw=null, empSheetUsed='';
+    for(const name of empNames){
+      // Prefer sheet names found in the workbook
+      const target=allSheets.find(s=>s.toLowerCase()===name.toLowerCase())||name;
+      try{
+        empRaw=await graphFetch(token,target);
+        if(empRaw&&empRaw.length>1){empSheetUsed=target;console.log('Emp sheet found:',target);break;}
+      }catch(e){console.log('Emp sheet not found:',name);}
+    }
+    // If none matched by name, use first sheet
+    if(!empRaw&&allSheets.length>0){
+      try{empRaw=await graphFetch(token,allSheets[0]);empSheetUsed=allSheets[0];console.log('Using first sheet:',allSheets[0]);}catch(e){}
+    }
+    if(!empRaw||empRaw.length<2) throw new Error(`Could not load employee data. Sheets found: [${allSheets.join(', ')}]. Check file access for ${OWNER_UPN}.`);
     EMP_DATA=processEmpMaster(empRaw);
+    const activeCount=EMP_DATA.filter(d=>d.ActiveFlag===1).length;
+    const inactiveCount=EMP_DATA.filter(d=>d.ActiveFlag===0).length;
+    const unflagged=EMP_DATA.filter(d=>d.ActiveFlag===null).length;
+    console.log(`✅ Emp Master: ${EMP_DATA.length} total | ${activeCount} active | ${inactiveCount} inactive | ${unflagged} untagged`);
+
     setStep('ls-emp','done'); setStep('ls-calc','active');
 
-    // Load Calculation Sheet
-    const calcRaw=await graphFetch(token,'Calculation Sheet');
-    ATTR_DATA=processCalcSheet(calcRaw);
-    setStep('ls-calc','done'); setStep('ls-org','active');
+    // Load Calculation Sheet — try multiple possible names, prefer actual sheet names
+    const calcNames=['Calculation Sheet','Calculations','Attrition','Calc Sheet','Calc','Sheet2'];
+    const calcTarget=allSheets.find(s=>calcNames.some(n=>s.toLowerCase().includes(n.toLowerCase())))||calcNames[0];
+    let calcLoaded=false;
+    try{
+      const raw=await graphFetch(token,calcTarget);
+      ATTR_DATA=processCalcSheet(raw);
+      if(ATTR_DATA.length>0){calcLoaded=true;console.log('✅ Calc sheet loaded:',calcTarget,ATTR_DATA.length,'rows');}
+    }catch(e){console.warn('Calc sheet failed:',calcTarget,e.message);}
+    if(!calcLoaded) console.warn('⚠ No attrition data — attrition tab will show empty');
+    setStep('ls-calc', calcLoaded?'done':'error');
+    setStep('ls-org','active');
 
-    // Load Org Overview
-    const orgRaw=await graphFetch(token,'Org Overview');
-    TREND_DATA=processOrgOverview(orgRaw);
-    setStep('ls-org','done'); setStep('ls-render','active');
+    // Load Org Overview — try multiple possible names
+    const orgNames=['Org Overview','Org_Overview','Organisation','Headcount','People Trend','Org','Sheet3'];
+    const orgTarget=allSheets.find(s=>orgNames.some(n=>s.toLowerCase().includes(n.toLowerCase())))||orgNames[0];
+    let orgLoaded=false;
+    try{
+      const raw=await graphFetch(token,orgTarget);
+      TREND_DATA=processOrgOverview(raw);
+      if(TREND_DATA.length>0){orgLoaded=true;console.log('✅ Org sheet loaded:',orgTarget,TREND_DATA.length,'rows');}
+    }catch(e){console.warn('Org sheet failed:',orgTarget,e.message);}
+    if(!orgLoaded) console.warn('⚠ No trend data — people trend tab will show empty');
+    setStep('ls-org', orgLoaded?'done':'error');
+    setStep('ls-render','active');
 
     // Populate filters & render
     populateFilters();
