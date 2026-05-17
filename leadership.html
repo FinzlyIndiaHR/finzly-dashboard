@@ -336,6 +336,16 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
 
   <!-- P4 -->
   <div class="pg" id="p4">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+      <span style="font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">Attrition Year</span>
+      <select id="f-attr-year" onchange="render()" style="font-family:'Outfit',sans-serif;font-size:.78rem;padding:5px 26px 5px 10px;border-radius:6px;border:1.5px solid var(--border);background:var(--bg);color:var(--ink);cursor:pointer;appearance:none;background-image:url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2710%27 height=%277%27%3E%3Cpath d=%27M1 1l4 4 4-4%27 stroke=%27%238a8578%27 stroke-width=%271.5%27 fill=%27none%27 stroke-linecap=%27round%27/%3E%3C/svg%3E');background-repeat:no-repeat;background-position:right 8px center">
+        <option value="all">All Years</option>
+        <option value="2024">2024</option>
+        <option value="2025">2025</option>
+        <option value="2026">2026</option>
+      </select>
+      <span style="font-size:.7rem;color:var(--muted)">Filter attrition table & charts by year</span>
+    </div>
     <div class="formula-box">
       <div class="fml"><div class="fml-title">OHC (Opening HC)</div><div class="fml-eq">Employees where<br>StartDate <span>&lt;</span> 1st of month<br><span>AND (Active OR TermDate ≥ 1st)</span></div></div>
       <div class="fml"><div class="fml-title">CHC (Closing HC)</div><div class="fml-eq">Employees where<br>StartDate <span>≤</span> last of month<br><span>AND (Active OR TermDate &gt; last)</span></div></div>
@@ -770,21 +780,31 @@ function computeAttrition(empData){
 // ── PROCESS ORG OVERVIEW ──────────────────────────────────────
 function processOrgOverview(values){
   if(!values||values.length<6)return[];
-  const result=[];
-  for(let i=5;i<values.length;i++){
-    const r=values[i];
-    if(!r[0]||typeof r[1]!=='number')continue;
-    const raw=r[0];
-    let label='';
-    if(typeof raw==='string'&&raw.length>=7){
-      const [yr,mo]=raw.slice(0,7).split('-');
-      const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-      if(yr&&mo)label=months[parseInt(mo)-1]+' '+yr;
-    }
-    if(!label)continue;
-    const n=j=>typeof r[j]==='number'?r[j]:0;
-    result.push({month:label,us_ee:Math.round(n(1)),india_ee:Math.round(n(2)),us_con:Math.round(n(3)),india_con:Math.round(n(4)),total:Math.round(n(1)+n(2)+n(3)+n(4))});
+  // Find header row (contains 'Month')
+  let dataStart=5;
+  for(let i=0;i<values.length;i++){
+    if(values[i]&&String(values[i][0]||'').toLowerCase().includes('month')){dataStart=i+1;break;}
   }
+  const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const result=[];
+  for(let i=dataStart;i<values.length;i++){
+    const r=values[i];
+    if(!r||!r[0])continue;
+    // Parse date — could be serial number, ISO string, or datetime string
+    const d=parseEmpDate(r[0]);
+    if(!d)continue;
+    if(typeof r[1]!=='number'&&typeof r[2]!=='number')continue;
+    const label=`${MON[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+    const n=j=>(typeof r[j]==='number'?r[j]:0);
+    result.push({
+      month:label,
+      us_ee:Math.round(n(1)),india_ee:Math.round(n(2)),
+      us_con:Math.round(n(3)),india_con:Math.round(n(4)),
+      total:Math.round(n(1)+n(2)+n(3)+n(4)),
+    });
+  }
+  console.log(`✅ Org Overview: ${result.length} months loaded`);
+  if(result.length>0)console.log('  First:',result[0],'Last:',result[result.length-1]);
   return result;
 }
 
@@ -902,11 +922,11 @@ function applyFilter(){
   const squad=document.getElementById('f-squad').value;
   const status=document.getElementById('f-status').value;
   filtered=EMP_DATA.filter(d=>{
-    if(status==='active'&&d.ActiveFlag!==1)return false;
-    if(status==='inactive'&&d.ActiveFlag!==0)return false;
+    if(status==='active'   &&d.Status!=='Active'   &&d.ActiveFlag!==1)return false;
+    if(status==='inactive' &&d.Status!=='Inactive' &&d.ActiveFlag!==0)return false;
     if(country!=='all'&&d.Country!==country)return false;
-    if(city!=='all'&&d.City!==city)return false;
-    if(squad!=='all'&&d.Squad!==squad)return false;
+    if(city   !=='all'&&d.City   !==city)   return false;
+    if(squad  !=='all'&&d.Squad  !==squad)  return false;
     return true;
   });
   document.getElementById('f-info').textContent=filtered.length+' employee'+(filtered.length!==1?'s':'')+' in view';
@@ -935,7 +955,10 @@ function render(){
     if(fSquad  !=='all'&&d.Squad  !==fSquad)  return false;
     return true; // includes both Active and Inactive
   });
-  const A=computeAttrition(attrPool);
+  const A_full=computeAttrition(attrPool);
+  // Apply year filter
+  const selYear=document.getElementById('f-attr-year')?.value||'all';
+  const A=selYear==='all'?A_full:A_full.filter(r=>r.month.endsWith(selYear));
   console.log(`📊 Attrition pool: ${attrPool.length} (${attrPool.filter(d=>d.ActiveFlag===1).length} active + ${attrPool.filter(d=>d.ActiveFlag===0).length} inactive)`);
   console.log(`📊 Attrition months computed: ${A.length}, exits sample:`, A.slice(0,3).map(r=>r.month+' exits='+r.exits));
   const india=active.filter(d=>d.Country==='India');
@@ -1173,13 +1196,15 @@ function render(){
     const totJo=A.reduce((s,d)=>s+d.joins,0);
     const peak=A.reduce((m,d)=>d.monthly_pct>m.monthly_pct?d:m,A[0]);
     const labels=A.map(d=>d.month);
-    document.getElementById('inf-attr2').innerHTML=`<strong>Monthly formula:</strong> Exits÷((OHC+CHC)÷2)×100. Peak <strong>${peak.monthly_pct.toFixed(2)}%</strong> in ${peak.month}. Annualised: ${A[0].ann_pct.toFixed(1)}% → ${A[A.length-1].ann_pct.toFixed(1)}%.`;
+    document.getElementById('inf-attr2').innerHTML=`<strong>${selYear==='all'?'All years':'Year: '+selYear} · Monthly formula:</strong> Exits÷((OHC+CHC)÷2)×100. Peak <strong>${peak.monthly_pct.toFixed(2)}%</strong> in ${peak.month}. Annualised: ${A[0].ann_pct.toFixed(1)}% → ${A[A.length-1].ann_pct.toFixed(1)}%.`;
     mkChart('ch-attr','line',{labels,datasets:[
       {label:'Monthly Attrition %',data:A.map(d=>d.monthly_pct),borderColor:'#dc2626',backgroundColor:'rgba(220,38,38,.08)',fill:true,tension:.3,borderWidth:2.5,pointRadius:5,pointBackgroundColor:'#dc2626'},
       {label:'Annualised %',data:A.map(d=>d.ann_pct),borderColor:'#d97706',fill:false,tension:.3,borderWidth:2,borderDash:[6,3],pointRadius:3},
     ]},{scales:{y:{beginAtZero:true,ticks:{callback:v=>v.toFixed(1)+'%',font:{family:'Fira Code',size:10}}}}});
     document.getElementById('inf-je').innerHTML=`<strong>Net flow:</strong> ${totJo>totEx?`+${totJo-totEx} net joins.`:`-${totEx-totJo} net exits.`}`;
     mkChart('ch-je','bar',{labels,datasets:[{label:'Joins',data:A.map(d=>d.joins),backgroundColor:'rgba(22,163,74,.8)',borderRadius:5},{label:'Exits',data:A.map(d=>d.exits),backgroundColor:'rgba(220,38,38,.8)',borderRadius:5}]});
+    const nowInt = new Date().getUTCFullYear()*10000+(new Date().getUTCMonth()+1)*100+new Date().getUTCDate();
+    const curMonthInt = new Date().getUTCFullYear()*10000+(new Date().getUTCMonth()+1)*100+1;
     document.getElementById('ohc-tbl').innerHTML=`<thead><tr>
       <th style="text-align:left">Month</th>
       <th>OHC</th><th>Joins</th>
@@ -1191,19 +1216,27 @@ function render(){
       <th>Monthly %</th>
       <th>YTD Exits</th><th>YTD AvgHC</th>
       <th>Annualised %</th>
-    </tr></thead><tbody>${A.map(r=>`<tr>
-      <td><strong>${r.month}</strong></td>
-      <td>${r.ohc}</td>
-      <td class="td-green">+${r.joins}</td>
-      <td class="${r.exits>0?'td-red':''}">${r.exits>0?'-'+r.exits:'—'}</td>
-      <td style="color:var(--green);font-weight:600;text-align:center">${r.vol||'—'}</td>
-      <td style="color:var(--red);font-weight:600;text-align:center">${r.invol||'—'}</td>
-      <td>${r.chc}</td>
-      <td><strong>${r.avg_hc}</strong></td>
-      <td class="${r.monthly_pct>2?'td-red':r.monthly_pct>1?'td-amber':'td-green'}">${r.monthly_pct.toFixed(2)}%</td>
-      <td>${r.ytd_exits}</td><td>${r.ytd_avg_hc}</td>
-      <td class="td-red">${r.ann_pct.toFixed(2)}%</td>
-    </tr>`).join('')}</tbody>`;
+    </tr></thead><tbody>${A.map(r=>{
+      // Detect if this is the current partial month
+      const rInt = parseInt(r.month.replace(/[^0-9]/g,'').slice(0,4))*10000 +
+        (['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].indexOf(r.month.slice(0,3))+1)*100+1;
+      const isCurrentMonth = rInt === curMonthInt;
+      const partialTag = isCurrentMonth ? `<span style="font-size:.58rem;color:var(--amber);font-weight:600;margin-left:4px">⚡ partial</span>` : '';
+      return `<tr style="${isCurrentMonth?'background:rgba(217,119,6,.04)':''}">
+        <td><strong>${r.month}</strong>${partialTag}</td>
+        <td>${r.ohc}</td>
+        <td class="td-green">+${r.joins}</td>
+        <td class="${r.exits>0?'td-red':''}">${r.exits>0?'-'+r.exits:'—'}</td>
+        <td style="color:var(--green);font-weight:600;text-align:center">${r.vol||'—'}</td>
+        <td style="color:var(--red);font-weight:600;text-align:center">${r.invol||'—'}</td>
+        <td>${r.chc}</td>
+        <td><strong>${r.avg_hc}</strong></td>
+        <td class="${r.monthly_pct>2?'td-red':r.monthly_pct>1?'td-amber':r.exits===0&&isCurrentMonth?'':'td-green'}">${r.monthly_pct.toFixed(2)}%${isCurrentMonth?' *':''}</td>
+        <td>${r.ytd_exits}</td><td>${r.ytd_avg_hc}</td>
+        <td class="${r.ann_pct>20?'td-red':r.ann_pct>12?'td-amber':'td-green'}">${r.ann_pct.toFixed(2)}%</td>
+      </tr>`;
+    }).join('')}</tbody>
+    <tfoot><tr><td colspan="12" style="padding:6px 10px;font-size:.64rem;color:var(--muted);font-style:italic">* Current month is partial — exits after today (${new Date().toISOString().slice(0,10)}) not yet in data. Update masterfile to reflect latest exits.</td></tr></tfoot>`;
   } else {
     // No Calc Sheet — show message in those sections
     document.getElementById('inf-attr2').innerHTML=`<strong>OHC/CHC monthly table:</strong> Not available — this file only has the Emp Master sheet. To enable this section, add a "Calculation Sheet" tab to your SharePoint Excel with monthly OHC, CHC, joins and exits data.`;
