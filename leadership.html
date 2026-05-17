@@ -779,21 +779,39 @@ function computeAttrition(empData){
 
 // ── PROCESS ORG OVERVIEW ──────────────────────────────────────
 function processOrgOverview(values){
-  if(!values||values.length<6)return[];
-  // Find header row (contains 'Month')
+  if(!values||values.length<4)return[];
+  // Find header row
   let dataStart=5;
   for(let i=0;i<values.length;i++){
     if(values[i]&&String(values[i][0]||'').toLowerCase().includes('month')){dataStart=i+1;break;}
   }
   const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const now=new Date();
+  const curInt=now.getUTCFullYear()*10000+(now.getUTCMonth()+1)*100+1;
+
+  const seen=new Set(); // deduplicate by YYYYMM key
   const result=[];
+
   for(let i=dataStart;i<values.length;i++){
     const r=values[i];
     if(!r||!r[0])continue;
-    // Parse date — could be serial number, ISO string, or datetime string
     const d=parseEmpDate(r[0]);
     if(!d)continue;
-    if(typeof r[1]!=='number'&&typeof r[2]!=='number')continue;
+
+    // Cap at current month
+    const rowInt=d.getUTCFullYear()*10000+(d.getUTCMonth()+1)*100+1;
+    if(rowInt>curInt)continue;
+
+    // Validate: US_EE and India_EE must be real headcount numbers (>5)
+    const usEE=r[1],indEE=r[2];
+    if(typeof usEE!=='number'||typeof indEE!=='number')continue;
+    if(usEE<5&&indEE<5)continue; // skip attrition rows (values like 1,3)
+
+    // Deduplicate — keep first occurrence of each month
+    const key=`${d.getUTCFullYear()}-${d.getUTCMonth()}`;
+    if(seen.has(key))continue;
+    seen.add(key);
+
     const label=`${MON[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
     const n=j=>(typeof r[j]==='number'?r[j]:0);
     result.push({
@@ -803,8 +821,7 @@ function processOrgOverview(values){
       total:Math.round(n(1)+n(2)+n(3)+n(4)),
     });
   }
-  console.log(`✅ Org Overview: ${result.length} months loaded`);
-  if(result.length>0)console.log('  First:',result[0],'Last:',result[result.length-1]);
+  console.log(`✅ Org Overview: ${result.length} months | ${result[0]?.month} → ${result[result.length-1]?.month}`);
   return result;
 }
 
@@ -1005,12 +1022,18 @@ function render(){
     document.getElementById('inf-trend2').innerHTML=`<strong>Latest (${lr.month}):</strong> US EEs <strong>${lr.us_ee}</strong> · India EEs <strong>${lr.india_ee}</strong> · US Consultants <strong>${lr.us_con}</strong> · India Consultants <strong>${lr.india_con}</strong>.`;
     document.getElementById('inf-us').innerHTML=`<strong>US peak:</strong> ${Math.max(...T.map(d=>d.us_ee+d.us_con))} total.`;
     document.getElementById('inf-india').innerHTML=`<strong>India peak:</strong> ${Math.max(...T.map(d=>d.india_ee+d.india_con))} total.`;
-    mkChart('ch-trend','line',{labels,datasets:[
-      {label:'India EEs',data:T.map(d=>d.india_ee),borderColor:'#0ea5e9',backgroundColor:'rgba(14,165,233,.08)',fill:true,tension:.3,borderWidth:2.5,pointRadius:3},
-      {label:'US EEs',data:T.map(d=>d.us_ee),borderColor:'#7c3aed',backgroundColor:'rgba(124,58,237,.06)',fill:true,tension:.3,borderWidth:2.5,pointRadius:3},
-      {label:'US Consultants',data:T.map(d=>d.us_con),borderColor:'#e8541a',backgroundColor:'rgba(232,84,26,.04)',fill:true,tension:.3,borderWidth:2,pointRadius:3,borderDash:[5,3]},
-      {label:'India Consultants',data:T.map(d=>d.india_con),borderColor:'#16a34a',backgroundColor:'rgba(22,163,74,.04)',fill:true,tension:.3,borderWidth:2,pointRadius:3,borderDash:[5,3]},
-    ]},{scales:{y:{beginAtZero:false,ticks:{font:{family:'Fira Code',size:10}}}}});
+    mkChart('ch-trend','bar',{labels,datasets:[
+      {label:'India EEs',   data:T.map(d=>d.india_ee), backgroundColor:'rgba(14,165,233,.85)',  borderRadius:3},
+      {label:'US EEs',      data:T.map(d=>d.us_ee),    backgroundColor:'rgba(124,58,237,.85)',  borderRadius:3},
+      {label:'US Consult.', data:T.map(d=>d.us_con),   backgroundColor:'rgba(232,84,26,.7)',    borderRadius:3},
+      {label:'India Consult.',data:T.map(d=>d.india_con),backgroundColor:'rgba(22,163,74,.7)', borderRadius:3},
+    ]},{
+      scales:{
+        y:{beginAtZero:true,stacked:false,ticks:{font:{family:'Fira Code',size:10}},grid:{color:'#f0ede8'}},
+        x:{ticks:{font:{family:'Outfit',size:9},maxRotation:45},grid:{display:false}}
+      },
+      plugins:{legend:{position:'bottom',labels:{font:{family:'Outfit',size:11},boxWidth:10,padding:8}}}
+    });
     mkChart('ch-us','bar',{labels,datasets:[{label:'US EEs',data:T.map(d=>d.us_ee),backgroundColor:'rgba(124,58,237,.8)',borderRadius:4},{label:'US Consultants',data:T.map(d=>d.us_con),backgroundColor:'rgba(232,84,26,.8)',borderRadius:4}]},{scales:{y:{stacked:true},x:{stacked:true}}});
     mkChart('ch-india','bar',{labels,datasets:[{label:'India EEs',data:T.map(d=>d.india_ee),backgroundColor:'rgba(14,165,233,.8)',borderRadius:4},{label:'India Consultants',data:T.map(d=>d.india_con),backgroundColor:'rgba(22,163,74,.8)',borderRadius:4}]},{scales:{y:{stacked:true},x:{stacked:true}}});
   }
@@ -1081,10 +1104,15 @@ function render(){
     d.Status==='Inactive' || d.ActiveFlag===0
   );
 
+  // Filter attrInactive by selected year if needed
+  const attrInactiveYr = selYear==='all' ? attrInactive : attrInactive.filter(d=>{
+    const ts=d['Termination Date Str'];
+    return ts&&ts.startsWith(selYear);
+  });
+
   // ── Year-wise exits ────────────────────────────────────────
   const exitYrMap={};
-  attrInactive.forEach(d=>{
-    // Use pre-parsed YYYY-MM-DD string — always works regardless of Graph API format
+  attrInactive.forEach(d=>{ // always use full attrInactive for year-wise bar chart
     const termStr = d['Termination Date Str'];
     const typ = d['Termination Type']||'Unknown';
     if(!termStr||!/^\d{4}/.test(termStr))return;
@@ -1100,25 +1128,37 @@ function render(){
     termStr: d['Termination Date Str'],
     termType: d['Termination Type'],
   })));
+
   const exitYrs=Object.keys(exitYrMap).sort();
+
+  // KPIs — use year-filtered attrInactiveYr
+  const totalInactiveYr = attrInactiveYr.length;
+  const volCountYr = attrInactiveYr.filter(d=>d['Termination Type']==='Voluntary').length;
+  const volPct = totalInactiveYr ? Math.round(volCountYr/totalInactiveYr*100) : 0;
+
+  // 2026 exits (always from full pool for the banner)
   const exits2026=exitYrMap['2026']||{Voluntary:0,Involuntary:0,Unknown:0};
   const total2026=exits2026.Voluntary+exits2026.Involuntary+exits2026.Unknown;
-  const moSoFar=new Date().getMonth()+1; // months elapsed in 2026
+  const moSoFar=new Date().getMonth()+1;
   const proj2026=moSoFar>0?Math.round(total2026/moSoFar*12):0;
-  const totalInactive=attrInactive.length;
-  const volCount=attrInactive.filter(d=>d['Termination Type']==='Voluntary').length;
-  const volPct=totalInactive?Math.round(volCount/totalInactive*100):0;
 
-  // KPI cards — computed from filtered data
+  // Year label for KPIs
+  const yrLabel = selYear==='all'?'All time':selYear;
+  const exitsYrTotal = selYear==='all'
+    ? exitYrs.reduce((s,y)=>s+Object.values(exitYrMap[y]).reduce((a,b)=>a+b,0),0)
+    : (exitYrMap[selYear]?Object.values(exitYrMap[selYear]).reduce((a,b)=>a+b,0):0);
+
+  // Last annualised from filtered A
   const lastAnn=A.length?A[A.length-1].ann_pct:null;
   const lastMonth=A.length?A[A.length-1].month:'';
-  document.getElementById('inf-attr').innerHTML=`<strong>⚠ Exit Trend:</strong> ${exitYrs.map(y=>`<strong>${y}: ${Object.values(exitYrMap[y]).reduce((s,v)=>s+v,0)}</strong>`).join(' → ')} exits. 2026 already <strong>${total2026}</strong> in ${moSoFar} months → projected <strong>~${proj2026}/year</strong>. ${proj2026>40?'🚨 Highest ever — immediate retention action needed.':'⚠ Monitor closely.'} <strong>${volPct}% voluntary</strong> — people are choosing to leave.`;
+
+  document.getElementById('inf-attr').innerHTML=`<strong>⚠ Exit Trend:</strong> ${exitYrs.map(y=>`<strong>${y}: ${Object.values(exitYrMap[y]).reduce((s,v)=>s+v,0)}</strong>`).join(' → ')} exits. 2026 already <strong>${total2026}</strong> in ${moSoFar} months → projected <strong>~${proj2026}/year</strong>. ${proj2026>40?'🚨 Highest ever — immediate retention action needed.':'⚠ Monitor closely.'} <strong>${volPct}% voluntary</strong> (${yrLabel}).`;
 
   document.getElementById('attr-kpis').innerHTML=`
-    <div class="attr-kpi"><div class="ak-lbl">Total Inactive</div><div class="ak-val">${totalInactive}</div><div class="ak-sub">all exits on record</div></div>
+    <div class="attr-kpi"><div class="ak-lbl">Exits · ${yrLabel}</div><div class="ak-val">${totalInactiveYr}</div><div class="ak-sub">${selYear==='all'?'all years':'in '+selYear+' only'}</div></div>
     <div class="attr-kpi a"><div class="ak-lbl">2026 Exits (so far)</div><div class="ak-val">${total2026}</div><div class="ak-sub">~${proj2026} projected/yr 🔴</div></div>
-    <div class="attr-kpi r"><div class="ak-lbl">Voluntary %</div><div class="ak-val">${volPct}%</div><div class="ak-sub">${volCount} of ${totalInactive} exits</div></div>
-    <div class="attr-kpi"><div class="ak-lbl">Annualised Attrition</div><div class="ak-val" style="color:var(--red)">${lastAnn?lastAnn.toFixed(1)+'%':'—'}</div><div class="ak-sub">${lastMonth?'as of '+lastMonth:'computed from dates'}</div></div>
+    <div class="attr-kpi r"><div class="ak-lbl">Voluntary % · ${yrLabel}</div><div class="ak-val">${volPct}%</div><div class="ak-sub">${volCountYr} of ${totalInactiveYr} exits</div></div>
+    <div class="attr-kpi"><div class="ak-lbl">Annualised Attrition</div><div class="ak-val" style="color:var(--red)">${lastAnn?lastAnn.toFixed(1)+'%':'—'}</div><div class="ak-sub">${lastMonth?'as of '+lastMonth:'—'}</div></div>
   `;
 
   // Year-wise exits chart
@@ -1153,21 +1193,21 @@ function render(){
     ]
   },{scales:{y:{stacked:true,beginAtZero:true,ticks:{font:{family:'Fira Code',size:10}}},x:{stacked:true}}});
 
-  // Termination type donut
+  // Termination type donut — year filtered
   const termMap={};
-  attrInactive.forEach(d=>{if(d['Termination Type']){const t=d['Termination Type'];termMap[t]=(termMap[t]||0)+1;}});
-  document.getElementById('inf-tt').innerHTML=`<strong>Voluntary = ${volPct}% of exits.</strong> People are choosing to leave — focus on growth path, recognition, manager quality, compensation.`;
+  attrInactiveYr.forEach(d=>{if(d['Termination Type']){const t=d['Termination Type'];termMap[t]=(termMap[t]||0)+1;}});
+  document.getElementById('inf-tt').innerHTML=`<strong>${yrLabel} · Voluntary = ${volPct}% of exits.</strong> People are choosing to leave — focus on growth path, recognition, manager quality, compensation.`;
   mkChart('ch-tt','doughnut',{
     labels:Object.keys(termMap).length?Object.keys(termMap):['No data'],
     datasets:[{data:Object.keys(termMap).length?Object.values(termMap):[1],backgroundColor:['#dc2626','#d97706','#94a3b8'],borderWidth:3,borderColor:'#fff'}]
   });
 
-  // ── Voluntary exit reasons ──────────────────────────────────
-  const volEmps=attrInactive.filter(d=>d['Termination Type']==='Voluntary');
+  // ── Voluntary exit reasons — year filtered ──────────────────
+  const volEmps=attrInactiveYr.filter(d=>d['Termination Type']==='Voluntary');
   const volReasons={};
   volEmps.forEach(d=>{const r=d['Reason of Termination']||'Not Stated';volReasons[r]=(volReasons[r]||0)+1;});
   const maxVR=Math.max(...Object.values(volReasons),1);
-  document.getElementById('vol-total-badge').textContent=volEmps.length+' exits';
+  document.getElementById('vol-total-badge').textContent=volEmps.length+' exits · '+yrLabel;
   document.getElementById('vol-reasons').innerHTML=Object.entries(volReasons).sort((a,b)=>b[1]-a[1])
     .map(([r,n])=>`<div class="brow">
       <div class="blbl">${r}</div>
@@ -1176,12 +1216,12 @@ function render(){
     </div>`).join('')
     ||'<div style="font-size:.76rem;color:var(--muted)">No voluntary exits recorded.</div>';
 
-  // ── Involuntary exit reasons ────────────────────────────────
-  const involEmps=attrInactive.filter(d=>d['Termination Type']==='Involuntary');
+  // ── Involuntary exit reasons — year filtered ────────────────
+  const involEmps=attrInactiveYr.filter(d=>d['Termination Type']==='Involuntary');
   const involReasons={};
   involEmps.forEach(d=>{const r=d['Reason of Termination']||'Not Stated';involReasons[r]=(involReasons[r]||0)+1;});
   const maxIR=Math.max(...Object.values(involReasons),1);
-  document.getElementById('invol-total-badge').textContent=involEmps.length+' exits';
+  document.getElementById('invol-total-badge').textContent=involEmps.length+' exits · '+yrLabel;
   document.getElementById('invol-reasons').innerHTML=Object.entries(involReasons).sort((a,b)=>b[1]-a[1])
     .map(([r,n])=>`<div class="brow">
       <div class="blbl">${r}</div>
