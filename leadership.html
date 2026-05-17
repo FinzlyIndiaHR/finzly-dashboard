@@ -583,13 +583,21 @@ function processEmpMaster(values){
       'Performance Rating 2025': gn(I.perf25),
     });
   }
-  const active=data.filter(d=>d.ActiveFlag===1).length;
-  const inactive=data.filter(d=>d.ActiveFlag===0).length;
-  const untagged=data.filter(d=>d.ActiveFlag===null).length;
-  console.log(`✅ ${data.length} total | ${active} Active | ${inactive} Inactive | ${untagged} untagged`);
-  // Log sample start years to verify
-  const sampleYears=data.filter(d=>d.ActiveFlag===1).slice(0,5).map(d=>d['Start Year']);
-  console.log('📅 Sample Start Years (active):', sampleYears);
+  const activeCount =data.filter(d=>d.Status==='Active').length;
+  const inactiveCount=data.filter(d=>d.Status==='Inactive').length;
+  console.log(`✅ ${data.length} total | ${activeCount} Active | ${inactiveCount} Inactive`);
+
+  // CRITICAL DEBUG — show exactly what Graph API sends for Termination Date
+  const inactSample=data.filter(d=>d.Status==='Inactive').slice(0,5);
+  console.log('🔍 RAW Term Dates from Graph API:',
+    inactSample.map(d=>({
+      name:    d['First Name'],
+      rawTerm: d['Termination Date'],         // exact value from Graph API
+      type:    typeof d['Termination Date'],   // "number", "string", or "object"
+      termStr: d['Termination Date Str'],      // our parsed YYYY-MM-DD
+      termType:d['Termination Type'],
+    }))
+  );
   return data;
 }
 
@@ -606,22 +614,57 @@ function processEmpMaster(values){
 // Annualised = (YTD Exits / YTD Avg HC) * (12 / months elapsed) * 100
 
 // Parse dates from Graph API — Excel dates return as numeric serial OR ISO string
-// ── DATE HELPERS — fully timezone-safe ───────────────────────
+// ── PARSE ANY DATE FORMAT FROM GRAPH API ─────────────────────
 function parseEmpDate(v){
-  if(v===null||v===undefined||v===''||v===0)return null;
-  // Number: Excel serial from Graph API (e.g. 45454)
+  if(v===null||v===undefined||v===''||v===0||v===false)return null;
+
+  // 1. Excel serial number (most common from Graph API usedRange)
   if(typeof v==='number'){
     if(v>40000&&v<110000)return new Date(Date.UTC(0,0,Math.round(v-25568)));
     return null;
   }
+
   const s=String(v).trim();
-  if(!s||s==='null'||s==='0')return null;
-  // ISO string: "2024-06-12T00:00:00" or "2024-06-12"
-  const m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(!s||s==='null'||s==='0'||s==='undefined'||s==='false')return null;
+
+  // 2. ISO: "2024-06-12" or "2024-06-12T00:00:00" or "2024-06-12T00:00:00Z"
+  let m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if(m)return new Date(Date.UTC(+m[1],+m[2]-1,+m[3]));
-  // Serial as string "45454" or "45454.0"
+
+  // 3. Serial as string "45454" or "45454.0"
   const n=parseFloat(s);
   if(!isNaN(n)&&n>40000&&n<110000)return new Date(Date.UTC(0,0,Math.round(n-25568)));
+
+  // 4. DD/MM/YYYY or MM/DD/YYYY (e.g. "12/06/2024")
+  m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if(m){
+    // Assume DD/MM/YYYY (India format)
+    return new Date(Date.UTC(+m[3],+m[2]-1,+m[1]));
+  }
+
+  // 5. DD-MM-YYYY or DD-Mon-YYYY (e.g. "12-Jun-2024" or "12-06-2024")
+  m=s.match(/^(\d{1,2})[\/\-](\w+)[\/\-](\d{4})$/);
+  if(m){
+    const months={jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+    const moStr=m[2].toLowerCase();
+    const moNum=months[moStr.slice(0,3)];
+    if(moNum!==undefined)return new Date(Date.UTC(+m[3],moNum,+m[1]));
+    // numeric DD-MM-YYYY
+    return new Date(Date.UTC(+m[3],+m[2]-1,+m[1]));
+  }
+
+  // 6. "Jun 12, 2024" or "June 12, 2024"
+  m=s.match(/^(\w+)\s+(\d{1,2}),?\s+(\d{4})$/);
+  if(m){
+    const d=new Date(s+' UTC');
+    if(!isNaN(d))return d;
+  }
+
+  // 7. Try native Date parse as last resort
+  const d=new Date(s+' UTC');
+  if(!isNaN(d.getTime())&&d.getUTCFullYear()>2000)return d;
+
+  console.warn('⚠ Could not parse date:', JSON.stringify(v));
   return null;
 }
 
@@ -643,52 +686,72 @@ function dateStr(v){
 // Monthly% = Exits / ((OHC+CHC)/2) * 100
 // Annualised = (YTD Exits / YTD AvgHC) * (12/months) * 100
 function computeAttrition(empData){
-  const emp=empData.map(d=>({
-    ...d,
-    _start: parseEmpDate(d['Start Date']),
-    _term:  parseEmpDate(d['Termination Date']),
-    _type:  String(d['Termination Type']||'').trim(),
-    _reason:String(d['Reason of Termination']||'').trim(),
-  })).filter(d=>d._start);
+  const emp=empData.map(d=>{
+    // Use pre-parsed Termination Date Str first (YYYY-MM-DD), fall back to raw
+    const termStr = d['Termination Date Str'] || dateStr(d['Termination Date']);
+    const startStr= dateStr(d['Start Date']);
+
+    // Parse from YYYY-MM-DD string — guaranteed UTC, no timezone issues
+    const parseStr=s=>{
+      if(!s)return null;
+      const m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      return m?new Date(Date.UTC(+m[1],+m[2]-1,+m[3])):null;
+    };
+
+    return{
+      ...d,
+      _start: parseStr(startStr),
+      _term:  parseStr(termStr),
+      _termStr: termStr,  // keep for debug
+      _type:  String(d['Termination Type']||'').trim(),
+      _reason:String(d['Reason of Termination']||'').trim(),
+    };
+  }).filter(d=>d._start);
 
   const withTerm=emp.filter(e=>e._term);
-  console.log(`🗓 ${emp.length} with start | ${withTerm.length} with term | sample:`,
-    withTerm.slice(0,3).map(e=>e['First Name']+':di='+di(e._term)));
+  console.log(`🗓 computeAttrition: ${empData.length} input | ${emp.length} with start | ${withTerm.length} with term`);
 
-  // Generate months Jan 2024 → current month (UTC)
+  // Show first 5 inactive to debug term dates
+  const sampleInactive=emp.filter(e=>e.Status==='Inactive').slice(0,5);
+  console.log('🔍 Sample inactive:', sampleInactive.map(e=>({
+    name: e['First Name'],
+    rawTerm: e['Termination Date'],
+    termStr: e._termStr,
+    parsed: e._term ? di(e._term) : 'NULL ❌',
+  })));
+
+  // Generate months Jan 2024 → current (UTC)
   const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const months=[];
   let cur=new Date(Date.UTC(2024,0,1));
   const now=new Date();
-  const end=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),1));
-  while(cur<=end){months.push(new Date(cur));cur=new Date(Date.UTC(cur.getUTCFullYear(),cur.getUTCMonth()+1,1));}
+  const endM=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),1));
+  while(cur<=endM){months.push(new Date(cur));cur=new Date(Date.UTC(cur.getUTCFullYear(),cur.getUTCMonth()+1,1));}
 
   let ytdEx=0,ytdAvgSum=0,elapsed=0,prevYr=null;
 
   return months.map(ms=>{
     const yr=ms.getUTCFullYear(),mo=ms.getUTCMonth();
     const lastDay=new Date(Date.UTC(yr,mo+1,0)).getUTCDate();
-    // YYYYMMDD integers — completely timezone-safe
     const firstInt=yr*10000+(mo+1)*100+1;
     const lastInt =yr*10000+(mo+1)*100+lastDay;
 
     if(prevYr!==yr){ytdEx=0;ytdAvgSum=0;elapsed=0;prevYr=yr;}
 
     const ohc=emp.filter(e=>{
-      if(di(e._start)>=firstInt)return false;
+      const s=di(e._start); if(s>=firstInt)return false;
       if(e.Status==='Active')return true;
       return e._term?di(e._term)>=firstInt:false;
     }).length;
 
     const chc=emp.filter(e=>{
-      if(di(e._start)>lastInt)return false;
+      const s=di(e._start); if(s>lastInt)return false;
       if(e.Status==='Active')return true;
       return e._term?di(e._term)>lastInt:false;
     }).length;
 
     const joins=emp.filter(e=>{const s=di(e._start);return s>=firstInt&&s<=lastInt;}).length;
 
-    // All exits this month (inclusive of last day — YYYYMMDD fixes timezone)
     const exitEmp=emp.filter(e=>{
       if(!e._term)return false;
       const t=di(e._term);
@@ -698,10 +761,7 @@ function computeAttrition(empData){
     const vol  =exitEmp.filter(e=>e._type==='Voluntary').length;
     const invol=exitEmp.filter(e=>e._type==='Involuntary').length;
     const unk  =exits-vol-invol;
-    // Reasons for involuntary exits this month
-    const involReasons=exitEmp
-      .filter(e=>e._type==='Involuntary'&&e._reason)
-      .map(e=>e._reason);
+    const involReasons=exitEmp.filter(e=>e._type==='Involuntary'&&e._reason).map(e=>e._reason);
 
     const avgHC=Math.round((ohc+chc)/2*10)/10;
     const monthly=avgHC>0?Math.round(exits/avgHC*10000)/100:0;
@@ -711,13 +771,8 @@ function computeAttrition(empData){
     const ytdPct=ytdAvg>0?Math.round(ytdEx/ytdAvg*10000)/100:0;
     const annPct=Math.round(ytdPct*(12/elapsed)*100)/100;
 
-    return{
-      month:`${MON[mo]} ${yr}`,
-      ohc,chc,joins,exits,vol,invol,unk,involReasons,
-      avg_hc:avgHC,monthly_pct:monthly,
-      ytd_exits:ytdEx,ytd_avg_hc:ytdAvg,
-      elapsed,ann_pct:annPct,
-    };
+    return{month:`${MON[mo]} ${yr}`,ohc,chc,joins,exits,vol,invol,unk,involReasons,
+      avg_hc:avgHC,monthly_pct:monthly,ytd_exits:ytdEx,ytd_avg_hc:ytdAvg,elapsed,ann_pct:annPct};
   }).filter(r=>r.ohc>0||r.chc>0);
 }
 
@@ -842,7 +897,7 @@ function toggleSquad(hdr){
 }
 
 function populateFilters(){
-  const active=EMP_DATA.filter(d=>d.ActiveFlag===1);
+  const active=EMP_DATA.filter(d=>d.Status==='Active'||d.ActiveFlag===1);
   const cities=[...new Set(active.map(d=>d.City).filter(Boolean))].sort();
   const squads=[...new Set(active.map(d=>d.Squad).filter(Boolean))].sort();
   const cEl=document.getElementById('f-city'),sEl=document.getElementById('f-squad');
@@ -875,8 +930,8 @@ function resetFilters(){
 // ── RENDER ────────────────────────────────────────────────────
 function render(){
   const D=filtered;
-  const active=D.filter(d=>d.ActiveFlag===1);
-  const inactive=D.filter(d=>d.ActiveFlag===0);
+  const active  = D.filter(d=> d.Status==='Active'   || d.ActiveFlag===1);
+  const inactive= D.filter(d=> d.Status==='Inactive' || d.ActiveFlag===0);
 
   // For attrition: ALWAYS include both active + inactive
   // Apply country/city/squad filters but IGNORE status filter
@@ -1008,21 +1063,30 @@ function render(){
 
   // P4 ATTRITION — computed from filtered data (A already set at top of render)
   // Use attrPool inactive for all exit-based charts (not filtered by status)
-  const attrInactive=attrPool.filter(d=>d.ActiveFlag===0);
+  // attrInactive: use Status text (reliable) not ActiveFlag (may be null)
+  const attrInactive=attrPool.filter(d=>
+    d.Status==='Inactive' || d.ActiveFlag===0
+  );
 
   // ── Year-wise exits ────────────────────────────────────────
   const exitYrMap={};
   attrInactive.forEach(d=>{
-    const termD=parseEmpDate(d['Termination Date']);
-    if(!termD)return;
-    const yr=String(termD.getUTCFullYear()); // UTC year — no timezone shift
-    const typ=d['Termination Type']||'Unknown';
+    // Use pre-parsed YYYY-MM-DD string — always works regardless of Graph API format
+    const termStr = d['Termination Date Str'];
+    const typ = d['Termination Type']||'Unknown';
+    if(!termStr||!/^\d{4}/.test(termStr))return;
+    const yr = termStr.slice(0,4);
     if(parseInt(yr)>=2019){
       if(!exitYrMap[yr])exitYrMap[yr]={Voluntary:0,Involuntary:0,Unknown:0};
       exitYrMap[yr][typ==='Voluntary'?'Voluntary':typ==='Involuntary'?'Involuntary':'Unknown']++;
     }
   });
   console.log('📅 Exits by year:', JSON.stringify(exitYrMap));
+  console.log('📅 attrInactive sample:', attrInactive.slice(0,3).map(d=>({
+    name: d['First Name'],
+    termStr: d['Termination Date Str'],
+    termType: d['Termination Type'],
+  })));
   const exitYrs=Object.keys(exitYrMap).sort();
   const exits2026=exitYrMap['2026']||{Voluntary:0,Involuntary:0,Unknown:0};
   const total2026=exits2026.Voluntary+exits2026.Involuntary+exits2026.Unknown;
@@ -1221,8 +1285,8 @@ function render(){
   const lastAnnNum=A.length?+A[A.length-1].ann_pct:0;
   const avgTenure=avg(active.filter(d=>typeof d['Finzly Experience']==='number').map(d=>d['Finzly Experience']));
   const inact2026=attrInactive.filter(d=>{
-    const td=parseEmpDate(d['Termination Date']);
-    return td&&td.getUTCFullYear()===2026;
+    const ts=d['Termination Date Str'];
+    return ts&&ts.startsWith('2026');
   }).length;
   document.getElementById('sum-sub').textContent=`${active.length} active · ${india.length} India · ${usa.length} USA · ${squads.length} squads · Live: SharePoint`;
   document.getElementById('sum-kpis').innerHTML=`
