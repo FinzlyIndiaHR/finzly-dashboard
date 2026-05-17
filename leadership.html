@@ -687,8 +687,14 @@ function computeAttrition(empData){
     elapsed++;
     ytdExits+=exits;
     ytdAvgHCSum+=avgHC;
+
+    // YTD Avg HC = average of monthly Avg HCs (NOT the sum)
     const ytdAvgHC=Math.round(ytdAvgHCSum/elapsed*10)/10;
-    const ytdPct=ytdAvgHC>0?Math.round(ytdExits/ytdAvgHCSum*10000)/100:0;
+
+    // YTD Attrition % = YTD Exits / YTD Avg HC * 100
+    const ytdPct=ytdAvgHC>0?Math.round(ytdExits/ytdAvgHC*10000)/100:0;
+
+    // Annualised = YTD% × (12 / months elapsed)
     const annPct=elapsed>0?Math.round(ytdPct*(12/elapsed)*100)/100:0;
 
     return{
@@ -767,9 +773,8 @@ async function loadData(){
 
     setStep('ls-emp','done'); setStep('ls-calc','active');
 
-    // ── COMPUTE OHC/CHC from EMP MASTER dates (no Calculation Sheet needed) ──
-    ATTR_DATA=computeAttrition(EMP_DATA);
-    console.log(`✅ Attrition computed: ${ATTR_DATA.length} months | Formula: OHC/CHC from Start Date + Termination Date`);
+    // ── Attrition computed in render() from filtered data ──────
+    console.log('✅ Emp Master loaded — attrition will compute from filtered data in render()');
     setStep('ls-calc','done'); setStep('ls-org','active');
 
     // Load Org Overview — try multiple possible names
@@ -861,6 +866,9 @@ function render(){
   const D=filtered;
   const active=D.filter(d=>d.ActiveFlag===1);
   const inactive=D.filter(d=>d.ActiveFlag===0);
+
+  // Recompute attrition from filtered data — respects country/city/squad filters
+  const A=computeAttrition(D);
   const india=active.filter(d=>d.Country==='India');
   const usa=active.filter(d=>d.Country==='USA');
   const male=active.filter(d=>d.Gender==='Male');
@@ -974,10 +982,9 @@ function render(){
     </div>`;
   }).join('');
 
-  // P4 ATTRITION — always renders from EMP_DATA (inactive employees)
-  const A=ATTR_DATA;
+  // P4 ATTRITION — computed from filtered data (A already set at top of render)
 
-  // ── Year-wise exits from EMP_DATA ─────────────────────────
+  // ── Year-wise exits ────────────────────────────────────────
   const exitYrMap={};
   inactive.forEach(d=>{
     // Use Termination Date Str (YYYY-MM-DD) — reliable string format
@@ -1010,15 +1017,16 @@ function render(){
   const volCount=inactive.filter(d=>d['Termination Type']==='Voluntary').length;
   const volPct=totalInactive?Math.round(volCount/totalInactive*100):0;
 
-  // KPI cards — from EMP_DATA + ATTR_DATA if available
+  // KPI cards — computed from filtered data
   const lastAnn=A.length?A[A.length-1].ann_pct:null;
+  const lastMonth=A.length?A[A.length-1].month:'';
   document.getElementById('inf-attr').innerHTML=`<strong>⚠ Exit Trend:</strong> ${exitYrs.map(y=>`<strong>${y}: ${Object.values(exitYrMap[y]).reduce((s,v)=>s+v,0)}</strong>`).join(' → ')} exits. 2026 already <strong>${total2026}</strong> in ${moSoFar} months → projected <strong>~${proj2026}/year</strong>. ${proj2026>40?'🚨 Highest ever — immediate retention action needed.':'⚠ Monitor closely.'} <strong>${volPct}% voluntary</strong> — people are choosing to leave.`;
 
   document.getElementById('attr-kpis').innerHTML=`
     <div class="attr-kpi"><div class="ak-lbl">Total Inactive</div><div class="ak-val">${totalInactive}</div><div class="ak-sub">all exits on record</div></div>
     <div class="attr-kpi a"><div class="ak-lbl">2026 Exits (so far)</div><div class="ak-val">${total2026}</div><div class="ak-sub">~${proj2026} projected/yr 🔴</div></div>
     <div class="attr-kpi r"><div class="ak-lbl">Voluntary %</div><div class="ak-val">${volPct}%</div><div class="ak-sub">${volCount} of ${totalInactive} exits</div></div>
-    <div class="attr-kpi${lastAnn?' g':''}"><div class="ak-lbl">Annualised Attrition</div><div class="ak-val" style="${lastAnn?'color:var(--red)':'color:var(--muted2)'}">${lastAnn?lastAnn.toFixed(1)+'%':'N/A'}</div><div class="ak-sub">${lastAnn?'from Calc Sheet':'add Calc Sheet for live %'}</div></div>
+    <div class="attr-kpi"><div class="ak-lbl">Annualised Attrition</div><div class="ak-val" style="color:var(--red)">${lastAnn?lastAnn.toFixed(1)+'%':'—'}</div><div class="ak-sub">${lastMonth?'as of '+lastMonth:'computed from dates'}</div></div>
   `;
 
   // Year-wise exits chart
@@ -1165,7 +1173,7 @@ function render(){
     .map(([p,v])=>`<div class="brow"><div class="blbl" style="min-width:130px">${p}</div><div class="btrack" style="flex:3;height:10px"><div style="height:100%;display:flex;border-radius:99px;overflow:hidden"><div style="width:${Math.round(v.g/maxPT*100)}%;background:var(--green)"></div><div style="width:${Math.round(v.a/maxPT*100)}%;background:var(--amber)"></div><div style="width:${Math.round(v.r/maxPT*100)}%;background:var(--red)"></div><div style="width:${Math.round(v.n/maxPT*100)}%;background:var(--border2)"></div></div></div><div style="font-family:'Fira Code',monospace;font-size:.66rem;width:90px;text-align:right;flex-shrink:0"><span style="color:var(--green)">${v.g}G</span> <span style="color:var(--amber)">${v.a}A</span> <span style="color:var(--red)">${v.r}R</span></div></div>`).join('');
 
   // P7 SUMMARY
-  const lastAnnNum=ATTR_DATA.length?+ATTR_DATA[ATTR_DATA.length-1].ann_pct:0;
+  const lastAnnNum=A.length?+A[A.length-1].ann_pct:0;
   const avgTenure=avg(active.filter(d=>typeof d['Finzly Experience']==='number').map(d=>d['Finzly Experience']));
   const inact2026=inactive.filter(d=>{
     const td=d['Termination Date Str']||dateStr(d['Termination Date']);
