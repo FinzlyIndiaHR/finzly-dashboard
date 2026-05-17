@@ -337,9 +337,9 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
   <!-- P4 -->
   <div class="pg" id="p4">
     <div class="formula-box">
-      <div class="fml"><div class="fml-title">Monthly Attrition %</div><div class="fml-eq">Exits <span>÷</span> Avg HC <span>×</span> 100<br><span style="font-size:.64rem;color:rgba(255,255,255,.2)">Avg HC = (OHC + CHC) ÷ 2</span></div></div>
-      <div class="fml"><div class="fml-title">Annualised Attrition %</div><div class="fml-eq">(YTD Exits <span>÷</span> YTD Avg HC)<br><span>× (12 ÷ Months Elapsed) × 100</span></div></div>
-      <div class="fml"><div class="fml-title">OHC / CHC</div><div class="fml-eq">OHC = Opening HC (BOM)<br>CHC = Closing HC (EOM)</div></div>
+      <div class="fml"><div class="fml-title">OHC (Opening HC)</div><div class="fml-eq">Employees where<br>StartDate <span>&lt;</span> 1st of month<br><span>AND (Active OR TermDate ≥ 1st)</span></div></div>
+      <div class="fml"><div class="fml-title">CHC (Closing HC)</div><div class="fml-eq">Employees where<br>StartDate <span>≤</span> last of month<br><span>AND (Active OR TermDate &gt; last)</span></div></div>
+      <div class="fml"><div class="fml-title">Monthly Attrition %</div><div class="fml-eq">Exits <span>÷</span> ((OHC+CHC)<span>÷</span>2) <span>×</span> 100<br><span style="font-size:.64rem;color:rgba(255,255,255,.25)">Computed from Emp Master dates</span></div></div>
     </div>
     <div class="inf red" id="inf-attr"></div>
     <div class="g4" id="attr-kpis"></div>
@@ -399,7 +399,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
 const CLIENT_ID  = 'd893026d-d1c9-4285-947a-0a672018b8d1';
 const TENANT_ID  = '4d4c58f7-6978-4a93-ba72-f1d987c46c89';
 const OWNER_UPN  = 'bharathkumar.m@finzly.com';
-const FILE_ID    = '9A0433F2-CC8B-426C-8C8A-E1894EB53FD7';
+const FILE_ID    = '788b3929-4077-4e6e-9909-e26c071ffab4';  // Master Employee Data - without Compensation (3)
 const REDIRECT   = 'https://finzlyindiahr.github.io/finzly-dashboard/leadership.html';
 const SCOPES     = ['Files.Read.All','User.Read'];
 
@@ -488,56 +488,76 @@ function processEmpMaster(values){
   if(!values||values.length<2)return[];
   const hdrs=values[0].map(h=>String(h||'').trim());
   const ci=kw=>hdrs.findIndex(h=>kw.some(k=>h.toLowerCase().includes(k.toLowerCase())));
-  console.log('📋 Headers detected:', hdrs.join(' | '));
+  console.log('📋 Headers:', hdrs.join(' | '));
 
   const I={
-    id:       ci(['Emp ID']),
-    fname:    ci(['First Name']),
-    lname:    ci(['Last Name']),
-    status:   ci(['Status']),          // "Active" / "Inactive" — source of truth
-    type:     ci(['Type']),
-    practice: ci(['Practice']),
-    squad:    ci(['Squad']),
-    scrumMaster: ci(['Scrum Master']),
-    subSquad: ci(['Sub Squad']),
-    email:    ci(['Email']),
-    city:     ci(['City']),
-    l1mgr:    ci(['L1 Manager']),
-    l2mgr:    ci(['L2 Manager']),
-    title:    ci(['Corporate Title']),
-    gender:   ci(['Gender']),
-    country:  ci(['Country']),
-    startDate:ci(['Start Date']),
-    startYear:ci(['Start Year']),
-    termDate: ci(['Termination Date']),
-    termType: ci(['Termination Type']),
-    termReason:ci(['Reason of Termination']),
-    totalExp: ci(['Total Experience']),
-    finzlyExp:ci(['Finzly Experience']),
-    level:    ci(['Level']),
-    rag:      ci(['Rag Status']),
-    perf24:   ci(['Performance Rating 2024']),
-    perf25:   ci(['Performance Rating 2025']),
+    id:       ci(['Emp Id','Emp ID']),    // col 0
+    fname:    ci(['First Name']),          // col 1
+    lname:    ci(['Last Name']),           // col 2
+    status:   ci(['Status']),              // col 3
+    type:     ci(['Type']),                // col 4
+    practice: ci(['Practice']),            // col 5
+    squad:    6,   // col 6 = 'Squads' (original) — NOT col 37 which is VLOOKUP
+    scrumMaster: ci(['Scrum Master']),     // col 7
+    subSquad: 8,   // col 8 = 'Sub Squads' (original) — NOT col 38 which is VLOOKUP
+    email:    ci(['Email']),               // col 9
+    city:     ci(['City']),                // col 10
+    l1mgr:    ci(['L1 Manager']),          // col 12
+    l2mgr:    ci(['L2 Manager']),          // col 13
+    title:    ci(['Corporate Title']),     // col 14
+    gender:   ci(['Gender']),              // col 15
+    country:  ci(['Country']),             // col 17
+    startDate:ci(['Start Date']),          // col 18
+    startYear:ci(['Start Year']),          // col 20
+    termDate: ci(['Termination Date']),    // col 22
+    termType: ci(['Termination Type']),    // col 24
+    termReason:ci(['Reason of Termination']), // col 25
+    totalExp: ci(['Total Experience']),    // col 27
+    finzlyExp:ci(['Finzly Experience']),   // col 28
+    level:    ci(['Level']),               // col 29
+    rag:      ci(['Rag Status']),          // col 30
+    perf24:   ci(['Performance Rating 2024']), // col 31
+    perf25:   ci(['Performance Rating 2025']), // col 33
   };
-  console.log('🗂 Key cols — Squad:',I.squad,'SubSquad:',I.subSquad,'Status:',I.status,'Gender:',I.gender,'Country:',I.country,'RAG:',I.rag);
+  console.log('🗂 Squad col:',I.squad,'SubSquad col:',I.subSquad,'Status col:',I.status,'Country col:',I.country,'RAG col:',I.rag);
 
   const data=[];
   for(let i=1;i<values.length;i++){
     const r=values[i];
     if(!r.some(v=>v!==null&&v!==''))continue;
     const g =j=>(j>=0&&j<r.length)?r[j]:null;
-    const gn=j=>{const v=g(j);return(typeof v==='number'&&!isNaN(v))?v:null;};
+    const gn=j=>{const v=g(j);return(typeof v==='number'&&!isNaN(v)&&v!==0)?v:null;};
 
-    // Status is the source of truth — no need for ActiveFlag column
     const statusVal=String(g(I.status)||'').trim();
+    // Status is source of truth: Active = 1, Inactive = 0
     const activeFlag=statusVal.toLowerCase()==='active'?1:statusVal.toLowerCase()==='inactive'?0:null;
+
+    const startDateRaw = g(I.startDate); // keep raw for parseEmpDate in computeAttrition
+    const termDateRaw  = g(I.termDate);  // keep raw for parseEmpDate
+
+    // Extract year from Start Year col or Start Date
+    const startYearRaw = gn(I.startYear);
+    let startYear = startYearRaw ? Math.round(startYearRaw) : null;
+    if(!startYear && startDateRaw){
+      const s=String(startDateRaw);
+      const m=s.match(/(\d{4})/);
+      if(m)startYear=parseInt(m[1]);
+    }
+
+    // Termination date as string YYYY-MM-DD for year-wise charts
+    let termDateStr=null;
+    if(termDateRaw){
+      const s=String(termDateRaw);
+      const m=s.match(/^(\d{4}-\d{2}-\d{2})/);
+      if(m)termDateStr=m[1];
+    }
 
     data.push({
       'Emp ID':      g(I.id),
       'First Name':  g(I.fname),
       'Last Name':   g(I.lname),
       Status:        statusVal,
-      ActiveFlag:    activeFlag,        // derived from Status — 1=Active, 0=Inactive
+      ActiveFlag:    activeFlag,
       Type:          g(I.type),
       Practice:      g(I.practice),
       Squad:         cleanSquad(String(g(I.squad)||'').trim()),
@@ -550,9 +570,9 @@ function processEmpMaster(values){
       'L1 Manager':  g(I.l1mgr),
       'L2 Manager':  g(I.l2mgr),
       'Corporate Title': g(I.title),
-      'Start Date':  g(I.startDate),
-      'Start Year':  gn(I.startYear)||(g(I.startDate)?String(g(I.startDate)).slice(0,4):null),
-      'Termination Date':    g(I.termDate),
+      'Start Date':  String(startDateRaw||''),  // raw for date parsing
+      'Start Year':  startYear,
+      'Termination Date': termDateStr,           // YYYY-MM-DD string
       'Termination Type':    g(I.termType),
       'Reason of Termination': g(I.termReason),
       'Total Experience':   gn(I.totalExp),
@@ -565,43 +585,107 @@ function processEmpMaster(values){
   }
   const active=data.filter(d=>d.ActiveFlag===1).length;
   const inactive=data.filter(d=>d.ActiveFlag===0).length;
-  console.log(`✅ Emp Master: ${data.length} total | ${active} Active | ${inactive} Inactive`);
+  const untagged=data.filter(d=>d.ActiveFlag===null).length;
+  console.log(`✅ ${data.length} total | ${active} Active | ${inactive} Inactive | ${untagged} untagged`);
+  // Log sample start years to verify
+  const sampleYears=data.filter(d=>d.ActiveFlag===1).slice(0,5).map(d=>d['Start Year']);
+  console.log('📅 Sample Start Years (active):', sampleYears);
   return data;
 }
 
-// ── PROCESS CALCULATION SHEET ─────────────────────────────────
-function processCalcSheet(values){
-  if(!values||values.length<4)return[];
-  const result=[];
-  // Headers at row 2 (index 2), data from row 3 (index 3)
-  for(let i=3;i<values.length;i++){
-    const r=values[i];
-    const monthRaw=r[0];
-    if(!monthRaw||!r[7])continue;
-    const monthStr=typeof monthRaw==='string'?monthRaw.slice(0,7):
-                   (monthRaw instanceof Date)?monthRaw.toISOString().slice(0,7):String(monthRaw).slice(0,7);
-    if(!monthStr||monthStr.length<7)continue;
-    const [yr,mo]=monthStr.split('-');
-    if(!yr||!mo)continue;
-    const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    const monthLabel=months[parseInt(mo)-1]+' '+yr;
-    const n=j=>typeof r[j]==='number'?r[j]:0;
-    result.push({
-      month: monthLabel,
-      joins: Math.round(n(3)),
-      exits: Math.round(n(4)),
-      ohc:   Math.round(n(5)),
-      chc:   Math.round(n(6)),
-      avg_hc: parseFloat(n(7).toFixed(1)),
-      monthly_pct: parseFloat(n(8).toFixed(2)),
-      ytd_exits: Math.round(n(9)),
-      ytd_avg_hc: parseFloat(n(10).toFixed(1)),
-      ytd_pct: parseFloat(n(11).toFixed(2)),
-      elapsed: Math.round(n(12)),
-      ann_pct: parseFloat(n(13).toFixed(2)),
-    });
-  }
-  return result.filter(r=>r.avg_hc>0&&r.exits>=0);
+// ── COMPUTED OHC/CHC FROM EMP MASTER ─────────────────────────
+// Formula: headcount = employees who had joined AND were still active in that month
+// OHC (Opening) = headcount on 1st of month
+// CHC (Closing) = headcount on last day of month
+// Employee counted in month M if: StartDate < monthStart AND (Active OR TermDate >= monthStart)
+// Employee in CHC of month M if:  StartDate <= monthEnd  AND (Active OR TermDate >  monthEnd)
+// Joins in M = StartDate within M
+// Exits in M = TermDate within M
+// Avg HC = (OHC + CHC) / 2
+// Monthly % = Exits / Avg HC * 100
+// Annualised = (YTD Exits / YTD Avg HC) * (12 / months elapsed) * 100
+
+function parseEmpDate(v){
+  if(!v)return null;
+  const s=String(v).trim();
+  // ISO datetime from Graph API: "2016-09-01T00:00:00"
+  const m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(m)return new Date(parseInt(m[1]),parseInt(m[2])-1,parseInt(m[3]));
+  // Excel serial number
+  if(/^\d+$/.test(s)){const n=parseInt(s);if(n>40000&&n<100000)return new Date((n-25569)*86400*1000);}
+  return null;
+}
+
+function daysInMonth(y,m){return new Date(y,m,0).getDate();}
+
+function computeAttrition(empData){
+  // Attach parsed dates to each record
+  const emp=empData.map(d=>({
+    ...d,
+    _start: parseEmpDate(d['Start Date'])||null,
+    _term:  parseEmpDate(d['Termination Date'])||null,
+  })).filter(d=>d._start);
+
+  // Generate months from Jan 2024 → current month
+  const today=new Date();
+  const rangeStart=new Date(2024,0,1);
+  const rangeEnd  =new Date(today.getFullYear(),today.getMonth(),1);
+  const months=[];
+  let cur=new Date(rangeStart);
+  while(cur<=rangeEnd){months.push(new Date(cur));cur=new Date(cur.getFullYear(),cur.getMonth()+1,1);}
+
+  const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  let ytdExits=0, ytdAvgHCSum=0, elapsed=0;
+  let prevYear=null;
+
+  return months.map(ms=>{
+    const yr=ms.getFullYear(), mo=ms.getMonth();
+    const monthStart=new Date(yr,mo,1);
+    const monthEnd  =new Date(yr,mo,daysInMonth(yr,mo+1));
+
+    // Reset YTD at start of each year
+    if(prevYear!==yr){ytdExits=0;ytdAvgHCSum=0;elapsed=0;prevYear=yr;}
+
+    // OHC: started BEFORE monthStart AND (Active OR terminated ON/AFTER monthStart)
+    const ohc=emp.filter(e=>
+      e._start<monthStart &&
+      (e.Status==='Active' || (e._term && e._term>=monthStart))
+    ).length;
+
+    // CHC: started ON/BEFORE monthEnd AND (Active OR terminated AFTER monthEnd)
+    const chc=emp.filter(e=>
+      e._start<=monthEnd &&
+      (e.Status==='Active' || (e._term && e._term>monthEnd))
+    ).length;
+
+    // Joins: started within this month
+    const joins=emp.filter(e=>e._start>=monthStart&&e._start<=monthEnd).length;
+
+    // Exits: terminated within this month
+    const exits=emp.filter(e=>e._term&&e._term>=monthStart&&e._term<=monthEnd).length;
+
+    const avgHC=Math.round((ohc+chc)/2*10)/10;
+    const monthlyPct=avgHC>0?Math.round(exits/avgHC*10000)/100:0;
+
+    elapsed++;
+    ytdExits+=exits;
+    ytdAvgHCSum+=avgHC;
+    const ytdAvgHC=Math.round(ytdAvgHCSum/elapsed*10)/10;
+    const ytdPct=ytdAvgHC>0?Math.round(ytdExits/ytdAvgHCSum*10000)/100:0;
+    const annPct=elapsed>0?Math.round(ytdPct*(12/elapsed)*100)/100:0;
+
+    return{
+      month:`${MON[mo]} ${yr}`,
+      ohc,chc,joins,exits,
+      avg_hc:avgHC,
+      monthly_pct:monthlyPct,
+      ytd_exits:ytdExits,
+      ytd_avg_hc:ytdAvgHC,
+      ytd_pct:ytdPct,
+      elapsed,
+      ann_pct:annPct,
+    };
+  }).filter(r=>r.ohc>0||r.chc>0);
 }
 
 // ── PROCESS ORG OVERVIEW ──────────────────────────────────────
@@ -666,18 +750,10 @@ async function loadData(){
 
     setStep('ls-emp','done'); setStep('ls-calc','active');
 
-    // Load Calculation Sheet — try multiple possible names, prefer actual sheet names
-    const calcNames=['Calculation Sheet','Calculations','Attrition','Calc Sheet','Calc','Sheet2'];
-    const calcTarget=allSheets.find(s=>calcNames.some(n=>s.toLowerCase().includes(n.toLowerCase())))||calcNames[0];
-    let calcLoaded=false;
-    try{
-      const raw=await graphFetch(token,calcTarget);
-      ATTR_DATA=processCalcSheet(raw);
-      if(ATTR_DATA.length>0){calcLoaded=true;console.log('✅ Calc sheet loaded:',calcTarget,ATTR_DATA.length,'rows');}
-    }catch(e){console.warn('Calc sheet failed:',calcTarget,e.message);}
-    if(!calcLoaded) console.warn('⚠ No attrition data — attrition tab will show empty');
-    setStep('ls-calc', calcLoaded?'done':'error');
-    setStep('ls-org','active');
+    // ── COMPUTE OHC/CHC from EMP MASTER dates (no Calculation Sheet needed) ──
+    ATTR_DATA=computeAttrition(EMP_DATA);
+    console.log(`✅ Attrition computed: ${ATTR_DATA.length} months | Formula: OHC/CHC from Start Date + Termination Date`);
+    setStep('ls-calc','done'); setStep('ls-org','active');
 
     // Load Org Overview — try multiple possible names
     const orgNames=['Org Overview','Org_Overview','Organisation','Headcount','People Trend','Org','Sheet3'];
@@ -881,103 +957,122 @@ function render(){
     </div>`;
   }).join('');
 
-  // P4 ATTRITION
+  // P4 ATTRITION — always renders from EMP_DATA (inactive employees)
   const A=ATTR_DATA;
+
+  // ── Year-wise exits from EMP_DATA (always available) ──────
+  const exitYrMap={};
+  inactive.forEach(d=>{
+    const td=d['Termination Date'];
+    const typ=d['Termination Type']||'Unknown';
+    if(td&&String(td).length>=4){
+      const yr=String(td).slice(0,4);
+      if(/^20\d\d$/.test(yr)&&parseInt(yr)>=2019){
+        if(!exitYrMap[yr])exitYrMap[yr]={Voluntary:0,Involuntary:0,Unknown:0};
+        exitYrMap[yr][typ==='Voluntary'?'Voluntary':typ==='Involuntary'?'Involuntary':'Unknown']++;
+      }
+    }
+  });
+  const exitYrs=Object.keys(exitYrMap).sort();
+  const exits2026=exitYrMap['2026']||{Voluntary:0,Involuntary:0,Unknown:0};
+  const total2026=exits2026.Voluntary+exits2026.Involuntary+exits2026.Unknown;
+  const moSoFar=new Date().getMonth()+1; // months elapsed in 2026
+  const proj2026=moSoFar>0?Math.round(total2026/moSoFar*12):0;
+  const totalInactive=inactive.length;
+  const volCount=inactive.filter(d=>d['Termination Type']==='Voluntary').length;
+  const volPct=totalInactive?Math.round(volCount/totalInactive*100):0;
+
+  // KPI cards — from EMP_DATA + ATTR_DATA if available
+  const lastAnn=A.length?A[A.length-1].ann_pct:null;
+  document.getElementById('inf-attr').innerHTML=`<strong>⚠ Exit Trend:</strong> ${exitYrs.map(y=>`<strong>${y}: ${Object.values(exitYrMap[y]).reduce((s,v)=>s+v,0)}</strong>`).join(' → ')} exits. 2026 already <strong>${total2026}</strong> in ${moSoFar} months → projected <strong>~${proj2026}/year</strong>. ${proj2026>40?'🚨 Highest ever — immediate retention action needed.':'⚠ Monitor closely.'} <strong>${volPct}% voluntary</strong> — people are choosing to leave.`;
+
+  document.getElementById('attr-kpis').innerHTML=`
+    <div class="attr-kpi"><div class="ak-lbl">Total Inactive</div><div class="ak-val">${totalInactive}</div><div class="ak-sub">all exits on record</div></div>
+    <div class="attr-kpi a"><div class="ak-lbl">2026 Exits (so far)</div><div class="ak-val">${total2026}</div><div class="ak-sub">~${proj2026} projected/yr 🔴</div></div>
+    <div class="attr-kpi r"><div class="ak-lbl">Voluntary %</div><div class="ak-val">${volPct}%</div><div class="ak-sub">${volCount} of ${totalInactive} exits</div></div>
+    <div class="attr-kpi${lastAnn?' g':''}"><div class="ak-lbl">Annualised Attrition</div><div class="ak-val" style="${lastAnn?'color:var(--red)':'color:var(--muted2)'}">${lastAnn?lastAnn.toFixed(1)+'%':'N/A'}</div><div class="ak-sub">${lastAnn?'from Calc Sheet':'add Calc Sheet for live %'}</div></div>
+  `;
+
+  // Year-wise exits chart
+  document.getElementById('inf-yr-exit').innerHTML=`<strong>Year-on-year exits:</strong> Exits escalated sharply in 2024–2026. Voluntary exits (~${volPct}%) dominate — this is a retention issue, not a performance management issue.`;
+  mkChart('ch-yr-exit','bar',{
+    labels:exitYrs,
+    datasets:[
+      {label:'Voluntary',   data:exitYrs.map(y=>exitYrMap[y]?.Voluntary||0),   backgroundColor:'rgba(220,38,38,.85)', borderRadius:4},
+      {label:'Involuntary', data:exitYrs.map(y=>exitYrMap[y]?.Involuntary||0), backgroundColor:'rgba(217,119,6,.85)',  borderRadius:4},
+      {label:'Unknown',     data:exitYrs.map(y=>exitYrMap[y]?.Unknown||0),     backgroundColor:'rgba(180,180,180,.5)', borderRadius:4},
+    ]
+  },{scales:{y:{stacked:true,beginAtZero:true,ticks:{stepSize:5,font:{family:'Fira Code',size:10}}},x:{stacked:true}}});
+
+  // Cohort retention chart
+  const cohortMap={};
+  EMP_DATA.forEach(d=>{
+    const yr=d['Start Year']?Math.floor(Number(d['Start Year'])):null;
+    if(!yr||yr<2015||yr>2025)return;
+    if(!cohortMap[yr])cohortMap[yr]={joined:0,active:0,exited:0};
+    cohortMap[yr].joined++;
+    if(d.ActiveFlag===1)cohortMap[yr].active++;
+    else if(d.ActiveFlag===0)cohortMap[yr].exited++;
+  });
+  const cohortYrs=Object.keys(cohortMap).map(Number).sort();
+  const newest=cohortMap[2025]||{joined:1,active:0};
+  document.getElementById('inf-cohort').innerHTML=`<strong>Cohort retention:</strong> 2025 joiners: ${newest.active} of ${newest.joined} still active (${Math.round(newest.active/newest.joined*100)}%). Pre-2019 cohorts show strong loyalty. 2023–2024 cohorts have high exit rates — check onboarding and early career experience.`;
+  mkChart('ch-cohort','bar',{
+    labels:cohortYrs.map(String),
+    datasets:[
+      {label:'Still Active', data:cohortYrs.map(y=>cohortMap[y]?.active||0),  backgroundColor:'rgba(22,163,74,.85)', borderRadius:4},
+      {label:'Have Exited',  data:cohortYrs.map(y=>cohortMap[y]?.exited||0),  backgroundColor:'rgba(220,38,38,.7)',  borderRadius:4},
+    ]
+  },{scales:{y:{stacked:true,beginAtZero:true,ticks:{font:{family:'Fira Code',size:10}}},x:{stacked:true}}});
+
+  // Termination type donut — always from EMP_DATA
+  const termMap={};
+  inactive.forEach(d=>{if(d['Termination Type']){const t=d['Termination Type'];termMap[t]=(termMap[t]||0)+1;}});
+  document.getElementById('inf-tt').innerHTML=`<strong>Voluntary = ${volPct}% of exits.</strong> Focus on retention triggers: growth path, recognition, manager quality, compensation.`;
+  mkChart('ch-tt','doughnut',{
+    labels:Object.keys(termMap).length?Object.keys(termMap):['No data'],
+    datasets:[{data:Object.keys(termMap).length?Object.values(termMap):[1],backgroundColor:['#dc2626','#d97706','#94a3b8'],borderWidth:3,borderColor:'#fff'}]
+  });
+
+  // Exit reasons — always from EMP_DATA
+  const reasons={};
+  inactive.forEach(d=>{const r=d['Reason of Termination']||'Not Stated';reasons[r]=(reasons[r]||0)+1;});
+  const maxR=Math.max(...Object.values(reasons),1);
+  document.getElementById('exit-reasons').innerHTML=Object.entries(reasons).sort((a,b)=>b[1]-a[1])
+    .map(([r,n])=>`<div class="brow"><div class="blbl">${r}</div><div class="btrack"><div class="bfill" style="width:${Math.round(n/maxR*100)}%;background:var(--red);opacity:.75"></div></div><div class="bval">${n}</div></div>`).join('')
+    ||'<div style="font-size:.76rem;color:var(--muted)">No exit reasons recorded.</div>';
+
+  // OHC/CHC monthly table + trend — only if Calculation Sheet data exists
   if(A.length){
-    const lastAnn=A[A.length-1].ann_pct;
-    const avgM=avg(A.map(d=>d.monthly_pct)).toFixed(2);
     const totEx=A.reduce((s,d)=>s+d.exits,0);
     const totJo=A.reduce((s,d)=>s+d.joins,0);
-
-    // Year-wise exits from inactive employees
-    const exitYrMap={};
-    inactive.forEach(d=>{
-      const td=d['Termination Date'];
-      const typ=d['Termination Type']||'Unknown';
-      if(td&&String(td).length>=4){
-        const yr=String(td).slice(0,4);
-        if(/^20\d\d$/.test(yr)){
-          if(!exitYrMap[yr])exitYrMap[yr]={Voluntary:0,Involuntary:0,Unknown:0};
-          exitYrMap[yr][typ==='Voluntary'?'Voluntary':typ==='Involuntary'?'Involuntary':'Unknown']++;
-        }
-      }
-    });
-    const exitYrs=Object.keys(exitYrMap).sort();
-    const exits2026=exitYrMap['2026']||{Voluntary:0,Involuntary:0,Unknown:0};
-    const total2026=exits2026.Voluntary+exits2026.Involuntary+exits2026.Unknown;
-    const proj2026=Math.round(total2026/4*12);
-
-    document.getElementById('inf-attr').innerHTML=`<strong>⚠ Exit Acceleration:</strong> Exits spiked ${Object.values(exitYrMap).map((v,i)=>`${exitYrs[i]}: ${v.Voluntary+v.Involuntary+v.Unknown}`).join(' → ')}. 2026 already <strong>${total2026} exits</strong> → projected ~<strong>${proj2026}/year</strong>. ${proj2026>39?'🚨 On track to exceed 2025 peak.':'⚠ Monitor closely.'} Voluntary exits dominate — this is a <strong>retention issue</strong>.`;
-    document.getElementById('attr-kpis').innerHTML=`
-      <div class="attr-kpi"><div class="ak-lbl">Annualised Attrition</div><div class="ak-val">${lastAnn.toFixed(1)}%</div><div class="ak-sub">as of ${A[A.length-1].month}</div></div>
-      <div class="attr-kpi a"><div class="ak-lbl">Avg Monthly %</div><div class="ak-val">${avgM}%</div><div class="ak-sub">tracked months</div></div>
-      <div class="attr-kpi g"><div class="ak-lbl">Total Joins</div><div class="ak-val">${totJo}</div><div class="ak-sub">tracked period</div></div>
-      <div class="attr-kpi"><div class="ak-lbl">Total Exits</div><div class="ak-val">${totEx}</div><div class="ak-sub">tracked period</div></div>
-    `;
-
-    // Year-wise chart
-    document.getElementById('inf-yr-exit').innerHTML=`<strong>Exit trend:</strong> Voluntary exits consistently above 60% — retention triggers needed: growth, recognition, compensation.`;
-    mkChart('ch-yr-exit','bar',{labels:exitYrs,datasets:[
-      {label:'Voluntary',data:exitYrs.map(y=>exitYrMap[y]?.Voluntary||0),backgroundColor:'rgba(220,38,38,.8)',borderRadius:4},
-      {label:'Involuntary',data:exitYrs.map(y=>exitYrMap[y]?.Involuntary||0),backgroundColor:'rgba(217,119,6,.8)',borderRadius:4},
-      {label:'Unknown',data:exitYrs.map(y=>exitYrMap[y]?.Unknown||0),backgroundColor:'rgba(180,180,180,.5)',borderRadius:4},
-    ]},{scales:{y:{stacked:true,beginAtZero:true,ticks:{font:{family:'Fira Code',size:10}}},x:{stacked:true}}});
-
-    // Cohort
-    const cohortMap={};
-    EMP_DATA.filter(d=>d.ActiveFlag===0||d.ActiveFlag===1).forEach(d=>{
-      const yr=d['Start Year']?Math.floor(d['Start Year']):null;
-      if(!yr||yr<2018||yr>2025)return;
-      if(!cohortMap[yr])cohortMap[yr]={joined:0,active:0,exited:0};
-      cohortMap[yr].joined++;
-      if(d.ActiveFlag===1)cohortMap[yr].active++;else cohortMap[yr].exited++;
-    });
-    const cohortYrs=Object.keys(cohortMap).map(Number).sort();
-    document.getElementById('inf-cohort').innerHTML=`<strong>Cohort retention:</strong> 2025 joiners at ${cohortYrs.includes(2025)?Math.round(cohortMap[2025].active/cohortMap[2025].joined*100):0}% retention — many left within first year. Pre-2020 cohorts show strong loyalty.`;
-    mkChart('ch-cohort','bar',{labels:cohortYrs.map(String),datasets:[
-      {label:'Still Active',data:cohortYrs.map(y=>cohortMap[y]?.active||0),backgroundColor:'rgba(22,163,74,.8)',borderRadius:4},
-      {label:'Have Exited',data:cohortYrs.map(y=>cohortMap[y]?.exited||0),backgroundColor:'rgba(220,38,38,.7)',borderRadius:4},
-    ]},{scales:{y:{stacked:true,beginAtZero:true,ticks:{font:{family:'Fira Code',size:10}}},x:{stacked:true}}});
-
-    // OHC table
+    const peak=A.reduce((m,d)=>d.monthly_pct>m.monthly_pct?d:m,A[0]);
+    const labels=A.map(d=>d.month);
+    document.getElementById('inf-attr2').innerHTML=`<strong>Monthly formula:</strong> Exits÷((OHC+CHC)÷2)×100. Peak <strong>${peak.monthly_pct.toFixed(2)}%</strong> in ${peak.month}. Annualised: ${A[0].ann_pct.toFixed(1)}% → ${A[A.length-1].ann_pct.toFixed(1)}%.`;
+    mkChart('ch-attr','line',{labels,datasets:[
+      {label:'Monthly Attrition %',data:A.map(d=>d.monthly_pct),borderColor:'#dc2626',backgroundColor:'rgba(220,38,38,.08)',fill:true,tension:.3,borderWidth:2.5,pointRadius:5,pointBackgroundColor:'#dc2626'},
+      {label:'Annualised %',data:A.map(d=>d.ann_pct),borderColor:'#d97706',fill:false,tension:.3,borderWidth:2,borderDash:[6,3],pointRadius:3},
+    ]},{scales:{y:{beginAtZero:true,ticks:{callback:v=>v.toFixed(1)+'%',font:{family:'Fira Code',size:10}}}}});
+    document.getElementById('inf-je').innerHTML=`<strong>Net flow:</strong> ${totJo>totEx?`+${totJo-totEx} net joins.`:`-${totEx-totJo} net exits.`}`;
+    mkChart('ch-je','bar',{labels,datasets:[{label:'Joins',data:A.map(d=>d.joins),backgroundColor:'rgba(22,163,74,.8)',borderRadius:5},{label:'Exits',data:A.map(d=>d.exits),backgroundColor:'rgba(220,38,38,.8)',borderRadius:5}]});
     document.getElementById('ohc-tbl').innerHTML=`<thead><tr>
       <th style="text-align:left">Month</th><th>OHC</th><th>Joins</th><th>Exits</th><th>CHC</th>
       <th>Avg HC<br><span style="font-size:.55rem;opacity:.5">(OHC+CHC)÷2</span></th>
       <th>Monthly %<br><span style="font-size:.55rem;opacity:.5">Exits÷AvgHC</span></th>
       <th>YTD Exits</th><th>YTD AvgHC</th>
-      <th>Annualised %<br><span style="font-size:.55rem;opacity:.5">YTD÷AvgHC×12÷n</span></th>
-    </tr></thead><tbody>${A.map((r,i)=>`<tr>
+      <th>Annualised %</th>
+    </tr></thead><tbody>${A.map(r=>`<tr>
       <td><strong>${r.month}</strong></td>
-      <td>${r.ohc}</td>
-      <td class="td-green">+${r.joins}</td>
-      <td class="td-red">-${r.exits}</td>
-      <td>${r.chc}</td>
+      <td>${r.ohc}</td><td class="td-green">+${r.joins}</td><td class="td-red">-${r.exits}</td><td>${r.chc}</td>
       <td><strong>${r.avg_hc}</strong></td>
       <td class="${r.monthly_pct>2?'td-red':r.monthly_pct>1?'td-amber':'td-green'}">${r.monthly_pct.toFixed(2)}%</td>
-      <td>${r.ytd_exits}</td>
-      <td>${r.ytd_avg_hc}</td>
+      <td>${r.ytd_exits}</td><td>${r.ytd_avg_hc}</td>
       <td class="td-red">${r.ann_pct.toFixed(2)}%</td>
     </tr>`).join('')}</tbody>`;
-
-    const labels=A.map(d=>d.month);
-    const peak=A.reduce((m,d)=>d.monthly_pct>m.monthly_pct?d:m,A[0]);
-    document.getElementById('inf-attr2').innerHTML=`<strong>Formula confirmed:</strong> Monthly% = Exits÷AvgHC×100 (AvgHC=(OHC+CHC)÷2). Peak <strong>${peak.monthly_pct.toFixed(2)}%</strong> in ${peak.month}. Annualised improving: ${A[0].ann_pct.toFixed(1)}% → ${A[A.length-1].ann_pct.toFixed(1)}%.`;
-    mkChart('ch-attr','line',{labels,datasets:[
-      {label:'Monthly Attrition %',data:A.map(d=>d.monthly_pct),borderColor:'#dc2626',backgroundColor:'rgba(220,38,38,.08)',fill:true,tension:.3,borderWidth:2.5,pointRadius:5,pointBackgroundColor:'#dc2626'},
-      {label:'Annualised %',data:A.map(d=>d.ann_pct),borderColor:'#d97706',fill:false,tension:.3,borderWidth:2,borderDash:[6,3],pointRadius:3},
-    ]},{scales:{y:{beginAtZero:true,ticks:{callback:v=>v.toFixed(1)+'%',font:{family:'Fira Code',size:10}}}}});
-    document.getElementById('inf-je').innerHTML=`<strong>Net flow:</strong> ${totJo>totEx?`+${totJo-totEx} net joins.`:`-${totEx-totJo} net exits — review hiring pipeline.`}`;
-    mkChart('ch-je','bar',{labels,datasets:[{label:'Joins',data:A.map(d=>d.joins),backgroundColor:'rgba(22,163,74,.8)',borderRadius:5},{label:'Exits',data:A.map(d=>d.exits),backgroundColor:'rgba(220,38,38,.8)',borderRadius:5}]});
-    const termMap={};
-    inactive.forEach(d=>{if(d['Termination Type']){const t=d['Termination Type'];termMap[t]=(termMap[t]||0)+1;}});
-    const volPct=inactive.length?Math.round((termMap['Voluntary']||0)/inactive.length*100):0;
-    document.getElementById('inf-tt').innerHTML=`<strong>Voluntary = ${volPct}% of exits.</strong> People are choosing to leave — not being managed out. Focus on retention.`;
-    mkChart('ch-tt','doughnut',{labels:Object.keys(termMap).length?Object.keys(termMap):['No data'],datasets:[{data:Object.keys(termMap).length?Object.values(termMap):[1],backgroundColor:['#dc2626','#d97706','#94a3b8'],borderWidth:3,borderColor:'#fff'}]});
-    const reasons={};
-    inactive.forEach(d=>{const r=d['Reason of Termination']||'Not Stated';reasons[r]=(reasons[r]||0)+1;});
-    const maxR=Math.max(...Object.values(reasons),1);
-    document.getElementById('exit-reasons').innerHTML=Object.entries(reasons).sort((a,b)=>b[1]-a[1])
-      .map(([r,n])=>`<div class="brow"><div class="blbl">${r}</div><div class="btrack"><div class="bfill" style="width:${Math.round(n/maxR*100)}%;background:var(--red);opacity:.75"></div></div><div class="bval">${n}</div></div>`).join('')||'<div style="font-size:.76rem;color:var(--muted)">No exit data in current filter.</div>';
+  } else {
+    // No Calc Sheet — show message in those sections
+    document.getElementById('inf-attr2').innerHTML=`<strong>OHC/CHC monthly table:</strong> Not available — this file only has the Emp Master sheet. To enable this section, add a "Calculation Sheet" tab to your SharePoint Excel with monthly OHC, CHC, joins and exits data.`;
+    document.getElementById('inf-je').innerHTML=`<strong>Monthly joins/exits chart:</strong> Available once a Calculation Sheet is added to the workbook.`;
   }
 
   // P5 PERFORMANCE & LEVELS
