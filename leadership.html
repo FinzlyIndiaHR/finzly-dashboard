@@ -1022,17 +1022,16 @@ function render(){
     document.getElementById('inf-trend2').innerHTML=`<strong>Latest (${lr.month}):</strong> US EEs <strong>${lr.us_ee}</strong> · India EEs <strong>${lr.india_ee}</strong> · US Consultants <strong>${lr.us_con}</strong> · India Consultants <strong>${lr.india_con}</strong>.`;
     document.getElementById('inf-us').innerHTML=`<strong>US peak:</strong> ${Math.max(...T.map(d=>d.us_ee+d.us_con))} total.`;
     document.getElementById('inf-india').innerHTML=`<strong>India peak:</strong> ${Math.max(...T.map(d=>d.india_ee+d.india_con))} total.`;
-    mkChart('ch-trend','bar',{labels,datasets:[
-      {label:'India EEs',   data:T.map(d=>d.india_ee), backgroundColor:'rgba(14,165,233,.85)',  borderRadius:3},
-      {label:'US EEs',      data:T.map(d=>d.us_ee),    backgroundColor:'rgba(124,58,237,.85)',  borderRadius:3},
-      {label:'US Consult.', data:T.map(d=>d.us_con),   backgroundColor:'rgba(232,84,26,.7)',    borderRadius:3},
-      {label:'India Consult.',data:T.map(d=>d.india_con),backgroundColor:'rgba(22,163,74,.7)', borderRadius:3},
+    mkChart('ch-trend','line',{labels,datasets:[
+      {label:'India EEs',     data:T.map(d=>d.india_ee), borderColor:'#0ea5e9',backgroundColor:'rgba(14,165,233,.08)',fill:true, tension:.3,borderWidth:2.5,pointRadius:3},
+      {label:'US EEs',        data:T.map(d=>d.us_ee),    borderColor:'#7c3aed',backgroundColor:'rgba(124,58,237,.06)',fill:true, tension:.3,borderWidth:2.5,pointRadius:3},
+      {label:'US Consult.',   data:T.map(d=>d.us_con),   borderColor:'#e8541a',backgroundColor:'rgba(232,84,26,.04)', fill:false,tension:.3,borderWidth:2,  pointRadius:3,borderDash:[5,3]},
+      {label:'India Consult.',data:T.map(d=>d.india_con),borderColor:'#16a34a',backgroundColor:'rgba(22,163,74,.04)', fill:false,tension:.3,borderWidth:2,  pointRadius:3,borderDash:[5,3]},
     ]},{
       scales:{
-        y:{beginAtZero:true,stacked:false,ticks:{font:{family:'Fira Code',size:10}},grid:{color:'#f0ede8'}},
+        y:{beginAtZero:false,ticks:{font:{family:'Fira Code',size:10}},grid:{color:'#f0ede8'}},
         x:{ticks:{font:{family:'Outfit',size:9},maxRotation:45},grid:{display:false}}
-      },
-      plugins:{legend:{position:'bottom',labels:{font:{family:'Outfit',size:11},boxWidth:10,padding:8}}}
+      }
     });
     mkChart('ch-us','bar',{labels,datasets:[{label:'US EEs',data:T.map(d=>d.us_ee),backgroundColor:'rgba(124,58,237,.8)',borderRadius:4},{label:'US Consultants',data:T.map(d=>d.us_con),backgroundColor:'rgba(232,84,26,.8)',borderRadius:4}]},{scales:{y:{stacked:true},x:{stacked:true}}});
     mkChart('ch-india','bar',{labels,datasets:[{label:'India EEs',data:T.map(d=>d.india_ee),backgroundColor:'rgba(14,165,233,.8)',borderRadius:4},{label:'India Consultants',data:T.map(d=>d.india_con),backgroundColor:'rgba(22,163,74,.8)',borderRadius:4}]},{scales:{y:{stacked:true},x:{stacked:true}}});
