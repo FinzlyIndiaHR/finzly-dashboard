@@ -6,6 +6,7 @@
 <title>Finzly · Leadership Dashboard · 2026</title>
 <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -195,6 +196,20 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
 .act-ul li::before{content:'→ ';color:var(--accent);font-weight:700}
 .cta-bar{padding:11px 14px;background:var(--bbg);border:1px solid var(--bbr);border-radius:8px;font-size:.74rem;line-height:1.7}
 .cta-bar strong{color:var(--accent)}
+/* INSIGHT CARDS */
+.insight-strip{display:grid;gap:10px;margin-bottom:14px}
+.insight-strip.cols2{grid-template-columns:1fr 1fr}
+.insight-strip.cols3{grid-template-columns:1fr 1fr 1fr}
+.ins{border-radius:10px;padding:12px 15px;border:1px solid transparent;font-size:.76rem;line-height:1.6}
+.ins.signal{background:#fff8f0;border-color:#fde68a}
+.ins.risk{background:var(--rbg);border-color:var(--rbr)}
+.ins.good{background:var(--gbg);border-color:var(--gbr)}
+.ins.info{background:var(--bbg);border-color:var(--bbr)}
+.ins-head{font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:4px;display:flex;align-items:center;gap:5px}
+.ins-val{font-family:'Fira Code',monospace;font-size:1.4rem;font-weight:700;line-height:1;margin-bottom:3px}
+.ins-val.red{color:var(--red)}.ins-val.green{color:var(--green)}.ins-val.amber{color:var(--amber)}.ins-val.blue{color:var(--blue)}
+.ins-txt{font-size:.72rem;color:var(--ink);line-height:1.55}
+.ins-txt strong{font-weight:700}
 @media(max-width:1100px){.kstrip{grid-template-columns:repeat(4,1fr)}.formula-box{grid-template-columns:1fr}}
 @media(max-width:860px){.kstrip,.g2,.g3,.g4{grid-template-columns:1fr 1fr}.pg{padding:14px 14px 50px}.hdr,.fbar,.tabs{padding-left:14px;padding-right:14px}}
 @media(max-width:560px){.kstrip,.g2,.g3,.g4{grid-template-columns:1fr}}
@@ -295,6 +310,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
   <!-- P1 -->
   <div class="pg on" id="p1">
     <div class="ts" id="ts1"></div>
+    <div class="insight-strip cols3" id="ins-p1"></div>
     <div class="kstrip" id="k1"></div>
     <div class="g2">
       <div class="card"><div class="c-title"><div class="c-title-l">Headcount by City</div></div><div id="city-cards" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px"></div></div>
@@ -309,6 +325,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
 
   <!-- P2 -->
   <div class="pg" id="p2">
+    <div class="insight-strip cols3" id="ins-p2"></div>
     <div class="inf blue" id="inf-trend"></div>
     <div class="ch-box">
       <div class="ch-title">Headcount Trend — US vs India</div>
@@ -323,6 +340,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
 
   <!-- P3 -->
   <div class="pg" id="p3">
+    <div class="insight-strip cols3" id="ins-p3"></div>
     <div class="inf blue" id="inf-sq-top"></div>
     <div class="g2" style="margin-bottom:14px">
       <div class="ch-box"><div class="ch-title">Squad HC</div><div class="ch-wrap tall"><canvas id="ch-sq-bar"></canvas></div></div>
@@ -907,10 +925,37 @@ const CHARTS={};
 const SQUAD_COLORS={'Payment':'#e8541a','Trade':'#0ea5e9','Professional Services':'#7c3aed','Digital':'#16a34a','GTM':'#d97706','Production Support':'#2563eb','DevOps':'#64748b','HR':'#ec4899','Finance':'#14b8a6','Account':'#f59e0b','InfoSec':'#6366f1','Management':'#78716c','Client Services':'#84cc16'};
 function avg(a){return a.length?a.reduce((x,y)=>x+y,0)/a.length:0}
 
+// Register datalabels plugin globally
+if(typeof ChartDataLabels!=='undefined') Chart.register(ChartDataLabels);
+
 function mkChart(id,type,data,opts={}){
   if(CHARTS[id])CHARTS[id].destroy();
   const ctx=document.getElementById(id); if(!ctx)return;
-  CHARTS[id]=new Chart(ctx,{type,data,options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{family:'Outfit',size:11},boxWidth:10,padding:8}}},scales:type==='bar'?{y:{beginAtZero:true,ticks:{font:{family:'Fira Code',size:10}},grid:{color:'#f0ede8'}},x:{ticks:{font:{family:'Outfit',size:10}},grid:{display:false}}}:{},animation:{duration:500},...opts}});
+  // Default: disable datalabels unless explicitly enabled
+  const dlabels = opts._datalabels || false;
+  delete opts._datalabels;
+  const baseOpts={
+    responsive:true,maintainAspectRatio:false,
+    plugins:{
+      legend:{position:'bottom',labels:{font:{family:'Outfit',size:11},boxWidth:10,padding:8}},
+      datalabels: dlabels ? {
+        color:'#fff',font:{family:'Fira Code',size:9,weight:'bold'},
+        formatter:(v)=>v>0?v:'',
+        anchor:'center',align:'center',
+        display:(ctx)=>ctx.dataset.data[ctx.dataIndex]>0,
+      } : false,
+    },
+    scales:type==='bar'?{
+      y:{beginAtZero:true,ticks:{font:{family:'Fira Code',size:10}},grid:{color:'#f0ede8'}},
+      x:{ticks:{font:{family:'Outfit',size:10}},grid:{display:false}}
+    }:{},
+    animation:{duration:500},
+  };
+  // Merge options deeply
+  const merged = {...baseOpts,...opts};
+  if(opts.scales) merged.scales={...baseOpts.scales,...opts.scales};
+  if(opts.plugins) merged.plugins={...baseOpts.plugins,...opts.plugins};
+  CHARTS[id]=new Chart(ctx,{type,data,options:merged});
 }
 
 function goTab(el,pid){
@@ -986,6 +1031,28 @@ function render(){
 
   // P1 KPIs
   const avgTen=avg(active.filter(d=>typeof d['Finzly Experience']==='number').map(d=>d['Finzly Experience']));
+
+  // ── P1 INSIGHTS ───────────────────────────────────────────
+  const femPct=active.length?Math.round(female.length/active.length*100):0;
+  const indiaPct=active.length?Math.round(india.length/active.length*100):0;
+  const consultants=active.filter(d=>d.Type&&d.Type.toLowerCase().includes('consult')).length;
+  const conPct=active.length?Math.round(consultants/active.length*100):0;
+  document.getElementById('ins-p1').innerHTML=`
+    <div class="ins info">
+      <div class="ins-head">🌍 Geo Distribution</div>
+      <div class="ins-val blue">${indiaPct}% India</div>
+      <div class="ins-txt">India is the dominant delivery hub at <strong>${india.length} of ${active.length}</strong> headcount. US team at <strong>${usa.length}</strong>. Single-country dependency — consider cross-training for business continuity.</div>
+    </div>
+    <div class="ins ${femPct<30?'risk':femPct<35?'signal':'good'}">
+      <div class="ins-head">♀ Gender Balance</div>
+      <div class="ins-val ${femPct<30?'red':femPct<35?'amber':'green'}">${femPct}% Female</div>
+      <div class="ins-txt"><strong>${female.length} women</strong> in active workforce. Industry benchmark for tech is <strong>28–35%</strong>. ${femPct<28?'🔴 Below benchmark — review hiring pipeline for gender diversity.':femPct<35?'⚠ Approaching benchmark — sustain focus on inclusive hiring.':'✅ Above benchmark — strong diversity performance.'}</div>
+    </div>
+    <div class="ins ${conPct>25?'risk':'signal'}">
+      <div class="ins-head">📋 Workforce Mix</div>
+      <div class="ins-val ${conPct>25?'amber':'green'}">${conPct}% Contractors</div>
+      <div class="ins-txt"><strong>${consultants} contractors</strong> vs <strong>${active.length-consultants} full-time</strong>. ${conPct>25?'⚠ High contractor ratio — review for cost, IP, and knowledge retention risk.':'✅ Healthy mix. Monitor contractor dependency as org scales.'} Avg tenure: <strong>${avgTen.toFixed(1)} years</strong>.</div>
+    </div>`;
   document.getElementById('k1').innerHTML=`
     <div class="kc"><div class="k-lbl">Total Records</div><div class="k-val">${EMP_DATA.length}</div><div class="k-sub">in masterfile</div></div>
     <div class="kc g"><div class="k-lbl">Active HC</div><div class="k-val g">${active.length}</div><div class="k-sub">currently active</div></div>
@@ -1017,6 +1084,30 @@ function render(){
     const labels=T.map(d=>d.month);
     const first=T[0].total,last=T[T.length-1].total;
     const growth=Math.round((last-first)/first*100);
+    const maxIndia=Math.max(...T.map(d=>d.india_ee));
+    const maxUS=Math.max(...T.map(d=>d.us_ee));
+    const conNow=T[T.length-1].us_con+T[T.length-1].india_con;
+    const conFirst=T[0].us_con+T[0].india_con;
+    const conGrowth=conFirst>0?Math.round((conNow-conFirst)/conFirst*100):0;
+
+    // ── P2 INSIGHTS ──────────────────────────────────────────
+    document.getElementById('ins-p2').innerHTML=`
+      <div class="ins good">
+        <div class="ins-head">📈 Org Growth</div>
+        <div class="ins-val green">+${growth}%</div>
+        <div class="ins-txt">Headcount grew from <strong>${first}</strong> (${T[0].month}) to <strong>${last}</strong> (${T[T.length-1].month}) over <strong>${T.length} months</strong>. Strong expansion trajectory — ensure onboarding and culture can scale at this pace.</div>
+      </div>
+      <div class="ins ${conGrowth>200?'risk':'signal'}">
+        <div class="ins-head">⚠ Consultant Growth</div>
+        <div class="ins-val ${conGrowth>200?'red':'amber'}">+${conGrowth}%</div>
+        <div class="ins-txt">Consultants grew from <strong>${conFirst}</strong> to <strong>${conNow}</strong> — a <strong>${conGrowth}%</strong> rise. ${conGrowth>200?'🔴 Rapid contractor growth signals either strategic flexibility or inability to hire FTE. Review dependency.':'⚠ Monitor — high contractor ratio can increase costs and reduce IP security.'}</div>
+      </div>
+      <div class="ins info">
+        <div class="ins-head">🏔 Peak Headcount</div>
+        <div class="ins-val blue">${Math.max(...T.map(d=>d.total))}</div>
+        <div class="ins-txt">India peaked at <strong>${maxIndia} EEs</strong>. US peaked at <strong>${maxUS} EEs</strong>. Current drop from peak = <strong>${Math.max(...T.map(d=>d.total))-last}</strong> employees. Understand if this is planned restructuring or unmanaged attrition.</div>
+      </div>`;
+
     document.getElementById('inf-trend').innerHTML=`<strong>Org Growth:</strong> Headcount from <strong>${first}</strong> (${T[0].month}) → <strong>${last}</strong> (${T[T.length-1].month}) = <strong>+${growth}%</strong> over ${T.length} months.`;
     const lr=T[T.length-1];
     document.getElementById('inf-trend2').innerHTML=`<strong>Latest (${lr.month}):</strong> US EEs <strong>${lr.us_ee}</strong> · India EEs <strong>${lr.india_ee}</strong> · US Consultants <strong>${lr.us_con}</strong> · India Consultants <strong>${lr.india_con}</strong>.`;
@@ -1033,8 +1124,8 @@ function render(){
         x:{ticks:{font:{family:'Outfit',size:9},maxRotation:45},grid:{display:false}}
       }
     });
-    mkChart('ch-us','bar',{labels,datasets:[{label:'US EEs',data:T.map(d=>d.us_ee),backgroundColor:'rgba(124,58,237,.8)',borderRadius:4},{label:'US Consultants',data:T.map(d=>d.us_con),backgroundColor:'rgba(232,84,26,.8)',borderRadius:4}]},{scales:{y:{stacked:true},x:{stacked:true}}});
-    mkChart('ch-india','bar',{labels,datasets:[{label:'India EEs',data:T.map(d=>d.india_ee),backgroundColor:'rgba(14,165,233,.8)',borderRadius:4},{label:'India Consultants',data:T.map(d=>d.india_con),backgroundColor:'rgba(22,163,74,.8)',borderRadius:4}]},{scales:{y:{stacked:true},x:{stacked:true}}});
+    mkChart('ch-us','bar',{labels,datasets:[{label:'US EEs',data:T.map(d=>d.us_ee),backgroundColor:'rgba(124,58,237,.8)',borderRadius:4},{label:'US Consultants',data:T.map(d=>d.us_con),backgroundColor:'rgba(232,84,26,.8)',borderRadius:4}]},{scales:{y:{stacked:true},x:{stacked:true}},_datalabels:true});
+    mkChart('ch-india','bar',{labels,datasets:[{label:'India EEs',data:T.map(d=>d.india_ee),backgroundColor:'rgba(14,165,233,.8)',borderRadius:4},{label:'India Consultants',data:T.map(d=>d.india_con),backgroundColor:'rgba(22,163,74,.8)',borderRadius:4}]},{scales:{y:{stacked:true},x:{stacked:true}},_datalabels:true});
   }
 
   // P3 SQUAD TREE
@@ -1053,8 +1144,32 @@ function render(){
   });
   const squadHCs=squads.map(sq=>Object.values(tree[sq]).reduce((s,v)=>s+v.hc,0));
   const redSqs=squads.filter(sq=>Object.values(tree[sq]).reduce((s,v)=>s+v.r,0)>0);
+  const amberSqs=squads.filter(sq=>Object.values(tree[sq]).reduce((s,v)=>s+v.a,0)>0);
+  const totalSubSquads=squads.reduce((s,sq)=>s+Object.keys(tree[sq]).length,0);
+  const avgSqSize=squadHCs.length?Math.round(avg(squadHCs)):0;
+  const maxSq=squads[0]||'—'; const maxSqHC=squadHCs[0]||0;
+  const minSq=squads[squads.length-1]||'—'; const minSqHC=squadHCs[squadHCs.length-1]||0;
+
+  // P3 insights
+  document.getElementById('ins-p3').innerHTML=`
+    <div class="ins info">
+      <div class="ins-head">🏗 Squad Landscape</div>
+      <div class="ins-val blue">${squads.length} Squads</div>
+      <div class="ins-txt"><strong>${totalSubSquads} sub-squads</strong> total. Avg squad size: <strong>${avgSqSize} people</strong>. Largest: <strong>${maxSq} (${maxSqHC})</strong>. Smallest: <strong>${minSq} (${minSqHC})</strong>. ${maxSqHC>avgSqSize*2?`⚠ ${maxSq} is over 2× avg — review if it needs splitting.`:''}</div>
+    </div>
+    <div class="ins ${redSqs.length>0?'risk':'good'}">
+      <div class="ins-head">🚦 RAG Risk</div>
+      <div class="ins-val ${redSqs.length>0?'red':'green'}">${redSqs.length} Red Squads</div>
+      <div class="ins-txt">${redSqs.length>0?`🔴 <strong>${redSqs.join(', ')}</strong> have Red-status members — escalate to L1 managers immediately.`:'✅ No squads with Red-status employees.'} <strong>${amberSqs.length} squads</strong> have Amber members — monitor closely.</div>
+    </div>
+    <div class="ins signal">
+      <div class="ins-head">⚖ Squad Balance</div>
+      <div class="ins-val amber">${Math.round(maxSqHC/Math.max(minSqHC,1))}× range</div>
+      <div class="ins-txt">Largest squad (<strong>${maxSqHC}</strong>) is <strong>${Math.round(maxSqHC/Math.max(minSqHC,1))}×</strong> the smallest (<strong>${minSqHC}</strong>). High imbalance can indicate resourcing gaps. Use filters to drill into specific squads.</div>
+    </div>`;
+
   document.getElementById('inf-sq-top').innerHTML=`<strong>Squad Overview:</strong> ${squads.length} squads · ${active.length} active. Largest: <strong>${squads[0]||'—'}</strong> (${squadHCs[0]||0}). ${redSqs.length>0?`🔴 Red RAG: <strong>${redSqs.join(', ')}</strong>`:'✅ No Red RAG squads.'}`;
-  mkChart('ch-sq-bar','bar',{labels:squads,datasets:[{label:'HC',data:squadHCs,backgroundColor:squads.map(s=>SQUAD_COLORS[s]||'#64748b'),borderRadius:6}]},{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{font:{family:'Fira Code',size:10}}},y:{ticks:{font:{family:'Outfit',size:10}}}}});
+  mkChart('ch-sq-bar','bar',{labels:squads,datasets:[{label:'HC',data:squadHCs,backgroundColor:squads.map(s=>SQUAD_COLORS[s]||'#64748b'),borderRadius:6}]},{indexAxis:'y',plugins:{legend:{display:false},datalabels:{color:'#fff',font:{family:'Fira Code',size:9,weight:'bold'},anchor:'end',align:'left',formatter:v=>v}},scales:{x:{beginAtZero:true,ticks:{font:{family:'Fira Code',size:10}}},y:{ticks:{font:{family:'Outfit',size:10}}}},_datalabels:true});
   mkChart('ch-sq-rag','bar',{labels:squads,datasets:[
     {label:'Green',data:squads.map(sq=>Object.values(tree[sq]).reduce((s,v)=>s+v.g,0)),backgroundColor:'rgba(22,163,74,.8)',borderRadius:3},
     {label:'Amber',data:squads.map(sq=>Object.values(tree[sq]).reduce((s,v)=>s+v.a,0)),backgroundColor:'rgba(217,119,6,.8)',borderRadius:3},
@@ -1169,7 +1284,7 @@ function render(){
       {label:'Involuntary', data:exitYrs.map(y=>exitYrMap[y]?.Involuntary||0), backgroundColor:'rgba(217,119,6,.85)',  borderRadius:4},
       {label:'Unknown',     data:exitYrs.map(y=>exitYrMap[y]?.Unknown||0),     backgroundColor:'rgba(180,180,180,.5)', borderRadius:4},
     ]
-  },{scales:{y:{stacked:true,beginAtZero:true,ticks:{stepSize:5,font:{family:'Fira Code',size:10}}},x:{stacked:true}}});
+  },{scales:{y:{stacked:true,beginAtZero:true,ticks:{stepSize:5,font:{family:'Fira Code',size:10}}},x:{stacked:true}},_datalabels:true});
 
   // Cohort retention chart — uses attrPool (respects filters, includes both active+inactive)
   const cohortMap={};
@@ -1298,15 +1413,35 @@ function render(){
   const r24=active.filter(d=>d['Performance Rating 2024']>=1&&d['Performance Rating 2024']<=5).map(d=>d['Performance Rating 2024']);
   const avg25=avg(r25).toFixed(2),avg24=avg(r24).toFixed(2);
   const ratedPct=active.length?Math.round(r25.length/active.length*100):0;
-  document.getElementById('inf-perf').innerHTML=`<strong>Performance:</strong> 2025 avg <strong>${avg25}/5</strong> (${r25.length} rated, ${ratedPct}%). 2024 avg <strong>${avg24}/5</strong>. ${+avg25>+avg24?`⬆ +${(avg25-avg24).toFixed(2)} pts YoY.`:+avg25<+avg24?`⬇ -${(avg24-avg25).toFixed(2)} pts.`:'Stable.'} ${ratedPct<80?`⚠ ${100-ratedPct}% missing 2025 rating.`:''}`;
+  const highPerf=r25.filter(v=>v>=4).length;
+  const lowPerf=r25.filter(v=>v<=2).length;
+  const highPct=r25.length?Math.round(highPerf/r25.length*100):0;
+  document.getElementById('inf-perf').innerHTML=`
+    <div class="insight-strip cols3" style="margin-bottom:0">
+      <div class="ins ${+avg25>=+avg24?'good':'risk'}">
+        <div class="ins-head">⭐ Rating Trend</div>
+        <div class="ins-val ${+avg25>=+avg24?'green':'red'}">${avg25}/5</div>
+        <div class="ins-txt">2025 avg <strong>${avg25}</strong> vs 2024 <strong>${avg24}</strong> — ${+avg25>+avg24?`⬆ +${(+avg25-+avg24).toFixed(2)} pts. Positive signal.`:+avg25<+avg24?`⬇ Decline. Review manager quality.`:'Stable.'}</div>
+      </div>
+      <div class="ins ${ratedPct<80?'risk':'good'}">
+        <div class="ins-head">📊 Coverage</div>
+        <div class="ins-val ${ratedPct<80?'amber':'green'}">${ratedPct}% Rated</div>
+        <div class="ins-txt"><strong>${r25.length}/${active.length}</strong> rated. ${ratedPct<80?`⚠ ${active.length-r25.length} missing — complete before pay reviews.`:'✅ Good appraisal discipline.'}</div>
+      </div>
+      <div class="ins signal">
+        <div class="ins-head">🏆 Distribution</div>
+        <div class="ins-val amber">${highPct}% ★4-5</div>
+        <div class="ins-txt"><strong>${highPerf}</strong> high (★4–5) · <strong>${lowPerf}</strong> low (★1–2). ${lowPerf>10?'⚠ Review PIP coverage for low performers.':'Ensure high performers have retention plans.'}</div>
+      </div>
+    </div>`;
   const pm={1:0,2:0,3:0,4:0,5:0};r25.forEach(v=>{pm[v]++;});
   const maxP=Math.max(...Object.values(pm),1);
   document.getElementById('perf-2025').innerHTML=[5,4,3,2,1].map(r=>`<div class="perf-row"><div class="star-lbl">★${r}</div><div class="star-track"><div class="star-fill" style="width:${Math.round(pm[r]/maxP*100)}%"></div></div><div class="star-count">${pm[r]}</div></div>`).join('');
   document.getElementById('inf-perf2').innerHTML=`<strong>YoY:</strong> 2024 avg ${avg24} → 2025 avg ${avg25}.`;
-  mkChart('ch-perf','bar',{labels:['★1','★2','★3','★4','★5'],datasets:[{label:'2024',data:[1,2,3,4,5].map(r=>active.filter(d=>d['Performance Rating 2024']===r).length),backgroundColor:'rgba(14,165,233,.7)',borderRadius:5},{label:'2025',data:[1,2,3,4,5].map(r=>active.filter(d=>d['Performance Rating 2025']===r).length),backgroundColor:'rgba(232,84,26,.8)',borderRadius:5}]});
+  mkChart('ch-perf','bar',{labels:['★1','★2','★3','★4','★5'],datasets:[{label:'2024',data:[1,2,3,4,5].map(r=>active.filter(d=>d['Performance Rating 2024']===r).length),backgroundColor:'rgba(14,165,233,.7)',borderRadius:5},{label:'2025',data:[1,2,3,4,5].map(r=>active.filter(d=>d['Performance Rating 2025']===r).length),backgroundColor:'rgba(232,84,26,.8)',borderRadius:5}]},{_datalabels:true});
   const topSqs=squads.slice(0,8);
-  document.getElementById('inf-lvl-sq').innerHTML=`<strong>Level by squad:</strong> Top ${topSqs.length} squads shown.`;
-  mkChart('ch-lvl-sq','bar',{labels:topSqs,datasets:LEVELS.map((l,i)=>({label:l.replace(' Level',''),data:topSqs.map(sq=>active.filter(d=>d.Squad===sq&&d.Level===l).length),backgroundColor:LCOLS[i],borderRadius:3}))},{scales:{y:{stacked:true,ticks:{font:{family:'Fira Code',size:10}}},x:{stacked:true,ticks:{font:{family:'Outfit',size:10}}}}});
+  document.getElementById('inf-lvl-sq').innerHTML=`<strong>Level by squad:</strong> Top ${topSqs.length} squads. Use filters to drill into a specific squad.`;
+  mkChart('ch-lvl-sq','bar',{labels:topSqs,datasets:LEVELS.map((l,i)=>({label:l.replace(' Level',''),data:topSqs.map(sq=>active.filter(d=>d.Squad===sq&&d.Level===l).length),backgroundColor:LCOLS[i],borderRadius:3}))},{scales:{y:{stacked:true,ticks:{font:{family:'Fira Code',size:10}}},x:{stacked:true,ticks:{font:{family:'Outfit',size:10}}}},_datalabels:true});
   const tenMap={};
   active.forEach(d=>{const sq=d.Squad||'?';const t=d['Finzly Experience'];if(typeof t==='number'&&t>0){if(!tenMap[sq])tenMap[sq]=[];tenMap[sq].push(t);}});
   const tenE=Object.entries(tenMap).map(([sq,arr])=>[sq,avg(arr)]).sort((a,b)=>b[1]-a[1]);
