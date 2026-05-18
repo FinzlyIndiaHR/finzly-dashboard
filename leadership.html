@@ -2672,7 +2672,7 @@ async function addSummarySlide(pres,active,inact){
     {x:0.5,y:6.3,w:12.2,h:0.32,fontSize:10,color:'888888',fontFace:'Calibri',margin:0});
 }
 
-// ── ORG CHART PPT — proper horizontal tree per galaxy ─────────
+// ── ORG CHART PPT — horizontal tree, one slide per team lead ──
 async function addOrgChartSlides(pres, active){
   titleSlide(pres,'Finzly Organization Chart',
     `As of ${new Date().toLocaleString('en-IN',{month:'long',year:'numeric'})}`,
@@ -2689,138 +2689,129 @@ async function addOrgChartSlides(pres, active){
     s.addText('India',{x:11.65,y:0.12,w:0.9,h:0.22,fontSize:8,color:'555555',fontFace:'Calibri',margin:0});
   }
 
-  // Draw one person box
   function drawBox(s, person, x, y, w, h){
-    const isIndia = person.Country==='India';
-    const isCon   = person.Type==='Consultant';
-    const bg = isIndia ? '156082' : '0E2841';
-    s.addShape('rect',{x,y,w,h, fill:{color:bg},
-      line:{color:isCon?'FBAE40':bg, pt:isCon?2:0},
+    const isIndia=person.Country==='India';
+    const isCon=person.Type==='Consultant';
+    const bg=isIndia?'156082':'0E2841';
+    s.addShape('rect',{x,y,w,h,fill:{color:bg},
+      line:{color:isCon?'FBAE40':bg,pt:isCon?2:0},
       shadow:{type:'outer',color:'000000',opacity:0.08,blur:4,offset:1,angle:135}});
-    const fs = Math.max(5.5, Math.min(9, w*5.5));
+    const fs=Math.max(5.5,Math.min(9,w*5.5));
     s.addText(`${person['First Name']||''} ${person['Last Name']||''}`,
-      {x:x+0.04,y:y+0.03,w:w-0.08,h:h*0.44, fontSize:fs, bold:true,
-       color:'FFFFFF', fontFace:'Calibri', align:'center', margin:0, fit:'shrink'});
+      {x:x+0.04,y:y+0.03,w:w-0.08,h:h*0.44,fontSize:fs,bold:true,
+       color:'FFFFFF',fontFace:'Calibri',align:'center',margin:0,fit:'shrink'});
     if(w>0.65){
-      const title=(person['Corporate Title']||person.Level||'').replace(' Level','').slice(0,22);
-      s.addText(title,{x:x+0.04,y:y+h*0.46,w:w-0.08,h:h*0.32,
-        fontSize:Math.max(4.5,fs*0.75), color:'DDDDDD',
-        fontFace:'Calibri', align:'center', margin:0, fit:'shrink'});
+      s.addText((person['Corporate Title']||person.Level||'').replace(' Level','').slice(0,22),
+        {x:x+0.04,y:y+h*0.46,w:w-0.08,h:h*0.32,
+         fontSize:Math.max(4.5,fs*0.75),color:'DDDDDD',
+         fontFace:'Calibri',align:'center',margin:0,fit:'shrink'});
     }
-    const flag = isIndia?'🔵':'🟣';
-    s.addText(`${flag}${isCon?' C':''}`,
+    s.addText(`${person.Country==='India'?'🔵':'🟣'}${isCon?' C':''}`,
       {x:x+0.04,y:y+h*0.78,w:w-0.08,h:h*0.2,
-       fontSize:Math.max(4,fs*0.62), color:'FFFFFF',
-       fontFace:'Calibri', align:'center', margin:0});
+       fontSize:Math.max(4,fs*0.62),color:'FFFFFF',
+       fontFace:'Calibri',align:'center',margin:0});
   }
 
-  // Draw elbow connector: parent-bottom → child-top
-  function drawLine(s, x1,y1, x2,y2){
-    const my=(y1+y2)/2, lw=0.011;
+  function drawLine(s,x1,y1,x2,y2){
+    const my=(y1+y2)/2,lw=0.011;
     s.addShape('rect',{x:x1-lw/2,y:y1,w:lw,h:my-y1,fill:{color:'AAAAAA'},line:{color:'AAAAAA',pt:0}});
-    const lx=Math.min(x1,x2), rx=Math.max(x1,x2);
-    if(rx-lx>lw)
-      s.addShape('rect',{x:lx,y:my-lw/2,w:rx-lx,h:lw,fill:{color:'AAAAAA'},line:{color:'AAAAAA',pt:0}});
+    const lx=Math.min(x1,x2),rx=Math.max(x1,x2);
+    if(rx-lx>lw) s.addShape('rect',{x:lx,y:my-lw/2,w:rx-lx,h:lw,fill:{color:'AAAAAA'},line:{color:'AAAAAA',pt:0}});
     s.addShape('rect',{x:x2-lw/2,y:my,w:lw,h:y2-my,fill:{color:'AAAAAA'},line:{color:'AAAAAA',pt:0}});
   }
 
-  // Count leaf nodes (determines proportional horizontal width)
   function leafCount(node){
-    if(!node.children||node.children.length===0) return 1;
-    return node.children.reduce((s,c)=>s+leafCount(c), 0);
+    return !node.children||node.children.length===0?1:
+      node.children.reduce((s,c)=>s+leafCount(c),0);
+  }
+  function maxDepth(node,d=0){
+    return !node.children||node.children.length===0?d:
+      Math.max(...node.children.map(c=>maxDepth(c,d+1)));
   }
 
-  // Max depth of subtree
-  function maxDepth(node, d=0){
-    if(!node.children||node.children.length===0) return d;
-    return Math.max(...node.children.map(c=>maxDepth(c,d+1)));
-  }
-
-  // Draw full horizontal tree for a given root onto a slide
-  // treeX/Y = top-left of drawing area, treeW/H = available space
+  // Draw full horizontal tree in given area — the core layout engine
   function drawTree(s, node, treeX, treeY, treeW, treeH){
-    const depth  = maxDepth(node);
-    const levels = depth + 1;
-    const levelH = treeH / levels;
-    const boxH   = Math.min(0.72, levelH * 0.66);
-    const totalLeaves = leafCount(node);
-    const unitW  = treeW / totalLeaves;
-    const minW   = 0.48;
+    const levels=maxDepth(node)+1;
+    const levelH=treeH/levels;
+    const boxH=Math.min(0.72,levelH*0.66);
+    const totalLeaves=leafCount(node);
+    const unitW=treeW/totalLeaves;
+    const minW=0.48;
 
-    // Collect all node placements via recursive traversal
-    const placements = [];
-    function place(nd, leftLeaves, level){
-      const leaves = leafCount(nd);
-      const bw = Math.max(minW, unitW*leaves - 0.06);
-      const bx = treeX + leftLeaves*unitW + (unitW*leaves - bw)/2;
-      const by = treeY + level*levelH + (levelH - boxH)/2;
-      const cx = treeX + leftLeaves*unitW + unitW*leaves/2; // true centre
-      placements.push({nd, bx, by, bw, bh:boxH, cx});
-      let cl = leftLeaves;
-      if(nd.children){
+    const placements=[];
+    function place(nd,leftLeaves,level){
+      const leaves=leafCount(nd);
+      const bw=Math.max(minW,unitW*leaves-0.06);
+      const bx=treeX+leftLeaves*unitW+(unitW*leaves-bw)/2;
+      const by=treeY+level*levelH+(levelH-boxH)/2;
+      const cx=treeX+leftLeaves*unitW+unitW*leaves/2;
+      placements.push({nd,bx,by,bw,bh:boxH,cx});
+      let cl=leftLeaves;
+      if(nd.children)
         [...nd.children].sort((a,b)=>leafCount(b)-leafCount(a))
-          .forEach(child=>{ place(child, cl, level+1); cl += leafCount(child); });
-      }
+          .forEach(c=>{place(c,cl,level+1);cl+=leafCount(c);});
     }
-    place(node, 0, 0);
+    place(node,0,0);
 
-    // Map name → placement for line drawing
-    const pm = {};
-    placements.forEach(p => pm[p.nd.full] = p);
+    const pm={};
+    placements.forEach(p=>pm[p.nd.full]=p);
 
-    // Draw lines first (behind boxes)
+    // Lines behind boxes
     placements.forEach(p=>{
-      const parName = String(p.nd['L1 Manager']||'').trim();
-      const par = pm[parName];
-      if(!par) return;
-      drawLine(s, par.cx, par.by+par.bh, p.cx, p.by);
+      const par=pm[String(p.nd['L1 Manager']||'').trim()];
+      if(par) drawLine(s,par.cx,par.by+par.bh,p.cx,p.by);
     });
-
-    // Draw boxes on top
-    placements.forEach(p => drawBox(s, p.nd, p.bx, p.by, p.bw, p.bh));
+    // Boxes on top
+    placements.forEach(p=>drawBox(s,p.nd,p.bx,p.by,p.bw,p.bh));
   }
 
-  // ── SLIDE 1: Leadership Team ─────────────────────────────
-  const s1 = makeSlide(pres, 2);
-  slideTitle(s1, 'Leadership Team', 'All direct reports to President');
-  addLegend(s1);
-  // Draw just Booshan + level-1 (2 levels only on this slide)
-  // Clone root with only direct children visible
-  const shallowRoot = {...root, children:[...root.children]};
-  root.children.forEach(c=>{ const sc={...c,children:[]}; });
-  drawTree(s1, {
-    ...root,
-    children: root.children.map(c=>({...c, children:[]}))
-  }, 0.2, 0.9, W-0.4, 6.0);
-
-  // ── ONE SLIDE PER GALAXY — full horizontal tree ────────────
-  const children = [...root.children].sort((a,b)=>subtreeCount(b)-subtreeCount(a));
-  let slideNum = 3;
-
-  children.forEach(leader=>{
-    if(leader.children.length===0) return;
-
-    const sg = makeSlide(pres, slideNum++);
+  // Generate one slide for a given team lead showing their full subtree
+  let slideNum=2;
+  function makeTreeSlide(leader, parentContext){
+    if(subtreeCount(leader)<=1) return; // skip if no reports
+    const sg=makeSlide(pres,slideNum++);
     addLegend(sg);
-    const leaderFull = `${leader['First Name']} ${leader['Last Name']}`;
-    slideTitle(sg, leaderFull,
-      `${leader['Corporate Title']||leader.Squad||''} · ${subtreeCount(leader)-1} people`);
-
-    // Draw the full galaxy tree
-    const depth   = maxDepth(leader);
-    const levels  = depth + 1;
-    const treeTop = 0.9;
-    const treeH   = 6.35;
-
-    drawTree(sg, leader, 0.1, treeTop, W-0.2, treeH);
-
+    const leaderFull=`${leader['First Name']} ${leader['Last Name']}`;
+    const ctx=parentContext?`${parentContext} › `:'';
+    slideTitle(sg,
+      leaderFull,
+      `${ctx}${leader['Corporate Title']||leader.Squad||''} · ${subtreeCount(leader)-1} reports`);
+    drawTree(sg,leader,0.1,0.9,W-0.2,6.35);
     // Footer
-    const allEmps = gatherSubtree(leader);
-    const ind = allEmps.filter(e=>e.Country==='India').length;
-    const con = allEmps.filter(e=>e.Type==='Consultant').length;
+    const all=gatherSubtree(leader);
+    const ind=all.filter(e=>e.Country==='India').length;
+    const con=all.filter(e=>e.Type==='Consultant').length;
     sg.addText(
-      `${leaderFull} · ${subtreeCount(leader)-1} people · ${ind} 🔵 India · ${subtreeCount(leader)-1-ind} 🟣 USA · ${con} contractors`,
+      `${leaderFull} · ${subtreeCount(leader)-1} people · ${ind} 🔵 India · ${subtreeCount(leader)-1-ind} 🟣 USA${con>0?` · ${con} contractors`:''}`,
       {x:0.3,y:7.1,w:12.7,h:0.25,fontSize:7.5,color:'AAAAAA',align:'center',fontFace:'Calibri'});
+  }
+
+  // ── SLIDE 1: Leadership Team (Booshan + direct reports only) ─
+  const s1=makeSlide(pres,slideNum++);
+  addLegend(s1);
+  slideTitle(s1,'Leadership Team','All direct reports to President');
+  // Show just 2 levels: root + children (flatten children)
+  drawTree(s1,
+    {...root, children:root.children.map(c=>({...c,children:[]}))},
+    0.2,0.9,W-0.4,6.0);
+
+  // ── For each galaxy + their sub-leads ─────────────────────
+  const galaxyHeads=[...root.children].sort((a,b)=>subtreeCount(b)-subtreeCount(a));
+
+  galaxyHeads.forEach(galaxy=>{
+    const galaxyName=`${galaxy['First Name']} ${galaxy['Last Name']}`;
+
+    // Slide for the galaxy head's full tree
+    makeTreeSlide(galaxy, null);
+
+    // Slide for EACH direct report of the galaxy head who has their own team
+    [...galaxy.children]
+      .sort((a,b)=>subtreeCount(b)-subtreeCount(a))
+      .forEach(subLead=>{
+        if(subLead.children.length>0){
+          makeTreeSlide(subLead, galaxyName);
+        }
+      });
   });
 }
 
