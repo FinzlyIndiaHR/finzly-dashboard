@@ -2857,14 +2857,18 @@ async function addOrgChartSlides(pres, active){
     if(n>0) s1.addText(`${n} below`,{x:cx,y:cY+0.79,w:cW,h:0.18,fontSize:6,color:'888888',align:'center',fontFace:'Calibri',margin:0});
   });
 
-  // ── PRACTICE-SPLIT SLIDES PER GALAXY ─────────────────────
+  // ── PRACTICE-SPLIT SLIDES ────────────────────────────────
+  // Generates slides for:
+  //   Level 1: all direct reports of Booshan (galaxy heads)
+  //   Level 2: all sub-leaders who have their own team (sub-galaxy heads)
+  // Each leader gets their OWN practice-split slides
   let slideNum=3;
 
-  for(const leader of children){
+  function makePracticeSlides(leader, parentLabel){
     const subtreeEmps=gatherSubtree(leader).slice(1);
-    if(subtreeEmps.length===0)continue;
+    if(subtreeEmps.length===0)return;
 
-    // Group by Practice
+    // Group this leader's whole subtree by Practice
     const practiceMap={};
     subtreeEmps.forEach(emp=>{
       const p=emp.Practice||'Other';
@@ -2879,7 +2883,7 @@ async function addOrgChartSlides(pres, active){
       return practiceMap[b].length-practiceMap[a].length;
     });
 
-    // Batch: large practice (>12) = own slide; small practices = up to 3 per slide
+    // Batch: large practice (>12) = own slide; small = up to 3 per slide
     const batches=[];
     let batch=[];
     practices.forEach(p=>{
@@ -2894,7 +2898,7 @@ async function addOrgChartSlides(pres, active){
     if(batch.length) batches.push(batch);
 
     const leaderFull=`${leader['First Name']} ${leader['Last Name']}`;
-    const leaderInfo=`${leader['Corporate Title']||leader.Squad||''} · ${subtreeEmps.length} total`;
+    const leaderInfo=`${leader['Corporate Title']||leader.Squad||''}${parentLabel?' · '+parentLabel:''} · ${subtreeEmps.length} people`;
 
     batches.forEach(practiceBatch=>{
       const sg=makeSlide(pres,slideNum++);
@@ -2914,10 +2918,10 @@ async function addOrgChartSlides(pres, active){
         sg.addShape('rect',{x:colX,y:1.05,w:colW,h:0.36,fill:{color:colHex},line:{color:colHex,pt:0}});
         sg.addText(practice,{x:colX+0.1,y:1.08,w:colW*0.72,h:0.28,
           fontSize:10,bold:true,color:'FFFFFF',fontFace:'Calibri',margin:0,fit:'shrink'});
-        sg.addText(String(emps.length)+' people',{x:colX+colW*0.72,y:1.1,w:colW*0.26,h:0.24,
+        sg.addText(emps.length+' people',{x:colX+colW*0.72,y:1.1,w:colW*0.26,h:0.24,
           fontSize:8,color:'FFFFFF',fontFace:'Calibri',margin:0,align:'right'});
 
-        // Group by manager
+        // Group by immediate manager
         const mgrGroups={};
         emps.forEach(emp=>{
           const mgr=String(emp['L1 Manager']||'(No Manager)').trim();
@@ -2929,43 +2933,39 @@ async function addOrgChartSlides(pres, active){
         const maxY=6.85;
         const rowH=0.27;
 
-        Object.entries(mgrGroups)
-          .sort((a,b)=>b[1].length-a[1].length)
-          .forEach(([mgr,reports])=>{
-            if(curY>=maxY)return;
-            const mgrNode=nodes[mgr];
-            // Manager sub-header
-            sg.addShape('rect',{x:colX,y:curY,w:colW,h:0.26,
-              fill:{color:colHex+'18'},line:{color:colHex+'55',pt:0.5}});
-            sg.addShape('rect',{x:colX,y:curY,w:0.05,h:0.26,
-              fill:{color:colHex},line:{color:colHex,pt:0}});
-            const mgrLabel=mgrNode
-              ?`${mgrNode['First Name']||''} ${mgrNode['Last Name']||''}`
-              :mgr.split(' ').slice(0,2).join(' ');
-            sg.addText(mgrLabel,{x:colX+0.1,y:curY+0.04,w:colW-0.15,h:0.2,
-              fontSize:8,bold:true,color:colHex,fontFace:'Calibri',margin:0,fit:'shrink'});
-            curY+=0.3;
+        Object.entries(mgrGroups).sort((a,b)=>b[1].length-a[1].length).forEach(([mgr,reports])=>{
+          if(curY>=maxY)return;
+          const mgrNode=nodes[mgr];
+          sg.addShape('rect',{x:colX,y:curY,w:colW,h:0.26,
+            fill:{color:colHex+'18'},line:{color:colHex+'55',pt:0.5}});
+          sg.addShape('rect',{x:colX,y:curY,w:0.05,h:0.26,
+            fill:{color:colHex},line:{color:colHex,pt:0}});
+          const mgrLabel=mgrNode
+            ?`${mgrNode['First Name']||''} ${mgrNode['Last Name']||''}`
+            :mgr.split(' ').slice(0,2).join(' ');
+          sg.addText(mgrLabel,{x:colX+0.1,y:curY+0.04,w:colW-0.15,h:0.2,
+            fontSize:8,bold:true,color:colHex,fontFace:'Calibri',margin:0,fit:'shrink'});
+          curY+=0.3;
 
-            reports.forEach(emp=>{
-              if(curY>=maxY)return;
-              const isIndia=emp.Country==='India';
-              const isCon=emp.Type==='Consultant';
-              const flag=isIndia?'🔵':'🟣';
-              const level=(emp.Level||'').replace(' Level','');
-              sg.addShape('rect',{x:colX,y:curY,w:colW,h:rowH,
-                fill:{color:isIndia?'EBF5FB':'F0EBF7'},
-                line:{color:'DDDDDD',pt:0.3}});
-              sg.addShape('rect',{x:colX,y:curY,w:0.04,h:rowH,
-                fill:{color:isIndia?'156082':'0E2841'},line:{color:isIndia?'156082':'0E2841',pt:0}});
-              sg.addText(`${flag} ${emp['First Name']||''} ${emp['Last Name']||''}${isCon?' ⬤':''}`,
-                {x:colX+0.09,y:curY+0.04,w:colW*0.68,h:0.2,fontSize:8,
-                 color:'1A1A2E',fontFace:'Calibri',margin:0,fit:'shrink'});
-              sg.addText(level,{x:colX+colW*0.68,y:curY+0.04,w:colW*0.3,h:0.2,
-                fontSize:7,color:'777777',fontFace:'Calibri',margin:0,align:'right',fit:'shrink'});
-              curY+=rowH;
-            });
-            curY+=0.07;
+          reports.forEach(emp=>{
+            if(curY>=maxY)return;
+            const isIndia=emp.Country==='India';
+            const isCon=emp.Type==='Consultant';
+            const flag=isIndia?'🔵':'🟣';
+            const level=(emp.Level||'').replace(' Level','');
+            sg.addShape('rect',{x:colX,y:curY,w:colW,h:rowH,
+              fill:{color:isIndia?'EBF5FB':'F0EBF7'},line:{color:'DDDDDD',pt:0.3}});
+            sg.addShape('rect',{x:colX,y:curY,w:0.04,h:rowH,
+              fill:{color:isIndia?'156082':'0E2841'},line:{color:isIndia?'156082':'0E2841',pt:0}});
+            sg.addText(`${flag} ${emp['First Name']||''} ${emp['Last Name']||''}${isCon?' ⬤':''}`,
+              {x:colX+0.09,y:curY+0.04,w:colW*0.68,h:0.2,fontSize:8,
+               color:'1A1A2E',fontFace:'Calibri',margin:0,fit:'shrink'});
+            sg.addText(level,{x:colX+colW*0.68,y:curY+0.04,w:colW*0.3,h:0.2,
+              fontSize:7,color:'777777',fontFace:'Calibri',margin:0,align:'right',fit:'shrink'});
+            curY+=rowH;
           });
+          curY+=0.07;
+        });
       });
 
       const totalSlide=practiceBatch.reduce((s,p)=>s+practiceMap[p].length,0);
@@ -2976,6 +2976,21 @@ async function addOrgChartSlides(pres, active){
         {x:0.3,y:7.1,w:12.7,h:0.25,fontSize:7.5,color:'AAAAAA',align:'center',fontFace:'Calibri'});
     });
   }
+
+  // Level 1: Each direct report of Booshan = Galaxy head → own slides
+  children.forEach(galaxyHead=>{
+    makePracticeSlides(galaxyHead, null);
+
+    // Level 2: Each direct report of galaxy head who has their own team = Sub-Galaxy head
+    // e.g. Kanan (PS Galaxy) and Mark (Customer Support) under Dharmesh
+    const subGalaxyHeads=[...galaxyHead.children]
+      .filter(child=>child.children.length>0) // has their own reports
+      .sort((a,b)=>subtreeCount(b)-subtreeCount(a));
+
+    subGalaxyHeads.forEach(subHead=>{
+      makePracticeSlides(subHead, `${galaxyHead['First Name']} ${galaxyHead['Last Name']}'s Galaxy`);
+    });
+  });
 }
 
 async function runAIIntel(){
