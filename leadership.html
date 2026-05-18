@@ -213,20 +213,37 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
 .mgr-badge.r{background:var(--rbg);color:var(--red);border:1px solid var(--rbr)}
 .mgr-badge.a{background:var(--abg);color:var(--amber);border:1px solid var(--abr)}
 .mgr-badge.g{background:var(--gbg);color:var(--green);border:1px solid var(--gbr)}
-/* ORG CHART */
-.org-wrap{overflow:auto;padding:20px;background:var(--bg);border-radius:10px;border:1px solid var(--border)}
-.org-squad{margin-bottom:28px}
-.org-squad-title{font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#fff;padding:6px 14px;border-radius:6px;display:inline-block;margin-bottom:12px}
-.org-l1-row{display:flex;flex-wrap:wrap;gap:10px;margin-left:20px;position:relative}
-.org-l1-row::before{content:'';position:absolute;left:-12px;top:0;bottom:0;width:2px;background:var(--border)}
-.org-l1{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 13px;min-width:160px}
-.org-l1-name{font-size:.76rem;font-weight:700;color:var(--ink);margin-bottom:2px}
-.org-l1-squad{font-size:.6rem;color:var(--muted);margin-bottom:8px}
-.org-l1-reports{display:flex;flex-direction:column;gap:3px}
-.org-emp{font-size:.62rem;padding:2px 8px;border-radius:4px;background:var(--bg);border:1px solid var(--border2);color:var(--ink);display:flex;align-items:center;gap:5px}
-.org-emp::before{content:'└';color:var(--muted);font-size:.58rem}
-.org-emp.ind{border-left:2px solid var(--ch)}
-.org-emp.usa{border-left:2px solid var(--pu)}
+/* ORG CHART - TOP DOWN TREE */
+.org-wrap{overflow:auto;padding:30px 20px;background:var(--bg);border-radius:10px;border:1px solid var(--border);min-height:300px}
+.org-tree{display:flex;flex-direction:column;align-items:center}
+.org-tree ul{display:flex;padding-top:24px;position:relative;flex-wrap:nowrap;justify-content:center}
+.org-tree ul::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:2px;height:24px;background:var(--border)}
+.org-tree li{display:flex;flex-direction:column;align-items:center;padding:0 8px;position:relative}
+.org-tree li::before,.org-tree li::after{content:'';position:absolute;top:0;width:50%;height:2px;background:var(--border)}
+.org-tree li::before{right:50%}.org-tree li::after{left:50%}
+.org-tree li:only-child::before,.org-tree li:only-child::after{display:none}
+.org-tree li:first-child::before,.org-tree li:last-child::after{display:none}
+.org-tree li:first-child::after{border-radius:6px 0 0 0}
+.org-tree li:last-child::before{border-radius:0 6px 0 0}
+.org-tree li:only-child>a::before{content:'';position:absolute;top:-24px;left:50%;width:2px;height:24px;background:var(--border)}
+.org-tree a{display:flex;flex-direction:column;align-items:center}
+.org-node{border-radius:8px;padding:9px 13px;min-width:140px;max-width:180px;text-align:center;cursor:pointer;transition:all .15s;position:relative;border:1px solid rgba(255,255,255,.2)}
+.org-node:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.15)}
+.org-node.root{min-width:180px;max-width:220px;border-width:2px}
+.org-node-name{font-size:.72rem;font-weight:700;color:#fff;line-height:1.3;margin-bottom:2px}
+.org-node-title{font-size:.58rem;color:rgba(255,255,255,.75);line-height:1.3;margin-bottom:2px}
+.org-node-squad{font-size:.54rem;color:rgba(255,255,255,.5);margin-bottom:3px}
+.org-node-badges{display:flex;gap:3px;justify-content:center;flex-wrap:wrap}
+.org-badge{font-size:.5rem;padding:1px 5px;border-radius:10px;font-weight:700}
+.org-badge.con{background:rgba(217,119,6,.9);color:#fff}
+.org-badge.ind{background:rgba(14,165,233,.3);color:#fff;border:1px solid rgba(14,165,233,.5)}
+.org-badge.usa{background:rgba(124,58,237,.3);color:#fff;border:1px solid rgba(124,58,237,.5)}
+.org-expand{font-size:.54rem;margin-top:3px;color:rgba(255,255,255,.6);font-weight:700}
+.org-tree li.collapsed>a>.org-node+ul,.org-tree li.collapsed ul{display:none}
+.org-controls{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+.org-btn{font-family:'Outfit',sans-serif;font-size:.7rem;padding:5px 12px;border-radius:6px;border:1px solid var(--border);background:var(--card);cursor:pointer;color:var(--ink)}
+.org-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.org-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
 /* AI INTEL */
 .ai-status{display:flex;align-items:center;gap:8px;font-size:.74rem;color:var(--muted);margin-bottom:14px;padding:10px 14px;background:var(--card);border-radius:8px;border:1px solid var(--border)}
 .ai-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);animation:pulse 1.5s infinite}
@@ -499,16 +516,16 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
   <!-- P9 ORG CHART -->
   <div class="pg" id="p9">
     <div class="inf blue" id="inf-org-chart"></div>
-    <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
-      <select id="f-org-squad" onchange="renderOrgChart()" style="font-family:'Outfit',sans-serif;font-size:.78rem;padding:5px 26px 5px 10px;border-radius:6px;border:1.5px solid var(--border);background:var(--bg);appearance:none"><option value="all">All Squads</option></select>
-      <select id="f-org-country" onchange="renderOrgChart()" style="font-family:'Outfit',sans-serif;font-size:.78rem;padding:5px 26px 5px 10px;border-radius:6px;border:1.5px solid var(--border);background:var(--bg);appearance:none">
-        <option value="all">All Countries</option>
-        <option value="India">India</option>
-        <option value="USA">USA</option>
-      </select>
-      <span style="font-size:.68rem;color:var(--muted)">🔵 India &nbsp; 🟣 USA &nbsp; Grouped by L1 Manager</span>
+    <div class="org-controls">
+      <select id="f-org-squad" onchange="renderOrgChart()" style="font-family:'Outfit',sans-serif;font-size:.78rem;padding:5px 22px 5px 10px;border-radius:6px;border:1.5px solid var(--border);background:var(--bg);appearance:none"><option value="all">All Squads</option></select>
+      <button class="org-btn" onclick="expandAll()">Expand All</button>
+      <button class="org-btn" onclick="collapseToLevel(2)">Top 2 Levels</button>
+      <button class="org-btn" onclick="collapseToLevel(3)">Top 3 Levels</button>
+      <span style="font-size:.66rem;color:var(--muted)">Click any node to expand / collapse · <span style="background:rgba(217,119,6,.15);color:var(--amber);padding:1px 5px;border-radius:3px;font-weight:700;font-size:.6rem">CON</span> = Contractor · 🔵 India · 🟣 USA</span>
     </div>
-    <div id="org-chart-wrap" class="org-wrap"></div>
+    <div id="org-chart-wrap" class="org-wrap">
+      <div id="org-tree-root" class="org-tree"></div>
+    </div>
   </div>
 
   <!-- P10 AI INTEL -->
@@ -1060,6 +1077,11 @@ function goTab(el,pid){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
   document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
   el.classList.add('on'); document.getElementById(pid).classList.add('on');
+  // Lazy render org chart on first click
+  if(pid==='p9'&&EMP_DATA.length>0){
+    const wrap=document.getElementById('org-tree-root');
+    if(wrap&&!wrap.hasChildNodes())renderOrgChart();
+  }
 }
 function toggleSquad(hdr){
   hdr.nextElementSibling.classList.toggle('hidden');
@@ -1759,65 +1781,167 @@ function renderMgrFilter(){
   }).join('');
 }
 
-// ── ORG CHART LOGIC ───────────────────────────────────────────
+// ── ORG CHART - PROPER TOP-DOWN TREE ─────────────────────────
+const SQUAD_DARK={
+  'Payment':'#b84010','Trade':'#0369a1','Professional Services':'#5b21b6',
+  'Digital':'#15803d','GTM':'#b45309','Production Support':'#1d4ed8',
+  'DevOps':'#374151','HR':'#be185d','Finance':'#0f766e',
+  'Account':'#b45309','InfoSec':'#4338ca','Management':'#44403c',
+  'Client Services':'#4d7c0f','Mgmt':'#44403c','PS':'#5b21b6',
+  'Prod Sup':'#1d4ed8','Infosec':'#4338ca','Customer Success':'#0e7490',
+  'Legal':'#92400e','Operation':'#78350f','Marketing':'#be185d',
+};
+function sqColor(sq){return SQUAD_DARK[sq]||'#1e3a5f';}
+
+function buildOrgTree(employees){
+  // Build name → node map
+  const nodes={};
+  employees.forEach(e=>{
+    const full=`${e['First Name']||''} ${e['Last Name']||''}`.trim();
+    nodes[full]={...e,full,children:[]};
+  });
+
+  // Link parent → children
+  const roots=[];
+  employees.forEach(e=>{
+    const full=`${e['First Name']||''} ${e['Last Name']||''}`.trim();
+    const l1=String(e['L1 Manager']||'').trim();
+    if(l1&&nodes[l1]&&l1!==full){
+      nodes[l1].children.push(nodes[full]);
+    } else {
+      roots.push(nodes[full]);
+    }
+  });
+  return{roots,nodes};
+}
+
+function makeNodeEl(node,depth,sqFilter){
+  // If squad filter is active, skip nodes not in that squad's subtree
+  const hasRelevant=sqFilter==='all'||hasSquadInSubtree(node,sqFilter);
+  if(!hasRelevant)return null;
+
+  const sq=node.Squad||'';
+  const col=sqColor(sq);
+  const isCon=node.Type==='Consultant';
+  const isRoot=depth===0;
+  const childCount=node.children.length;
+
+  const li=document.createElement('li');
+
+  const a=document.createElement('a');
+  a.style.textDecoration='none';
+  a.style.display='flex';
+  a.style.flexDirection='column';
+  a.style.alignItems='center';
+
+  const box=document.createElement('div');
+  box.className='org-node'+(isRoot?' root':'');
+  box.style.background=col;
+  box.style.borderColor=isCon?'rgba(217,119,6,.8)':'rgba(255,255,255,.15)';
+  box.style.borderWidth=isCon?'2px':'1px';
+
+  const flag=node.Country==='India'?'🔵':'🟣';
+  box.innerHTML=`
+    <div class="org-node-name">${node['First Name']||''} ${node['Last Name']||''}</div>
+    <div class="org-node-title">${node['Corporate Title']||node.Level||''}</div>
+    <div class="org-node-squad">${sq}</div>
+    <div class="org-node-badges">
+      <span class="org-badge ${node.Country==='India'?'ind':'usa'}">${flag} ${node.Country||''}</span>
+      ${isCon?'<span class="org-badge con">CON</span>':''}
+    </div>
+    ${childCount>0?`<div class="org-expand">▾ ${childCount} report${childCount>1?'s':''}</div>`:''}`;
+
+  box.onclick=e=>{
+    e.stopPropagation();
+    li.classList.toggle('collapsed');
+    const expEl=box.querySelector('.org-expand');
+    if(expEl)expEl.textContent=li.classList.contains('collapsed')?`▸ ${childCount} report${childCount>1?'s':''}`:`▾ ${childCount} report${childCount>1?'s':''}`;
+  };
+
+  a.appendChild(box);
+  li.appendChild(a);
+
+  if(childCount>0){
+    const ul=document.createElement('ul');
+    // Sort children by number of their children (managers first)
+    const sorted=[...node.children].sort((a,b)=>b.children.length-a.children.length);
+    let added=0;
+    sorted.forEach(child=>{
+      const childEl=makeNodeEl(child,depth+1,sqFilter);
+      if(childEl){ul.appendChild(childEl);added++;}
+    });
+    if(added>0)li.appendChild(ul);
+  }
+
+  return li;
+}
+
+function hasSquadInSubtree(node,sq){
+  if((node.Squad||'')===(sq||'')||
+     (node.Squad==='Prod Sup'&&sq==='Production Support')||
+     (node.Squad==='PS'&&sq==='Professional Services')||
+     (node.Squad==='Infosec'&&sq==='InfoSec'))return true;
+  return node.children.some(c=>hasSquadInSubtree(c,sq));
+}
+
 function renderOrgChart(){
   const activeAll=EMP_DATA.filter(d=>d.Status==='Active'||d.ActiveFlag===1);
   const sq=document.getElementById('f-org-squad')?.value||'all';
-  const country=document.getElementById('f-org-country')?.value||'all';
-  let emps=activeAll;
-  if(sq!=='all')emps=emps.filter(d=>d.Squad===sq);
-  if(country!=='all')emps=emps.filter(d=>d.Country===country);
 
-  const conCount=emps.filter(d=>d.Type==='Consultant').length;
-  const fteCount=emps.length-conCount;
-  document.getElementById('inf-org-chart').innerHTML=`<strong>Org Chart:</strong> Showing <strong>${emps.length} active employees</strong> — <strong>${fteCount} FTE</strong> + <span style="color:var(--amber);font-weight:700">${conCount} Consultants</span>${sq!=='all'?' · Squad: '+sq:''}${country!=='all'?' · Country: '+country:''}. 🔵 India &nbsp;🟣 USA &nbsp;<span style="background:rgba(217,119,6,.1);color:var(--amber);padding:1px 5px;border-radius:3px;font-size:.72rem;font-weight:700">CON</span> = Consultant`;
-
-  // Group by squad → then L1 manager
-  const sqGroups={};
-  emps.forEach(d=>{
-    const s=d.Squad||'Unknown';
-    const mgr=String(d['L1 Manager']||'(No Manager)').trim();
-    if(!sqGroups[s])sqGroups[s]={};
-    if(!sqGroups[s][mgr])sqGroups[s][mgr]=[];
-    sqGroups[s][mgr].push(d);
-  });
-
-  // Populate org squad filter
-  const orgSquadSel=document.getElementById('f-org-squad');
-  if(orgSquadSel.options.length<=1){
-    [...new Set(activeAll.map(d=>d.Squad).filter(Boolean))].sort().forEach(s=>{
-      const o=document.createElement('option');o.value=o.textContent=s;orgSquadSel.appendChild(o);
-    });
+  // Populate squad filter once
+  const sel=document.getElementById('f-org-squad');
+  if(sel&&sel.options.length<=1){
+    [...new Set(activeAll.map(d=>d.Squad).filter(Boolean))].sort()
+      .forEach(s=>{const o=document.createElement('option');o.value=o.textContent=s;sel.appendChild(o);});
   }
 
-  const html=Object.keys(sqGroups).sort().map(squad=>{
-    const color=SQUAD_COLORS[squad]||'#1a1a2e';
-    const mgrBlocks=Object.entries(sqGroups[squad])
-      .sort((a,b)=>b[1].length-a[1].length)
-      .map(([mgr,reports])=>{
-        const repHtml=reports.map(r=>{
-          const flag=r.Country==='India'?'🔵':'🟣';
-          const level=r.Level?r.Level.replace(' Level',''):'';
-          const isCon=r.Type==='Consultant';
-          const conBadge=isCon?`<span style="font-size:.5rem;padding:1px 4px;border-radius:3px;background:rgba(217,119,6,.15);color:var(--amber);border:1px solid rgba(217,119,6,.3);font-weight:700">CON</span>`:'';
-          const style=isCon?'background:rgba(217,119,6,.04);border-left:2px solid var(--amber)':'';
-          return `<div class="org-emp" style="${style}">${flag} <strong>${r['First Name']}</strong> ${r['Last Name']||''} ${level?`<span style="font-size:.55rem;color:var(--muted)">(${level})</span>`:''} ${conBadge}</div>`;
-        }).join('');
-        const conCount=reports.filter(r=>r.Type==='Consultant').length;
-        const ftCount=reports.length-conCount;
-        return `<div class="org-l1" style="${conCount>0?'border-top:2px solid var(--amber)':'border-top:2px solid var(--green)'}">
-          <div class="org-l1-name">👤 ${mgr}</div>
-          <div class="org-l1-squad">${ftCount} FTE${conCount>0?` · <span style="color:var(--amber);font-weight:700">${conCount} Consultant${conCount>1?'s':''}</span>`:''}</div>
-          <div class="org-l1-reports">${repHtml}</div>
-        </div>`;
-      }).join('');
-    return `<div class="org-squad">
-      <div class="org-squad-title" style="background:${color}">${squad} · ${Object.values(sqGroups[squad]).reduce((s,a)=>s+a.length,0)} people</div>
-      <div class="org-l1-row">${mgrBlocks}</div>
-    </div>`;
-  }).join('');
+  const conCount=activeAll.filter(d=>d.Type==='Consultant').length;
+  const fteCount=activeAll.length-conCount;
+  document.getElementById('inf-org-chart').innerHTML=`<strong>Org Chart:</strong> <strong>${activeAll.length} active</strong> — ${fteCount} FTE + <span style="color:var(--amber);font-weight:700">${conCount} Contractors</span>. One root: <strong>Booshan Rengachari (President)</strong>. Click any node to expand/collapse. Filter by squad to zoom in.`;
 
-  document.getElementById('org-chart-wrap').innerHTML=html||'<div style="text-align:center;padding:40px;color:var(--muted)">No employees match the current filters.</div>';
+  const {roots}=buildOrgTree(activeAll);
+  const wrap=document.getElementById('org-tree-root');
+  wrap.innerHTML='';
+
+  const outerUl=document.createElement('ul');
+  outerUl.style.padding='0';
+  roots.forEach(r=>{
+    const el=makeNodeEl(r,0,sq);
+    if(el)outerUl.appendChild(el);
+  });
+  wrap.appendChild(outerUl);
+
+  // Default: collapse to level 3 for performance
+  collapseToLevel(3);
+}
+
+function collapseToLevel(maxLevel){
+  const allLi=document.querySelectorAll('#org-tree-root li');
+  allLi.forEach(li=>{
+    // Measure depth
+    let depth=0,parent=li.parentElement;
+    while(parent&&parent.id!=='org-tree-root'){
+      if(parent.tagName==='UL')depth++;
+      parent=parent.parentElement;
+    }
+    if(depth>=maxLevel){
+      li.classList.add('collapsed');
+      const exp=li.querySelector(':scope > a .org-expand');
+      if(exp)exp.textContent=exp.textContent.replace('▾','▸');
+    } else {
+      li.classList.remove('collapsed');
+      const exp=li.querySelector(':scope > a .org-expand');
+      if(exp)exp.textContent=exp.textContent.replace('▸','▾');
+    }
+  });
+}
+
+function expandAll(){
+  document.querySelectorAll('#org-tree-root li').forEach(li=>{
+    li.classList.remove('collapsed');
+    const exp=li.querySelector(':scope > a .org-expand');
+    if(exp)exp.textContent=exp.textContent.replace('▸','▾');
+  });
 }
 
 // ── AI INTEL ─────────────────────────────────────────────────
