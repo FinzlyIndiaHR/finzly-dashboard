@@ -2222,11 +2222,45 @@ function renderGalaxyBody(body, section){
   if(!leaderName||!nodes[leaderName])return;
 
   const leader=nodes[leaderName];
-  // Build horizontal tree exactly like leadership strip but starting from this leader
   body.innerHTML=buildHorizontalTree(leader, 0);
+
+  // Auto-expand ALL levels — full tree visible immediately, no clicking required
+  body.querySelectorAll('.ls-child-subtree').forEach(sub=>{
+    sub.style.display='block';
+  });
 }
 
 // Build a horizontal org tree (same visual as leadership strip, recursive)
+// Build children-only HTML (no root box repeated — fixes the duplicate node bug)
+function buildChildrenHtml(node, depth){
+  const kids=[...node.children].sort((a,b)=>subtreeCount(b)-subtreeCount(a));
+  if(kids.length===0)return '';
+  return `<div style="display:flex;flex-direction:column;align-items:center;padding-top:6px">
+    <div class="ls-hbar" style="width:90%"></div>
+    <div class="ls-children-row">${kids.map(child=>{
+      const cc=sqColor(child.Squad||'');
+      const cf=child.Country==='India'?'🔵':'🟣';
+      const cCon=child.Type==='Consultant';
+      const cTotal=subtreeCount(child)-1;
+      const cKids=child.children.length;
+      return `<div class="ls-child" onclick="toggleGalaxyChild(this)" style="cursor:${cKids?'pointer':'default'}">
+        <div class="ls-child-vbar"></div>
+        <div class="ls-card" style="background:${cc};${cCon?'border:2px solid rgba(217,119,6,.8)':''}">
+          <div class="ls-card-name">${child['First Name']||''} ${child['Last Name']||''}</div>
+          <div class="ls-card-title">${child['Corporate Title']||child.Level||''}</div>
+          <div class="ls-badges">
+            <span class="ls-badge ${child.Country==='India'?'ind':'usa'}">${cf}</span>
+            ${cCon?'<span class="ls-badge con">CON</span>':''}
+            ${cTotal>0?`<span class="ls-badge" style="background:rgba(255,255,255,.2)">${cTotal} below${cKids?``:''}</span>`:''}
+          </div>
+        </div>
+        ${cKids>0?`<div class="ls-child-subtree" style="display:none">${buildChildrenHtml(child, depth+1)}</div>`:''}
+      </div>`;
+    }).join('')}
+    </div>
+  </div>`;
+}
+
 function buildHorizontalTree(node, depth){
   const col=sqColor(node.Squad||'');
   const isCon=node.Type==='Consultant';
@@ -2245,9 +2279,7 @@ function buildHorizontalTree(node, depth){
       </div>
     </div>`;
 
-  if(kids.length===0) return `<div class="ls-wrap">${nodeHtml}</div>`;
-
-  const childrenHtml=kids.map(child=>buildHorizontalTree(child, depth+1)).join('');
+  if(kids.length===0)return `<div class="ls-wrap">${nodeHtml}</div>`;
 
   return `<div class="ls-wrap">
     ${nodeHtml}
@@ -2268,10 +2300,10 @@ function buildHorizontalTree(node, depth){
             <div class="ls-badges">
               <span class="ls-badge ${child.Country==='India'?'ind':'usa'}">${cf}</span>
               ${cCon?'<span class="ls-badge con">CON</span>':''}
-              ${cTotal>0?`<span class="ls-badge" style="background:rgba(255,255,255,.2)">${cTotal} below${cKids?` · click`:''}</span>`:''}
+              ${cTotal>0?`<span class="ls-badge" style="background:rgba(255,255,255,.2)">${cTotal} below${cKids?``:''}</span>`:''}
             </div>
           </div>
-          ${cKids>0?`<div class="ls-child-subtree" style="display:none;margin-top:0">${buildHorizontalTree(child,depth+1)}</div>`:''}
+          ${cKids>0?`<div class="ls-child-subtree" style="display:none">${buildChildrenHtml(child, depth+1)}</div>`:''}
         </div>`;
       }).join('')}
       </div>
@@ -2280,12 +2312,10 @@ function buildHorizontalTree(node, depth){
 }
 
 function toggleGalaxyChild(el){
-  const sub=el.querySelector('.ls-child-subtree');
+  const sub=el.querySelector(':scope > .ls-child-subtree');
   if(!sub)return;
   const isOpen=sub.style.display!=='none';
   sub.style.display=isOpen?'none':'block';
-  const badge=el.querySelector('.ls-badge:last-child');
-  if(badge)badge.style.opacity=isOpen?'1':'0.6';
 }
 
 // ── REPORT GENERATION ────────────────────────────────────────
@@ -2639,113 +2669,140 @@ async function addSummarySlide(pres,active,inact){
     {x:0.5,y:6.3,w:12.2,h:0.32,fontSize:10,color:'888888',fontFace:'Calibri',margin:0});
 }
 
-// ── ORG CHART ─────────────────────────────────────────────────
+// ── ORG CHART — clean coordinate-based PPT ───────────────────
 async function addOrgChartSlides(pres, active){
   titleSlide(pres,'Finzly Organization Chart',
     `As of ${new Date().toLocaleString('en-IN',{month:'long',year:'numeric'})}`,
     'Bharathkumar Mayakrishnan');
 
-  // Ensure org chart tab is rendered
-  await captureTab('p9');
-  const galaxies=document.getElementById('galaxy-trees');
-  if(!galaxies||galaxies.children.length===0) renderOrgChart();
-  await new Promise(r=>setTimeout(r,800));
+  const {roots}=buildOrgTree(active);
+  const root=roots[0]; if(!root)return;
+  const W=13.33;
 
-  // Helper: expand every node inside an element
-  function expandAllNodes(container){
-    // Click all collapsed nodes open
-    container.querySelectorAll('.ls-child-subtree').forEach(sub=>{
-      sub.style.display='block';
-    });
-    // Also expand org-tree-v nodes if present
-    container.querySelectorAll('li > ul').forEach(ul=>{
-      ul.style.display='block';
-    });
-    container.querySelectorAll('.on-toggle').forEach(tog=>{
-      tog.textContent='▾';
-      tog.classList.add('open');
-    });
-  }
-
-  // Better screenshot: higher scale, white bg, full scroll height
-  async function snapFull(el, scale=2.5){
-    if(!el)return null;
-    // Force full height render
-    const origOverflow=el.style.overflow;
-    el.style.overflow='visible';
-    const canvas=await html2canvas(el,{
-      scale,
-      useCORS:true,
-      backgroundColor:'#ffffff',
-      logging:false,
-      allowTaint:true,
-      scrollX:0, scrollY:0,
-      windowWidth:el.scrollWidth+100,
-      windowHeight:el.scrollHeight+100,
-      width:el.scrollWidth,
-      height:el.scrollHeight
-    });
-    el.style.overflow=origOverflow;
-    return canvas.toDataURL('image/png',1.0);
-  }
-
-  // Helper: add image slide that fits the image properly with no distortion
-  function addImgSlide(pres, title, subtitle, img, slideNum){
-    const s=makeSlide(pres,slideNum);
-    slideTitle(s,title,subtitle);
-    if(!img)return s;
-    // Available area on slide
-    const areaX=0.3, areaY=0.92, areaW=12.73, areaH=6.3;
-    s.addImage({data:img, x:areaX, y:areaY, w:areaW, h:areaH,
-      sizing:{type:'contain', w:areaW, h:areaH}});
-    return s;
-  }
-
-  // Slide 1: Leadership strip
-  const stripEl=document.getElementById('leadership-strip');
-  if(stripEl){
-    expandAllNodes(stripEl);
-    await new Promise(r=>setTimeout(r,300));
-    const stripImg=await snapFull(stripEl, 2.5);
-    addImgSlide(pres,'Leadership Team',
-      'Booshan Rengachari · President · Direct Reports', stripImg, 2);
-  }
-
-  // One slide per galaxy — expand ALL levels then screenshot
-  const sections=document.querySelectorAll('#galaxy-trees .galaxy-section');
-  let slideNum=3;
-
-  for(const sec of sections){
-    const leaderName=sec.querySelector('.galaxy-leader-name')?.textContent?.trim()||'';
-    const leaderTitle=sec.querySelector('.galaxy-leader-title')?.textContent?.trim()||'';
-    const badge=sec.querySelector('.galaxy-badge')?.textContent?.trim()||'';
-    const body=sec.querySelector('.galaxy-body');
-    if(!body)continue;
-
-    // Open the galaxy
-    const wasOpen=body.classList.contains('open');
-    body.classList.add('open');
-    const tog=sec.querySelector('.galaxy-toggle');
-    if(tog)tog.classList.add('open');
-
-    // Render tree if not done yet
-    if(body.dataset.rendered!=='1') renderGalaxyBody(body, sec);
-    await new Promise(r=>setTimeout(r,600));
-
-    // *** EXPAND ALL LEVELS before screenshot ***
-    expandAllNodes(body);
-    await new Promise(r=>setTimeout(r,300));
-
-    const img=await snapFull(body, 2.2);
-    addImgSlide(pres, leaderName, `${leaderTitle} · ${badge}`, img, slideNum++);
-
-    // Restore state
-    if(!wasOpen){
-      body.classList.remove('open');
-      if(tog)tog.classList.remove('open');
+  // Draw a single person box
+  function box(s,p,x,y,w,h,isRoot=false){
+    const isIndia=p.Country==='India';
+    const isCon=p.Type==='Consultant';
+    // USA = dark navy, India = teal
+    const bg=isRoot?'0E2841':isIndia?'156082':'0E2841';
+    const border=isCon?'FBAE40':bg;
+    s.addShape('rect',{x,y,w,h,fill:{color:bg},
+      line:{color:border,pt:isCon?2:0},
+      shadow:{type:'outer',color:'000000',opacity:0.1,blur:4,offset:1,angle:135}});
+    const fs=Math.max(6,Math.min(9,w*5.5));
+    s.addText(`${p['First Name']||''} ${p['Last Name']||''}`,
+      {x:x+0.05,y:y+0.05,w:w-0.1,h:h*0.44,fontSize:fs,bold:true,
+       color:'FFFFFF',fontFace:'Calibri',align:'center',margin:0,fit:'shrink'});
+    if(w>0.7){
+      s.addText((p['Corporate Title']||p.Level||'').slice(0,24),
+        {x:x+0.05,y:y+h*0.46,w:w-0.1,h:h*0.32,
+         fontSize:Math.max(5,fs*0.75),color:'DDDDDD',
+         fontFace:'Calibri',align:'center',margin:0,fit:'shrink'});
     }
-    // Re-collapse nodes to keep dashboard tidy
-    body.querySelectorAll('.ls-child-subtree').forEach(sub=>sub.style.display='none');
+    const flag=isIndia?'🔵':'🟣';
+    s.addText(`${flag}${isCon?' CON':''}`,
+      {x:x+0.05,y:y+h*0.78,w:w-0.1,h:h*0.2,
+       fontSize:Math.max(4.5,fs*0.65),color:'FFFFFF',
+       fontFace:'Calibri',align:'center',margin:0});
+  }
+
+  // Draw elbow connector line
+  function line(s,x1,y1,x2,y2){
+    const my=(y1+y2)/2, lw=0.012;
+    s.addShape('rect',{x:x1-lw/2,y:y1,w:lw,h:my-y1,fill:{color:'AAAAAA'},line:{color:'AAAAAA',pt:0}});
+    const lx=Math.min(x1,x2),rx=Math.max(x1,x2);
+    if(rx-lx>lw) s.addShape('rect',{x:lx,y:my-lw/2,w:rx-lx,h:lw,fill:{color:'AAAAAA'},line:{color:'AAAAAA',pt:0}});
+    s.addShape('rect',{x:x2-lw/2,y:my,w:lw,h:y2-my,fill:{color:'AAAAAA'},line:{color:'AAAAAA',pt:0}});
+  }
+
+  // Legend helper
+  function addLegend(s){
+    s.addShape('rect',{x:10.5,y:0.12,w:0.22,h:0.22,fill:{color:'0E2841'},line:{color:'CCCCCC',pt:0.5}});
+    s.addText('USA',{x:10.75,y:0.12,w:0.7,h:0.22,fontSize:8,color:'555555',fontFace:'Calibri',margin:0});
+    s.addShape('rect',{x:11.5,y:0.12,w:0.22,h:0.22,fill:{color:'156082'},line:{color:'CCCCCC',pt:0.5}});
+    s.addText('India',{x:11.75,y:0.12,w:0.8,h:0.22,fontSize:8,color:'555555',fontFace:'Calibri',margin:0});
+  }
+
+  // ── SLIDE 1: Leadership Team ───────────────────────────────
+  const s1=makeSlide(pres,2);
+  slideTitle(s1,'Leadership Team','All direct reports to President');
+  addLegend(s1);
+
+  const children=[...root.children].sort((a,b)=>subtreeCount(b)-subtreeCount(a));
+  const rW=1.8, rH=0.82;
+  const rX=(W-rW)/2, rY=0.88;
+  box(s1,root,rX,rY,rW,rH,true);
+
+  const cW=Math.min(1.55,(W-0.4)/Math.max(children.length,1)-0.1);
+  const gap=(W-0.4-children.length*cW)/Math.max(children.length-1,1);
+  const cStartX=0.2, cY=rY+rH+0.62, midY=rY+rH+0.3;
+
+  s1.addShape('rect',{x:rX+rW/2-0.006,y:rY+rH,w:0.012,h:0.3,fill:{color:'AAAAAA'},line:{color:'AAAAAA',pt:0}});
+  if(children.length>1){
+    const bL=cStartX+cW/2, bR=cStartX+(children.length-1)*(cW+gap)+cW/2;
+    s1.addShape('rect',{x:bL,y:midY-0.006,w:bR-bL,h:0.012,fill:{color:'AAAAAA'},line:{color:'AAAAAA',pt:0}});
+  }
+  children.forEach((c,i)=>{
+    const cx=cStartX+i*(cW+gap);
+    s1.addShape('rect',{x:cx+cW/2-0.006,y:midY,w:0.012,h:0.3,fill:{color:'AAAAAA'},line:{color:'AAAAAA',pt:0}});
+    box(s1,c,cx,cY,cW,0.76);
+    const n=subtreeCount(c)-1;
+    if(n>0) s1.addText(`${n} below`,{x:cx,y:cY+0.79,w:cW,h:0.18,fontSize:6,color:'888888',align:'center',fontFace:'Calibri',margin:0});
+  });
+
+  // ── ONE SLIDE PER GALAXY: Leader + Direct Reports ──────────
+  // Simple clean layout: one level shown, count badge for deeper levels
+  let slideNum=3;
+  for(const leader of children){
+    const gKids=[...leader.children].sort((a,b)=>subtreeCount(b)-subtreeCount(a));
+    if(gKids.length===0)continue;
+
+    const sg=makeSlide(pres,slideNum++);
+    slideTitle(sg,`${leader['First Name']} ${leader['Last Name']}`,
+      `${leader['Corporate Title']||leader.Squad||''} · ${subtreeCount(leader)-1} people`);
+    addLegend(sg);
+
+    // Leader box centred
+    const lW=2.1, lH=0.78, lX=(W-lW)/2, lY=0.88;
+    box(sg,leader,lX,lY,lW,lH,true);
+    sg.addShape('rect',{x:lX+lW/2-0.006,y:lY+lH,w:0.012,h:0.3,fill:{color:'AAAAAA'},line:{color:'AAAAAA',pt:0}});
+
+    // Direct reports row — fit up to 10 per row
+    const rowSize=Math.min(gKids.length,10);
+    const gW=Math.min(1.55,(W-0.3)/rowSize-0.1);
+    const gGap=(W-0.3-rowSize*gW)/Math.max(rowSize-1,1);
+    const gStart=0.15, gY=lY+lH+0.62, gMid=lY+lH+0.3;
+
+    if(rowSize>1){
+      const bL=gStart+gW/2, bR=gStart+(rowSize-1)*(gW+gGap)+gW/2;
+      sg.addShape('rect',{x:bL,y:gMid-0.006,w:bR-bL,h:0.012,fill:{color:'AAAAAA'},line:{color:'AAAAAA',pt:0}});
+    }
+    gKids.slice(0,rowSize).forEach((c,i)=>{
+      const gx=gStart+i*(gW+gGap);
+      sg.addShape('rect',{x:gx+gW/2-0.006,y:gMid,w:0.012,h:0.3,fill:{color:'AAAAAA'},line:{color:'AAAAAA',pt:0}});
+      box(sg,c,gx,gY,gW,0.78);
+      const n=subtreeCount(c)-1;
+      if(n>0) sg.addText(`+ ${n} below`,{x:gx,y:gY+0.81,w:gW,h:0.18,fontSize:6,color:'888888',align:'center',fontFace:'Calibri',margin:0});
+    });
+
+    // Second row if needed
+    if(gKids.length>rowSize){
+      const row2=gKids.slice(rowSize,rowSize+10);
+      const r2W=Math.min(1.55,(W-0.3)/row2.length-0.1);
+      const r2Gap=(W-0.3-row2.length*r2W)/Math.max(row2.length-1,1);
+      const r2Y=gY+1.05;
+      row2.forEach((c,i)=>{
+        box(sg,c,0.15+i*(r2W+r2Gap),r2Y,r2W,0.78);
+        const n=subtreeCount(c)-1;
+        if(n>0) sg.addText(`+ ${n}`,{x:0.15+i*(r2W+r2Gap),y:r2Y+0.81,w:r2W,h:0.18,fontSize:6,color:'888888',align:'center',fontFace:'Calibri',margin:0});
+      });
+    }
+
+    // Footer note
+    const conCount=gatherSubtree(leader).filter(e=>e.Type==='Consultant').length;
+    const indCount=gatherSubtree(leader).filter(e=>e.Country==='India').length;
+    sg.addText(`${subtreeCount(leader)-1} people · ${indCount} India · ${subtreeCount(leader)-1-indCount} USA · ${conCount} contractors · Finzly Org Chart`,
+      {x:0.3,y:7.1,w:12.7,h:0.25,fontSize:7.5,color:'AAAAAA',align:'center',fontFace:'Calibri'});
   }
 }
 
