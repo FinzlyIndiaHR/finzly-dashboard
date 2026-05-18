@@ -2742,63 +2742,126 @@ async function addOrgChartSlides(pres, active){
   s1.addText('🔵 India  🟣 USA  CON = Contractor  · See next slides for each galaxy team',
     {x:0.3,y:7.15,w:12.7,h:0.28,fontSize:8,color:'888888',align:'center',fontFace:'Outfit'});
 
-  // ── ONE SLIDE PER GALAXY ───────────────────────────────────
+  // ── ONE SLIDE PER GALAXY — horizontal tree, all employees ──
   for(const leader of children){
-    const gKids=[...leader.children].sort((a,b)=>subtreeCount(b)-subtreeCount(a));
-    if(gKids.length===0)continue;
+    const allInGalaxy=gatherSubtree(leader);
+    if(allInGalaxy.length<=1)continue;
 
     const sg=pres.addSlide();
     sg.background={color:BRAND.bg};
     const lcol=(sqColor(leader.Squad||'')||'#1e3a5f').replace('#','');
-    sg.addShape('rect',{x:0,y:0,w:SLIDE_W,h:0.72,fill:{color:lcol}});
+    const total=allInGalaxy.length-1;
+
+    // Header
+    sg.addShape('rect',{x:0,y:0,w:SLIDE_W,h:0.58,fill:{color:lcol}});
     sg.addText(`${leader['First Name']} ${leader['Last Name']} — ${leader['Corporate Title']||leader.Squad||''}`,
-      {x:0.25,y:0.1,w:9.5,h:0.32,fontSize:16,bold:true,color:'FFFFFF',fontFace:'Outfit',margin:0});
-    sg.addText(`${subtreeCount(leader)-1} people · ${leader.Squad||''} · ${leader.Country==='India'?'🔵 India':'🟣 USA'}`,
-      {x:0.25,y:0.42,w:9.5,h:0.22,fontSize:9,color:'rgba(255,255,255,0.72)',fontFace:'Outfit',margin:0});
+      {x:0.25,y:0.07,w:10,h:0.3,fontSize:14,bold:true,color:'FFFFFF',fontFace:'Outfit',margin:0});
+    sg.addText(`${total} people · ${leader.Country==='India'?'🔵 India':'🟣 USA'} · Full Team Org Chart`,
+      {x:0.25,y:0.37,w:10,h:0.18,fontSize:8,color:'rgba(255,255,255,0.7)',fontFace:'Outfit',margin:0});
 
-    // Leader box centred
-    const lrootW=2.1, lrootH=0.75;
-    const lrootX=(SLIDE_W-lrootW)/2;
-    drawBox(sg,leader,lrootX,0.88,lrootW,lrootH);
-    sg.addShape('rect',{x:lrootX+lrootW/2-0.01,y:0.88+lrootH,w:0.02,h:0.32,fill:{color:'666666'},line:{color:'666666',pt:0}});
-
-    // Direct reports row(s) — up to 8 per row
-    const rowSize=Math.min(gKids.length,8);
-    const gW=Math.min(1.6,(SLIDE_W-0.4)/rowSize-0.1);
-    const gGap=(SLIDE_W-0.4-rowSize*gW)/(Math.max(rowSize-1,1));
-    const gTotal=rowSize*gW+(rowSize-1)*gGap;
-    const gStartX=(SLIDE_W-gTotal)/2;
-    const row1Y=0.88+lrootH+0.62;
-
-    // Horizontal bar
-    if(rowSize>1){
-      sg.addShape('rect',{x:gStartX+gW/2,y:0.88+lrootH+0.32,w:gTotal-gW,h:0.02,fill:{color:'666666'},line:{color:'666666',pt:0}});
+    // ── Tree layout ─────────────────────────────────────────
+    // Count leaves (determines proportional width allocation)
+    function leafCount(node){
+      if(!node.children||node.children.length===0)return 1;
+      return node.children.reduce((s,c)=>s+leafCount(c),0);
+    }
+    // Max depth of tree
+    function maxDepth(node,d=0){
+      if(!node.children||node.children.length===0)return d;
+      return Math.max(...node.children.map(c=>maxDepth(c,d+1)));
     }
 
-    gKids.slice(0,rowSize).forEach((child,i)=>{
-      const gx=gStartX+i*(gW+gGap);
-      sg.addShape('rect',{x:gx+gW/2-0.01,y:0.88+lrootH+0.32,w:0.02,h:0.3,fill:{color:'666666'},line:{color:'666666',pt:0}});
-      drawBox(sg,child,gx,row1Y,gW,0.8);
-      const n=child.children.length;
-      if(n>0) sg.addText(`▸ ${n} reports`,{x:gx,y:row1Y+0.83,w:gW,h:0.18,fontSize:6,color:'BBBBBB',align:'center',fontFace:'Outfit',margin:0});
+    const TREE_X=0.12, TREE_Y=0.68;
+    const TREE_W=SLIDE_W-0.24, TREE_H=6.65;
+    const depth=maxDepth(leader);
+    const levelH=TREE_H/(depth+1);
+    const boxH=Math.min(0.75,levelH*0.65);
+    const totalLeaves=leafCount(leader);
+    const unitW=TREE_W/totalLeaves;
+    const minBoxW=0.5;
+
+    // Collect all node placements
+    const placements=[];
+    function placeNode(node, leftLeaves, level){
+      const leaves=leafCount(node);
+      const bw=Math.max(minBoxW, unitW*leaves - 0.06);
+      const bx=TREE_X + leftLeaves*unitW + (unitW*leaves - bw)/2;
+      const by=TREE_Y + level*levelH + (levelH-boxH)/2;
+      placements.push({node, bx, by, bw, bh:boxH,
+        cx:TREE_X+leftLeaves*unitW+unitW*leaves/2}); // true centre x
+      let childLeft=leftLeaves;
+      if(node.children){
+        [...node.children].sort((a,b)=>leafCount(b)-leafCount(a))
+          .forEach(child=>{placeNode(child,childLeft,level+1);childLeft+=leafCount(child);});
+      }
+    }
+    placeNode(leader,0,0);
+
+    // Map node name → placement for line drawing
+    const pm={};placements.forEach(p=>pm[p.node.full]=p);
+
+    // Draw lines FIRST (behind boxes)
+    placements.forEach(p=>{
+      const parName=String(p.node['L1 Manager']||'').trim();
+      const par=pm[parName];
+      if(!par)return;
+      // Elbow: parent bottom-centre → child top-centre
+      const x1=par.cx, y1=par.by+par.bh;
+      const x2=p.cx,   y2=p.by;
+      const my=(y1+y2)/2;
+      // Down from parent
+      sg.addShape('rect',{x:x1-0.008,y:y1,w:0.016,h:my-y1,
+        fill:{color:'555555'},line:{color:'555555',pt:0}});
+      // Horizontal
+      const lx=Math.min(x1,x2), rx=Math.max(x1,x2);
+      if(rx-lx>0.02)
+        sg.addShape('rect',{x:lx,y:my-0.008,w:rx-lx,h:0.016,
+          fill:{color:'555555'},line:{color:'555555',pt:0}});
+      // Down to child
+      sg.addShape('rect',{x:x2-0.008,y:my,w:0.016,h:y2-my,
+        fill:{color:'555555'},line:{color:'555555',pt:0}});
     });
 
-    // Row 2 if needed
-    if(gKids.length>rowSize){
-      const row2=gKids.slice(rowSize,rowSize*2);
-      const r2W=Math.min(1.6,(SLIDE_W-0.4)/Math.min(row2.length,8)-0.1);
-      const r2Gap=(SLIDE_W-0.4-row2.length*r2W)/(Math.max(row2.length-1,1));
-      const r2StartX=(SLIDE_W-(row2.length*r2W+(row2.length-1)*r2Gap))/2;
-      const r2Y=row1Y+1.05;
-      row2.forEach((child,i)=>{
-        drawBox(sg,child,r2StartX+i*(r2W+r2Gap),r2Y,r2W,0.8);
-        const n=child.children.length;
-        if(n>0) sg.addText(`▸ ${n}`,{x:r2StartX+i*(r2W+r2Gap),y:r2Y+0.83,w:r2W,h:0.18,fontSize:6,color:'BBBBBB',align:'center',fontFace:'Outfit',margin:0});
-      });
-    }
+    // Draw boxes ON TOP of lines
+    placements.forEach(p=>{
+      const {node,bx,by,bw,bh}=p;
+      const bcol=(sqColor(node.Squad||'')||'#1e3a5f').replace('#','');
+      const isCon=node.Type==='Consultant';
+      const flag=node.Country==='India'?'🔵':'🟣';
 
-    sg.addText('Finzly Org Chart · '+new Date().toLocaleDateString('en-IN'),
-      {x:0.3,y:7.15,w:12.7,h:0.28,fontSize:8,color:'666666',align:'center',fontFace:'Outfit'});
+      sg.addShape('rect',{x:bx,y:by,w:bw,h:bh,
+        fill:{color:bcol},
+        line:{color:isCon?'F59E0B':'FFFFFF',pt:isCon?1.5:0.5},
+        shadow:{type:'outer',color:'000000',opacity:0.15,blur:4,offset:1,angle:135}});
+
+      // Name — scale font to box width
+      const fs=Math.max(5,Math.min(8.5,bw*5));
+      sg.addText(`${node['First Name']||''} ${node['Last Name']||''}`,
+        {x:bx+0.03,y:by+0.03,w:bw-0.06,h:bh*0.44,
+         fontSize:fs,bold:true,color:'FFFFFF',fontFace:'Outfit',
+         align:'center',margin:0,fit:'shrink'});
+
+      // Title — only if box wide enough
+      if(bw>=0.75){
+        const title=(node['Corporate Title']||node.Level||'').replace(' Level','').slice(0,22);
+        sg.addText(title,{x:bx+0.03,y:by+bh*0.46,w:bw-0.06,h:bh*0.3,
+          fontSize:Math.max(4.5,Math.min(6.5,bw*3.8)),color:'DDDDDD',
+          fontFace:'Outfit',align:'center',margin:0,fit:'shrink'});
+      }
+
+      // Flag + CON badge
+      sg.addText(`${flag}${isCon?' C':''}`,
+        {x:bx+0.03,y:by+bh*0.77,w:bw-0.06,h:bh*0.2,
+         fontSize:Math.max(4,Math.min(6,bw*3.5)),color:'FFFFFF',
+         fontFace:'Outfit',align:'center',margin:0});
+    });
+
+    // Footer
+    const conCount=allInGalaxy.filter(e=>e.Type==='Consultant').length;
+    const indCount=allInGalaxy.filter(e=>e.Country==='India').length;
+    sg.addText(
+      `${total} people · ${indCount} 🔵 India · ${total-indCount} 🟣 USA · ${conCount} contractors · Finzly Org Chart`,
+      {x:0.2,y:7.2,w:12.9,h:0.25,fontSize:7,color:'888888',align:'center',fontFace:'Outfit'});
   }
 }
 
