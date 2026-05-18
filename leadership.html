@@ -2222,12 +2222,117 @@ function renderGalaxyBody(body, section){
   if(!leaderName||!nodes[leaderName])return;
 
   const leader=nodes[leaderName];
-  body.innerHTML=buildHorizontalTree(leader, 0);
 
-  // Auto-expand ALL levels — full tree visible immediately, no clicking required
-  body.querySelectorAll('.ls-child-subtree').forEach(sub=>{
-    sub.style.display='block';
+  // Get all employees in this galaxy
+  const subtreeEmps=gatherSubtree(leader).slice(1); // exclude leader
+
+  // Group by Practice
+  const practiceMap={};
+  subtreeEmps.forEach(emp=>{
+    const p=emp['Practice']||'Other';
+    if(!practiceMap[p])practiceMap[p]=[];
+    practiceMap[p].push(emp);
   });
+
+  // Sort practices: Engineering first, then QA, then rest by size
+  const practiceOrder=['Engineering','QA','Product','Business Analyst',
+    'Production Support','DevOps','Sales','Marketing','Management','HR','Finance',
+    'InfoSec','Scrum Master','Project Management','Pre-Sales','Release Manager'];
+  const practices=Object.keys(practiceMap).sort((a,b)=>{
+    const ai=practiceOrder.indexOf(a), bi=practiceOrder.indexOf(b);
+    if(ai>=0&&bi>=0)return ai-bi;
+    if(ai>=0)return -1; if(bi>=0)return 1;
+    return practiceMap[b].length-practiceMap[a].length;
+  });
+
+  // Practice colour palette
+  const PCOLORS={
+    'Engineering':'#1e4d8c','QA':'#15803d','Product':'#7c3aed',
+    'Business Analyst':'#b45309','Production Support':'#0369a1',
+    'DevOps':'#374151','Sales':'#be185d','Marketing':'#9d174d',
+    'Management':'#44403c','HR':'#d97706','Finance':'#0f766e',
+    'InfoSec':'#4338ca','Scrum Master':'#0e7490','Project Management':'#6d28d9',
+    'Pre-Sales':'#b91c1c','Release Manager':'#065f46',
+  };
+  const pcolor=p=>PCOLORS[p]||'#475569';
+
+  // Build HTML: galaxy leader at top, then Practice sections side by side
+  let html=`
+    <div style="display:flex;flex-direction:column;align-items:center;padding:0 10px">
+      <!-- Galaxy leader box -->
+      <div class="ls-root-box" style="background:${sqColor(leader.Squad||'')};border-color:rgba(255,255,255,.2);margin-bottom:0">
+        <div class="ls-name">${leader['First Name']||''} ${leader['Last Name']||''}</div>
+        <div class="ls-title">${leader['Corporate Title']||leader.Level||''}</div>
+        <div class="ls-badges">
+          <span class="ls-badge ${leader.Country==='India'?'ind':'usa'}">${leader.Country==='India'?'🔵':'🟣'}</span>
+          <span class="ls-badge" style="background:rgba(255,255,255,.2)">${subtreeEmps.length} people</span>
+        </div>
+      </div>
+      <div class="ls-connector"></div>
+      <!-- Practice sections in a row -->
+      <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;justify-content:center;width:100%">
+  `;
+
+  practices.forEach(practice=>{
+    const emps=practiceMap[practice];
+    const col=pcolor(practice);
+
+    // Group employees by their immediate L1 manager
+    const mgrGroups={};
+    emps.forEach(emp=>{
+      const mgr=String(emp['L1 Manager']||'').trim();
+      if(!mgrGroups[mgr])mgrGroups[mgr]=[];
+      mgrGroups[mgr].push(emp);
+    });
+
+    html+=`
+      <div style="border:1px solid ${col}30;border-radius:10px;overflow:hidden;min-width:200px;max-width:320px;flex:1">
+        <!-- Practice header -->
+        <div style="background:${col};padding:7px 12px;display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:.78rem;font-weight:800;color:#fff;font-family:'Outfit',sans-serif">${practice}</span>
+          <span style="font-size:.65rem;padding:2px 8px;border-radius:20px;background:rgba(255,255,255,.2);color:#fff;font-family:'Outfit',sans-serif">${emps.length}</span>
+        </div>
+        <!-- Manager groups -->
+        <div style="padding:8px;background:#fff;display:flex;flex-direction:column;gap:8px">
+    `;
+
+    Object.entries(mgrGroups)
+      .sort((a,b)=>b[1].length-a[1].length)
+      .forEach(([mgr,reports])=>{
+        // Check if manager is in the galaxy (to show their name nicely)
+        const mgrNode=nodes[mgr];
+        html+=`<div style="background:#f8f8f8;border-radius:6px;padding:6px 8px;border-left:3px solid ${col}">`;
+
+        // Manager label
+        if(mgrNode){
+          html+=`<div style="font-size:.65rem;font-weight:700;color:${col};font-family:'Outfit',sans-serif;margin-bottom:5px;border-bottom:1px solid ${col}20;padding-bottom:3px">
+            ${mgrNode['First Name']} ${mgrNode['Last Name']} <span style="font-weight:400;color:#888">${mgrNode['Corporate Title']||''}</span>
+          </div>`;
+        } else {
+          html+=`<div style="font-size:.6rem;font-weight:700;color:${col};font-family:'Outfit',sans-serif;margin-bottom:5px">${mgr||'Direct Report'}</div>`;
+        }
+
+        // People under this manager in this practice
+        html+=`<div style="display:flex;flex-direction:column;gap:3px">`;
+        reports.forEach(emp=>{
+          const flag=emp.Country==='India'?'🔵':'🟣';
+          const isCon=emp.Type==='Consultant';
+          const level=(emp.Level||'').replace(' Level','');
+          html+=`<div style="display:flex;align-items:center;gap:5px;padding:3px 6px;border-radius:4px;background:#fff;border:1px solid #eee;font-family:'Outfit',sans-serif">
+            <span style="font-size:.65rem">${flag}</span>
+            <span style="font-size:.68rem;font-weight:600;color:#1a1a2e;flex:1">${emp['First Name']||''} ${emp['Last Name']||''}</span>
+            ${level?`<span style="font-size:.55rem;color:#888;flex-shrink:0">${level}</span>`:''}
+            ${isCon?`<span style="font-size:.52rem;padding:1px 4px;border-radius:3px;background:#fef3c7;color:#92400e;font-weight:700;border:1px solid #fcd34d">CON</span>`:''}
+          </div>`;
+        });
+        html+=`</div></div>`;
+      });
+
+    html+=`</div></div>`;
+  });
+
+  html+=`</div></div>`;
+  body.innerHTML=html;
 }
 
 // Build a horizontal org tree (same visual as leadership strip, recursive)
@@ -2669,36 +2774,51 @@ async function addSummarySlide(pres,active,inact){
     {x:0.5,y:6.3,w:12.2,h:0.32,fontSize:10,color:'888888',fontFace:'Calibri',margin:0});
 }
 
-// ── ORG CHART — clean coordinate-based PPT ───────────────────
+// ── ORG CHART — practice-split slides per galaxy ─────────────
 async function addOrgChartSlides(pres, active){
   titleSlide(pres,'Finzly Organization Chart',
     `As of ${new Date().toLocaleString('en-IN',{month:'long',year:'numeric'})}`,
     'Bharathkumar Mayakrishnan');
 
-  const {roots}=buildOrgTree(active);
+  const {roots,nodes}=buildOrgTree(active);
   const root=roots[0]; if(!root)return;
   const W=13.33;
 
-  // Draw a single person box
-  function box(s,p,x,y,w,h,isRoot=false){
+  const PCOL={
+    'Engineering':'1E4D8C','QA':'15803D','Product':'7C3AED',
+    'Business Analyst':'B45309','Production Support':'0369A1',
+    'DevOps':'374151','Sales':'BE185D','Marketing':'9D174D',
+    'Management':'44403C','HR':'D97706','Finance':'0F766E',
+    'InfoSec':'4338CA','Scrum Master':'0E7490','Project Management':'6D28D9',
+    'Pre-Sales':'B91C1C','Release Manager':'065F46',
+  };
+  const pc=p=>PCOL[p]||'475569';
+  const PORDER=['Engineering','QA','Product','Business Analyst',
+    'Production Support','DevOps','Sales','Marketing','Management',
+    'HR','Finance','InfoSec','Scrum Master','Project Management','Pre-Sales','Release Manager'];
+
+  function addLegend(s){
+    s.addShape('rect',{x:10.5,y:0.12,w:0.22,h:0.22,fill:{color:'0E2841'},line:{color:'CCCCCC',pt:0.5}});
+    s.addText('USA',{x:10.75,y:0.12,w:0.6,h:0.22,fontSize:8,color:'555555',fontFace:'Calibri',margin:0});
+    s.addShape('rect',{x:11.4,y:0.12,w:0.22,h:0.22,fill:{color:'156082'},line:{color:'CCCCCC',pt:0.5}});
+    s.addText('India',{x:11.65,y:0.12,w:0.9,h:0.22,fontSize:8,color:'555555',fontFace:'Calibri',margin:0});
+  }
+
+  function drawBox(s,p,x,y,w,h){
     const isIndia=p.Country==='India';
     const isCon=p.Type==='Consultant';
-    // USA = dark navy, India = teal
-    const bg=isRoot?'0E2841':isIndia?'156082':'0E2841';
-    const border=isCon?'FBAE40':bg;
+    const bg=isIndia?'156082':'0E2841';
     s.addShape('rect',{x,y,w,h,fill:{color:bg},
-      line:{color:border,pt:isCon?2:0},
+      line:{color:isCon?'FBAE40':bg,pt:isCon?2:0},
       shadow:{type:'outer',color:'000000',opacity:0.1,blur:4,offset:1,angle:135}});
     const fs=Math.max(6,Math.min(9,w*5.5));
     s.addText(`${p['First Name']||''} ${p['Last Name']||''}`,
-      {x:x+0.05,y:y+0.05,w:w-0.1,h:h*0.44,fontSize:fs,bold:true,
+      {x:x+0.05,y:y+0.04,w:w-0.1,h:h*0.44,fontSize:fs,bold:true,
        color:'FFFFFF',fontFace:'Calibri',align:'center',margin:0,fit:'shrink'});
-    if(w>0.7){
-      s.addText((p['Corporate Title']||p.Level||'').slice(0,24),
-        {x:x+0.05,y:y+h*0.46,w:w-0.1,h:h*0.32,
-         fontSize:Math.max(5,fs*0.75),color:'DDDDDD',
-         fontFace:'Calibri',align:'center',margin:0,fit:'shrink'});
-    }
+    if(w>0.7) s.addText((p['Corporate Title']||p.Level||'').slice(0,24),
+      {x:x+0.05,y:y+h*0.46,w:w-0.1,h:h*0.32,
+       fontSize:Math.max(5,fs*0.75),color:'DDDDDD',
+       fontFace:'Calibri',align:'center',margin:0,fit:'shrink'});
     const flag=isIndia?'🔵':'🟣';
     s.addText(`${flag}${isCon?' CON':''}`,
       {x:x+0.05,y:y+h*0.78,w:w-0.1,h:h*0.2,
@@ -2706,103 +2826,155 @@ async function addOrgChartSlides(pres, active){
        fontFace:'Calibri',align:'center',margin:0});
   }
 
-  // Draw elbow connector line
-  function line(s,x1,y1,x2,y2){
-    const my=(y1+y2)/2, lw=0.012;
+  function connLine(s,x1,y1,x2,y2){
+    const my=(y1+y2)/2,lw=0.012;
     s.addShape('rect',{x:x1-lw/2,y:y1,w:lw,h:my-y1,fill:{color:'AAAAAA'},line:{color:'AAAAAA',pt:0}});
     const lx=Math.min(x1,x2),rx=Math.max(x1,x2);
     if(rx-lx>lw) s.addShape('rect',{x:lx,y:my-lw/2,w:rx-lx,h:lw,fill:{color:'AAAAAA'},line:{color:'AAAAAA',pt:0}});
     s.addShape('rect',{x:x2-lw/2,y:my,w:lw,h:y2-my,fill:{color:'AAAAAA'},line:{color:'AAAAAA',pt:0}});
   }
 
-  // Legend helper
-  function addLegend(s){
-    s.addShape('rect',{x:10.5,y:0.12,w:0.22,h:0.22,fill:{color:'0E2841'},line:{color:'CCCCCC',pt:0.5}});
-    s.addText('USA',{x:10.75,y:0.12,w:0.7,h:0.22,fontSize:8,color:'555555',fontFace:'Calibri',margin:0});
-    s.addShape('rect',{x:11.5,y:0.12,w:0.22,h:0.22,fill:{color:'156082'},line:{color:'CCCCCC',pt:0.5}});
-    s.addText('India',{x:11.75,y:0.12,w:0.8,h:0.22,fontSize:8,color:'555555',fontFace:'Calibri',margin:0});
-  }
-
-  // ── SLIDE 1: Leadership Team ───────────────────────────────
+  // ── SLIDE 1: Leadership Team ─────────────────────────────
   const s1=makeSlide(pres,2);
   slideTitle(s1,'Leadership Team','All direct reports to President');
   addLegend(s1);
-
   const children=[...root.children].sort((a,b)=>subtreeCount(b)-subtreeCount(a));
-  const rW=1.8, rH=0.82;
-  const rX=(W-rW)/2, rY=0.88;
-  box(s1,root,rX,rY,rW,rH,true);
-
-  const cW=Math.min(1.55,(W-0.4)/Math.max(children.length,1)-0.1);
-  const gap=(W-0.4-children.length*cW)/Math.max(children.length-1,1);
-  const cStartX=0.2, cY=rY+rH+0.62, midY=rY+rH+0.3;
-
+  const rW=1.8,rH=0.82,rX=(W-rW)/2,rY=0.88;
+  drawBox(s1,root,rX,rY,rW,rH);
   s1.addShape('rect',{x:rX+rW/2-0.006,y:rY+rH,w:0.012,h:0.3,fill:{color:'AAAAAA'},line:{color:'AAAAAA',pt:0}});
+  const cW=Math.min(1.55,(W-0.4)/Math.max(children.length,1)-0.1);
+  const cGap=(W-0.4-children.length*cW)/Math.max(children.length-1,1);
+  const cStartX=0.2,cY=rY+rH+0.62,midY=rY+rH+0.3;
   if(children.length>1){
-    const bL=cStartX+cW/2, bR=cStartX+(children.length-1)*(cW+gap)+cW/2;
+    const bL=cStartX+cW/2,bR=cStartX+(children.length-1)*(cW+cGap)+cW/2;
     s1.addShape('rect',{x:bL,y:midY-0.006,w:bR-bL,h:0.012,fill:{color:'AAAAAA'},line:{color:'AAAAAA',pt:0}});
   }
   children.forEach((c,i)=>{
-    const cx=cStartX+i*(cW+gap);
+    const cx=cStartX+i*(cW+cGap);
     s1.addShape('rect',{x:cx+cW/2-0.006,y:midY,w:0.012,h:0.3,fill:{color:'AAAAAA'},line:{color:'AAAAAA',pt:0}});
-    box(s1,c,cx,cY,cW,0.76);
+    drawBox(s1,c,cx,cY,cW,0.76);
     const n=subtreeCount(c)-1;
     if(n>0) s1.addText(`${n} below`,{x:cx,y:cY+0.79,w:cW,h:0.18,fontSize:6,color:'888888',align:'center',fontFace:'Calibri',margin:0});
   });
 
-  // ── ONE SLIDE PER GALAXY: Leader + Direct Reports ──────────
-  // Simple clean layout: one level shown, count badge for deeper levels
+  // ── PRACTICE-SPLIT SLIDES PER GALAXY ─────────────────────
   let slideNum=3;
+
   for(const leader of children){
-    const gKids=[...leader.children].sort((a,b)=>subtreeCount(b)-subtreeCount(a));
-    if(gKids.length===0)continue;
+    const subtreeEmps=gatherSubtree(leader).slice(1);
+    if(subtreeEmps.length===0)continue;
 
-    const sg=makeSlide(pres,slideNum++);
-    slideTitle(sg,`${leader['First Name']} ${leader['Last Name']}`,
-      `${leader['Corporate Title']||leader.Squad||''} · ${subtreeCount(leader)-1} people`);
-    addLegend(sg);
-
-    // Leader box centred
-    const lW=2.1, lH=0.78, lX=(W-lW)/2, lY=0.88;
-    box(sg,leader,lX,lY,lW,lH,true);
-    sg.addShape('rect',{x:lX+lW/2-0.006,y:lY+lH,w:0.012,h:0.3,fill:{color:'AAAAAA'},line:{color:'AAAAAA',pt:0}});
-
-    // Direct reports row — fit up to 10 per row
-    const rowSize=Math.min(gKids.length,10);
-    const gW=Math.min(1.55,(W-0.3)/rowSize-0.1);
-    const gGap=(W-0.3-rowSize*gW)/Math.max(rowSize-1,1);
-    const gStart=0.15, gY=lY+lH+0.62, gMid=lY+lH+0.3;
-
-    if(rowSize>1){
-      const bL=gStart+gW/2, bR=gStart+(rowSize-1)*(gW+gGap)+gW/2;
-      sg.addShape('rect',{x:bL,y:gMid-0.006,w:bR-bL,h:0.012,fill:{color:'AAAAAA'},line:{color:'AAAAAA',pt:0}});
-    }
-    gKids.slice(0,rowSize).forEach((c,i)=>{
-      const gx=gStart+i*(gW+gGap);
-      sg.addShape('rect',{x:gx+gW/2-0.006,y:gMid,w:0.012,h:0.3,fill:{color:'AAAAAA'},line:{color:'AAAAAA',pt:0}});
-      box(sg,c,gx,gY,gW,0.78);
-      const n=subtreeCount(c)-1;
-      if(n>0) sg.addText(`+ ${n} below`,{x:gx,y:gY+0.81,w:gW,h:0.18,fontSize:6,color:'888888',align:'center',fontFace:'Calibri',margin:0});
+    // Group by Practice
+    const practiceMap={};
+    subtreeEmps.forEach(emp=>{
+      const p=emp.Practice||'Other';
+      if(!practiceMap[p])practiceMap[p]=[];
+      practiceMap[p].push(emp);
     });
 
-    // Second row if needed
-    if(gKids.length>rowSize){
-      const row2=gKids.slice(rowSize,rowSize+10);
-      const r2W=Math.min(1.55,(W-0.3)/row2.length-0.1);
-      const r2Gap=(W-0.3-row2.length*r2W)/Math.max(row2.length-1,1);
-      const r2Y=gY+1.05;
-      row2.forEach((c,i)=>{
-        box(sg,c,0.15+i*(r2W+r2Gap),r2Y,r2W,0.78);
-        const n=subtreeCount(c)-1;
-        if(n>0) sg.addText(`+ ${n}`,{x:0.15+i*(r2W+r2Gap),y:r2Y+0.81,w:r2W,h:0.18,fontSize:6,color:'888888',align:'center',fontFace:'Calibri',margin:0});
-      });
-    }
+    const practices=Object.keys(practiceMap).sort((a,b)=>{
+      const ai=PORDER.indexOf(a),bi=PORDER.indexOf(b);
+      if(ai>=0&&bi>=0)return ai-bi;
+      if(ai>=0)return -1; if(bi>=0)return 1;
+      return practiceMap[b].length-practiceMap[a].length;
+    });
 
-    // Footer note
-    const conCount=gatherSubtree(leader).filter(e=>e.Type==='Consultant').length;
-    const indCount=gatherSubtree(leader).filter(e=>e.Country==='India').length;
-    sg.addText(`${subtreeCount(leader)-1} people · ${indCount} India · ${subtreeCount(leader)-1-indCount} USA · ${conCount} contractors · Finzly Org Chart`,
-      {x:0.3,y:7.1,w:12.7,h:0.25,fontSize:7.5,color:'AAAAAA',align:'center',fontFace:'Calibri'});
+    // Batch: large practice (>12) = own slide; small practices = up to 3 per slide
+    const batches=[];
+    let batch=[];
+    practices.forEach(p=>{
+      if(practiceMap[p].length>12){
+        if(batch.length){batches.push(batch);batch=[];}
+        batches.push([p]);
+      } else {
+        batch.push(p);
+        if(batch.length>=3){batches.push(batch);batch=[];}
+      }
+    });
+    if(batch.length) batches.push(batch);
+
+    const leaderFull=`${leader['First Name']} ${leader['Last Name']}`;
+    const leaderInfo=`${leader['Corporate Title']||leader.Squad||''} · ${subtreeEmps.length} total`;
+
+    batches.forEach(practiceBatch=>{
+      const sg=makeSlide(pres,slideNum++);
+      addLegend(sg);
+      slideTitle(sg,`${leaderFull} — ${practiceBatch.join(' · ')}`,leaderInfo);
+
+      const cols=practiceBatch.length;
+      const colW=(W-0.3)/cols-0.15;
+      const colGap=0.15;
+
+      practiceBatch.forEach((practice,ci)=>{
+        const emps=practiceMap[practice];
+        const colX=0.15+ci*(colW+colGap);
+        const colHex=pc(practice);
+
+        // Practice header
+        sg.addShape('rect',{x:colX,y:1.05,w:colW,h:0.36,fill:{color:colHex},line:{color:colHex,pt:0}});
+        sg.addText(practice,{x:colX+0.1,y:1.08,w:colW*0.72,h:0.28,
+          fontSize:10,bold:true,color:'FFFFFF',fontFace:'Calibri',margin:0,fit:'shrink'});
+        sg.addText(String(emps.length)+' people',{x:colX+colW*0.72,y:1.1,w:colW*0.26,h:0.24,
+          fontSize:8,color:'FFFFFF',fontFace:'Calibri',margin:0,align:'right'});
+
+        // Group by manager
+        const mgrGroups={};
+        emps.forEach(emp=>{
+          const mgr=String(emp['L1 Manager']||'(No Manager)').trim();
+          if(!mgrGroups[mgr])mgrGroups[mgr]=[];
+          mgrGroups[mgr].push(emp);
+        });
+
+        let curY=1.46;
+        const maxY=6.85;
+        const rowH=0.27;
+
+        Object.entries(mgrGroups)
+          .sort((a,b)=>b[1].length-a[1].length)
+          .forEach(([mgr,reports])=>{
+            if(curY>=maxY)return;
+            const mgrNode=nodes[mgr];
+            // Manager sub-header
+            sg.addShape('rect',{x:colX,y:curY,w:colW,h:0.26,
+              fill:{color:colHex+'18'},line:{color:colHex+'55',pt:0.5}});
+            sg.addShape('rect',{x:colX,y:curY,w:0.05,h:0.26,
+              fill:{color:colHex},line:{color:colHex,pt:0}});
+            const mgrLabel=mgrNode
+              ?`${mgrNode['First Name']||''} ${mgrNode['Last Name']||''}`
+              :mgr.split(' ').slice(0,2).join(' ');
+            sg.addText(mgrLabel,{x:colX+0.1,y:curY+0.04,w:colW-0.15,h:0.2,
+              fontSize:8,bold:true,color:colHex,fontFace:'Calibri',margin:0,fit:'shrink'});
+            curY+=0.3;
+
+            reports.forEach(emp=>{
+              if(curY>=maxY)return;
+              const isIndia=emp.Country==='India';
+              const isCon=emp.Type==='Consultant';
+              const flag=isIndia?'🔵':'🟣';
+              const level=(emp.Level||'').replace(' Level','');
+              sg.addShape('rect',{x:colX,y:curY,w:colW,h:rowH,
+                fill:{color:isIndia?'EBF5FB':'F0EBF7'},
+                line:{color:'DDDDDD',pt:0.3}});
+              sg.addShape('rect',{x:colX,y:curY,w:0.04,h:rowH,
+                fill:{color:isIndia?'156082':'0E2841'},line:{color:isIndia?'156082':'0E2841',pt:0}});
+              sg.addText(`${flag} ${emp['First Name']||''} ${emp['Last Name']||''}${isCon?' ⬤':''}`,
+                {x:colX+0.09,y:curY+0.04,w:colW*0.68,h:0.2,fontSize:8,
+                 color:'1A1A2E',fontFace:'Calibri',margin:0,fit:'shrink'});
+              sg.addText(level,{x:colX+colW*0.68,y:curY+0.04,w:colW*0.3,h:0.2,
+                fontSize:7,color:'777777',fontFace:'Calibri',margin:0,align:'right',fit:'shrink'});
+              curY+=rowH;
+            });
+            curY+=0.07;
+          });
+      });
+
+      const totalSlide=practiceBatch.reduce((s,p)=>s+practiceMap[p].length,0);
+      const indSlide=practiceBatch.reduce((s,p)=>
+        s+practiceMap[p].filter(e=>e.Country==='India').length,0);
+      sg.addText(
+        `${leaderFull} · ${practiceBatch.join(' & ')} · ${totalSlide} people · ${indSlide} 🔵 India · ${totalSlide-indSlide} 🟣 USA`,
+        {x:0.3,y:7.1,w:12.7,h:0.25,fontSize:7.5,color:'AAAAAA',align:'center',fontFace:'Calibri'});
+    });
   }
 }
 
