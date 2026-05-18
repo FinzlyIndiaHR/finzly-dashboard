@@ -2119,15 +2119,29 @@ async function runAIIntel(){
   if(galaxySel!=='all'){
     const {nodes}=buildOrgTree(allActive);
     if(nodes[galaxySel]){
+      // Get ALL names in this galaxy's subtree (active employees)
       const subtreeNodes=gatherSubtree(nodes[galaxySel]);
-      const names=new Set(subtreeNodes.map(n=>n.full));
-      activeAll=allActive.filter(d=>names.has(`${d['First Name']||''} ${d['Last Name']||''}`.trim()));
-      inactAll =allInact.filter(d=>names.has(`${d['First Name']||''} ${d['Last Name']||''}`.trim())||String(d['L1 Manager']||'').trim()===galaxySel);
-      galaxyLabel=`${galaxySel}'s Galaxy (${activeAll.length} active)`;
+      const activeNames=new Set(subtreeNodes.map(n=>n.full));
+      // Also collect ALL L1 manager names within this galaxy's subtree
+      // This lets us find inactive employees who reported to anyone in this galaxy
+      const galaxyMgrNames=new Set(subtreeNodes.map(n=>n.full));
+
+      activeAll=allActive.filter(d=>activeNames.has(`${d['First Name']||''} ${d['Last Name']||''}`.trim()));
+
+      // Inactive: their L1 Manager must be in the galaxy subtree (at any level)
+      inactAll=allInact.filter(d=>{
+        const l1=String(d['L1 Manager']||'').trim();
+        const ownName=`${d['First Name']||''} ${d['Last Name']||''}`.trim();
+        // They were directly in the subtree (name match) OR their L1 manager is in the subtree
+        return activeNames.has(ownName) || galaxyMgrNames.has(l1);
+      });
+
+      galaxyLabel=`${galaxySel}'s Galaxy`;
+      console.log(`🌌 Galaxy filter: ${activeAll.length} active, ${inactAll.length} inactive (exits from this galaxy)`);
     }
   }
 
-  // ── Compute metrics ───────────────────────────────────────────
+  // ── Compute metrics from galaxy-filtered data ─────────────────
   const total=activeAll.length;
   const india=activeAll.filter(d=>d.Country==='India').length;
   const usa=activeAll.filter(d=>d.Country==='USA').length;
@@ -2136,16 +2150,20 @@ async function runAIIntel(){
   const contractors=activeAll.filter(d=>d.Type==='Consultant').length;
   const conPct=total?Math.round(contractors/total*100):0;
 
-  // Attrition
-  const A=computeAttrition(EMP_DATA);
+  // Attrition — computed from galaxy-filtered employees (active + inactive)
+  // Pass combined pool: computeAttrition uses Status to determine active/inactive
+  const galaxyPool=[...activeAll,...inactAll];
+  const A=computeAttrition(galaxyPool);
   const lastAnn=A.length?A[A.length-1].ann_pct:0;
-  const exits2026=inactAll.filter(d=>{const ts=d['Termination Date Str'];return ts&&ts.startsWith('2026');}).length;
-  const exits2025=inactAll.filter(d=>{const ts=d['Termination Date Str'];return ts&&ts.startsWith('2025');}).length;
-  const exits2024=inactAll.filter(d=>{const ts=d['Termination Date Str'];return ts&&ts.startsWith('2024');}).length;
+  const lastAnnMonth=A.length?A[A.length-1].month:'';
+  console.log(`📊 Galaxy attrition: ${A.length} months computed, last ann=${lastAnn}% (${lastAnnMonth}) for ${galaxyLabel}`);
+  const exits2026=inactAll.filter(d=>{const ts=d['Termination Date Str']||dateStr(d['Termination Date']);return ts&&ts.startsWith('2026');}).length;
+  const exits2025=inactAll.filter(d=>{const ts=d['Termination Date Str']||dateStr(d['Termination Date']);return ts&&ts.startsWith('2025');}).length;
+  const exits2024=inactAll.filter(d=>{const ts=d['Termination Date Str']||dateStr(d['Termination Date']);return ts&&ts.startsWith('2024');}).length;
   const volExits=inactAll.filter(d=>d['Termination Type']==='Voluntary').length;
   const volPct=inactAll.length?Math.round(volExits/inactAll.length*100):0;
   const moSoFar=new Date().getMonth()+1;
-  const proj2026=Math.round(exits2026/moSoFar*12);
+  const proj2026=moSoFar>0?Math.round(exits2026/moSoFar*12):0;
 
   // Manager span
   const mgrMap=buildMgrMap(activeAll);
@@ -2193,15 +2211,16 @@ async function runAIIntel(){
 
   // 1. ATTRITION RISK
   const attrType=lastAnn>25?'risk':lastAnn>15?'signal':'good';
-  const exitTrend=exits2026>exits2025?'🔴 Accelerating':'⚠ Elevated';
+  const exitTrend=exits2026>exits2025?'🔴 Accelerating':exits2026<exits2025?'🟢 Improving':'⚠ Flat';
+  const isGalaxy=galaxySel!=='all';
   insights.push({
     type:attrType,
-    title:'Attrition Risk Assessment',
-    metric:`${lastAnn.toFixed(1)}% Annualised`,
-    body:`Projected <strong>${proj2026} exits</strong> in 2026 vs <strong>${exits2025}</strong> in 2025 and <strong>${exits2024}</strong> in 2024. ${exitTrend} — trend is ${exits2026>exits2025?'worsening year-on-year.':'stabilising.'}`,
+    title:`Attrition Risk · ${galaxyLabel}`,
+    metric:`${lastAnn.toFixed(1)}% Annualised${lastAnnMonth?' ('+lastAnnMonth+')':''}`,
+    body:`${isGalaxy?`<strong>${total} active</strong> in this galaxy. `:''}Exits: <strong>2024: ${exits2024}</strong> → <strong>2025: ${exits2025}</strong> → <strong>2026 YTD: ${exits2026}</strong>. ${exitTrend} — projected <strong>~${proj2026}/year</strong>. <strong>${volPct}% voluntary</strong> exits.`,
     actions:[
-      `${volPct}% of exits are voluntary — root cause is pull factors (better offers, growth), not push. Run structured exit interviews.`,
-      `Projected ${proj2026}/year puts pressure on hiring pipeline. Ensure TA team is ahead by at least 2× exit run rate.`
+      volPct>60?`${volPct}% voluntary exits = people choosing to leave, not being managed out. Fix growth path and recognition.`:`Mix of voluntary/involuntary — review both retention and performance management processes.`,
+      proj2026>exits2025?`On track to exceed 2025 exit count — escalate to leadership now if not already actioned.`:`Exit pace appears to be stabilising — maintain current retention interventions.`
     ]
   });
 
@@ -2210,12 +2229,12 @@ async function runAIIntel(){
   const topOverloaded=overloaded.sort((a,b)=>b[1].reports.length-a[1].reports.length).slice(0,2).map(e=>`${e[0]} (${e[1].reports.length})`).join(', ');
   insights.push({
     type:mgrType,
-    title:'Manager Span of Control',
+    title:`Manager Span · ${galaxyLabel}`,
     metric:`1:${avgSpan} Avg Span`,
-    body:`<strong>${mgrEntries.length} L1 managers</strong> for ${total} employees (${mgrPct}% manager ratio). Industry benchmark: 1:5–7. <strong>${overloaded.length} managers overloaded</strong> (&gt;7 reports)${topOverloaded?': '+topOverloaded+'.':'.'}`,
+    body:`<strong>${mgrEntries.length} L1 managers</strong> for ${total} employees (${mgrPct}% manager ratio). Benchmark: 1:5–7. <strong>${overloaded.length} overloaded</strong> (&gt;7)${topOverloaded?': '+topOverloaded+'.':'.'}`,
     actions:[
-      singleReport>0?`${singleReport} single-report managers — review if these are genuine people managers or working leads.`:`All managers have ≥2 reports — no single-report concerns.`,
-      overloaded.length>0?`Redistribute ${overloaded[0]?.[0]||'overloaded managers'}'s reports or hire additional managers.`:`Span of control is healthy — maintain as org scales.`
+      singleReport>0?`${singleReport} single-report managers — check if genuine people managers or working leads.`:`All managers have ≥2 reports.`,
+      overloaded.length>0?`Redistribute ${overloaded[0]?.[0]||'overloaded managers'}'s reports or hire a manager.`:`Span healthy — maintain as team scales.`
     ]
   });
 
