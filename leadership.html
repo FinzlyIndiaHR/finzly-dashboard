@@ -1944,101 +1944,179 @@ function expandAll(){
   });
 }
 
-// ── AI INTEL ─────────────────────────────────────────────────
+// ── AI INTEL - DATA-DRIVEN INSIGHTS ENGINE ───────────────────
 async function runAIIntel(){
-  const activeAll=EMP_DATA.filter(d=>d.Status==='Active'||d.ActiveFlag===1);
-  const inactiveAll=EMP_DATA.filter(d=>d.Status==='Inactive'||d.ActiveFlag===0);
+  document.getElementById('ai-dot').style.background='var(--amber)';
+  document.getElementById('ai-status-txt').textContent='Analysing your workforce data…';
+  document.getElementById('ai-cards').innerHTML=`<div class="ai-card" style="grid-column:1/-1;text-align:center;padding:30px;border-top-color:var(--border)"><div class="ai-dot" style="margin:0 auto 10px"></div><div style="font-size:.8rem;color:var(--muted)">Computing insights from live data…</div></div>`;
 
-  // Build real data summary — no hallucination possible
+  // Small delay for UX
+  await new Promise(r=>setTimeout(r,600));
+
+  const activeAll=EMP_DATA.filter(d=>d.Status==='Active'||d.ActiveFlag===1);
+  const inactAll =EMP_DATA.filter(d=>d.Status==='Inactive'||d.ActiveFlag===0);
+
+  // ── Compute all metrics ──────────────────────────────────────
+  const total=activeAll.length;
   const india=activeAll.filter(d=>d.Country==='India').length;
   const usa=activeAll.filter(d=>d.Country==='USA').length;
   const female=activeAll.filter(d=>d.Gender==='Female').length;
-  const femPct=Math.round(female/activeAll.length*100);
+  const femPct=Math.round(female/total*100);
+  const contractors=activeAll.filter(d=>d.Type==='Consultant').length;
+  const conPct=Math.round(contractors/total*100);
+
+  // Attrition
+  const A=computeAttrition(EMP_DATA);
+  const lastAnn=A.length?A[A.length-1].ann_pct:0;
+  const exits2026=inactAll.filter(d=>{const ts=d['Termination Date Str'];return ts&&ts.startsWith('2026');}).length;
+  const exits2025=inactAll.filter(d=>{const ts=d['Termination Date Str'];return ts&&ts.startsWith('2025');}).length;
+  const exits2024=inactAll.filter(d=>{const ts=d['Termination Date Str'];return ts&&ts.startsWith('2024');}).length;
+  const volExits=inactAll.filter(d=>d['Termination Type']==='Voluntary').length;
+  const volPct=inactAll.length?Math.round(volExits/inactAll.length*100):0;
+  const moSoFar=new Date().getMonth()+1;
+  const proj2026=Math.round(exits2026/moSoFar*12);
+
+  // Manager span
   const mgrMap=buildMgrMap(activeAll);
   const mgrEntries=Object.entries(mgrMap);
   const avgSpan=mgrEntries.length?Math.round(mgrEntries.reduce((s,e)=>s+e[1].reports.length,0)/mgrEntries.length*10)/10:0;
-  const overloaded=mgrEntries.filter(e=>e[1].reports.length>7).map(e=>e[0]);
-  const lean=mgrEntries.filter(e=>e[1].reports.length===1).length;
+  const overloaded=mgrEntries.filter(e=>e[1].reports.length>7);
+  const singleReport=mgrEntries.filter(e=>e[1].reports.length===1).length;
+  const mgrPct=Math.round(mgrEntries.length/total*100);
 
-  const A=computeAttrition(EMP_DATA);
-  const lastAnn=A.length?A[A.length-1].ann_pct:0;
-  const exits2026=inactiveAll.filter(d=>{const ts=d['Termination Date Str'];return ts&&ts.startsWith('2026');}).length;
-  const volPct=inactiveAll.length?Math.round(inactiveAll.filter(d=>d['Termination Type']==='Voluntary').length/inactiveAll.length*100):0;
-
+  // Performance
   const r25=activeAll.filter(d=>d['Performance Rating 2025']>=1&&d['Performance Rating 2025']<=5);
   const avg25=r25.length?Math.round(r25.reduce((s,d)=>s+d['Performance Rating 2025'],0)/r25.length*100)/100:0;
+  const r24=activeAll.filter(d=>d['Performance Rating 2024']>=1&&d['Performance Rating 2024']<=5);
+  const avg24=r24.length?Math.round(r24.reduce((s,d)=>s+d['Performance Rating 2024'],0)/r24.length*100)/100:0;
   const highPerf=r25.filter(d=>d['Performance Rating 2025']>=4).length;
-  const lowPerf=r25.filter(d=>d['Performance Rating 2025']<=2).length;
+  const lowPerf =r25.filter(d=>d['Performance Rating 2025']<=2).length;
+  const unrated=total-r25.length;
+  const highPct=r25.length?Math.round(highPerf/r25.length*100):0;
 
-  const rag={Green:0,Amber:0,Red:0};
-  activeAll.forEach(d=>{if(d['Rag Status']&&rag[d['Rag Status']]!==undefined)rag[d['Rag Status']]++;});
+  // RAG
+  const rag={Green:0,Amber:0,Red:0,NotSet:0};
+  activeAll.forEach(d=>{
+    const r=d['Rag Status']||'Not Set';
+    if(r==='Green')rag.Green++;else if(r==='Amber')rag.Amber++;else if(r==='Red')rag.Red++;else rag.NotSet++;
+  });
+  const ragHealthPct=Math.round(rag.Green/total*100);
 
+  // Tenure & cohort
+  const tenured=activeAll.filter(d=>typeof d['Finzly Experience']==='number');
+  const avgTen=tenured.length?Math.round(tenured.reduce((s,d)=>s+d['Finzly Experience'],0)/tenured.length*10)/10:0;
+  const longTenure=tenured.filter(d=>d['Finzly Experience']>=3).length;
+  const newJoins=tenured.filter(d=>d['Finzly Experience']<1).length;
+  const cohort2024=EMP_DATA.filter(d=>d['Start Year']===2024);
+  const cohort2024still=cohort2024.filter(d=>d.Status==='Active').length;
+  const cohort2024ret=cohort2024.length?Math.round(cohort2024still/cohort2024.length*100):0;
+
+  // Squad sizes
   const sqMap={};
   activeAll.forEach(d=>{const s=d.Squad||'?';sqMap[s]=(sqMap[s]||0)+1;});
-  const topSq=Object.entries(sqMap).sort((a,b)=>b[1]-a[1])[0]||['?',0];
+  const sqEntries=Object.entries(sqMap).sort((a,b)=>b[1]-a[1]);
+  const topSq=sqEntries[0]||['?',0];
 
-  const avgTenure=Math.round(activeAll.filter(d=>typeof d['Finzly Experience']==='number').reduce((s,d)=>s+d['Finzly Experience'],0)/Math.max(activeAll.filter(d=>typeof d['Finzly Experience']==='number').length,1)*10)/10;
+  // ── Generate insights ────────────────────────────────────────
+  const insights=[];
 
-  const dataPayload=`
-Finzly HR Data as of today (${new Date().toLocaleDateString()}):
-- Active employees: ${activeAll.length} (India: ${india}, USA: ${usa})
-- Female employees: ${female} (${femPct}% of active)
-- Total inactive/exits: ${inactiveAll.length}
-- 2026 exits so far: ${exits2026}
-- Voluntary exit %: ${volPct}%
-- Annualised attrition: ${lastAnn}%
-- Avg L1 span of control: ${avgSpan} direct reports (industry best: 5-7)
-- Overloaded managers (>7 reports): ${overloaded.length} — ${overloaded.slice(0,3).join(', ')}${overloaded.length>3?'...':''}
-- Single-report managers: ${lean}
-- Total L1 managers: ${mgrEntries.length}
-- Avg performance rating 2025: ${avg25}/5
-- High performers (★4-5): ${highPerf}
-- Low performers (★1-2): ${lowPerf}
-- RAG: Green=${rag.Green}, Amber=${rag.Amber}, Red=${rag.Red}
-- Largest squad: ${topSq[0]} (${topSq[1]} people)
-- Avg Finzly tenure: ${avgTenure} years`;
+  // 1. ATTRITION RISK
+  const attrType=lastAnn>25?'risk':lastAnn>15?'signal':'good';
+  const exitTrend=exits2026>exits2025?'🔴 Accelerating':'⚠ Elevated';
+  insights.push({
+    type:attrType,
+    title:'Attrition Risk Assessment',
+    metric:`${lastAnn.toFixed(1)}% Annualised`,
+    body:`Projected <strong>${proj2026} exits</strong> in 2026 vs <strong>${exits2025}</strong> in 2025 and <strong>${exits2024}</strong> in 2024. ${exitTrend} — trend is ${exits2026>exits2025?'worsening year-on-year.':'stabilising.'}`,
+    actions:[
+      `${volPct}% of exits are voluntary — root cause is pull factors (better offers, growth), not push. Run structured exit interviews.`,
+      `Projected ${proj2026}/year puts pressure on hiring pipeline. Ensure TA team is ahead by at least 2× exit run rate.`
+    ]
+  });
 
-  document.getElementById('ai-dot').style.background='var(--amber)';
-  document.getElementById('ai-status-txt').textContent='Analysing your workforce data…';
-  document.getElementById('ai-cards').innerHTML=`<div class="ai-card" style="grid-column:1/-1;text-align:center;padding:30px;border-top-color:var(--border)"><div class="ai-dot" style="margin:0 auto 10px"></div><div style="font-size:.8rem;color:var(--muted)">Generating insights from your data…</div></div>`;
+  // 2. MANAGER HEALTH
+  const mgrType=overloaded.length>5?'risk':overloaded.length>2?'signal':'good';
+  const topOverloaded=overloaded.sort((a,b)=>b[1].reports.length-a[1].reports.length).slice(0,2).map(e=>`${e[0]} (${e[1].reports.length})`).join(', ');
+  insights.push({
+    type:mgrType,
+    title:'Manager Span of Control',
+    metric:`1:${avgSpan} Avg Span`,
+    body:`<strong>${mgrEntries.length} L1 managers</strong> for ${total} employees (${mgrPct}% manager ratio). Industry benchmark: 1:5–7. <strong>${overloaded.length} managers overloaded</strong> (&gt;7 reports)${topOverloaded?': '+topOverloaded+'.':'.'}`,
+    actions:[
+      singleReport>0?`${singleReport} single-report managers — review if these are genuine people managers or working leads.`:`All managers have ≥2 reports — no single-report concerns.`,
+      overloaded.length>0?`Redistribute ${overloaded[0]?.[0]||'overloaded managers'}'s reports or hire additional managers.`:`Span of control is healthy — maintain as org scales.`
+    ]
+  });
 
-  try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:1500,
-        system:`You are an expert HR analytics advisor analysing real workforce data for Finzly, a fintech company. 
-Generate exactly 6 insight cards in JSON format. Each card must be grounded ONLY in the numbers provided — no hallucination, no made-up benchmarks beyond what is stated.
-Return ONLY a valid JSON array, no markdown, no explanation:
-[{"title":"...","type":"risk|good|signal|info","metric":"...","body":"...","actions":["action1","action2"]}]
-Keep body under 60 words. Keep actions to 2 short bullet points. type must be one of: risk, good, signal, info.`,
-        messages:[{role:'user',content:`Analyse this Finzly HR data and generate 6 insight cards:\n${dataPayload}`}]
-      })
-    });
-    const data=await res.json();
-    const text=data.content?.find(c=>c.type==='text')?.text||'[]';
-    const clean=text.replace(/```json|```/g,'').trim();
-    const cards=JSON.parse(clean);
+  // 3. PERFORMANCE SIGNAL
+  const perfTrend=avg25>avg24?'improvement':'decline';
+  const perfType=avg25<3?'risk':avg25<3.5?'signal':'good';
+  insights.push({
+    type:perfType,
+    title:'Performance Health',
+    metric:`${avg25}/5 Avg (2025)`,
+    body:`Rating ${avg25>avg24?`⬆ improved`:`⬇ declined`} from <strong>${avg24}</strong> (2024) to <strong>${avg25}</strong> (2025). <strong>${highPerf} high performers</strong> (★4–5, ${highPct}%) · <strong>${lowPerf} low performers</strong> (★1–2). <strong>${unrated} employees</strong> have no 2025 rating.`,
+    actions:[
+      unrated>20?`Complete appraisals for ${unrated} unrated employees before any promotion or pay review decisions.`:`Appraisal coverage is strong at ${Math.round(r25.length/total*100)}%.`,
+      lowPerf>0?`${lowPerf} low performers (★1–2) — ensure each has an active PIP with 90-day checkpoint.`:`No significant low-performer concentration detected.`
+    ]
+  });
 
-    document.getElementById('ai-dot').style.background='var(--green)';
-    document.getElementById('ai-status-txt').textContent=`Generated ${cards.length} insights from your live data · ${new Date().toLocaleTimeString()}`;
+  // 4. RAG ENGAGEMENT HEALTH
+  const ragType=rag.Red>5?'risk':rag.Red>0||rag.Amber>total*0.2?'signal':'good';
+  insights.push({
+    type:ragType,
+    title:'Employee Engagement (RAG)',
+    metric:`${ragHealthPct}% Green`,
+    body:`<strong>${rag.Green} Green</strong> · <strong>${rag.Amber} Amber</strong> · <strong>${rag.Red} Red</strong> · <strong>${rag.NotSet} Not Set</strong>. ${rag.NotSet>total*0.1?`⚠ ${Math.round(rag.NotSet/total*100)}% missing RAG — managers may not be doing regular 1-on-1s.`:'RAG coverage is adequate.'} Target: 85%+ Green.`,
+    actions:[
+      rag.Red>0?`${rag.Red} Red employees need immediate skip-level 1-on-1 — escalate to L2 managers this week.`:`No Red employees — maintain cadence of monthly 1-on-1s.`,
+      rag.Amber>0?`${rag.Amber} Amber employees are at flight risk — schedule structured career conversations within 2 weeks.`:`No significant Amber concentration.`
+    ]
+  });
 
-    document.getElementById('ai-cards').innerHTML=cards.map(c=>`
-      <div class="ai-card" style="border-top-color:${c.type==='risk'?'var(--red)':c.type==='good'?'var(--green)':c.type==='signal'?'var(--amber)':'var(--blue)'}">
-        <div class="ai-card-title">${c.type==='risk'?'🔴':c.type==='good'?'✅':c.type==='signal'?'⚠️':'💡'} ${c.title}</div>
-        <div class="ai-card-body">
-          <div style="font-family:'Fira Code',monospace;font-size:1.3rem;font-weight:700;color:${c.type==='risk'?'var(--red)':c.type==='good'?'var(--green)':c.type==='signal'?'var(--amber)':'var(--blue)'};margin-bottom:8px">${c.metric}</div>
-          ${c.body}
-          ${c.actions?.length?`<ul style="margin-top:8px">${c.actions.map(a=>`<li>${a}</li>`).join('')}</ul>`:''}
-        </div>
-      </div>`).join('');
-  }catch(e){
-    document.getElementById('ai-dot').style.background='var(--red)';
-    document.getElementById('ai-status-txt').textContent='Error: '+e.message;
-    document.getElementById('ai-cards').innerHTML=`<div class="ai-card" style="grid-column:1/-1;border-top-color:var(--red)"><div class="ai-card-title">❌ Could not generate insights</div><div class="ai-card-body">${e.message}</div></div>`;
-  }
+  // 5. WORKFORCE COMPOSITION
+  const compType=conPct>20?'signal':femPct<25?'signal':'info';
+  insights.push({
+    type:compType,
+    title:'Workforce Composition',
+    metric:`${Math.round(india/total*100)}% India · ${Math.round(usa/total*100)}% USA`,
+    body:`<strong>${contractors} contractors</strong> (${conPct}% of headcount). ${conPct>20?'⚠ High contractor dependency — IP risk and cost premium.':'Contractor ratio manageable.'} Gender: <strong>${femPct}% female</strong> (industry tech benchmark: 28–35%). <strong>${india} India</strong> vs <strong>${usa} USA</strong> split.`,
+    actions:[
+      femPct<28?`Female representation at ${femPct}% is below tech benchmark — review sourcing and interview panel diversity.`:`Gender ratio at ${femPct}% meets or exceeds benchmark — sustain inclusive hiring.`,
+      conPct>15?`Review ${contractors} contractors for conversion to FTE where strategic — reduces cost and IP risk.`:`Contractor mix is healthy — no immediate action needed.`
+    ]
+  });
+
+  // 6. RETENTION & TENURE RISK
+  const retType=cohort2024ret<60?'risk':avgTen<2?'signal':'good';
+  insights.push({
+    type:retType,
+    title:'Retention & Tenure Depth',
+    metric:`${avgTen}y Avg Tenure`,
+    body:`<strong>${longTenure} employees</strong> with 3+ years tenure — your institutional knowledge base. <strong>${newJoins}</strong> joined in last 12 months. 2024 cohort retention: <strong>${cohort2024ret}%</strong> (${cohort2024still} of ${cohort2024.length} still active).`,
+    actions:[
+      longTenure<total*0.3?`Only ${Math.round(longTenure/total*100)}% have 3+ years — org is still maturing. Prioritise L&D and career ladders to retain mid-tenure talent.`:`Strong ${Math.round(longTenure/total*100)}% tenure base — protect these employees with targeted retention bonuses.`,
+      cohort2024ret<70?`2024 cohort at ${cohort2024ret}% retention — early-career exits suggest onboarding or manager assignment issues. Review 90-day check-in process.`:`2024 cohort retention healthy at ${cohort2024ret}%.`
+    ]
+  });
+
+  // ── Render cards ─────────────────────────────────────────────
+  const typeColors={risk:'var(--red)',good:'var(--green)',signal:'var(--amber)',info:'var(--blue)'};
+  const typeIcons={risk:'🔴',good:'✅',signal:'⚠️',info:'💡'};
+
+  document.getElementById('ai-dot').style.background='var(--green)';
+  document.getElementById('ai-status-txt').textContent=`${insights.length} insights generated from live data · ${new Date().toLocaleTimeString()} · No API call — 100% from your numbers`;
+
+  document.getElementById('ai-cards').innerHTML=insights.map(c=>`
+    <div class="ai-card" style="border-top-color:${typeColors[c.type]||'var(--border)'}">
+      <div class="ai-card-title">${typeIcons[c.type]||'💡'} ${c.title}</div>
+      <div class="ai-card-body">
+        <div style="font-family:'Fira Code',monospace;font-size:1.3rem;font-weight:700;color:${typeColors[c.type]};margin-bottom:8px">${c.metric}</div>
+        <p style="margin-bottom:8px">${c.body}</p>
+        <ul>${c.actions.map(a=>`<li>${a}</li>`).join('')}</ul>
+      </div>
+    </div>`).join('');
 }
 
 // ── SHOW/HIDE SCREENS ─────────────────────────────────────────
