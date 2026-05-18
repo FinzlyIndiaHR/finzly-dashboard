@@ -2189,120 +2189,183 @@ async function runAIIntel(){
     const r=d['Rag Status']||'Not Set';
     if(r==='Green')rag.Green++;else if(r==='Amber')rag.Amber++;else if(r==='Red')rag.Red++;else rag.NotSet++;
   });
-  const ragHealthPct=Math.round(rag.Green/total*100);
+  const ragHealthPct=total?Math.round(rag.Green/total*100):0;
 
-  // Tenure & cohort
-  const tenured=activeAll.filter(d=>typeof d['Finzly Experience']==='number');
+  // Active tenure
+  const tenured=activeAll.filter(d=>typeof d['Finzly Experience']==='number'&&d['Finzly Experience']>0);
   const avgTen=tenured.length?Math.round(tenured.reduce((s,d)=>s+d['Finzly Experience'],0)/tenured.length*10)/10:0;
   const longTenure=tenured.filter(d=>d['Finzly Experience']>=3).length;
   const newJoins=tenured.filter(d=>d['Finzly Experience']<1).length;
-  const cohort2024=EMP_DATA.filter(d=>d['Start Year']===2024);
+
+  // ── EXIT TENURE ANALYSIS — the core of what the user asked for ──
+  // Compute tenure at exit for each inactive employee using their Start Date + Termination Date
+  const exitTenures=[];
+  const exitBuckets={'<3m':0,'3-6m':0,'6-12m':0,'1-2y':0,'2-3y':0,'3y+':0};
+  inactAll.forEach(d=>{
+    const startD=parseEmpDate(d['Start Date']);
+    const termD=parseEmpDate(d['Termination Date']);
+    if(!startD||!termD)return;
+    const days=(termD-startD)/(1000*60*60*24);
+    if(days<0||days>7300)return; // sanity check (max 20 years)
+    const yrs=Math.round(days/365.25*100)/100;
+    exitTenures.push({yrs,days,type:d['Termination Type']||'Unknown',reason:d['Reason of Termination']||''});
+    if(days<90)exitBuckets['<3m']++;
+    else if(days<180)exitBuckets['3-6m']++;
+    else if(days<365)exitBuckets['6-12m']++;
+    else if(days<730)exitBuckets['1-2y']++;
+    else if(days<1095)exitBuckets['2-3y']++;
+    else exitBuckets['3y+']++;
+  });
+  const avgExitTenure=exitTenures.length?Math.round(exitTenures.reduce((s,e)=>s+e.yrs,0)/exitTenures.length*100)/100:0;
+  const medianExitTenure=exitTenures.length?exitTenures.slice().sort((a,b)=>a.yrs-b.yrs)[Math.floor(exitTenures.length/2)].yrs:0;
+  const earlyExits=exitTenures.filter(e=>e.yrs<1).length; // left within first year
+  const veryEarlyExits=exitTenures.filter(e=>e.days<180).length; // left within 6 months
+  const earlyPct=exitTenures.length?Math.round(earlyExits/exitTenures.length*100):0;
+  const earlyVoluntary=exitTenures.filter(e=>e.yrs<1&&e.type==='Voluntary').length;
+  const earlyInvoluntary=exitTenures.filter(e=>e.yrs<1&&e.type==='Involuntary').length;
+
+  // Cohort retention (scoped to galaxy pool)
+  const cohort2024=galaxyPool.filter(d=>d['Start Year']===2024||d['Start Year']==='2024'||(d['Start Date']&&String(d['Start Date']).startsWith('2024')));
   const cohort2024still=cohort2024.filter(d=>d.Status==='Active').length;
   const cohort2024ret=cohort2024.length?Math.round(cohort2024still/cohort2024.length*100):0;
+  const cohort2023=galaxyPool.filter(d=>d['Start Year']===2023||d['Start Year']==='2023'||(d['Start Date']&&String(d['Start Date']).startsWith('2023')));
+  const cohort2023ret=cohort2023.length?Math.round(cohort2023.filter(d=>d.Status==='Active').length/cohort2023.length*100):0;
 
-  // Squad sizes
-  const sqMap={};
-  activeAll.forEach(d=>{const s=d.Squad||'?';sqMap[s]=(sqMap[s]||0)+1;});
+  // Galaxy health score (0-100) — composite signal
+  const healthScore=Math.round(
+    (ragHealthPct * 0.25) +                           // 25% weight: RAG
+    (Math.max(0,100-(lastAnn*2)) * 0.25) +            // 25% weight: Attrition (lower = better)
+    (Math.max(0,100-(earlyPct)) * 0.25) +             // 25% weight: Early exit rate (lower = better)
+    (Math.min(100,avgTen/3*100) * 0.25)               // 25% weight: Avg tenure (higher = better, cap at 3yrs)
+  );
+  const healthLabel=healthScore>=75?'Healthy':healthScore>=55?'At Risk':'Needs Attention';
+  const healthColor=healthScore>=75?'var(--green)':healthScore>=55?'var(--amber)':'var(--red)';
+
+  // Squad map for display
+  const sqMap={};activeAll.forEach(d=>{const s=d.Squad||'?';sqMap[s]=(sqMap[s]||0)+1;});
   const sqEntries=Object.entries(sqMap).sort((a,b)=>b[1]-a[1]);
   const topSq=sqEntries[0]||['?',0];
 
-  // ── Generate insights ────────────────────────────────────────
+  // ── GENERATE 8 INSIGHT CARDS ──────────────────────────────────
   const insights=[];
 
-  // 1. ATTRITION RISK
+  // 1. GALAXY HEALTH SCORE — headline card
+  insights.push({
+    type:healthScore>=75?'good':healthScore>=55?'signal':'risk',
+    title:`Overall Health · ${galaxyLabel}`,
+    metric:`${healthScore}/100 — ${healthLabel}`,
+    body:`Composite of: RAG health <strong>${ragHealthPct}%</strong> · Attrition <strong>${lastAnn.toFixed(1)}%</strong> · Early exit rate <strong>${earlyPct}%</strong> · Avg active tenure <strong>${avgTen}y</strong>. ${healthScore<55?'🔴 Multiple risk signals — immediate leadership review needed.':healthScore<75?'⚠ Some risk areas need attention — review actions below.':'✅ Team is broadly healthy — maintain momentum.'}`,
+    actions:[
+      healthScore<75?`Focus on the lowest scoring dimension: ${ragHealthPct<60?'RAG engagement':earlyPct>50?'early exit prevention':lastAnn>20?'attrition reduction':'tenure building'}.`:`Use this as a baseline — track monthly to detect deterioration early.`,
+      `Compare across galaxies to identify which teams need priority investment.`
+    ]
+  });
+
+  // 2. ATTRITION
   const attrType=lastAnn>25?'risk':lastAnn>15?'signal':'good';
-  const exitTrend=exits2026>exits2025?'🔴 Accelerating':exits2026<exits2025?'🟢 Improving':'⚠ Flat';
-  const isGalaxy=galaxySel!=='all';
+  const exitTrendStr=exits2026>exits2025?'🔴 Accelerating':exits2026<exits2025?'🟢 Improving':'⚠ Flat';
   insights.push({
     type:attrType,
-    title:`Attrition Risk · ${galaxyLabel}`,
-    metric:`${lastAnn.toFixed(1)}% Annualised${lastAnnMonth?' ('+lastAnnMonth+')':''}`,
-    body:`${isGalaxy?`<strong>${total} active</strong> in this galaxy. `:''}Exits: <strong>2024: ${exits2024}</strong> → <strong>2025: ${exits2025}</strong> → <strong>2026 YTD: ${exits2026}</strong>. ${exitTrend} — projected <strong>~${proj2026}/year</strong>. <strong>${volPct}% voluntary</strong> exits.`,
+    title:'Attrition Rate',
+    metric:`${lastAnn.toFixed(1)}% Annualised${lastAnnMonth?' · '+lastAnnMonth:''}`,
+    body:`Exits: <strong>2024: ${exits2024}</strong> → <strong>2025: ${exits2025}</strong> → <strong>2026 YTD: ${exits2026}</strong>. ${exitTrendStr} — projected <strong>~${proj2026}/year</strong>. <strong>${volPct}% voluntary</strong> exits.`,
     actions:[
-      volPct>60?`${volPct}% voluntary exits = people choosing to leave, not being managed out. Fix growth path and recognition.`:`Mix of voluntary/involuntary — review both retention and performance management processes.`,
-      proj2026>exits2025?`On track to exceed 2025 exit count — escalate to leadership now if not already actioned.`:`Exit pace appears to be stabilising — maintain current retention interventions.`
+      volPct>60?`${volPct}% voluntary = people choosing to leave. Conduct stay interviews — ask: "What would make you leave?" before they decide.`:`Involuntary exits elevated — review hiring quality and onboarding expectations alignment.`,
+      proj2026>exits2025?`Projected to exceed last year — escalate retention interventions now, not at year-end.`:`Exit pace stabilising — continue current retention efforts.`
     ]
   });
 
-  // 2. MANAGER HEALTH
-  const mgrType=overloaded.length>5?'risk':overloaded.length>2?'signal':'good';
-  const topOverloaded=overloaded.sort((a,b)=>b[1].reports.length-a[1].reports.length).slice(0,2).map(e=>`${e[0]} (${e[1].reports.length})`).join(', ');
+  // 3. TENURE AT EXIT — the new key card
+  const exitTenureType=avgExitTenure<1?'risk':avgExitTenure<1.5?'signal':'good';
+  insights.push({
+    type:exitTenureType,
+    title:'Tenure at Exit — How Long Before They Leave?',
+    metric:`${avgExitTenure}y avg · ${medianExitTenure}y median`,
+    body:`Of <strong>${exitTenures.length} exits</strong>: <strong>${exitBuckets['<3m']}</strong> left in &lt;3 months · <strong>${exitBuckets['3-6m']}</strong> in 3–6 months · <strong>${exitBuckets['6-12m']}</strong> in 6–12 months · <strong>${exitBuckets['1-2y']}</strong> in 1–2 years · <strong>${exitBuckets['3y+']+exitBuckets['2-3y']}</strong> after 2+ years. Median under 1 year = ${medianExitTenure<1?'<strong>people leave before they fully contribute</strong>':'employees stay through their productive early period'}.`,
+    actions:[
+      veryEarlyExits>0?`<strong>${veryEarlyExits} people left within 6 months</strong> — review hiring accuracy (role fit, expectations), onboarding quality, and 30/60/90-day check-in process.`:`No critical &lt;6 month exits in this galaxy.`,
+      avgExitTenure<1.5?`Average exit at ${avgExitTenure}y means Finzly is paying onboarding cost without getting full productivity ROI. Target: raise avg exit tenure to 2+ years through structured 1-year retention milestones.`:`Exit tenure is reasonable — focus on protecting 2–3 year employees who are at inflection point.`
+    ]
+  });
+
+  // 4. EARLY EXIT RATE — onboarding/hiring signal
+  const earlyType=earlyPct>60?'risk':earlyPct>40?'signal':'good';
+  insights.push({
+    type:earlyType,
+    title:'Early Exit Rate — First Year Attrition',
+    metric:`${earlyPct}% left within Year 1`,
+    body:`<strong>${earlyExits} of ${exitTenures.length}</strong> exits happened in the first year. Of those: <strong>${earlyVoluntary} voluntary</strong> (chose to leave) and <strong>${earlyInvoluntary} involuntary</strong> (let go). 2023 cohort retention: <strong>${cohort2023ret}%</strong>. 2024 cohort retention: <strong>${cohort2024ret}%</strong>.`,
+    actions:[
+      earlyVoluntary>earlyInvoluntary?`Early voluntary exits = hiring or onboarding mismatch. Review: was the role sold accurately? Are managers setting clear 90-day expectations?`:`Early involuntary exits = hiring quality issue. Review assessment process and probation-period feedback loops.`,
+      cohort2024ret<70?`2024 cohort at only ${cohort2024ret}% retention — assign a dedicated buddy/mentor for all joiners in this galaxy for their first 6 months.`:`2024 cohort retention healthy at ${cohort2024ret}% — capture what's working and replicate for 2025 joiners.`
+    ]
+  });
+
+  // 5. MANAGER HEALTH
+  const mgrType=overloaded.length>3?'risk':overloaded.length>1?'signal':'good';
+  const topOverloaded=overloaded.sort((a,b)=>b[1].reports.length-a[1].reports.length).slice(0,2).map(e=>`${e[0].split(' ')[0]} (${e[1].reports.length})`).join(', ');
   insights.push({
     type:mgrType,
-    title:`Manager Span · ${galaxyLabel}`,
-    metric:`1:${avgSpan} Avg Span`,
-    body:`<strong>${mgrEntries.length} L1 managers</strong> for ${total} employees (${mgrPct}% manager ratio). Benchmark: 1:5–7. <strong>${overloaded.length} overloaded</strong> (&gt;7)${topOverloaded?': '+topOverloaded+'.':'.'}`,
+    title:'Manager Span of Control',
+    metric:`1:${avgSpan} avg · ${mgrEntries.length} L1 managers`,
+    body:`<strong>${mgrPct}% manager ratio</strong> (benchmark: 12–15%). ${overloaded.length>0?`<strong>${overloaded.length} overloaded</strong> (&gt;7 reports): ${topOverloaded}.`:' All within healthy span.'} ${singleReport>0?`<strong>${singleReport}</strong> single-report managers.`:''} Overloaded managers correlate with higher team attrition.`,
     actions:[
-      singleReport>0?`${singleReport} single-report managers — check if genuine people managers or working leads.`:`All managers have ≥2 reports.`,
-      overloaded.length>0?`Redistribute ${overloaded[0]?.[0]||'overloaded managers'}'s reports or hire a manager.`:`Span healthy — maintain as team scales.`
+      overloaded.length>0?`${overloaded[0]?.[0]?.split(' ')[0]||'Overloaded managers'} has too many reports — risk of manager burnout and reduced 1-on-1 quality. Hire a manager or flatten the structure.`:`Span is healthy — ensure each manager does monthly 1-on-1s with every report.`,
+      singleReport>0?`${singleReport} single-report managers may be working leads misclassified as managers — clarify roles to avoid pay and career confusion.`:`All manager assignments look appropriate.`
     ]
   });
 
-  // 3. PERFORMANCE SIGNAL
-  const perfTrend=avg25>avg24?'improvement':'decline';
+  // 6. PERFORMANCE & ENGAGEMENT
   const perfType=avg25<3?'risk':avg25<3.5?'signal':'good';
   insights.push({
     type:perfType,
-    title:'Performance Health',
-    metric:`${avg25}/5 Avg (2025)`,
-    body:`Rating ${avg25>avg24?`⬆ improved`:`⬇ declined`} from <strong>${avg24}</strong> (2024) to <strong>${avg25}</strong> (2025). <strong>${highPerf} high performers</strong> (★4–5, ${highPct}%) · <strong>${lowPerf} low performers</strong> (★1–2). <strong>${unrated} employees</strong> have no 2025 rating.`,
+    title:'Performance & Engagement Health',
+    metric:`${avg25}/5 avg rating · ${ragHealthPct}% Green RAG`,
+    body:`Performance ${avg25>avg24?`⬆ improved from ${avg24}`:`⬇ declined from ${avg24}`} in 2025. <strong>${highPerf} high performers</strong> (★4–5) · <strong>${lowPerf} low performers</strong> (★1–2) · <strong>${unrated} unrated</strong>. RAG: <strong>${rag.Green}G · ${rag.Amber}A · ${rag.Red}R</strong>.`,
     actions:[
-      unrated>20?`Complete appraisals for ${unrated} unrated employees before any promotion or pay review decisions.`:`Appraisal coverage is strong at ${Math.round(r25.length/total*100)}%.`,
-      lowPerf>0?`${lowPerf} low performers (★1–2) — ensure each has an active PIP with 90-day checkpoint.`:`No significant low-performer concentration detected.`
+      rag.Red>0?`🔴 ${rag.Red} Red-status employees need skip-level 1-on-1 this week — do not delegate this to their L1.`:`No Red employees — schedule Amber check-ins within 2 weeks.`,
+      unrated>total*0.2?`${unrated} employees (${Math.round(unrated/total*100)}%) missing 2025 rating — complete before any pay, promotion, or PIP decision.`:`Appraisal coverage strong — use ratings to drive differentiated recognition this cycle.`
     ]
   });
 
-  // 4. RAG ENGAGEMENT HEALTH
-  const ragType=rag.Red>5?'risk':rag.Red>0||rag.Amber>total*0.2?'signal':'good';
+  // 7. WORKFORCE STABILITY (tenure + contractors)
+  const stabType=longTenure<total*0.2||conPct>25?'signal':'good';
   insights.push({
-    type:ragType,
-    title:'Employee Engagement (RAG)',
-    metric:`${ragHealthPct}% Green`,
-    body:`<strong>${rag.Green} Green</strong> · <strong>${rag.Amber} Amber</strong> · <strong>${rag.Red} Red</strong> · <strong>${rag.NotSet} Not Set</strong>. ${rag.NotSet>total*0.1?`⚠ ${Math.round(rag.NotSet/total*100)}% missing RAG — managers may not be doing regular 1-on-1s.`:'RAG coverage is adequate.'} Target: 85%+ Green.`,
+    type:stabType,
+    title:'Workforce Stability',
+    metric:`${avgTen}y avg active tenure · ${longTenure} anchors`,
+    body:`<strong>${longTenure} employees</strong> with 3+ years tenure — your institutional knowledge anchors. <strong>${newJoins} employees</strong> joined in last 12 months (${total?Math.round(newJoins/total*100):0}% of team). <strong>${contractors} contractors</strong> (${conPct}%). ${conPct>20?'⚠ High contractor ratio.':'Contractor mix manageable.'}`,
     actions:[
-      rag.Red>0?`${rag.Red} Red employees need immediate skip-level 1-on-1 — escalate to L2 managers this week.`:`No Red employees — maintain cadence of monthly 1-on-1s.`,
-      rag.Amber>0?`${rag.Amber} Amber employees are at flight risk — schedule structured career conversations within 2 weeks.`:`No significant Amber concentration.`
+      longTenure<total*0.25?`Only ${Math.round(longTenure/total*100)}% of team has 3+ years — shallow institutional knowledge base. Prioritise retaining your top 5 long-tenure employees with retention conversations now.`:`${Math.round(longTenure/total*100)}% long-tenure base is solid — document their knowledge and build succession plans.`,
+      newJoins>total*0.3?`${newJoins} employees are in their first year (${Math.round(newJoins/total*100)}%) — heavy onboarding burden. Ensure buddy system and structured 30/60/90 check-ins are in place for all.`:`New join ratio is manageable — maintain structured onboarding without overwhelming existing team.`
     ]
   });
 
-  // 5. WORKFORCE COMPOSITION
-  const compType=conPct>20?'signal':femPct<25?'signal':'info';
+  // 8. GENDER & COMPOSITION
+  const compType=femPct<25?'signal':'info';
   insights.push({
     type:compType,
-    title:'Workforce Composition',
-    metric:`${Math.round(india/total*100)}% India · ${Math.round(usa/total*100)}% USA`,
-    body:`<strong>${contractors} contractors</strong> (${conPct}% of headcount). ${conPct>20?'⚠ High contractor dependency — IP risk and cost premium.':'Contractor ratio manageable.'} Gender: <strong>${femPct}% female</strong> (industry tech benchmark: 28–35%). <strong>${india} India</strong> vs <strong>${usa} USA</strong> split.`,
+    title:'Team Composition',
+    metric:`${femPct}% Female · ${conPct}% Contractors`,
+    body:`<strong>${india} India · ${usa} USA</strong>. <strong>${female} women</strong> of ${total} (tech benchmark: 28–35%). ${femPct<28?'⚠ Below benchmark.':femPct<35?'Approaching benchmark.':'✅ Above benchmark.'} <strong>${contractors} contractors</strong> (${conPct}%) — ${conPct>20?'above':'within'} recommended threshold.`,
     actions:[
-      femPct<28?`Female representation at ${femPct}% is below tech benchmark — review sourcing and interview panel diversity.`:`Gender ratio at ${femPct}% meets or exceeds benchmark — sustain inclusive hiring.`,
-      conPct>15?`Review ${contractors} contractors for conversion to FTE where strategic — reduces cost and IP risk.`:`Contractor mix is healthy — no immediate action needed.`
+      femPct<28?`${femPct}% female representation is below benchmark for a tech team — review hiring panels, job descriptions, and sourcing channels.`:`Gender mix is healthy — maintain focus on inclusive culture to sustain it.`,
+      conPct>20?`${contractors} contractors represent cost and IP risk — evaluate which roles could be converted to FTE for long-term stability.`:`Contractor mix is healthy.`
     ]
   });
 
-  // 6. RETENTION & TENURE RISK
-  const retType=cohort2024ret<60?'risk':avgTen<2?'signal':'good';
-  insights.push({
-    type:retType,
-    title:'Retention & Tenure Depth',
-    metric:`${avgTen}y Avg Tenure`,
-    body:`<strong>${longTenure} employees</strong> with 3+ years tenure — your institutional knowledge base. <strong>${newJoins}</strong> joined in last 12 months. 2024 cohort retention: <strong>${cohort2024ret}%</strong> (${cohort2024still} of ${cohort2024.length} still active).`,
-    actions:[
-      longTenure<total*0.3?`Only ${Math.round(longTenure/total*100)}% have 3+ years — org is still maturing. Prioritise L&D and career ladders to retain mid-tenure talent.`:`Strong ${Math.round(longTenure/total*100)}% tenure base — protect these employees with targeted retention bonuses.`,
-      cohort2024ret<70?`2024 cohort at ${cohort2024ret}% retention — early-career exits suggest onboarding or manager assignment issues. Review 90-day check-in process.`:`2024 cohort retention healthy at ${cohort2024ret}%.`
-    ]
-  });
-
-  // ── Render cards ─────────────────────────────────────────────
+  // ── Render ────────────────────────────────────────────────────
   const typeColors={risk:'var(--red)',good:'var(--green)',signal:'var(--amber)',info:'var(--blue)'};
   const typeIcons={risk:'🔴',good:'✅',signal:'⚠️',info:'💡'};
 
   document.getElementById('ai-dot').style.background='var(--green)';
-  document.getElementById('ai-status-txt').textContent=`${insights.length} insights · ${galaxyLabel} · ${new Date().toLocaleTimeString()} · computed from live data`;
+  document.getElementById('ai-status-txt').textContent=`8 insights · ${galaxyLabel} · ${new Date().toLocaleTimeString()} · from live data`;
 
   document.getElementById('ai-cards').innerHTML=insights.map(c=>`
     <div class="ai-card" style="border-top-color:${typeColors[c.type]||'var(--border)'}">
       <div class="ai-card-title">${typeIcons[c.type]||'💡'} ${c.title}</div>
       <div class="ai-card-body">
-        <div style="font-family:'Fira Code',monospace;font-size:1.3rem;font-weight:700;color:${typeColors[c.type]};margin-bottom:8px">${c.metric}</div>
+        <div style="font-family:'Fira Code',monospace;font-size:1.2rem;font-weight:700;color:${typeColors[c.type]};margin-bottom:8px">${c.metric}</div>
         <p style="margin-bottom:8px">${c.body}</p>
         <ul>${c.actions.map(a=>`<li>${a}</li>`).join('')}</ul>
       </div>
