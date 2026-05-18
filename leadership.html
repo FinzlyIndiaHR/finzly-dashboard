@@ -213,37 +213,63 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
 .mgr-badge.r{background:var(--rbg);color:var(--red);border:1px solid var(--rbr)}
 .mgr-badge.a{background:var(--abg);color:var(--amber);border:1px solid var(--abr)}
 .mgr-badge.g{background:var(--gbg);color:var(--green);border:1px solid var(--gbr)}
-/* ORG CHART - TOP DOWN TREE */
-.org-wrap{overflow:auto;padding:30px 20px;background:var(--bg);border-radius:10px;border:1px solid var(--border);min-height:300px}
-.org-tree{display:flex;flex-direction:column;align-items:center}
-.org-tree ul{display:flex;padding-top:24px;position:relative;flex-wrap:nowrap;justify-content:center}
-.org-tree ul::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:2px;height:24px;background:var(--border)}
-.org-tree li{display:flex;flex-direction:column;align-items:center;padding:0 8px;position:relative}
-.org-tree li::before,.org-tree li::after{content:'';position:absolute;top:0;width:50%;height:2px;background:var(--border)}
-.org-tree li::before{right:50%}.org-tree li::after{left:50%}
-.org-tree li:only-child::before,.org-tree li:only-child::after{display:none}
-.org-tree li:first-child::before,.org-tree li:last-child::after{display:none}
-.org-tree li:first-child::after{border-radius:6px 0 0 0}
-.org-tree li:last-child::before{border-radius:0 6px 0 0}
-.org-tree li:only-child>a::before{content:'';position:absolute;top:-24px;left:50%;width:2px;height:24px;background:var(--border)}
-.org-tree a{display:flex;flex-direction:column;align-items:center}
-.org-node{border-radius:8px;padding:9px 13px;min-width:140px;max-width:180px;text-align:center;cursor:pointer;transition:all .15s;position:relative;border:1px solid rgba(255,255,255,.2)}
-.org-node:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.15)}
-.org-node.root{min-width:180px;max-width:220px;border-width:2px}
-.org-node-name{font-size:.72rem;font-weight:700;color:#fff;line-height:1.3;margin-bottom:2px}
-.org-node-title{font-size:.58rem;color:rgba(255,255,255,.75);line-height:1.3;margin-bottom:2px}
-.org-node-squad{font-size:.54rem;color:rgba(255,255,255,.5);margin-bottom:3px}
-.org-node-badges{display:flex;gap:3px;justify-content:center;flex-wrap:wrap}
-.org-badge{font-size:.5rem;padding:1px 5px;border-radius:10px;font-weight:700}
-.org-badge.con{background:rgba(217,119,6,.9);color:#fff}
-.org-badge.ind{background:rgba(14,165,233,.3);color:#fff;border:1px solid rgba(14,165,233,.5)}
-.org-badge.usa{background:rgba(124,58,237,.3);color:#fff;border:1px solid rgba(124,58,237,.5)}
-.org-expand{font-size:.54rem;margin-top:3px;color:rgba(255,255,255,.6);font-weight:700}
-.org-tree li.collapsed>a>.org-node+ul,.org-tree li.collapsed ul{display:none}
+/* ORG CHART - VERTICAL INDENTED TREE */
+.org-wrap{overflow:auto;padding:20px;background:var(--bg);border-radius:10px;border:1px solid var(--border);min-height:300px}
+.org-tree-v{list-style:none;padding:0;margin:0}
+.org-tree-v ul{list-style:none;padding:0;margin:0 0 0 24px;position:relative}
+.org-tree-v ul::before{content:'';position:absolute;left:0;top:0;bottom:12px;width:1.5px;background:var(--border)}
+.org-tree-v li{position:relative;padding:0 0 0 20px;margin-top:6px}
+.org-tree-v li::before{content:'';position:absolute;left:0;top:20px;width:18px;height:1.5px;background:var(--border)}
+.org-node-row{display:flex;align-items:center;gap:8px;padding:7px 12px;border-radius:8px;cursor:pointer;transition:background .12s;border:1px solid var(--border);background:var(--card)}
+.org-node-row:hover{border-color:var(--accent);background:#fff8f5}
+.org-node-row.root-row{background:var(--ink);border-color:var(--ink)}
+.org-node-row.root-row .on-name,.org-node-row.root-row .on-title,.org-node-row.root-row .on-squad{color:#fff!important}
+.on-toggle{font-size:.7rem;color:var(--muted);width:14px;flex-shrink:0;text-align:center;transition:transform .15s}
+.on-toggle.open{color:var(--accent)}
+.on-avatar{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:800;color:#fff;flex-shrink:0}
+.on-info{flex:1;min-width:0}
+.on-name{font-size:.76rem;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.on-title{font-size:.62rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.on-right{display:flex;align-items:center;gap:5px;flex-shrink:0}
+.on-squad-badge{font-size:.56rem;padding:2px 7px;border-radius:10px;color:#fff;font-weight:700;white-space:nowrap}
+.on-country{font-size:.66rem}
+.on-con{font-size:.54rem;padding:1px 5px;border-radius:8px;background:rgba(217,119,6,.15);color:var(--amber);border:1px solid rgba(217,119,6,.3);font-weight:700}
+.on-count{font-size:.58rem;color:var(--muted);white-space:nowrap}
 .org-controls{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
 .org-btn{font-family:'Outfit',sans-serif;font-size:.7rem;padding:5px 12px;border-radius:6px;border:1px solid var(--border);background:var(--card);cursor:pointer;color:var(--ink)}
 .org-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
-.org-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+/* GALAXY SECTIONS */
+.galaxy-section{border-radius:12px;overflow:hidden;margin-bottom:12px;border:1px solid var(--border)}
+.galaxy-header{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;cursor:pointer;user-select:none}
+.galaxy-header:hover{filter:brightness(1.08)}
+.galaxy-leader-name{font-size:.9rem;font-weight:800;color:#fff}
+.galaxy-leader-title{font-size:.64rem;color:rgba(255,255,255,.7);margin-top:1px}
+.galaxy-meta{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:4px}
+.galaxy-badge{font-size:.6rem;padding:2px 8px;border-radius:20px;background:rgba(255,255,255,.15);color:#fff;font-weight:600}
+.galaxy-badge.con{background:rgba(217,119,6,.5)}
+.galaxy-toggle{font-size:.75rem;color:rgba(255,255,255,.6);transition:transform .25s;flex-shrink:0;margin-left:12px}
+.galaxy-toggle.open{transform:rotate(180deg)}
+.galaxy-body{display:none;overflow-x:auto;padding:20px;background:var(--bg)}
+.galaxy-body.open{display:block}
+/* LEADERSHIP STRIP */
+.ls-wrap{display:flex;flex-direction:column;align-items:center}
+.ls-root-box{border-radius:10px;padding:12px 18px;text-align:center;min-width:180px;border:2px solid rgba(255,255,255,.2)}
+.ls-name{font-size:.82rem;font-weight:800;color:#fff;line-height:1.3}
+.ls-title{font-size:.62rem;color:rgba(255,255,255,.75);margin-top:2px;line-height:1.3}
+.ls-connector{width:2px;height:28px;background:var(--border);margin:0 auto}
+.ls-hbar{height:2px;background:var(--border);width:100%}
+.ls-children-row{display:flex;justify-content:center;flex-wrap:wrap;gap:12px;padding-top:0}
+.ls-child{display:flex;flex-direction:column;align-items:center}
+.ls-child-vbar{width:2px;height:24px;background:var(--border)}
+.ls-card{border-radius:8px;padding:9px 12px;text-align:center;min-width:140px;max-width:165px;border:1px solid rgba(255,255,255,.15);transition:transform .15s}
+.ls-card:hover{transform:translateY(-2px)}
+.ls-card-name{font-size:.72rem;font-weight:700;color:#fff;line-height:1.3}
+.ls-card-title{font-size:.56rem;color:rgba(255,255,255,.7);margin-top:2px;line-height:1.3}
+.ls-badges{display:flex;gap:3px;justify-content:center;margin-top:4px;flex-wrap:wrap}
+.ls-badge{font-size:.5rem;padding:1px 5px;border-radius:10px;font-weight:700}
+.ls-badge.ind{background:rgba(14,165,233,.3);color:#fff;border:1px solid rgba(14,165,233,.5)}
+.ls-badge.usa{background:rgba(124,58,237,.3);color:#fff;border:1px solid rgba(124,58,237,.5)}
+.ls-badge.con{background:rgba(217,119,6,.8);color:#fff}
 /* AI INTEL */
 .ai-status{display:flex;align-items:center;gap:8px;font-size:.74rem;color:var(--muted);margin-bottom:14px;padding:10px 14px;background:var(--card);border-radius:8px;border:1px solid var(--border)}
 .ai-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);animation:pulse 1.5s infinite}
@@ -516,16 +542,23 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
   <!-- P9 ORG CHART -->
   <div class="pg" id="p9">
     <div class="inf blue" id="inf-org-chart"></div>
-    <div class="org-controls">
-      <select id="f-org-squad" onchange="renderOrgChart()" style="font-family:'Outfit',sans-serif;font-size:.78rem;padding:5px 22px 5px 10px;border-radius:6px;border:1.5px solid var(--border);background:var(--bg);appearance:none"><option value="all">All Squads</option></select>
-      <button class="org-btn" onclick="expandAll()">Expand All</button>
-      <button class="org-btn" onclick="collapseToLevel(2)">Top 2 Levels</button>
-      <button class="org-btn" onclick="collapseToLevel(3)">Top 3 Levels</button>
-      <span style="font-size:.66rem;color:var(--muted)">Click any node to expand / collapse · <span style="background:rgba(217,119,6,.15);color:var(--amber);padding:1px 5px;border-radius:3px;font-weight:700;font-size:.6rem">CON</span> = Contractor · 🔵 India · 🟣 USA</span>
+
+    <!-- SECTION 1: Leadership Team -->
+    <div class="card" style="margin-bottom:18px">
+      <div class="c-title"><div class="c-title-l">🏛 Leadership Team — Direct Reports to President</div></div>
+      <div id="leadership-strip" style="overflow-x:auto;padding:10px 0"></div>
     </div>
-    <div id="org-chart-wrap" class="org-wrap">
-      <div id="org-tree-root" class="org-tree"></div>
+
+    <!-- SECTION 2: Galaxy Trees -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div style="font-size:.78rem;font-weight:700;color:var(--ink)">🌌 Galaxy Trees — Click to Expand</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="org-btn" onclick="expandAllGalaxies()">Expand All</button>
+        <button class="org-btn" onclick="collapseAllGalaxies()">Collapse All</button>
+        <span style="font-size:.62rem;color:var(--muted);line-height:1;align-self:center"><span style="background:rgba(217,119,6,.15);color:var(--amber);padding:1px 5px;border-radius:3px;font-weight:700">CON</span> Contractor · 🔵 India · 🟣 USA</span>
+      </div>
     </div>
+    <div id="galaxy-trees"></div>
   </div>
 
   <!-- P10 AI INTEL -->
@@ -1793,54 +1826,93 @@ const SQUAD_DARK={
 };
 function sqColor(sq){return SQUAD_DARK[sq]||'#1e3a5f';}
 
+// ── BUILD TREE FROM L1 RELATIONSHIPS ─────────────────────────
 function buildOrgTree(employees){
-  // Build name → node map
   const nodes={};
   employees.forEach(e=>{
     const full=`${e['First Name']||''} ${e['Last Name']||''}`.trim();
     nodes[full]={...e,full,children:[]};
   });
-
-  // Link parent → children
   const roots=[];
   employees.forEach(e=>{
     const full=`${e['First Name']||''} ${e['Last Name']||''}`.trim();
     const l1=String(e['L1 Manager']||'').trim();
-    if(l1&&nodes[l1]&&l1!==full){
-      nodes[l1].children.push(nodes[full]);
-    } else {
-      roots.push(nodes[full]);
-    }
+    if(l1&&nodes[l1]&&l1!==full) nodes[l1].children.push(nodes[full]);
+    else roots.push(nodes[full]);
   });
   return{roots,nodes};
 }
 
-function makeNodeEl(node,depth,sqFilter){
-  // If squad filter is active, skip nodes not in that squad's subtree
-  const hasRelevant=sqFilter==='all'||hasSquadInSubtree(node,sqFilter);
-  if(!hasRelevant)return null;
+// ── COUNT SUBTREE SIZE ────────────────────────────────────────
+function subtreeCount(node){
+  return 1+node.children.reduce((s,c)=>s+subtreeCount(c),0);
+}
 
+// ── RENDER LEADERSHIP STRIP (top 2 levels) ───────────────────
+function renderLeadershipStrip(root){
+  const col=sqColor(root.Squad||'Mgmt');
+  const isCon=root.Type==='Consultant';
+  const flag=root.Country==='India'?'🔵':'🟣';
+
+  // Root box
+  let html=`<div class="ls-wrap">
+    <div class="ls-root-box" style="background:${col};border-color:rgba(255,255,255,.3)">
+      <div class="ls-name">${root.full}</div>
+      <div class="ls-title">${root['Corporate Title']||root.Level||''}</div>
+      <div class="ls-badges">
+        <span class="ls-badge ${root.Country==='India'?'ind':'usa'}">${flag} ${root.Country||''}</span>
+        ${isCon?'<span class="ls-badge con">CON</span>':''}
+      </div>
+    </div>
+    <div class="ls-connector"></div>`;
+
+  if(root.children.length>0){
+    // Horizontal line + children
+    html+=`<div style="width:100%;display:flex;flex-direction:column;align-items:center">
+      <div class="ls-hbar"></div>
+      <div class="ls-children-row">`;
+
+    const sorted=[...root.children].sort((a,b)=>subtreeCount(b)-subtreeCount(a));
+    sorted.forEach(child=>{
+      const cc=sqColor(child.Squad||'');
+      const cf=child.Country==='India'?'🔵':'🟣';
+      const cCon=child.Type==='Consultant';
+      const total=subtreeCount(child)-1;
+      html+=`<div class="ls-child">
+        <div class="ls-child-vbar"></div>
+        <div class="ls-card" style="background:${cc}">
+          <div class="ls-card-name">${child.full}</div>
+          <div class="ls-card-title">${child['Corporate Title']||child.Level||''}</div>
+          <div class="ls-badges">
+            <span class="ls-badge ${child.Country==='India'?'ind':'usa'}">${cf} ${child.Country||''}</span>
+            ${cCon?'<span class="ls-badge con">CON</span>':''}
+            ${total>0?`<span class="ls-badge" style="background:rgba(255,255,255,.2)">${total} reports</span>`:''}
+          </div>
+        </div>
+      </div>`;
+    });
+    html+=`</div></div>`;
+  }
+  html+=`</div>`;
+  document.getElementById('leadership-strip').innerHTML=html;
+}
+
+// ── RENDER A SINGLE GALAXY TREE ───────────────────────────────
+function makeNodeEl(node,depth){
   const sq=node.Squad||'';
   const col=sqColor(sq);
   const isCon=node.Type==='Consultant';
-  const isRoot=depth===0;
   const childCount=node.children.length;
+  const flag=node.Country==='India'?'🔵':'🟣';
 
   const li=document.createElement('li');
-
   const a=document.createElement('a');
-  a.style.textDecoration='none';
-  a.style.display='flex';
-  a.style.flexDirection='column';
-  a.style.alignItems='center';
+  a.style.cssText='text-decoration:none;display:flex;flex-direction:column;align-items:center';
 
   const box=document.createElement('div');
-  box.className='org-node'+(isRoot?' root':'');
+  box.className='org-node'+(depth===0?' root':'');
   box.style.background=col;
   box.style.borderColor=isCon?'rgba(217,119,6,.8)':'rgba(255,255,255,.15)';
-  box.style.borderWidth=isCon?'2px':'1px';
-
-  const flag=node.Country==='India'?'🔵':'🟣';
   box.innerHTML=`
     <div class="org-node-name">${node['First Name']||''} ${node['Last Name']||''}</div>
     <div class="org-node-title">${node['Corporate Title']||node.Level||''}</div>
@@ -1849,98 +1921,162 @@ function makeNodeEl(node,depth,sqFilter){
       <span class="org-badge ${node.Country==='India'?'ind':'usa'}">${flag} ${node.Country||''}</span>
       ${isCon?'<span class="org-badge con">CON</span>':''}
     </div>
-    ${childCount>0?`<div class="org-expand">▾ ${childCount} report${childCount>1?'s':''}</div>`:''}`;
+    ${childCount>0?`<div class="org-expand">▾ ${childCount}</div>`:''}`;
 
   box.onclick=e=>{
     e.stopPropagation();
     li.classList.toggle('collapsed');
     const expEl=box.querySelector('.org-expand');
-    if(expEl)expEl.textContent=li.classList.contains('collapsed')?`▸ ${childCount} report${childCount>1?'s':''}`:`▾ ${childCount} report${childCount>1?'s':''}`;
+    if(expEl)expEl.textContent=li.classList.contains('collapsed')?`▸ ${childCount}`:`▾ ${childCount}`;
   };
-
   a.appendChild(box);
   li.appendChild(a);
 
   if(childCount>0){
     const ul=document.createElement('ul');
-    // Sort children by number of their children (managers first)
-    const sorted=[...node.children].sort((a,b)=>b.children.length-a.children.length);
-    let added=0;
-    sorted.forEach(child=>{
-      const childEl=makeNodeEl(child,depth+1,sqFilter);
-      if(childEl){ul.appendChild(childEl);added++;}
-    });
-    if(added>0)li.appendChild(ul);
+    [...node.children].sort((a,b)=>b.children.length-a.children.length)
+      .forEach(child=>ul.appendChild(makeNodeEl(child,depth+1)));
+    li.appendChild(ul);
   }
-
   return li;
 }
 
-function hasSquadInSubtree(node,sq){
-  if((node.Squad||'')===(sq||'')||
-     (node.Squad==='Prod Sup'&&sq==='Production Support')||
-     (node.Squad==='PS'&&sq==='Professional Services')||
-     (node.Squad==='Infosec'&&sq==='InfoSec'))return true;
-  return node.children.some(c=>hasSquadInSubtree(c,sq));
-}
-
+// ── MAIN ORG CHART RENDER ─────────────────────────────────────
 function renderOrgChart(){
   const activeAll=EMP_DATA.filter(d=>d.Status==='Active'||d.ActiveFlag===1);
-  const sq=document.getElementById('f-org-squad')?.value||'all';
-
-  // Populate squad filter once
-  const sel=document.getElementById('f-org-squad');
-  if(sel&&sel.options.length<=1){
-    [...new Set(activeAll.map(d=>d.Squad).filter(Boolean))].sort()
-      .forEach(s=>{const o=document.createElement('option');o.value=o.textContent=s;sel.appendChild(o);});
-  }
-
   const conCount=activeAll.filter(d=>d.Type==='Consultant').length;
   const fteCount=activeAll.length-conCount;
-  document.getElementById('inf-org-chart').innerHTML=`<strong>Org Chart:</strong> <strong>${activeAll.length} active</strong> — ${fteCount} FTE + <span style="color:var(--amber);font-weight:700">${conCount} Contractors</span>. One root: <strong>Booshan Rengachari (President)</strong>. Click any node to expand/collapse. Filter by squad to zoom in.`;
+
+  document.getElementById('inf-org-chart').innerHTML=
+    `<strong>Org Chart · ${activeAll.length} active employees</strong> — ${fteCount} FTE + <span style="color:var(--amber);font-weight:700">${conCount} Contractors</span>. 
+     Section 1: Leadership Team (Booshan + direct reports). Section 2: Each leader's full Galaxy tree — click header to expand. 🔵 India · 🟣 USA`;
 
   const {roots}=buildOrgTree(activeAll);
-  const wrap=document.getElementById('org-tree-root');
-  wrap.innerHTML='';
+  const root=roots[0]; // Booshan Rengachari
+  if(!root)return;
 
-  const outerUl=document.createElement('ul');
-  outerUl.style.padding='0';
-  roots.forEach(r=>{
-    const el=makeNodeEl(r,0,sq);
-    if(el)outerUl.appendChild(el);
+  // ── SECTION 1: Leadership Strip ───────────────────────────
+  renderLeadershipStrip(root);
+
+  // ── SECTION 2: Galaxy Trees ───────────────────────────────
+  const galaxyWrap=document.getElementById('galaxy-trees');
+  galaxyWrap.innerHTML='';
+
+  const sorted=[...root.children].sort((a,b)=>subtreeCount(b)-subtreeCount(a));
+  sorted.forEach((leader,idx)=>{
+    const col=sqColor(leader.Squad||'');
+    const total=subtreeCount(leader)-1;
+    const conInGalaxy=[...gatherSubtree(leader)].filter(n=>n.Type==='Consultant').length;
+    const squad=leader.Squad||leader['Sub Squad']||'';
+
+    // Galaxy section
+    const section=document.createElement('div');
+    section.className='galaxy-section';
+
+    // Header
+    const hdr=document.createElement('div');
+    hdr.className='galaxy-header';
+    hdr.style.background=col;
+    hdr.innerHTML=`
+      <div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div>
+            <div class="galaxy-leader-name">${leader.full}</div>
+            <div class="galaxy-leader-title">${leader['Corporate Title']||leader.Level||''}</div>
+          </div>
+        </div>
+        <div class="galaxy-meta">
+          <span class="galaxy-badge">${total} people</span>
+          <span class="galaxy-badge">${squad}</span>
+          ${conInGalaxy>0?`<span class="galaxy-badge con">${conInGalaxy} contractor${conInGalaxy>1?'s':''}</span>`:''}
+          <span class="galaxy-badge">${leader.Country==='India'?'🔵 India':'🟣 USA'}</span>
+        </div>
+      </div>
+      <div class="galaxy-toggle">▼</div>`;
+
+    hdr.onclick=()=>{
+      const body=section.querySelector('.galaxy-body');
+      const tog=section.querySelector('.galaxy-toggle');
+      const isOpen=body.classList.contains('open');
+      body.classList.toggle('open');
+      tog.classList.toggle('open');
+      // Lazy render tree on first open
+      if(!isOpen&&body.dataset.rendered!=='1'){
+        body.dataset.rendered='1';
+        const tree=document.createElement('div');
+        tree.className='org-tree';
+        const ul=document.createElement('ul');
+        ul.style.padding='0';
+        ul.appendChild(makeNodeEl(leader,0));
+        tree.appendChild(ul);
+        body.appendChild(tree);
+        // Default: show top 3 levels
+        collapseGalaxy(body,3);
+      }
+    };
+
+    // Body (lazy)
+    const body=document.createElement('div');
+    body.className='galaxy-body';
+
+    section.appendChild(hdr);
+    section.appendChild(body);
+    galaxyWrap.appendChild(section);
   });
-  wrap.appendChild(outerUl);
-
-  // Default: collapse to level 3 for performance
-  collapseToLevel(3);
 }
 
-function collapseToLevel(maxLevel){
-  const allLi=document.querySelectorAll('#org-tree-root li');
-  allLi.forEach(li=>{
-    // Measure depth
-    let depth=0,parent=li.parentElement;
-    while(parent&&parent.id!=='org-tree-root'){
-      if(parent.tagName==='UL')depth++;
-      parent=parent.parentElement;
-    }
+function gatherSubtree(node){
+  const all=[node];
+  node.children.forEach(c=>all.push(...gatherSubtree(c)));
+  return all;
+}
+
+function collapseGalaxy(bodyEl,maxLevel){
+  bodyEl.querySelectorAll('li').forEach(li=>{
+    let depth=0,p=li.parentElement;
+    while(p&&!p.classList.contains('galaxy-body')){if(p.tagName==='UL')depth++;p=p.parentElement;}
     if(depth>=maxLevel){
       li.classList.add('collapsed');
       const exp=li.querySelector(':scope > a .org-expand');
       if(exp)exp.textContent=exp.textContent.replace('▾','▸');
-    } else {
-      li.classList.remove('collapsed');
-      const exp=li.querySelector(':scope > a .org-expand');
-      if(exp)exp.textContent=exp.textContent.replace('▸','▾');
     }
   });
 }
 
-function expandAll(){
-  document.querySelectorAll('#org-tree-root li').forEach(li=>{
-    li.classList.remove('collapsed');
-    const exp=li.querySelector(':scope > a .org-expand');
-    if(exp)exp.textContent=exp.textContent.replace('▸','▾');
+function expandAllGalaxies(){
+  document.querySelectorAll('.galaxy-section').forEach(sec=>{
+    const body=sec.querySelector('.galaxy-body');
+    const tog=sec.querySelector('.galaxy-toggle');
+    if(!body.classList.contains('open')){
+      body.classList.add('open');
+      if(tog)tog.classList.add('open');
+      if(body.dataset.rendered!=='1'){
+        // Find the leader from the header title
+        body.dataset.rendered='1';
+        const leaderName=sec.querySelector('.galaxy-leader-name')?.textContent?.trim();
+        const activeAll=EMP_DATA.filter(d=>d.Status==='Active'||d.ActiveFlag===1);
+        const {nodes}=buildOrgTree(activeAll);
+        if(leaderName&&nodes[leaderName]){
+          const tree=document.createElement('div');tree.className='org-tree';
+          const ul=document.createElement('ul');ul.style.padding='0';
+          ul.appendChild(makeNodeEl(nodes[leaderName],0));
+          tree.appendChild(ul);body.appendChild(tree);
+        }
+      }
+    }
+    body.querySelectorAll('li').forEach(li=>{
+      li.classList.remove('collapsed');
+      const exp=li.querySelector(':scope > a .org-expand');
+      if(exp)exp.textContent=exp.textContent.replace('▸','▾');
+    });
+  });
+}
+
+function collapseAllGalaxies(){
+  document.querySelectorAll('.galaxy-section').forEach(sec=>{
+    sec.querySelector('.galaxy-body')?.classList.remove('open');
+    const tog=sec.querySelector('.galaxy-toggle');
+    if(tog)tog.classList.remove('open');
   });
 }
 
