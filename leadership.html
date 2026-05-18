@@ -2335,12 +2335,13 @@ async function downloadReport(type, btn){
 
 // Add the diagonal stripe background pattern (matches Finzly PPT style)
 function addStripePattern(slide){
-  // Light lavender diagonal rectangles across the slide
+  // Stripes ONLY at top header area and bottom footer area — never through content
   const stripes=[
-    {x:0,y:0.3,w:2.8,h:0.18},{x:3.2,y:0.3,w:2.4,h:0.18},{x:6.4,y:0.3,w:1.8,h:0.18},{x:9,y:0.3,w:2.2,h:0.18},{x:11.8,y:0.3,w:1.5,h:0.18},
-    {x:0,y:1.8,w:1.5,h:0.14},{x:2.2,y:1.8,w:3.2,h:0.14},{x:6.2,y:1.8,w:1.4,h:0.14},{x:8.4,y:1.8,w:2.8,h:0.14},
-    {x:0,y:5.5,w:3.5,h:0.14},{x:4.2,y:5.5,w:2.6,h:0.14},{x:7.6,y:5.5,w:2.0,h:0.14},{x:10.4,y:5.5,w:2.9,h:0.14},
-    {x:0,y:6.5,w:2.0,h:0.14},{x:2.8,y:6.5,w:3.8,h:0.14},{x:7.4,y:6.5,w:2.2,h:0.14},{x:10.4,y:6.5,w:2.9,h:0.14},
+    // Top row (under the title line, ~y=0.55–0.7 range)
+    {x:5.5,y:0.55,w:2.2,h:0.12},{x:8.4,y:0.55,w:2.8,h:0.12},{x:11.8,y:0.55,w:1.4,h:0.12},
+    // Bottom footer area (y=7.0–7.15)
+    {x:0,y:7.0,w:2.4,h:0.12},{x:3.0,y:7.0,w:2.0,h:0.12},{x:5.8,y:7.0,w:1.5,h:0.12},
+    {x:8.1,y:7.0,w:2.8,h:0.12},{x:11.6,y:7.0,w:1.6,h:0.12},
   ];
   stripes.forEach(s=>slide.addShape('rect',{...s,fill:{color:F.bgStripe},line:{color:F.bgStripe,pt:0}}));
 }
@@ -2397,17 +2398,20 @@ function slideTitle(s, title, subtitle=''){
     italic:true,color:F.subtitlePurple,fontFace:'Calibri',margin:0});
 }
 
-// Insight + Leadership Takeaway box at bottom
-function insightBox(s, insight, takeaway, y=5.85){
+// Insight + Leadership Takeaway at bottom — fixed y positions, no overlap
+function insightBox(s, insight, takeaway, y=5.9){
+  // Light background strip for insight area
+  s.addShape('rect',{x:0.3,y:y-0.08,w:12.7,h:takeaway?1.12:0.58,
+    fill:{color:'F8F6FF'},line:{color:F.lavender,pt:0.5}});
   s.addText([
-    {text:'Key Insight: ',options:{bold:true,color:F.black,fontFace:'Calibri'}},
+    {text:'Key Insight:  ',options:{bold:true,color:F.darkPurple,fontFace:'Calibri'}},
     {text:insight,options:{color:F.black,fontFace:'Calibri'}},
-  ],{x:0.45,y,w:12.4,h:0.5,fontSize:11,margin:0,fit:'shrink'});
+  ],{x:0.5,y:y,w:12.2,h:0.48,fontSize:10.5,margin:0,fit:'shrink'});
   if(takeaway){
     s.addText([
-      {text:'Leadership Takeaway: ',options:{bold:true,color:F.black,fontFace:'Calibri'}},
+      {text:'Leadership Takeaway:  ',options:{bold:true,color:F.darkPurple,fontFace:'Calibri'}},
       {text:takeaway,options:{color:F.black,fontFace:'Calibri'}},
-    ],{x:0.45,y:y+0.52,w:12.4,h:0.5,fontSize:11,margin:0,fit:'shrink'});
+    ],{x:0.5,y:y+0.54,w:12.2,h:0.48,fontSize:10.5,margin:0,fit:'shrink'});
   }
 }
 
@@ -2477,40 +2481,41 @@ async function addSnapshotSlides(pres,active,inact){
   const annAtt=A.length?A[A.length-1].ann_pct:0;
   const exits2026=inact.filter(d=>{const ts=d['Termination Date Str']||dateStr(d['Termination Date']);return ts&&ts.startsWith('2026');}).length;
 
-  kpiBox2(s,'Active HC',active.length,'employees today',0.45,1.0,1.85,1.1,F.purple);
-  kpiBox2(s,'India',india,Math.round(india/active.length*100)+'% of HC',2.38,1.0,1.85,1.1,F.tealDark);
-  kpiBox2(s,'USA',usa,Math.round(usa/active.length*100)+'% of HC',4.31,1.0,1.85,1.1,F.tealMid);
-  kpiBox2(s,'Female',female,Math.round(female/active.length*100)+'%  (tech avg 28–35%)',6.24,1.0,1.85,1.1,F.midPurple);
-  kpiBox2(s,'Contractors',contractors,Math.round(contractors/active.length*100)+'% of HC',8.17,1.0,1.85,1.1,F.amber);
-  kpiBox2(s,'Avg Tenure',avgTen+'y','avg time at Finzly',10.1,1.0,1.85,1.1,F.green);
-  kpiBox2(s,'2026 Exits',exits2026,'so far this year',12.03,1.0,1.2,1.1,F.red);
+  // 6 KPI boxes — evenly spaced, no overflow
+  const kpiW=2.05, kpiH=1.05, kpiGap=0.13, kpiY=1.0, kpiStart=0.35;
+  kpiBox2(s,'Active HC',active.length,'employees today',kpiStart+0*(kpiW+kpiGap),kpiY,kpiW,kpiH,F.purple);
+  kpiBox2(s,'India',india,Math.round(india/active.length*100)+'% of HC',kpiStart+1*(kpiW+kpiGap),kpiY,kpiW,kpiH,F.tealDark);
+  kpiBox2(s,'USA',usa,Math.round(usa/active.length*100)+'% of HC',kpiStart+2*(kpiW+kpiGap),kpiY,kpiW,kpiH,F.tealMid);
+  kpiBox2(s,'Female',female,Math.round(female/active.length*100)+'% (benchmark 28–35%)',kpiStart+3*(kpiW+kpiGap),kpiY,kpiW,kpiH,F.midPurple);
+  kpiBox2(s,'Contractors',contractors,Math.round(contractors/active.length*100)+'% of HC',kpiStart+4*(kpiW+kpiGap),kpiY,kpiW,kpiH,F.amber);
+  kpiBox2(s,'Avg Tenure',avgTen+'y','avg time at Finzly',kpiStart+5*(kpiW+kpiGap),kpiY,kpiW,kpiH,F.green);
 
-  // Squad distribution chart
+  // Squad bar chart (left)
   const sqMap={};active.forEach(d=>{const sq=d.Squad||'?';sqMap[sq]=(sqMap[sq]||0)+1;});
-  const sqE=Object.entries(sqMap).sort((a,b)=>b[1]-a[1]);
+  const sqE=Object.entries(sqMap).sort((a,b)=>b[1]-a[1]).slice(0,12);
+  s.addText('Headcount by Squad',{x:0.35,y:2.2,w:7.5,h:0.22,fontSize:10,bold:true,color:F.darkPurple,fontFace:'Calibri',margin:0});
   s.addChart(pres.charts.BAR,[{name:'Headcount',labels:sqE.map(e=>e[0]),values:sqE.map(e=>e[1])}],{
-    x:0.45,y:2.25,w:7.8,h:3.4,barDir:'bar',
-    chartColors:['6B4EFF','4B3AC2','7B5EF8','9B7EFF','3A2AC2','5B3EE8','8B6EFF','2A1AC2','AB8EFF','1A0FAA'],
+    x:0.35,y:2.42,w:7.5,h:3.3,barDir:'bar',
+    chartColors:['6B4EFF','4B3AC2','7B5EF8','9B7EFF','3A2AC2','5B3EE8','8B6EFF','2A1AC2','AB8EFF','1A0FAA','8080FF','6060EE'],
     showValue:true,dataLabelFontSize:9,dataLabelColor:'FFFFFF',
     catAxisLabelColor:F.muted,valAxisLabelColor:F.muted,
     catGridLine:{style:'none'},valGridLine:{color:'EEEEEE'},
     showLegend:false,chartArea:{fill:{color:F.white}},
   });
-  s.addText('Headcount by Squad',{x:0.45,y:2.1,w:7,h:0.22,fontSize:10,bold:true,color:F.darkPurple,fontFace:'Calibri',margin:0});
 
-  // Donut
+  // Donut (right)
+  s.addText('Workforce Mix',{x:8.1,y:2.2,w:5.1,h:0.22,fontSize:10,bold:true,color:F.darkPurple,fontFace:'Calibri',margin:0});
   s.addChart(pres.charts.DOUGHNUT,[{name:'Mix',labels:['India FTE','USA FTE','Contractors'],values:[india-contractors,usa,contractors]}],{
-    x:8.5,y:2.25,w:4.4,h:3.4,
+    x:8.1,y:2.42,w:5.1,h:3.3,
     chartColors:[F.tealLight,F.tealDark,F.amber],
     showLegend:true,legendPos:'b',showPercent:true,
-    dataLabelColor:F.white,dataLabelFontSize:9,
+    dataLabelColor:F.white,dataLabelFontSize:10,
     chartArea:{fill:{color:F.white}},
   });
-  s.addText('Workforce Mix',{x:8.5,y:2.1,w:4.4,h:0.22,fontSize:10,bold:true,color:F.darkPurple,fontFace:'Calibri',margin:0});
 
   insightBox(s,
-    `Headcount ${active.length} — India ${india} (${Math.round(india/active.length*100)}%), USA ${usa}. Contractors at ${Math.round(contractors/active.length*100)}% of workforce.`,
-    annAtt>20?`Attrition at ${annAtt.toFixed(1)}% — above healthy threshold. ${exits2026} exits in 2026. Immediate retention focus needed.`:`Attrition at ${annAtt.toFixed(1)}% — monitor Amber/Red RAG employees and 2024 cohort retention.`
+    `Headcount ${active.length} — India ${india} (${Math.round(india/active.length*100)}%), USA ${usa}. ${exits2026} exits in 2026 so far. Contractors: ${Math.round(contractors/active.length*100)}%.`,
+    annAtt>20?`Attrition at ${annAtt.toFixed(1)}% annualised — above healthy threshold. Immediate retention focus needed.`:`Attrition at ${annAtt.toFixed(1)}% — monitor Amber/Red employees and 2024 cohort retention.`
   );
 }
 
@@ -2520,7 +2525,7 @@ async function addAttritionSlides(pres,active,inact){
 
   // Slide 1: Year-wise exits bar + key stats
   const s1=contentSlide(pres,2);
-  slideTitle(s1,'Attrition Report – Year on Year','Exit Volume · Voluntary vs Involuntary');
+  slideTitle(s1,'Attrition Report – Year on Year','Exit Volume · Voluntary vs Involuntary · Tenure at Exit');
 
   const yrMap={};
   inact.forEach(d=>{
@@ -2533,10 +2538,11 @@ async function addAttritionSlides(pres,active,inact){
   });
   const yrs=Object.keys(yrMap).sort();
 
+  // Main exits chart — takes left 60%
   s1.addChart(pres.charts.BAR,[
     {name:'Voluntary',labels:yrs,values:yrs.map(y=>yrMap[y].V)},
     {name:'Involuntary',labels:yrs,values:yrs.map(y=>yrMap[y].I)},
-  ],{x:0.45,y:1.05,w:8,h:4.5,barDir:'col',barGrouping:'stacked',
+  ],{x:0.35,y:1.0,w:7.8,h:4.65,barDir:'col',barGrouping:'stacked',
     chartColors:[F.red,F.amber],
     showValue:true,dataLabelColor:F.white,dataLabelFontSize:10,
     catAxisLabelColor:F.muted,valAxisLabelColor:F.muted,
@@ -2551,11 +2557,14 @@ async function addAttritionSlides(pres,active,inact){
   const moSoFar=new Date().getMonth()+1;
   const proj=Math.round(exits2026/moSoFar*12);
 
-  kpiBox2(s1,'Annualised',annAtt.toFixed(1)+'%','attrition rate',8.65,1.05,1.6,1.05,F.red);
-  kpiBox2(s1,'Voluntary',volPct+'%','of all exits',10.35,1.05,1.6,1.05,F.amber);
-  kpiBox2(s1,'2026 Exits',exits2026,'YTD',12.05,1.05,1.2,1.05,F.red);
+  // Right side: 3x2 KPI grid
+  const rX=8.35, kW=2.35, kH=0.95, kGap=0.1;
+  kpiBox2(s1,'Annualised',annAtt.toFixed(1)+'%','attrition rate',rX,1.0,kW,kH,F.red);
+  kpiBox2(s1,'Voluntary',volPct+'%','of all exits',rX+kW+kGap,1.0,kW,kH,F.amber);
+  kpiBox2(s1,'2026 Exits',exits2026,'YTD',rX,2.05,kW,kH,F.red);
+  kpiBox2(s1,'Projected',proj+'/yr','2026 run-rate',rX+kW+kGap,2.05,kW,kH,F.darkPurple);
 
-  // Tenure at exit
+  // Tenure at exit computation
   const exitTenures=[];
   const buckets={'<3m':0,'3-6m':0,'6-12m':0,'1-2y':0,'2y+':0};
   inact.forEach(d=>{
@@ -2570,38 +2579,40 @@ async function addAttritionSlides(pres,active,inact){
   const avgET=exitTenures.length?(exitTenures.reduce((a,b)=>a+b,0)/exitTenures.length).toFixed(1):0;
   const earlyPct=exitTenures.length?Math.round(exitTenures.filter(y=>y<1).length/exitTenures.length*100):0;
 
-  kpiBox2(s1,'Avg Exit Tenure',avgET+'y','avg time before leaving',8.65,2.2,1.6,1.05,F.purple);
-  kpiBox2(s1,'Early Exits',earlyPct+'%','left within Year 1',10.35,2.2,1.6,1.05,F.darkPurple);
-  kpiBox2(s1,'Projected',proj+'/yr','2026 exit run-rate',12.05,2.2,1.2,1.05,F.red);
+  kpiBox2(s1,'Avg Exit Tenure',avgET+'y','before leaving',rX,3.1,kW,kH,F.purple);
+  kpiBox2(s1,'Early Exits',earlyPct+'%','left in Year 1',rX+kW+kGap,3.1,kW,kH,F.midPurple);
 
+  s1.addText('Tenure at Exit',{x:rX,y:4.18,w:kW*2+kGap,h:0.2,fontSize:9,bold:true,color:F.darkPurple,fontFace:'Calibri',margin:0});
   s1.addChart(pres.charts.BAR,[{name:'Exits',labels:Object.keys(buckets),values:Object.values(buckets)}],{
-    x:8.65,y:3.4,w:4.6,h:2.15,barDir:'col',
+    x:rX,y:4.38,w:kW*2+kGap,h:1.25,barDir:'col',
     chartColors:[F.red],showValue:true,dataLabelColor:F.white,dataLabelFontSize:9,
     catAxisLabelColor:F.muted,valAxisLabelColor:F.muted,
     catGridLine:{style:'none'},valGridLine:{color:'EEEEEE'},
     showLegend:false,chartArea:{fill:{color:F.white}},
   });
-  s1.addText('Tenure at Exit (buckets)',{x:8.65,y:3.27,w:4.6,h:0.2,fontSize:9,bold:true,color:F.darkPurple,fontFace:'Calibri',margin:0});
 
   insightBox(s1,
     `${earlyPct}% of exits happen within Year 1 — avg tenure at exit is only ${avgET} years. ${volPct}% voluntary.`,
-    `This points to a hiring fit or onboarding issue. Projected ${proj} exits in 2026 — run structured exit interviews immediately.`
+    `This points to a hiring/onboarding mismatch. Projected ${proj} exits in 2026 — run structured exit interviews now.`
   );
 
-  // Slide 2: OHC/CHC table
+  // Slide 2: OHC/CHC table — last 12 months, row height fixed so no overflow
   const s2=contentSlide(pres,3);
   slideTitle(s2,'Monthly Attrition – OHC / CHC / Exits','Last 12 months · Computed from Emp Master');
 
   const Aall=computeAttrition(EMP_DATA);
   const recentA=Aall.slice(-12);
-  const hdr=[{text:'Month',options:{bold:true,color:F.white,fill:{color:F.darkPurple},fontSize:9,fontFace:'Calibri'}},
+  const rowH=0.38; // fixed row height — 12 rows × 0.38 = 4.56 + 0.42 header = 4.98 → fits with insight below
+  const hdr=[
+    {text:'Month',options:{bold:true,color:F.white,fill:{color:F.darkPurple},fontSize:9,fontFace:'Calibri'}},
     {text:'OHC',options:{bold:true,color:F.white,fill:{color:F.darkPurple},fontSize:9,fontFace:'Calibri'}},
     {text:'Joins',options:{bold:true,color:F.white,fill:{color:F.darkPurple},fontSize:9,fontFace:'Calibri'}},
     {text:'Exits',options:{bold:true,color:F.white,fill:{color:F.darkPurple},fontSize:9,fontFace:'Calibri'}},
     {text:'CHC',options:{bold:true,color:F.white,fill:{color:F.darkPurple},fontSize:9,fontFace:'Calibri'}},
     {text:'Avg HC',options:{bold:true,color:F.white,fill:{color:F.darkPurple},fontSize:9,fontFace:'Calibri'}},
     {text:'Monthly %',options:{bold:true,color:F.white,fill:{color:F.darkPurple},fontSize:9,fontFace:'Calibri'}},
-    {text:'Annualised %',options:{bold:true,color:F.white,fill:{color:F.darkPurple},fontSize:9,fontFace:'Calibri'}}];
+    {text:'Annualised %',options:{bold:true,color:F.white,fill:{color:F.darkPurple},fontSize:9,fontFace:'Calibri'}},
+  ];
   const tRows=[hdr,...recentA.map((r,i)=>[
     {text:r.month,options:{bold:true,fontSize:9,fontFace:'Calibri',fill:{color:i%2?'F5F3FF':F.white}}},
     {text:String(r.ohc),options:{fontSize:9,fontFace:'Calibri',fill:{color:i%2?'F5F3FF':F.white}}},
@@ -2612,14 +2623,16 @@ async function addAttritionSlides(pres,active,inact){
     {text:r.monthly_pct.toFixed(2)+'%',options:{color:r.monthly_pct>2?F.red:r.monthly_pct>1?F.amber:F.green,bold:true,fontSize:9,fontFace:'Calibri',fill:{color:i%2?'F5F3FF':F.white}}},
     {text:r.ann_pct.toFixed(2)+'%',options:{color:r.ann_pct>20?F.red:r.ann_pct>12?F.amber:F.green,bold:true,fontSize:9,fontFace:'Calibri',fill:{color:i%2?'F5F3FF':F.white}}},
   ])];
-  s2.addTable(tRows,{x:0.45,y:1.0,w:12.4,h:recentA.length*0.43+0.5,
+  s2.addTable(tRows,{x:0.35,y:1.0,w:12.6,
+    rowH:rowH,
     border:{pt:0.5,color:F.border},fontFace:'Calibri',
-    colW:[1.9,1.1,1.1,1.1,1.1,1.3,1.4,1.5],
+    colW:[1.8,1.05,1.05,1.05,1.05,1.3,1.65,1.65],
   });
+  // Insight sits below table at fixed y — won't overlap
   insightBox(s2,
-    `OHC = employees on payroll at start of month. CHC = at end. Exits column shows separations.`,
-    `Green = healthy (<1% monthly). Amber = watch (1–2%). Red = act (>2% monthly attrition).`,
-    6.2
+    `OHC = headcount at month start. CHC = headcount at month end. Exits = separations that month.`,
+    `Green = healthy (<1% monthly). Amber = monitor (1–2%). Red = act immediately (>2% monthly).`,
+    5.95
   );
 }
 
@@ -2646,29 +2659,32 @@ async function addSquadSlides(pres,active){
     {name:'Amber ⚠',labels:squads.map(e=>e[0]),values:squads.map(e=>e[1].a)},
     {name:'Red ✕',labels:squads.map(e=>e[0]),values:squads.map(e=>e[1].r)},
     {name:'No Data',labels:squads.map(e=>e[0]),values:squads.map(e=>e[1].n)},
-  ],{x:0.45,y:1.05,w:8.4,h:4.5,barDir:'bar',barGrouping:'stacked',
+  ],{x:0.35,y:1.08,w:8.0,h:4.65,barDir:'bar',barGrouping:'stacked',
     chartColors:['2D7A4F',F.amber,F.red,'BBBBBB'],
     showValue:true,dataLabelColor:F.white,dataLabelFontSize:8,
     catAxisLabelColor:F.muted,valAxisLabelColor:F.muted,
     catGridLine:{style:'none'},valGridLine:{color:'EEEEEE'},
     showLegend:true,legendPos:'b',chartArea:{fill:{color:F.white}},
   });
-  s.addText('Squad RAG Health',{x:0.45,y:0.92,w:8,h:0.2,fontSize:10,bold:true,color:F.darkPurple,fontFace:'Calibri',margin:0});
+  s.addText('Squad RAG Health',{x:0.35,y:0.92,w:7.8,h:0.2,fontSize:10,bold:true,color:F.darkPurple,fontFace:'Calibri',margin:0});
 
-  // Manager span table
-  const spanHdr=[{text:'Squad',options:{bold:true,color:F.white,fill:{color:F.darkPurple},fontSize:8,fontFace:'Calibri'}},
+  // Manager span table — sits right of chart, width = 4.9" total (0.35+8.0+gap=8.55 → 13.3-8.55=4.75 available)
+  const tX=8.55, tW=4.6;
+  const spanHdr=[
+    {text:'Squad',options:{bold:true,color:F.white,fill:{color:F.darkPurple},fontSize:8,fontFace:'Calibri'}},
     {text:'HC',options:{bold:true,color:F.white,fill:{color:F.darkPurple},fontSize:8,fontFace:'Calibri'}},
     {text:'Mgrs',options:{bold:true,color:F.white,fill:{color:F.darkPurple},fontSize:8,fontFace:'Calibri'}},
     {text:'Span',options:{bold:true,color:F.white,fill:{color:F.darkPurple},fontSize:8,fontFace:'Calibri'}},
-    {text:'G',options:{bold:true,color:F.white,fill:{color:F.darkPurple},fontSize:8,fontFace:'Calibri'}},
-    {text:'A',options:{bold:true,color:F.white,fill:{color:F.darkPurple},fontSize:8,fontFace:'Calibri'}},
-    {text:'R',options:{bold:true,color:F.white,fill:{color:F.darkPurple},fontSize:8,fontFace:'Calibri'}}];
+    {text:'🟢',options:{bold:true,color:F.white,fill:{color:F.darkPurple},fontSize:8,fontFace:'Calibri'}},
+    {text:'🟡',options:{bold:true,color:F.white,fill:{color:F.darkPurple},fontSize:8,fontFace:'Calibri'}},
+    {text:'🔴',options:{bold:true,color:F.white,fill:{color:F.darkPurple},fontSize:8,fontFace:'Calibri'}},
+  ];
   const spanRows=[spanHdr,...squads.map(([sq,d],i)=>{
     const span=d.mgrs.size>0?Math.round(d.hc/d.mgrs.size*10)/10:'-';
     const spanN=parseFloat(span);
     const fill={color:i%2?'F5F3FF':F.white};
     return [
-      {text:sq,options:{bold:true,fontSize:8,fontFace:'Calibri',fill}},
+      {text:sq.slice(0,18),options:{bold:true,fontSize:7.5,fontFace:'Calibri',fill}},
       {text:String(d.hc),options:{bold:true,fontSize:8,fontFace:'Calibri',fill}},
       {text:String(d.mgrs.size),options:{fontSize:8,fontFace:'Calibri',fill}},
       {text:String(span),options:{color:spanN>7?F.red:spanN<2?F.amber:F.green,bold:true,fontSize:8,fontFace:'Calibri',fill}},
@@ -2677,16 +2693,17 @@ async function addSquadSlides(pres,active){
       {text:String(d.r),options:{color:d.r>0?F.red:F.muted,bold:d.r>0,fontSize:8,fontFace:'Calibri',fill}},
     ];
   })];
-  s.addTable(spanRows,{x:9.0,y:1.05,w:4.25,h:squads.length*0.4+0.45,
+  s.addText('Manager Span by Squad',{x:tX,y:0.92,w:tW,h:0.2,fontSize:10,bold:true,color:F.darkPurple,fontFace:'Calibri',margin:0});
+  s.addTable(spanRows,{x:tX,y:1.08,w:tW,
+    rowH:0.34,
     border:{pt:0.5,color:F.border},fontFace:'Calibri',
-    colW:[1.9,0.55,0.55,0.65,0.4,0.4,0.4],
+    colW:[1.85,0.55,0.55,0.6,0.35,0.35,0.35],
   });
-  s.addText('Manager Span',{x:9.0,y:0.92,w:4,h:0.2,fontSize:10,bold:true,color:F.darkPurple,fontFace:'Calibri',margin:0});
 
   const redSqs=squads.filter(([,d])=>d.r>0).map(([sq])=>sq);
   insightBox(s,
-    `${squads.length} squads · Green/Amber/Red shows engagement health per squad. Span = avg direct reports per L1 manager.`,
-    redSqs.length>0?`Red employees in: ${redSqs.join(', ')} — schedule skip-level 1-on-1 this week.`:`No Red-status employees. Monitor Amber employees with career conversations this month.`
+    `${squads.length} squads · RAG shows engagement signal: Green = stable, Amber = at risk, Red = act now. Span = avg direct reports per L1 manager.`,
+    redSqs.length>0?`Red employees in: ${redSqs.slice(0,4).join(', ')} — schedule skip-level 1-on-1 this week.`:`No Red-status employees. Monitor Amber employees with career conversations this month.`
   );
 }
 
@@ -2704,47 +2721,51 @@ async function addPerformanceSlides(pres,active){
   const highPerf=r25.filter(d=>d['Performance Rating 2025']>=4).length;
   const lowPerf=r25.filter(d=>d['Performance Rating 2025']<=2).length;
   const unrated=active.length-r25.length;
+  const highPct=r25.length?Math.round(highPerf/r25.length*100):0;
 
+  // 5 KPI boxes in a compact row under subtitle
+  const kW=2.35,kH=0.9,kGap=0.1,kY=0.95,kX=0.35;
+  kpiBox2(s,'2024 Avg Rating',avg24+'/5','previous year',kX,kY,kW,kH,F.lavender.replace('EAE6FF','A090EE'));
+  kpiBox2(s,'2025 Avg Rating',avg25+'/5',+avg25>+avg24?'↑ improved':'↓ declined',kX+(kW+kGap),kY,kW,kH,F.purple);
+  kpiBox2(s,'High Performers',String(highPerf),'★4 or ★5 ('+highPct+'%)',kX+2*(kW+kGap),kY,kW,kH,F.green);
+  kpiBox2(s,'Low Performers',String(lowPerf),'★1 or ★2',kX+3*(kW+kGap),kY,kW,kH,F.red);
+  kpiBox2(s,'Unrated',String(unrated),'missing 2025 rating',kX+4*(kW+kGap),kY,kW,kH,F.amber);
+
+  // Rating comparison chart — left half
+  s.addText('Ratings 2024 vs 2025',{x:0.35,y:2.0,w:6,h:0.22,fontSize:10,bold:true,color:F.darkPurple,fontFace:'Calibri',margin:0});
   s.addChart(pres.charts.BAR,[
     {name:'2024',labels:['Rating 2','Rating 3','Rating 4','Rating 5'],values:[2,3,4,5].map(r=>r24.filter(d=>d['Performance Rating 2024']===r).length)},
     {name:'2025',labels:['Rating 2','Rating 3','Rating 4','Rating 5'],values:[2,3,4,5].map(r=>r25.filter(d=>d['Performance Rating 2025']===r).length)},
-  ],{x:0.45,y:1.05,w:5.8,h:4.5,barDir:'col',
-    chartColors:[F.lavender,F.purple],
+  ],{x:0.35,y:2.22,w:6.2,h:3.58,barDir:'col',
+    chartColors:['C0B8F5',F.purple],
     showValue:true,dataLabelColor:F.white,dataLabelFontSize:10,
     catAxisLabelColor:F.muted,valAxisLabelColor:F.muted,
     catGridLine:{style:'none'},valGridLine:{color:'EEEEEE'},
     showLegend:true,legendPos:'b',chartArea:{fill:{color:F.white}},
   });
 
-  // Level distribution
+  // Level distribution — right half
   const LEVELS=['Trainee Level','Junior Level','Mid Level','Senior Level','Lead Level','Mgmt Level'];
   const lvlVals=LEVELS.map(l=>active.filter(d=>d.Level===l).length);
+  s.addText('Level-Wise Distribution',{x:6.8,y:2.0,w:6.2,h:0.22,fontSize:10,bold:true,color:F.darkPurple,fontFace:'Calibri',margin:0});
   s.addChart(pres.charts.BAR,[{name:'Count',labels:LEVELS.map(l=>l.replace(' Level','')),values:lvlVals}],{
-    x:6.45,y:1.05,w:6.4,h:4.5,barDir:'bar',
+    x:6.8,y:2.22,w:6.15,h:3.58,barDir:'bar',
     chartColors:[F.purple],
     showValue:true,dataLabelColor:F.white,dataLabelFontSize:10,
     catAxisLabelColor:F.muted,valAxisLabelColor:F.muted,
     catGridLine:{style:'none'},valGridLine:{color:'EEEEEE'},
     showLegend:false,chartArea:{fill:{color:F.white}},
   });
-  s.addText('Level-Wise Distribution Across Practices',{x:6.45,y:0.92,w:6,h:0.2,fontSize:10,bold:true,color:F.darkPurple,fontFace:'Calibri',margin:0});
-
-  kpiBox2(s,'2024 Avg',avg24+'/5','performance rating',0.45,5.72,2.0,1.0,F.lavender.replace('#',''));
-  kpiBox2(s,'2025 Avg',avg25+'/5','performance rating',2.53,5.72,2.0,1.0,F.purple);
-  kpiBox2(s,'High Perf',highPerf,'rated ★4 or ★5',4.61,5.72,2.0,1.0,F.green);
-  kpiBox2(s,'Low Perf',lowPerf,'rated ★1 or ★2',6.69,5.72,2.0,1.0,F.red);
-  kpiBox2(s,'Unrated',unrated,'missing 2025 rating',8.77,5.72,2.0,1.0,F.amber);
 
   insightBox(s,
-    `${Math.round(r25.filter(d=>d['Performance Rating 2025']>=4).length/r25.length*100)||0}% high performers (★4–5). ${+avg25>+avg24?'Performance improved':'Performance declined'} from ${avg24} (2024) to ${avg25} (2025).`,
-    `${unrated>active.length*0.2?`${unrated} employees unrated — complete appraisals before pay review.`:'Appraisal coverage is strong.'} ${lowPerf>0?`${lowPerf} low performers need active PIP.`:''}`,
-    6.78
+    `${highPct}% high performers (★4–5). Performance ${+avg25>+avg24?'improved':'declined'} from ${avg24} (2024) to ${avg25} (2025).`,
+    `${unrated>active.length*0.2?`${unrated} employees unrated — complete appraisals before any pay or promotion decision.`:'Appraisal coverage is strong.'} ${lowPerf>0?` ${lowPerf} low performers need active PIP with 90-day checkpoint.`:''}`
   );
 }
 
 // ── SUMMARY SLIDE ─────────────────────────────────────────────
 async function addSummarySlide(pres,active,inact){
-  const s=contentSlide(pres,99);
+  const s=contentSlide(pres,10); // last slide of full deck
   slideTitle(s,'Summary – Key Observations');
 
   const A=computeAttrition(EMP_DATA);
@@ -2755,22 +2776,24 @@ async function addSummarySlide(pres,active,inact){
   const avg25=(r25.reduce((a,d)=>a+d['Performance Rating 2025'],0)/(r25.length||1)).toFixed(2);
 
   const points=[
-    {label:'Growth',body:`Headcount at ${active.length} active employees — India ${active.filter(d=>d.Country==='India').length}, USA ${active.filter(d=>d.Country==='USA').length}. Consistent additions in core practices.`},
-    {label:'Capability',body:`Level mix stable. ${Math.round(active.filter(d=>d.Level&&d.Level.includes('Senior')||d.Level&&d.Level.includes('Lead')).length/active.length*100)}% at Senior/Lead level. Periodic refresh needed for senior pipeline.`},
-    {label:'Performance',body:`2025 avg rating ${avg25}/5. Distribution largely consistent across squads.`},
-    {label:'Stability',body:`Attrition at ${annAtt.toFixed(1)}% annualised. RAG: ${rag.G} Green · ${rag.A} Amber · ${rag.R} Red. ${rag.R>0?`${rag.R} Red employees need immediate attention.`:'No Red employees — strong engagement.'}`},
+    {label:'Growth:',body:`Headcount at ${active.length} active employees — India ${active.filter(d=>d.Country==='India').length}, USA ${active.filter(d=>d.Country==='USA').length}. Consistent additions in core practices.`},
+    {label:'Capability:',body:`Level mix stable. ${Math.round(active.filter(d=>d.Level&&(d.Level.includes('Senior')||d.Level.includes('Lead'))).length/active.length*100)}% at Senior/Lead level. Periodic refresh needed for senior pipeline.`},
+    {label:'Performance:',body:`2025 avg rating ${avg25}/5. Distribution largely consistent across squads.`},
+    {label:'Stability:',body:`Attrition at ${annAtt.toFixed(1)}% annualised. RAG: ${rag.G} Green · ${rag.A} Amber · ${rag.R} Red. ${rag.R>0?`${rag.R} Red employees need immediate attention.`:'No Red employees — strong engagement.'}`},
   ];
 
   points.forEach((p,i)=>{
-    const y=1.1+i*1.35;
+    const y=1.1+i*1.28;
     s.addText([
-      {text:p.label+': ',options:{bold:true,italic:true,color:F.purple,fontFace:'Calibri',fontSize:16}},
-      {text:p.body,options:{italic:true,color:F.purple,fontFace:'Calibri',fontSize:16}},
-    ],{x:0.55,y,w:12.2,h:0.9,margin:0,fit:'shrink'});
+      {text:p.label+'  ',options:{bold:true,italic:true,color:F.purple,fontFace:'Calibri',fontSize:15}},
+      {text:p.body,options:{italic:true,color:F.purple,fontFace:'Calibri',fontSize:15}},
+    ],{x:0.55,y,w:12.2,h:0.85,margin:0,fit:'shrink'});
+    // Separator line
+    if(i<3) s.addShape('rect',{x:0.55,y:y+0.9,w:12.2,h:0.02,fill:{color:F.lavender},line:{color:F.lavender,pt:0}});
   });
 
-  s.addText('For deeper analysis or slice-and-dice insights, access the live dashboard.',
-    {x:0.55,y:6.5,w:12.2,h:0.35,fontSize:11,color:F.muted,fontFace:'Calibri',margin:0});
+  s.addText('For deeper analysis or slice-and-dice insights, access the live data dashboard.',
+    {x:0.55,y:6.4,w:12.2,h:0.35,fontSize:10.5,color:F.muted,fontFace:'Calibri',margin:0});
 }
 
 // ── ORG CHART SLIDES ──────────────────────────────────────────
