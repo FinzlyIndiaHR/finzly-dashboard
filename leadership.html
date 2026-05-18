@@ -2288,37 +2288,59 @@ function toggleGalaxyChild(el){
   if(badge)badge.style.opacity=isOpen?'1':'0.6';
 }
 
-// ── REPORT GENERATION — Finzly Brand Style ───────────────────
-// Colours from the actual Finzly PPT: purple brand, white bg, teal org chart
-const F={
-  white:'FFFFFF', black:'000000',
-  purple:'6B4EFF', darkPurple:'1A0F4F', midPurple:'4B3AC2',
-  lightPurple:'EAE6FF', lavender:'D4CEFD', bgStripe:'E8E4FF',
-  tealDark:'0D6B8C', tealMid:'1E8EAF', tealLight:'4EC9F5',
-  green:'2D7A4F', red:'CC2200', amber:'B85C00',
-  muted:'666666', border:'CCCCCC', bg:'FFFFFF',
-  footer:'999999', subtitlePurple:'7B5EF8'
-};
-const SLIDE_W=13.3, SLIDE_H=7.5;
+// ── REPORT GENERATION ────────────────────────────────────────
+// Professional white theme + html2canvas screenshots from live dashboard
 
 async function downloadReport(type, btn){
   btn.disabled=true;
   const prog=document.getElementById('prog-'+type);
-  if(prog){prog.style.display='block';prog.textContent='Building slides…';}
+  if(prog){prog.style.display='block';prog.textContent='Preparing…';}
+
   try{
+    // Load html2canvas once
+    if(!window.html2canvas){
+      await new Promise((res,rej)=>{
+        const sc=document.createElement('script');
+        sc.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+        sc.onload=res; sc.onerror=()=>rej(new Error('html2canvas failed to load'));
+        document.head.appendChild(sc);
+      });
+    }
+
     const pres=new PptxGenJS();
     pres.layout='LAYOUT_WIDE';
     pres.title='Finzly HR Report';
     pres.author='Bharathkumar Mayakrishnan';
+
     const activeAll=EMP_DATA.filter(d=>d.Status==='Active'||d.ActiveFlag===1);
     const inactAll =EMP_DATA.filter(d=>d.Status==='Inactive'||d.ActiveFlag===0);
-    if(type==='snapshot'||type==='full')    await addSnapshotSlides(pres,activeAll,inactAll);
-    if(type==='attrition'||type==='full')   await addAttritionSlides(pres,activeAll,inactAll);
-    if(type==='squad'||type==='full')       await addSquadSlides(pres,activeAll);
-    if(type==='performance'||type==='full') await addPerformanceSlides(pres,activeAll);
-    if(type==='full')                       await addSummarySlide(pres,activeAll,inactAll);
-    if(type==='orgchart')                   await addOrgChartSlides(pres,activeAll);
-    if(prog)prog.textContent='Saving…';
+
+    if(type==='snapshot'||type==='full'){
+      if(prog)prog.textContent='Capturing Org Snapshot…';
+      await addSnapshotSlides(pres,activeAll,inactAll);
+    }
+    if(type==='attrition'||type==='full'){
+      if(prog)prog.textContent='Capturing Attrition…';
+      await addAttritionSlides(pres,activeAll,inactAll);
+    }
+    if(type==='squad'||type==='full'){
+      if(prog)prog.textContent='Capturing Squad…';
+      await addSquadSlides(pres,activeAll);
+    }
+    if(type==='performance'||type==='full'){
+      if(prog)prog.textContent='Capturing Performance…';
+      await addPerformanceSlides(pres,activeAll);
+    }
+    if(type==='full'){
+      if(prog)prog.textContent='Capturing Summary…';
+      await addSummarySlide(pres,activeAll,inactAll);
+    }
+    if(type==='orgchart'){
+      if(prog)prog.textContent='Capturing Org Chart…';
+      await addOrgChartSlides(pres,activeAll);
+    }
+
+    if(prog)prog.textContent='Saving file…';
     const dt=new Date().toISOString().slice(0,10);
     await pres.writeFile({fileName:`Finzly_HR_${type}_${dt}.pptx`});
     if(prog)prog.textContent='✅ Downloaded!';
@@ -2327,392 +2349,226 @@ async function downloadReport(type, btn){
     if(prog)prog.textContent='❌ '+e.message;
   }finally{
     btn.disabled=false;
-    setTimeout(()=>{if(prog)prog.style.display='none';},4000);
+    setTimeout(()=>{if(prog)prog.style.display='none';},5000);
   }
 }
 
-// ── SHARED SLIDE HELPERS ──────────────────────────────────────
-
-// Add the diagonal stripe background pattern (matches Finzly PPT style)
-function addStripePattern(slide){
-  // Stripes ONLY at top header area and bottom footer area — never through content
-  const stripes=[
-    // Top row (under the title line, ~y=0.55–0.7 range)
-    {x:5.5,y:0.55,w:2.2,h:0.12},{x:8.4,y:0.55,w:2.8,h:0.12},{x:11.8,y:0.55,w:1.4,h:0.12},
-    // Bottom footer area (y=7.0–7.15)
-    {x:0,y:7.0,w:2.4,h:0.12},{x:3.0,y:7.0,w:2.0,h:0.12},{x:5.8,y:7.0,w:1.5,h:0.12},
-    {x:8.1,y:7.0,w:2.8,h:0.12},{x:11.6,y:7.0,w:1.6,h:0.12},
-  ];
-  stripes.forEach(s=>slide.addShape('rect',{...s,fill:{color:F.bgStripe},line:{color:F.bgStripe,pt:0}}));
+// ── CAPTURE HELPER ────────────────────────────────────────────
+// Switch to a tab, wait for render, screenshot an element
+async function captureTab(tabId){
+  // Show the tab without clicking the button (avoid scroll)
+  document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
+  const pg=document.getElementById(tabId);
+  if(pg)pg.classList.add('on');
+  // Give charts time to render
+  await new Promise(r=>setTimeout(r,400));
 }
 
-// Standard content slide shell: white bg + stripes + logo + footer + slide number
-function contentSlide(pres, slideNum){
+async function snapElement(el, scale=2){
+  if(!el)return null;
+  const canvas=await html2canvas(el,{
+    scale, useCORS:true, backgroundColor:'#ffffff',
+    logging:false, allowTaint:true,
+    scrollX:0, scrollY:0,
+    width:el.offsetWidth, height:el.offsetHeight
+  });
+  return canvas.toDataURL('image/png');
+}
+
+// ── SLIDE BUILDER HELPERS ─────────────────────────────────────
+// Clean professional white slide with navy thin top bar
+function makeSlide(pres, slideNum){
   const s=pres.addSlide();
-  s.background={color:F.white};
-  addStripePattern(s);
-  // Finzly logo top-right (text simulation since no image)
-  s.addText('fínzly',{x:11.8,y:0.12,w:1.4,h:0.38,fontSize:18,bold:true,
-    color:F.purple,fontFace:'Calibri',margin:0,align:'right'});
-  // Footer
+  s.background={color:'FFFFFF'};
+  // Thin navy top line
+  s.addShape('rect',{x:0,y:0,w:13.33,h:0.06,fill:{color:'0E2841'},line:{color:'0E2841',pt:0}});
+  // Logo top right
+  s.addText('fínzly',{x:11.6,y:0.1,w:1.5,h:0.36,fontSize:15,bold:true,
+    color:'5200FF',fontFace:'Calibri',margin:0,align:'right'});
+  // Page number
+  s.addText(String(slideNum),{x:0.3,y:7.22,w:0.5,h:0.22,fontSize:8,color:'999999',fontFace:'Calibri',margin:0});
   s.addText('© Finzly Confidential 2025',{x:3,y:7.22,w:7.3,h:0.22,
-    fontSize:8,color:F.footer,align:'center',fontFace:'Calibri',margin:0});
-  s.addText(String(slideNum),{x:0.25,y:7.22,w:0.3,h:0.22,
-    fontSize:8,color:F.footer,fontFace:'Calibri',margin:0});
+    fontSize:8,color:'999999',align:'center',fontFace:'Calibri',margin:0});
   return s;
 }
 
-// Title slide (purple bg with diagonal stripes, centred)
+// Title slide — clean white with navy left strip
 function titleSlide(pres, title, subtitle, author){
   const s=pres.addSlide();
-  s.background={color:F.purple};
-  // Diagonal stripe pattern in darker purple
-  const stripes=[
-    {x:0,y:0.2,w:2.8,h:0.22},{x:3.2,y:0.2,w:2.4,h:0.22},{x:6.4,y:0.2,w:1.8,h:0.22},{x:9,y:0.2,w:2.2,h:0.22},{x:11.8,y:0.2,w:1.5,h:0.22},
-    {x:0,y:1.4,w:1.5,h:0.18},{x:2.2,y:1.4,w:3.2,h:0.18},{x:6.2,y:1.4,w:1.4,h:0.18},{x:8.4,y:1.4,w:2.8,h:0.18},
-    {x:0,y:5.8,w:3.5,h:0.18},{x:4.2,y:5.8,w:2.6,h:0.18},{x:7.6,y:5.8,w:2.0,h:0.18},{x:10.4,y:5.8,w:2.9,h:0.18},
-    {x:0,y:6.8,w:2.0,h:0.18},{x:2.8,y:6.8,w:3.8,h:0.18},{x:7.4,y:6.8,w:2.2,h:0.18},{x:10.4,y:6.8,w:2.9,h:0.18},
-  ];
-  stripes.forEach(s2=>s.addShape('rect',{...s2,fill:{color:'5A3EE8'},line:{color:'5A3EE8',pt:0}}));
-  s.addText('fínzly',{x:11.8,y:0.18,w:1.4,h:0.38,fontSize:18,bold:true,
-    color:F.white,fontFace:'Calibri',margin:0,align:'right'});
-  s.addText(title,{x:1,y:2.2,w:11.3,h:1.6,fontSize:42,bold:true,
-    color:F.white,fontFace:'Calibri',align:'center',margin:0,fit:'shrink'});
-  if(subtitle) s.addText(subtitle,{x:1,y:3.9,w:11.3,h:0.6,fontSize:18,
-    color:'CCCCFF',fontFace:'Calibri',align:'center',margin:0});
+  s.background={color:'FFFFFF'};
+  // Navy left accent strip
+  s.addShape('rect',{x:0,y:0,w:0.55,h:7.5,fill:{color:'0E2841'},line:{color:'0E2841',pt:0}});
+  // Orange horizontal accent
+  s.addShape('rect',{x:0.55,y:3.05,w:12.78,h:0.08,fill:{color:'FBAE40'},line:{color:'FBAE40',pt:0}});
+  // Logo
+  s.addText('fínzly',{x:11.5,y:0.25,w:1.6,h:0.42,fontSize:18,bold:true,
+    color:'5200FF',fontFace:'Calibri',margin:0,align:'right'});
+  // Title
+  s.addText(title,{x:0.85,y:1.4,w:12.0,h:1.4,fontSize:38,bold:true,
+    color:'0E2841',fontFace:'Calibri',margin:0,fit:'shrink'});
+  if(subtitle) s.addText(subtitle,{x:0.85,y:2.9,w:12.0,h:0.5,fontSize:15,
+    color:'505050',fontFace:'Calibri',margin:0});
   const now=new Date();
   s.addText(`${now.toLocaleString('en-IN',{month:'long'})} ${now.getFullYear()}`,
-    {x:1,y:4.7,w:11.3,h:0.45,fontSize:16,color:'DDDDDD',fontFace:'Calibri',align:'center',margin:0});
-  if(author) s.addText(author,{x:1,y:5.35,w:11.3,h:0.38,fontSize:14,
-    color:'EEEEEE',fontFace:'Calibri',align:'center',margin:0});
+    {x:0.85,y:3.5,w:12.0,h:0.38,fontSize:13,color:'888888',fontFace:'Calibri',margin:0});
+  if(author) s.addText(author,{x:0.85,y:4.0,w:12.0,h:0.35,fontSize:12,
+    color:'666666',fontFace:'Calibri',margin:0});
   s.addText('© Finzly Confidential 2025',{x:3,y:7.22,w:7.3,h:0.22,
-    fontSize:8,color:'AAAACC',align:'center',fontFace:'Calibri',margin:0});
+    fontSize:8,color:'AAAAAA',align:'center',fontFace:'Calibri',margin:0});
   return s;
 }
 
-// Slide title (top-left bold black)
-function slideTitle(s, title, subtitle=''){
-  s.addText(title,{x:0.45,y:0.12,w:11,h:0.52,fontSize:24,bold:true,
-    color:F.black,fontFace:'Calibri',margin:0,fit:'shrink'});
-  if(subtitle) s.addText(subtitle,{x:0.45,y:0.65,w:11,h:0.28,fontSize:11,
-    italic:true,color:F.subtitlePurple,fontFace:'Calibri',margin:0});
+// Slide title line (top-left, bold navy)
+function slideTitle(s, title, subtitle){
+  s.addText(title,{x:0.4,y:0.1,w:11.0,h:0.5,fontSize:22,bold:true,
+    color:'0E2841',fontFace:'Calibri',margin:0,fit:'shrink'});
+  if(subtitle) s.addText(subtitle,{x:0.4,y:0.62,w:11.0,h:0.26,fontSize:11,
+    italic:true,color:'666666',fontFace:'Calibri',margin:0});
 }
 
-// Insight + Leadership Takeaway at bottom — fixed y positions, no overlap
-function insightBox(s, insight, takeaway, y=5.9){
-  // Light background strip for insight area
-  s.addShape('rect',{x:0.3,y:y-0.08,w:12.7,h:takeaway?1.12:0.58,
-    fill:{color:'F8F6FF'},line:{color:F.lavender,pt:0.5}});
+// Insight box — clean, no clutter
+function insightBox(s, insight, takeaway){
+  const y=5.92;
+  s.addShape('rect',{x:0.3,y:y-0.1,w:12.7,h:takeaway?1.1:0.56,
+    fill:{color:'F7F7F7'},line:{color:'E0E0E0',pt:0.5}});
+  s.addShape('rect',{x:0.3,y:y-0.1,w:0.06,h:takeaway?1.1:0.56,
+    fill:{color:'FBAE40'},line:{color:'FBAE40',pt:0}});
   s.addText([
-    {text:'Key Insight:  ',options:{bold:true,color:F.darkPurple,fontFace:'Calibri'}},
-    {text:insight,options:{color:F.black,fontFace:'Calibri'}},
-  ],{x:0.5,y:y,w:12.2,h:0.48,fontSize:10.5,margin:0,fit:'shrink'});
+    {text:'Key Insight:  ',options:{bold:true,color:'0E2841',fontFace:'Calibri',fontSize:10}},
+    {text:insight,options:{color:'333333',fontFace:'Calibri',fontSize:10}},
+  ],{x:0.5,y,w:12.3,h:0.44,margin:0,fit:'shrink'});
   if(takeaway){
     s.addText([
-      {text:'Leadership Takeaway:  ',options:{bold:true,color:F.darkPurple,fontFace:'Calibri'}},
-      {text:takeaway,options:{color:F.black,fontFace:'Calibri'}},
-    ],{x:0.5,y:y+0.54,w:12.2,h:0.48,fontSize:10.5,margin:0,fit:'shrink'});
+      {text:'Leadership Takeaway:  ',options:{bold:true,color:'0E2841',fontFace:'Calibri',fontSize:10}},
+      {text:takeaway,options:{color:'333333',fontFace:'Calibri',fontSize:10}},
+    ],{x:0.5,y:y+0.5,w:12.3,h:0.44,margin:0,fit:'shrink'});
   }
 }
 
-// KPI stat box
-function kpiBox2(s, label, value, sub, x, y, w=1.9, h=1.1, col=F.purple){
-  s.addShape('rect',{x,y,w,h,fill:{color:F.white},
-    line:{color:F.border,pt:0.8},
-    shadow:{type:'outer',color:'000000',opacity:0.06,blur:6,offset:2,angle:135}});
-  s.addShape('rect',{x,y,w,h:0.05,fill:{color:col},line:{color:col,pt:0}});
-  s.addText(label.toUpperCase(),{x:x+0.1,y:y+0.08,w:w-0.2,h:0.22,
-    fontSize:7,bold:true,color:F.muted,charSpacing:1,fontFace:'Calibri',margin:0});
-  s.addText(String(value),{x:x+0.1,y:y+0.28,w:w-0.2,h:0.52,
-    fontSize:26,bold:true,color:col,fontFace:'Calibri',margin:0,fit:'shrink'});
-  s.addText(sub,{x:x+0.1,y:y+0.82,w:w-0.2,h:0.22,
-    fontSize:8,color:F.muted,fontFace:'Calibri',margin:0,fit:'shrink'});
+// KPI box — clean white card, navy label, single value color
+function kpiBox(s, label, value, sub, x, y, w=2.1, h=1.05, valColor='0E2841'){
+  s.addShape('rect',{x,y,w,h,fill:{color:'FFFFFF'},line:{color:'D8D8D8',pt:0.8},
+    shadow:{type:'outer',color:'000000',opacity:0.06,blur:5,offset:2,angle:135}});
+  s.addShape('rect',{x,y:y+h-0.05,w,h:0.05,fill:{color:'0E2841'},line:{color:'0E2841',pt:0}});
+  s.addText(label.toUpperCase(),{x:x+0.12,y:y+0.1,w:w-0.2,h:0.2,
+    fontSize:7,bold:true,color:'888888',charSpacing:1,fontFace:'Calibri',margin:0});
+  s.addText(String(value),{x:x+0.12,y:y+0.28,w:w-0.2,h:0.52,
+    fontSize:26,bold:true,color:valColor,fontFace:'Calibri',margin:0,fit:'shrink'});
+  s.addText(sub,{x:x+0.12,y:y+0.82,w:w-0.2,h:0.2,
+    fontSize:8,color:'888888',fontFace:'Calibri',margin:0,fit:'shrink'});
 }
 
-// ── ORG CHART BOX DRAW (teal scheme) ─────────────────────────
-function drawOrgBox(s, person, x, y, w, h, isRoot=false){
-  const isIndia=person.Country==='India';
-  const boxCol=isRoot?F.tealDark:isIndia?F.tealLight:F.tealDark;
-  const textCol=isIndia&&!isRoot?F.black:F.white;
-  const isCon=person.Type==='Consultant';
-  s.addShape('rect',{x,y,w,h,fill:{color:boxCol},
-    line:{color:isCon?F.amber:isRoot?F.tealDark:boxCol,pt:isCon?2:0.5},
-    shadow:{type:'outer',color:'000000',opacity:0.12,blur:5,offset:2,angle:135}});
-  const name=`${person['First Name']||''} ${person['Last Name']||''}`;
-  const titleTxt=(person['Corporate Title']||person.Level||'').replace(' Level','').slice(0,25);
-  const fs=Math.max(5.5,Math.min(9,w*5.5));
-  s.addText(name,{x:x+0.04,y:y+0.04,w:w-0.08,h:h*0.46,fontSize:fs,bold:true,
-    color:textCol,fontFace:'Calibri',align:'center',margin:0,fit:'shrink'});
-  if(w>0.65&&h>0.55){
-    s.addText(titleTxt,{x:x+0.04,y:y+h*0.46,w:w-0.08,h:h*0.35,
-      fontSize:Math.max(4.5,fs*0.75),color:isIndia&&!isRoot?F.muted:F.white,
-      fontFace:'Calibri',align:'center',margin:0,fit:'shrink'});
-  }
-  if(isCon&&w>0.5){
-    s.addText('CON',{x:x+0.04,y:y+h*0.8,w:w-0.08,h:h*0.18,
-      fontSize:Math.max(4,fs*0.6),color:isIndia&&!isRoot?F.amber:F.white,
-      fontFace:'Calibri',align:'center',margin:0,bold:true});
-  }
-}
-
-function drawLine(s, x1,y1, x2,y2){
-  const my=(y1+y2)/2;
-  const lw=0.015;
-  s.addShape('rect',{x:x1-lw/2,y:y1,w:lw,h:my-y1,fill:{color:'888888'},line:{color:'888888',pt:0}});
-  const lx=Math.min(x1,x2), rx=Math.max(x1,x2);
-  if(rx-lx>lw*2) s.addShape('rect',{x:lx,y:my-lw/2,w:rx-lx,h:lw,fill:{color:'888888'},line:{color:'888888',pt:0}});
-  s.addShape('rect',{x:x2-lw/2,y:my,w:lw,h:y2-my,fill:{color:'888888'},line:{color:'888888',pt:0}});
-}
-
-// ── SNAPSHOT SLIDES ───────────────────────────────────────────
+// ── SNAPSHOT ──────────────────────────────────────────────────
 async function addSnapshotSlides(pres,active,inact){
-  titleSlide(pres,'Finzly – People Snapshot','Current Headcount & Workforce Overview','Bharathkumar Mayakrishnan');
+  titleSlide(pres,'People Snapshot','Current Headcount & Workforce Overview','Bharathkumar Mayakrishnan');
 
-  const s=contentSlide(pres,2);
-  slideTitle(s,'People Snapshot – As of Today','Headcount · Composition · Key Signals');
+  // Switch to P1 tab and screenshot it
+  await captureTab('p1');
+  const p1el=document.getElementById('p1');
+  const img=await snapElement(p1el, 1.5);
 
-  const india=active.filter(d=>d.Country==='India').length;
-  const usa=active.filter(d=>d.Country==='USA').length;
-  const female=active.filter(d=>d.Gender==='Female').length;
-  const contractors=active.filter(d=>d.Type==='Consultant').length;
-  const tenured=active.filter(d=>typeof d['Finzly Experience']==='number');
-  const avgTen=(tenured.reduce((a,d)=>a+d['Finzly Experience'],0)/(tenured.length||1)).toFixed(1);
   const A=computeAttrition(EMP_DATA);
   const annAtt=A.length?A[A.length-1].ann_pct:0;
+  const india=active.filter(d=>d.Country==='India').length;
+  const usa=active.filter(d=>d.Country==='USA').length;
   const exits2026=inact.filter(d=>{const ts=d['Termination Date Str']||dateStr(d['Termination Date']);return ts&&ts.startsWith('2026');}).length;
 
-  // 6 KPI boxes — evenly spaced, no overflow
-  const kpiW=2.05, kpiH=1.05, kpiGap=0.13, kpiY=1.0, kpiStart=0.35;
-  kpiBox2(s,'Active HC',active.length,'employees today',kpiStart+0*(kpiW+kpiGap),kpiY,kpiW,kpiH,F.purple);
-  kpiBox2(s,'India',india,Math.round(india/active.length*100)+'% of HC',kpiStart+1*(kpiW+kpiGap),kpiY,kpiW,kpiH,F.tealDark);
-  kpiBox2(s,'USA',usa,Math.round(usa/active.length*100)+'% of HC',kpiStart+2*(kpiW+kpiGap),kpiY,kpiW,kpiH,F.tealMid);
-  kpiBox2(s,'Female',female,Math.round(female/active.length*100)+'% (benchmark 28–35%)',kpiStart+3*(kpiW+kpiGap),kpiY,kpiW,kpiH,F.midPurple);
-  kpiBox2(s,'Contractors',contractors,Math.round(contractors/active.length*100)+'% of HC',kpiStart+4*(kpiW+kpiGap),kpiY,kpiW,kpiH,F.amber);
-  kpiBox2(s,'Avg Tenure',avgTen+'y','avg time at Finzly',kpiStart+5*(kpiW+kpiGap),kpiY,kpiW,kpiH,F.green);
+  const s=makeSlide(pres,2);
+  slideTitle(s,'People Snapshot – As of Today','Headcount · Composition · Key Signals');
 
-  // Squad bar chart (left)
-  const sqMap={};active.forEach(d=>{const sq=d.Squad||'?';sqMap[sq]=(sqMap[sq]||0)+1;});
-  const sqE=Object.entries(sqMap).sort((a,b)=>b[1]-a[1]).slice(0,12);
-  s.addText('Headcount by Squad',{x:0.35,y:2.2,w:7.5,h:0.22,fontSize:10,bold:true,color:F.darkPurple,fontFace:'Calibri',margin:0});
-  s.addChart(pres.charts.BAR,[{name:'Headcount',labels:sqE.map(e=>e[0]),values:sqE.map(e=>e[1])}],{
-    x:0.35,y:2.42,w:7.5,h:3.3,barDir:'bar',
-    chartColors:['6B4EFF','4B3AC2','7B5EF8','9B7EFF','3A2AC2','5B3EE8','8B6EFF','2A1AC2','AB8EFF','1A0FAA','8080FF','6060EE'],
-    showValue:true,dataLabelFontSize:9,dataLabelColor:'FFFFFF',
-    catAxisLabelColor:F.muted,valAxisLabelColor:F.muted,
-    catGridLine:{style:'none'},valGridLine:{color:'EEEEEE'},
-    showLegend:false,chartArea:{fill:{color:F.white}},
-  });
-
-  // Donut (right)
-  s.addText('Workforce Mix',{x:8.1,y:2.2,w:5.1,h:0.22,fontSize:10,bold:true,color:F.darkPurple,fontFace:'Calibri',margin:0});
-  s.addChart(pres.charts.DOUGHNUT,[{name:'Mix',labels:['India FTE','USA FTE','Contractors'],values:[india-contractors,usa,contractors]}],{
-    x:8.1,y:2.42,w:5.1,h:3.3,
-    chartColors:[F.tealLight,F.tealDark,F.amber],
-    showLegend:true,legendPos:'b',showPercent:true,
-    dataLabelColor:F.white,dataLabelFontSize:10,
-    chartArea:{fill:{color:F.white}},
-  });
-
+  if(img){
+    s.addImage({data:img,x:0.3,y:0.95,w:12.7,h:4.8});
+  }
   insightBox(s,
-    `Headcount ${active.length} — India ${india} (${Math.round(india/active.length*100)}%), USA ${usa}. ${exits2026} exits in 2026 so far. Contractors: ${Math.round(contractors/active.length*100)}%.`,
-    annAtt>20?`Attrition at ${annAtt.toFixed(1)}% annualised — above healthy threshold. Immediate retention focus needed.`:`Attrition at ${annAtt.toFixed(1)}% — monitor Amber/Red employees and 2024 cohort retention.`
+    `${active.length} active — India ${india} (${Math.round(india/active.length*100)}%), USA ${usa}. Attrition: ${annAtt.toFixed(1)}% annualised. ${exits2026} exits in 2026.`,
+    annAtt>20?`Above healthy threshold — retention is the #1 priority. Run stay interviews with Amber/Red RAG employees this month.`:`Attrition within range. Focus on 2024 cohort retention and manager engagement cadence.`
   );
 }
 
-// ── ATTRITION SLIDES ──────────────────────────────────────────
+// ── ATTRITION ─────────────────────────────────────────────────
 async function addAttritionSlides(pres,active,inact){
-  titleSlide(pres,'Attrition Report','Exit Trends · Tenure Analysis · Cohort Retention','Bharathkumar Mayakrishnan');
+  titleSlide(pres,'Attrition Report','Exit Trends · Tenure at Exit · Cohort Retention','Bharathkumar Mayakrishnan');
 
-  // Slide 1: Year-wise exits bar + key stats
-  const s1=contentSlide(pres,2);
-  slideTitle(s1,'Attrition Report – Year on Year','Exit Volume · Voluntary vs Involuntary · Tenure at Exit');
+  await captureTab('p4');
+  const p4el=document.getElementById('p4');
+  const img=await snapElement(p4el, 1.5);
 
-  const yrMap={};
-  inact.forEach(d=>{
-    const ts=d['Termination Date Str']||dateStr(d['Termination Date']);
-    if(!ts)return; const yr=ts.slice(0,4);
-    if(parseInt(yr)<2019||parseInt(yr)>2030)return;
-    const t=d['Termination Type']||'Unknown';
-    if(!yrMap[yr])yrMap[yr]={V:0,I:0};
-    if(t==='Voluntary')yrMap[yr].V++;else if(t==='Involuntary')yrMap[yr].I++;
-  });
-  const yrs=Object.keys(yrMap).sort();
-
-  // Main exits chart — takes left 60%
-  s1.addChart(pres.charts.BAR,[
-    {name:'Voluntary',labels:yrs,values:yrs.map(y=>yrMap[y].V)},
-    {name:'Involuntary',labels:yrs,values:yrs.map(y=>yrMap[y].I)},
-  ],{x:0.35,y:1.0,w:7.8,h:4.65,barDir:'col',barGrouping:'stacked',
-    chartColors:[F.red,F.amber],
-    showValue:true,dataLabelColor:F.white,dataLabelFontSize:10,
-    catAxisLabelColor:F.muted,valAxisLabelColor:F.muted,
-    catGridLine:{style:'none'},valGridLine:{color:'EEEEEE'},
-    showLegend:true,legendPos:'b',chartArea:{fill:{color:F.white}},
-  });
-
-  const volPct=inact.length?Math.round(inact.filter(d=>d['Termination Type']==='Voluntary').length/inact.length*100):0;
   const A=computeAttrition(EMP_DATA);
   const annAtt=A.length?A[A.length-1].ann_pct:0;
   const exits2026=inact.filter(d=>{const ts=d['Termination Date Str']||dateStr(d['Termination Date']);return ts&&ts.startsWith('2026');}).length;
   const moSoFar=new Date().getMonth()+1;
   const proj=Math.round(exits2026/moSoFar*12);
-
-  // Right side: 3x2 KPI grid
-  const rX=8.35, kW=2.35, kH=0.95, kGap=0.1;
-  kpiBox2(s1,'Annualised',annAtt.toFixed(1)+'%','attrition rate',rX,1.0,kW,kH,F.red);
-  kpiBox2(s1,'Voluntary',volPct+'%','of all exits',rX+kW+kGap,1.0,kW,kH,F.amber);
-  kpiBox2(s1,'2026 Exits',exits2026,'YTD',rX,2.05,kW,kH,F.red);
-  kpiBox2(s1,'Projected',proj+'/yr','2026 run-rate',rX+kW+kGap,2.05,kW,kH,F.darkPurple);
-
-  // Tenure at exit computation
+  const volPct=inact.length?Math.round(inact.filter(d=>d['Termination Type']==='Voluntary').length/inact.length*100):0;
   const exitTenures=[];
-  const buckets={'<3m':0,'3-6m':0,'6-12m':0,'1-2y':0,'2y+':0};
   inact.forEach(d=>{
     const sd=parseEmpDate(d['Start Date']),td=parseEmpDate(d['Termination Date']);
     if(!sd||!td)return;
     const days=(td-sd)/(1000*60*60*24);
-    if(days<0||days>7300)return;
-    exitTenures.push(days/365.25);
-    if(days<90)buckets['<3m']++;else if(days<180)buckets['3-6m']++;
-    else if(days<365)buckets['6-12m']++;else if(days<730)buckets['1-2y']++;else buckets['2y+']++;
+    if(days>0&&days<7300)exitTenures.push(days/365.25);
   });
   const avgET=exitTenures.length?(exitTenures.reduce((a,b)=>a+b,0)/exitTenures.length).toFixed(1):0;
   const earlyPct=exitTenures.length?Math.round(exitTenures.filter(y=>y<1).length/exitTenures.length*100):0;
 
-  kpiBox2(s1,'Avg Exit Tenure',avgET+'y','before leaving',rX,3.1,kW,kH,F.purple);
-  kpiBox2(s1,'Early Exits',earlyPct+'%','left in Year 1',rX+kW+kGap,3.1,kW,kH,F.midPurple);
+  const s=makeSlide(pres,2);
+  slideTitle(s,'Attrition Report – Year on Year','Exit Volume · Voluntary vs Involuntary · Tenure at Exit');
 
-  s1.addText('Tenure at Exit',{x:rX,y:4.18,w:kW*2+kGap,h:0.2,fontSize:9,bold:true,color:F.darkPurple,fontFace:'Calibri',margin:0});
-  s1.addChart(pres.charts.BAR,[{name:'Exits',labels:Object.keys(buckets),values:Object.values(buckets)}],{
-    x:rX,y:4.38,w:kW*2+kGap,h:1.25,barDir:'col',
-    chartColors:[F.red],showValue:true,dataLabelColor:F.white,dataLabelFontSize:9,
-    catAxisLabelColor:F.muted,valAxisLabelColor:F.muted,
-    catGridLine:{style:'none'},valGridLine:{color:'EEEEEE'},
-    showLegend:false,chartArea:{fill:{color:F.white}},
-  });
+  // KPI row
+  kpiBox(s,'Annualised',annAtt.toFixed(1)+'%','attrition rate',0.3,0.95,1.9,1.0,annAtt>20?'C00000':annAtt>12?'D97706':'196B24');
+  kpiBox(s,'Voluntary',volPct+'%','of all exits',2.28,0.95,1.9,1.0,'0E2841');
+  kpiBox(s,'2026 Exits',exits2026,'YTD',4.26,0.95,1.9,1.0,'C00000');
+  kpiBox(s,'Projected',proj+'/yr','2026 run-rate',6.24,0.95,1.9,1.0,'0E2841');
+  kpiBox(s,'Avg Exit Tenure',avgET+'y','before leaving',8.22,0.95,1.9,1.0,'0E2841');
+  kpiBox(s,'Early Exits',earlyPct+'%','left in Year 1',10.2,0.95,1.9,1.0,earlyPct>50?'C00000':'D97706');
 
-  insightBox(s1,
-    `${earlyPct}% of exits happen within Year 1 — avg tenure at exit is only ${avgET} years. ${volPct}% voluntary.`,
-    `This points to a hiring/onboarding mismatch. Projected ${proj} exits in 2026 — run structured exit interviews now.`
-  );
-
-  // Slide 2: OHC/CHC table — last 12 months, row height fixed so no overflow
-  const s2=contentSlide(pres,3);
-  slideTitle(s2,'Monthly Attrition – OHC / CHC / Exits','Last 12 months · Computed from Emp Master');
-
-  const Aall=computeAttrition(EMP_DATA);
-  const recentA=Aall.slice(-12);
-  const rowH=0.38; // fixed row height — 12 rows × 0.38 = 4.56 + 0.42 header = 4.98 → fits with insight below
-  const hdr=[
-    {text:'Month',options:{bold:true,color:F.white,fill:{color:F.darkPurple},fontSize:9,fontFace:'Calibri'}},
-    {text:'OHC',options:{bold:true,color:F.white,fill:{color:F.darkPurple},fontSize:9,fontFace:'Calibri'}},
-    {text:'Joins',options:{bold:true,color:F.white,fill:{color:F.darkPurple},fontSize:9,fontFace:'Calibri'}},
-    {text:'Exits',options:{bold:true,color:F.white,fill:{color:F.darkPurple},fontSize:9,fontFace:'Calibri'}},
-    {text:'CHC',options:{bold:true,color:F.white,fill:{color:F.darkPurple},fontSize:9,fontFace:'Calibri'}},
-    {text:'Avg HC',options:{bold:true,color:F.white,fill:{color:F.darkPurple},fontSize:9,fontFace:'Calibri'}},
-    {text:'Monthly %',options:{bold:true,color:F.white,fill:{color:F.darkPurple},fontSize:9,fontFace:'Calibri'}},
-    {text:'Annualised %',options:{bold:true,color:F.white,fill:{color:F.darkPurple},fontSize:9,fontFace:'Calibri'}},
-  ];
-  const tRows=[hdr,...recentA.map((r,i)=>[
-    {text:r.month,options:{bold:true,fontSize:9,fontFace:'Calibri',fill:{color:i%2?'F5F3FF':F.white}}},
-    {text:String(r.ohc),options:{fontSize:9,fontFace:'Calibri',fill:{color:i%2?'F5F3FF':F.white}}},
-    {text:'+'+r.joins,options:{color:F.green,fontSize:9,fontFace:'Calibri',fill:{color:i%2?'F5F3FF':F.white}}},
-    {text:r.exits>0?String(r.exits):'—',options:{color:r.exits>0?F.red:F.muted,bold:r.exits>0,fontSize:9,fontFace:'Calibri',fill:{color:i%2?'F5F3FF':F.white}}},
-    {text:String(r.chc),options:{fontSize:9,fontFace:'Calibri',fill:{color:i%2?'F5F3FF':F.white}}},
-    {text:String(r.avg_hc),options:{bold:true,fontSize:9,fontFace:'Calibri',fill:{color:i%2?'F5F3FF':F.white}}},
-    {text:r.monthly_pct.toFixed(2)+'%',options:{color:r.monthly_pct>2?F.red:r.monthly_pct>1?F.amber:F.green,bold:true,fontSize:9,fontFace:'Calibri',fill:{color:i%2?'F5F3FF':F.white}}},
-    {text:r.ann_pct.toFixed(2)+'%',options:{color:r.ann_pct>20?F.red:r.ann_pct>12?F.amber:F.green,bold:true,fontSize:9,fontFace:'Calibri',fill:{color:i%2?'F5F3FF':F.white}}},
-  ])];
-  s2.addTable(tRows,{x:0.35,y:1.0,w:12.6,
-    rowH:rowH,
-    border:{pt:0.5,color:F.border},fontFace:'Calibri',
-    colW:[1.8,1.05,1.05,1.05,1.05,1.3,1.65,1.65],
-  });
-  // Insight sits below table at fixed y — won't overlap
-  insightBox(s2,
-    `OHC = headcount at month start. CHC = headcount at month end. Exits = separations that month.`,
-    `Green = healthy (<1% monthly). Amber = monitor (1–2%). Red = act immediately (>2% monthly).`,
-    5.95
-  );
-}
-
-// ── SQUAD SLIDES ──────────────────────────────────────────────
-async function addSquadSlides(pres,active){
-  titleSlide(pres,'Squad Health Report','Headcount · RAG Status · Manager Span','Bharathkumar Mayakrishnan');
-
-  const s=contentSlide(pres,2);
-  slideTitle(s,'Employee Distribution – Squad & Practice','Squad headcount + RAG health + Manager span');
-
-  const tree={};
-  active.forEach(d=>{
-    const sq=d.Squad||'?',rag=d['Rag Status']||'Not Set';
-    if(!tree[sq])tree[sq]={hc:0,g:0,a:0,r:0,n:0,mgrs:new Set()};
-    tree[sq].hc++;
-    if(rag==='Green')tree[sq].g++;else if(rag==='Amber')tree[sq].a++;else if(rag==='Red')tree[sq].r++;else tree[sq].n++;
-    const mgr=String(d['L1 Manager']||'').trim();
-    if(mgr)tree[sq].mgrs.add(mgr);
-  });
-  const squads=Object.entries(tree).sort((a,b)=>b[1].hc-a[1].hc);
-
-  s.addChart(pres.charts.BAR,[
-    {name:'Green ✓',labels:squads.map(e=>e[0]),values:squads.map(e=>e[1].g)},
-    {name:'Amber ⚠',labels:squads.map(e=>e[0]),values:squads.map(e=>e[1].a)},
-    {name:'Red ✕',labels:squads.map(e=>e[0]),values:squads.map(e=>e[1].r)},
-    {name:'No Data',labels:squads.map(e=>e[0]),values:squads.map(e=>e[1].n)},
-  ],{x:0.35,y:1.08,w:8.0,h:4.65,barDir:'bar',barGrouping:'stacked',
-    chartColors:['2D7A4F',F.amber,F.red,'BBBBBB'],
-    showValue:true,dataLabelColor:F.white,dataLabelFontSize:8,
-    catAxisLabelColor:F.muted,valAxisLabelColor:F.muted,
-    catGridLine:{style:'none'},valGridLine:{color:'EEEEEE'},
-    showLegend:true,legendPos:'b',chartArea:{fill:{color:F.white}},
-  });
-  s.addText('Squad RAG Health',{x:0.35,y:0.92,w:7.8,h:0.2,fontSize:10,bold:true,color:F.darkPurple,fontFace:'Calibri',margin:0});
-
-  // Manager span table — sits right of chart, width = 4.9" total (0.35+8.0+gap=8.55 → 13.3-8.55=4.75 available)
-  const tX=8.55, tW=4.6;
-  const spanHdr=[
-    {text:'Squad',options:{bold:true,color:F.white,fill:{color:F.darkPurple},fontSize:8,fontFace:'Calibri'}},
-    {text:'HC',options:{bold:true,color:F.white,fill:{color:F.darkPurple},fontSize:8,fontFace:'Calibri'}},
-    {text:'Mgrs',options:{bold:true,color:F.white,fill:{color:F.darkPurple},fontSize:8,fontFace:'Calibri'}},
-    {text:'Span',options:{bold:true,color:F.white,fill:{color:F.darkPurple},fontSize:8,fontFace:'Calibri'}},
-    {text:'🟢',options:{bold:true,color:F.white,fill:{color:F.darkPurple},fontSize:8,fontFace:'Calibri'}},
-    {text:'🟡',options:{bold:true,color:F.white,fill:{color:F.darkPurple},fontSize:8,fontFace:'Calibri'}},
-    {text:'🔴',options:{bold:true,color:F.white,fill:{color:F.darkPurple},fontSize:8,fontFace:'Calibri'}},
-  ];
-  const spanRows=[spanHdr,...squads.map(([sq,d],i)=>{
-    const span=d.mgrs.size>0?Math.round(d.hc/d.mgrs.size*10)/10:'-';
-    const spanN=parseFloat(span);
-    const fill={color:i%2?'F5F3FF':F.white};
-    return [
-      {text:sq.slice(0,18),options:{bold:true,fontSize:7.5,fontFace:'Calibri',fill}},
-      {text:String(d.hc),options:{bold:true,fontSize:8,fontFace:'Calibri',fill}},
-      {text:String(d.mgrs.size),options:{fontSize:8,fontFace:'Calibri',fill}},
-      {text:String(span),options:{color:spanN>7?F.red:spanN<2?F.amber:F.green,bold:true,fontSize:8,fontFace:'Calibri',fill}},
-      {text:String(d.g),options:{color:F.green,bold:true,fontSize:8,fontFace:'Calibri',fill}},
-      {text:String(d.a),options:{color:F.amber,bold:true,fontSize:8,fontFace:'Calibri',fill}},
-      {text:String(d.r),options:{color:d.r>0?F.red:F.muted,bold:d.r>0,fontSize:8,fontFace:'Calibri',fill}},
-    ];
-  })];
-  s.addText('Manager Span by Squad',{x:tX,y:0.92,w:tW,h:0.2,fontSize:10,bold:true,color:F.darkPurple,fontFace:'Calibri',margin:0});
-  s.addTable(spanRows,{x:tX,y:1.08,w:tW,
-    rowH:0.34,
-    border:{pt:0.5,color:F.border},fontFace:'Calibri',
-    colW:[1.85,0.55,0.55,0.6,0.35,0.35,0.35],
-  });
-
-  const redSqs=squads.filter(([,d])=>d.r>0).map(([sq])=>sq);
+  if(img){
+    s.addImage({data:img,x:0.3,y:2.05,w:12.7,h:3.75});
+  }
   insightBox(s,
-    `${squads.length} squads · RAG shows engagement signal: Green = stable, Amber = at risk, Red = act now. Span = avg direct reports per L1 manager.`,
-    redSqs.length>0?`Red employees in: ${redSqs.slice(0,4).join(', ')} — schedule skip-level 1-on-1 this week.`:`No Red-status employees. Monitor Amber employees with career conversations this month.`
+    `${earlyPct}% of exits happen within Year 1 — avg tenure at exit ${avgET} years. ${volPct}% voluntary.`,
+    `Hiring fit or onboarding issue — not just compensation. Projected ${proj} exits in 2026. Run structured exit interviews immediately.`
   );
 }
 
-// ── PERFORMANCE SLIDES ────────────────────────────────────────
+// ── SQUAD ─────────────────────────────────────────────────────
+async function addSquadSlides(pres,active){
+  titleSlide(pres,'Squad Health Report','Headcount · RAG Engagement · Manager Span','Bharathkumar Mayakrishnan');
+
+  await captureTab('p3');
+  const p3el=document.getElementById('p3');
+  const img=await snapElement(p3el, 1.5);
+
+  const rag={G:0,A:0,R:0};
+  active.forEach(d=>{const r=d['Rag Status']||'';if(r==='Green')rag.G++;else if(r==='Amber')rag.A++;else if(r==='Red')rag.R++;});
+  const mgrMap=buildMgrMap(active);
+  const overloaded=Object.values(mgrMap).filter(m=>m.reports.length>7).length;
+  const redSqs=[...new Set(active.filter(d=>d['Rag Status']==='Red').map(d=>d.Squad))];
+
+  const s=makeSlide(pres,2);
+  slideTitle(s,'Employee Distribution – Squad & Practice','Squad headcount + RAG health + Manager span of control');
+
+  kpiBox(s,'Green',rag.G,'engaged & stable',0.3,0.95,1.9,1.0,'196B24');
+  kpiBox(s,'Amber',rag.A,'at risk — act soon',2.28,0.95,1.9,1.0,'D97706');
+  kpiBox(s,'Red',rag.R,'act this week',4.26,0.95,1.9,1.0,rag.R>0?'C00000':'196B24');
+  kpiBox(s,'Overloaded Mgrs',overloaded,'>7 direct reports',6.24,0.95,1.9,1.0,overloaded>0?'C00000':'196B24');
+  kpiBox(s,'Total Mgrs',Object.keys(mgrMap).length,'L1 managers',8.22,0.95,1.9,1.0,'0E2841');
+  kpiBox(s,'Squads',[...new Set(active.map(d=>d.Squad).filter(Boolean))].length,'active squads',10.2,0.95,1.9,1.0,'0E2841');
+
+  if(img){
+    s.addImage({data:img,x:0.3,y:2.05,w:12.7,h:3.75});
+  }
+  insightBox(s,
+    `${rag.G} Green (stable) · ${rag.A} Amber (at risk) · ${rag.R} Red (urgent). Span benchmark: 5–7 direct reports per manager.`,
+    redSqs.length>0?`Red employees in: ${redSqs.slice(0,4).join(', ')} — schedule skip-level 1-on-1 this week.`:`No Red employees. Schedule Amber career conversations within 2 weeks.`
+  );
+}
+
+// ── PERFORMANCE ───────────────────────────────────────────────
 async function addPerformanceSlides(pres,active){
   titleSlide(pres,'Performance Distribution','Ratings · Level Mix · Year-on-Year','Bharathkumar Mayakrishnan');
 
-  const s=contentSlide(pres,2);
-  slideTitle(s,'Performance Distribution','Performance Rating Distribution – 2024 vs 2025');
+  await captureTab('p5');
+  const p5el=document.getElementById('p5');
+  const img=await snapElement(p5el, 1.5);
 
   const r25=active.filter(d=>d['Performance Rating 2025']>=1&&d['Performance Rating 2025']<=5);
   const r24=active.filter(d=>d['Performance Rating 2024']>=1&&d['Performance Rating 2024']<=5);
@@ -2723,49 +2579,31 @@ async function addPerformanceSlides(pres,active){
   const unrated=active.length-r25.length;
   const highPct=r25.length?Math.round(highPerf/r25.length*100):0;
 
-  // 5 KPI boxes in a compact row under subtitle
-  const kW=2.35,kH=0.9,kGap=0.1,kY=0.95,kX=0.35;
-  kpiBox2(s,'2024 Avg Rating',avg24+'/5','previous year',kX,kY,kW,kH,F.lavender.replace('EAE6FF','A090EE'));
-  kpiBox2(s,'2025 Avg Rating',avg25+'/5',+avg25>+avg24?'↑ improved':'↓ declined',kX+(kW+kGap),kY,kW,kH,F.purple);
-  kpiBox2(s,'High Performers',String(highPerf),'★4 or ★5 ('+highPct+'%)',kX+2*(kW+kGap),kY,kW,kH,F.green);
-  kpiBox2(s,'Low Performers',String(lowPerf),'★1 or ★2',kX+3*(kW+kGap),kY,kW,kH,F.red);
-  kpiBox2(s,'Unrated',String(unrated),'missing 2025 rating',kX+4*(kW+kGap),kY,kW,kH,F.amber);
+  const s=makeSlide(pres,2);
+  slideTitle(s,'Performance Distribution','Performance Rating Distribution – 2024 vs 2025');
 
-  // Rating comparison chart — left half
-  s.addText('Ratings 2024 vs 2025',{x:0.35,y:2.0,w:6,h:0.22,fontSize:10,bold:true,color:F.darkPurple,fontFace:'Calibri',margin:0});
-  s.addChart(pres.charts.BAR,[
-    {name:'2024',labels:['Rating 2','Rating 3','Rating 4','Rating 5'],values:[2,3,4,5].map(r=>r24.filter(d=>d['Performance Rating 2024']===r).length)},
-    {name:'2025',labels:['Rating 2','Rating 3','Rating 4','Rating 5'],values:[2,3,4,5].map(r=>r25.filter(d=>d['Performance Rating 2025']===r).length)},
-  ],{x:0.35,y:2.22,w:6.2,h:3.58,barDir:'col',
-    chartColors:['C0B8F5',F.purple],
-    showValue:true,dataLabelColor:F.white,dataLabelFontSize:10,
-    catAxisLabelColor:F.muted,valAxisLabelColor:F.muted,
-    catGridLine:{style:'none'},valGridLine:{color:'EEEEEE'},
-    showLegend:true,legendPos:'b',chartArea:{fill:{color:F.white}},
-  });
+  kpiBox(s,'2024 Avg',avg24+'/5','performance rating',0.3,0.95,2.0,1.0,'0E2841');
+  kpiBox(s,'2025 Avg',avg25+'/5',+avg25>+avg24?'↑ improved':'↓ declined',2.38,0.95,2.0,1.0,+avg25>+avg24?'196B24':'C00000');
+  kpiBox(s,'High Performers',highPerf,'★4–5 ('+highPct+'%)',4.46,0.95,2.0,1.0,'196B24');
+  kpiBox(s,'Low Performers',lowPerf,'★1–2',6.54,0.95,2.0,1.0,lowPerf>10?'C00000':'0E2841');
+  kpiBox(s,'Unrated',unrated,'no 2025 rating',8.62,0.95,2.0,1.0,unrated>active.length*0.2?'D97706':'0E2841');
 
-  // Level distribution — right half
-  const LEVELS=['Trainee Level','Junior Level','Mid Level','Senior Level','Lead Level','Mgmt Level'];
-  const lvlVals=LEVELS.map(l=>active.filter(d=>d.Level===l).length);
-  s.addText('Level-Wise Distribution',{x:6.8,y:2.0,w:6.2,h:0.22,fontSize:10,bold:true,color:F.darkPurple,fontFace:'Calibri',margin:0});
-  s.addChart(pres.charts.BAR,[{name:'Count',labels:LEVELS.map(l=>l.replace(' Level','')),values:lvlVals}],{
-    x:6.8,y:2.22,w:6.15,h:3.58,barDir:'bar',
-    chartColors:[F.purple],
-    showValue:true,dataLabelColor:F.white,dataLabelFontSize:10,
-    catAxisLabelColor:F.muted,valAxisLabelColor:F.muted,
-    catGridLine:{style:'none'},valGridLine:{color:'EEEEEE'},
-    showLegend:false,chartArea:{fill:{color:F.white}},
-  });
-
+  if(img){
+    s.addImage({data:img,x:0.3,y:2.05,w:12.7,h:3.75});
+  }
   insightBox(s,
     `${highPct}% high performers (★4–5). Performance ${+avg25>+avg24?'improved':'declined'} from ${avg24} (2024) to ${avg25} (2025).`,
-    `${unrated>active.length*0.2?`${unrated} employees unrated — complete appraisals before any pay or promotion decision.`:'Appraisal coverage is strong.'} ${lowPerf>0?` ${lowPerf} low performers need active PIP with 90-day checkpoint.`:''}`
+    `${unrated>active.length*0.2?`${unrated} employees unrated — complete appraisals before any pay or promotion decision. `:'Appraisal coverage strong. '}${lowPerf>0?`${lowPerf} low performers need active PIP with 90-day review.`:''}`
   );
 }
 
-// ── SUMMARY SLIDE ─────────────────────────────────────────────
+// ── SUMMARY ───────────────────────────────────────────────────
 async function addSummarySlide(pres,active,inact){
-  const s=contentSlide(pres,10); // last slide of full deck
+  await captureTab('p7');
+  const p7el=document.getElementById('p7');
+  const img=await snapElement(p7el, 1.5);
+
+  const s=makeSlide(pres,10);
   slideTitle(s,'Summary – Key Observations');
 
   const A=computeAttrition(EMP_DATA);
@@ -2776,146 +2614,75 @@ async function addSummarySlide(pres,active,inact){
   const avg25=(r25.reduce((a,d)=>a+d['Performance Rating 2025'],0)/(r25.length||1)).toFixed(2);
 
   const points=[
-    {label:'Growth:',body:`Headcount at ${active.length} active employees — India ${active.filter(d=>d.Country==='India').length}, USA ${active.filter(d=>d.Country==='USA').length}. Consistent additions in core practices.`},
-    {label:'Capability:',body:`Level mix stable. ${Math.round(active.filter(d=>d.Level&&(d.Level.includes('Senior')||d.Level.includes('Lead'))).length/active.length*100)}% at Senior/Lead level. Periodic refresh needed for senior pipeline.`},
-    {label:'Performance:',body:`2025 avg rating ${avg25}/5. Distribution largely consistent across squads.`},
-    {label:'Stability:',body:`Attrition at ${annAtt.toFixed(1)}% annualised. RAG: ${rag.G} Green · ${rag.A} Amber · ${rag.R} Red. ${rag.R>0?`${rag.R} Red employees need immediate attention.`:'No Red employees — strong engagement.'}`},
+    {label:'Growth',body:`Headcount at ${active.length} active — India ${active.filter(d=>d.Country==='India').length}, USA ${active.filter(d=>d.Country==='USA').length}. Consistent additions in core practices.`},
+    {label:'Capability',body:`Level mix stable. Periodic refresh needed for senior pipeline. ${Math.round(active.filter(d=>d.Level&&(d.Level.includes('Senior')||d.Level.includes('Lead'))).length/active.length*100)}% at Senior/Lead level.`},
+    {label:'Performance',body:`2025 avg rating ${avg25}/5. Distribution largely consistent across squads.`},
+    {label:'Stability',body:`Attrition ${annAtt.toFixed(1)}% annualised. RAG: ${rag.G} Green · ${rag.A} Amber · ${rag.R} Red. ${rag.R>0?`${rag.R} employees need immediate attention.`:'Engagement stable.'}`},
   ];
 
   points.forEach((p,i)=>{
-    const y=1.1+i*1.28;
-    s.addText([
-      {text:p.label+'  ',options:{bold:true,italic:true,color:F.purple,fontFace:'Calibri',fontSize:15}},
-      {text:p.body,options:{italic:true,color:F.purple,fontFace:'Calibri',fontSize:15}},
-    ],{x:0.55,y,w:12.2,h:0.85,margin:0,fit:'shrink'});
-    // Separator line
-    if(i<3) s.addShape('rect',{x:0.55,y:y+0.9,w:12.2,h:0.02,fill:{color:F.lavender},line:{color:F.lavender,pt:0}});
+    const y=0.95+i*1.3;
+    s.addShape('rect',{x:0.3,y,w:0.06,h:0.85,fill:{color:'FBAE40'},line:{color:'FBAE40',pt:0}});
+    s.addText(p.label,{x:0.5,y:y+0.05,w:2.2,h:0.35,fontSize:13,bold:true,color:'0E2841',fontFace:'Calibri',margin:0});
+    s.addText(p.body,{x:0.5,y:y+0.42,w:12.0,h:0.38,fontSize:11,color:'333333',fontFace:'Calibri',margin:0,fit:'shrink'});
+    if(i<3) s.addShape('rect',{x:0.3,y:y+0.92,w:12.7,h:0.015,fill:{color:'EEEEEE'},line:{color:'EEEEEE',pt:0}});
   });
 
-  s.addText('For deeper analysis or slice-and-dice insights, access the live data dashboard.',
-    {x:0.55,y:6.4,w:12.2,h:0.35,fontSize:10.5,color:F.muted,fontFace:'Calibri',margin:0});
+  s.addText('For deeper analysis, access the live Finzly HR Intelligence dashboard.',
+    {x:0.5,y:6.3,w:12.2,h:0.32,fontSize:10,color:'888888',fontFace:'Calibri',margin:0});
 }
 
-// ── ORG CHART SLIDES ──────────────────────────────────────────
+// ── ORG CHART ─────────────────────────────────────────────────
 async function addOrgChartSlides(pres, active){
-  // Title slide
-  const ts=pres.addSlide();
-  ts.background={color:F.tealDark};
-  ts.addShape('rect',{x:3,y:0,w:7.3,h:0.45,fill:{color:F.tealMid},line:{color:F.tealMid,pt:0}});
-  ts.addText('Finzly Organization Chart',{x:1,y:2.2,w:11.3,h:1.4,fontSize:42,bold:false,
-    color:F.white,fontFace:'Calibri',align:'center',margin:0});
-  const now=new Date();
-  ts.addText(`as of ${now.toLocaleString('en-IN',{month:'long'})} ${now.getFullYear()}`,
-    {x:1,y:3.8,w:11.3,h:0.5,fontSize:18,color:'AADDEE',fontFace:'Calibri',align:'center',margin:0});
-  // Legend
-  ts.addShape('rect',{x:10.2,y:6.5,w:0.35,h:0.35,fill:{color:F.tealDark},line:{color:F.white,pt:0.5}});
-  ts.addText('USA',{x:10.6,y:6.53,w:1,h:0.28,fontSize:12,color:F.white,fontFace:'Calibri',margin:0});
-  ts.addShape('rect',{x:11.5,y:6.5,w:0.35,h:0.35,fill:{color:F.tealLight},line:{color:F.white,pt:0.5}});
-  ts.addText('India',{x:11.9,y:6.53,w:1.2,h:0.28,fontSize:12,color:F.white,fontFace:'Calibri',margin:0});
+  titleSlide(pres,'Finzly Organization Chart',
+    `As of ${new Date().toLocaleString('en-IN',{month:'long',year:'numeric'})}`,
+    'Bharathkumar Mayakrishnan');
 
-  const {roots}=buildOrgTree(active);
-  const root=roots[0];
-  if(!root)return;
+  // Ensure org chart is rendered
+  await captureTab('p9');
+  const galaxies=document.getElementById('galaxy-trees');
+  if(!galaxies||galaxies.children.length===0) renderOrgChart();
+  await new Promise(r=>setTimeout(r,600));
 
-  // ── SLIDE 1: Leadership Team ───────────────────────────────
-  const s1=pres.addSlide();
-  s1.background={color:F.white};
-  // Light teal top bar
-  s1.addShape('rect',{x:0,y:0,w:SLIDE_W,h:0.5,fill:{color:F.tealDark},line:{color:F.tealDark,pt:0}});
-  s1.addText('Leadership Team',{x:0.4,y:0.06,w:10,h:0.38,fontSize:18,bold:true,color:F.white,fontFace:'Calibri',margin:0});
-  s1.addText('Legend:',{x:10.5,y:0.09,w:1,h:0.22,fontSize:9,color:F.white,fontFace:'Calibri',margin:0});
-  s1.addShape('rect',{x:11.2,y:0.1,w:0.22,h:0.22,fill:{color:F.tealDark},line:{color:F.white,pt:0.5}});
-  s1.addText('USA',{x:11.45,y:0.09,w:0.6,h:0.22,fontSize:9,color:F.white,fontFace:'Calibri',margin:0});
-  s1.addShape('rect',{x:12.0,y:0.1,w:0.22,h:0.22,fill:{color:F.tealLight},line:{color:F.white,pt:0.5}});
-  s1.addText('India',{x:12.25,y:0.09,w:0.9,h:0.22,fontSize:9,color:F.white,fontFace:'Calibri',margin:0});
-
-  const rootW=1.9, rootH=0.85;
-  const rootX=(SLIDE_W-rootW)/2, rootY=0.65;
-  drawOrgBox(s1,root,rootX,rootY,rootW,rootH,true);
-
-  const children=[...root.children].sort((a,b)=>subtreeCount(b)-subtreeCount(a));
-  const cW=Math.min(1.55,(SLIDE_W-0.4)/Math.max(children.length,1)-0.12);
-  const cGap=(SLIDE_W-0.4-children.length*cW)/Math.max(children.length-1,1);
-  const cStartX=0.2, cY=rootY+rootH+0.62;
-  const midY=rootY+rootH+0.3;
-
-  // vertical root→bar
-  s1.addShape('rect',{x:rootX+rootW/2-0.008,y:rootY+rootH,w:0.016,h:0.3,fill:{color:'888888'},line:{color:'888888',pt:0}});
-  // horizontal bar
-  if(children.length>1){
-    const barL=cStartX+cW/2, barR=cStartX+(children.length-1)*(cW+cGap)+cW/2;
-    s1.addShape('rect',{x:barL,y:midY-0.008,w:barR-barL,h:0.016,fill:{color:'888888'},line:{color:'888888',pt:0}});
+  // Slide 1: Leadership strip screenshot
+  const stripEl=document.getElementById('leadership-strip');
+  const stripImg=await snapElement(stripEl, 2);
+  if(stripImg){
+    const s=makeSlide(pres,2);
+    slideTitle(s,'Leadership Team','Booshan Rengachari · President · Direct Reports');
+    s.addImage({data:stripImg,x:0.3,y:1.0,w:12.7,h:5.8,sizing:{type:'contain',w:12.7,h:5.8}});
   }
-  children.forEach((child,i)=>{
-    const cx=cStartX+i*(cW+cGap);
-    s1.addShape('rect',{x:cx+cW/2-0.008,y:midY,w:0.016,h:0.3,fill:{color:'888888'},line:{color:'888888',pt:0}});
-    drawOrgBox(s1,child,cx,cY,cW,0.78);
-    const n=subtreeCount(child)-1;
-    if(n>0) s1.addText(n+' below',{x:cx,y:cY+0.81,w:cW,h:0.18,fontSize:6,color:F.muted,align:'center',fontFace:'Calibri',margin:0});
-  });
 
-  s1.addText('© Finzly Confidential 2025',{x:3,y:7.22,w:7.3,h:0.22,fontSize:8,color:F.footer,align:'center',fontFace:'Calibri',margin:0});
+  // One slide per galaxy — expand each and screenshot
+  const sections=document.querySelectorAll('#galaxy-trees .galaxy-section');
+  let slideNum=3;
+  for(const sec of sections){
+    const leaderName=sec.querySelector('.galaxy-leader-name')?.textContent?.trim()||'';
+    const leaderTitle=sec.querySelector('.galaxy-leader-title')?.textContent?.trim()||'';
+    const body=sec.querySelector('.galaxy-body');
+    if(!body)continue;
 
-  // ── ONE SLIDE PER GALAXY — horizontal tree, all employees ──
-  for(const leader of children){
-    const allInGalaxy=gatherSubtree(leader);
-    if(allInGalaxy.length<=1)continue;
-
-    const sg=pres.addSlide();
-    sg.background={color:F.white};
-    const lcol=F.tealDark;
-    sg.addShape('rect',{x:0,y:0,w:SLIDE_W,h:0.5,fill:{color:lcol},line:{color:lcol,pt:0}});
-    sg.addText(`${leader['First Name']} ${leader['Last Name']} — ${leader['Corporate Title']||leader.Squad||''}`,
-      {x:0.3,y:0.08,w:10,h:0.35,fontSize:16,bold:true,color:F.white,fontFace:'Calibri',margin:0});
-    const total=allInGalaxy.length-1;
-    sg.addText(`${total} people · ${leader.Country==='India'?'India':'USA'}`,
-      {x:10.5,y:0.12,w:2.6,h:0.25,fontSize:9,color:'AADDEE',fontFace:'Calibri',margin:0,align:'right'});
-
-    // legend
-    sg.addShape('rect',{x:10.2,y:7.1,w:0.25,h:0.22,fill:{color:F.tealDark},line:{color:F.border,pt:0.5}});
-    sg.addText('USA',{x:10.48,y:7.1,w:0.7,h:0.22,fontSize:7.5,color:F.muted,fontFace:'Calibri',margin:0});
-    sg.addShape('rect',{x:11.2,y:7.1,w:0.25,h:0.22,fill:{color:F.tealLight},line:{color:F.border,pt:0.5}});
-    sg.addText('India',{x:11.48,y:7.1,w:0.8,h:0.22,fontSize:7.5,color:F.muted,fontFace:'Calibri',margin:0});
-    sg.addText('© Finzly Confidential 2025',{x:3,y:7.22,w:7.3,h:0.22,fontSize:8,color:F.footer,align:'center',fontFace:'Calibri',margin:0});
-
-    // Tree layout using leaf-count proportional widths
-    function leafCount(node){return !node.children||node.children.length===0?1:node.children.reduce((s,c)=>s+leafCount(c),0);}
-    function maxDepth(node,d=0){return !node.children||node.children.length===0?d:Math.max(...node.children.map(c=>maxDepth(c,d+1)));}
-
-    const TREE_X=0.12, TREE_Y=0.6;
-    const TREE_W=SLIDE_W-0.24, TREE_H=6.35;
-    const depth=maxDepth(leader);
-    const levelH=TREE_H/Math.max(depth+1,2);
-    const boxH=Math.min(0.72,levelH*0.65);
-    const totalLeaves=leafCount(leader);
-    const unitW=TREE_W/totalLeaves;
-    const minW=0.5;
-
-    const placements=[];
-    function placeNode(node,leftLeaves,level){
-      const leaves=leafCount(node);
-      const bw=Math.max(minW,unitW*leaves-0.05);
-      const bx=TREE_X+leftLeaves*unitW+(unitW*leaves-bw)/2;
-      const by=TREE_Y+level*levelH+(levelH-boxH)/2;
-      placements.push({node,bx,by,bw,bh:boxH,cx:TREE_X+leftLeaves*unitW+unitW*leaves/2});
-      let cl=leftLeaves;
-      if(node.children)[...node.children].sort((a,b)=>leafCount(b)-leafCount(a)).forEach(child=>{placeNode(child,cl,level+1);cl+=leafCount(child);});
+    // Open the galaxy
+    const wasOpen=body.classList.contains('open');
+    if(!wasOpen){
+      body.classList.add('open');
+      // Lazy render if needed
+      if(body.dataset.rendered!=='1') renderGalaxyBody(body, sec);
+      await new Promise(r=>setTimeout(r,500));
     }
-    placeNode(leader,0,0);
 
-    const pm2={};placements.forEach(p=>pm2[p.node.full]=p);
+    const img=await snapElement(body, 1.8);
 
-    // Lines first
-    placements.forEach(p=>{
-      const par=pm2[String(p.node['L1 Manager']||'').trim()];
-      if(!par)return;
-      drawLine(sg,par.cx,par.by+par.bh,p.cx,p.by);
-    });
-    // Boxes on top
-    placements.forEach(p=>drawOrgBox(sg,p.node,p.bx,p.by,p.bw,p.bh));
+    if(img){
+      const s=makeSlide(pres, slideNum++);
+      slideTitle(s, leaderName, leaderTitle);
+      s.addImage({data:img,x:0.3,y:0.95,w:12.7,h:6.1,sizing:{type:'contain',w:12.7,h:6.1}});
+    }
+
+    // Close it again to keep dashboard clean
+    if(!wasOpen) body.classList.remove('open');
   }
 }
-
 
 async function runAIIntel(){
   document.getElementById('ai-dot').style.background='var(--amber)';
