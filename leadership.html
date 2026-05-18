@@ -379,6 +379,9 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
       <option value="all">All Employees</option>
       <option value="inactive">Inactive Only</option>
     </select>
+    <select id="f-year" onchange="applyFilter()">
+      <option value="all">All Join Years</option>
+    </select>
     <div class="fb-sep"></div>
     <button class="fb-reset" onclick="resetFilters()">↺ Reset</button>
     <span class="fb-info" id="f-info">Loading…</span>
@@ -1143,6 +1146,11 @@ function populateFilters(){
   const cEl=document.getElementById('f-city'),sEl=document.getElementById('f-squad');
   cities.forEach(c=>{const o=document.createElement('option');o.value=o.textContent=c;cEl.appendChild(o);});
   squads.forEach(s=>{const o=document.createElement('option');o.value=o.textContent=s;sEl.appendChild(o);});
+
+  // Populate join year filter from all employees (active + inactive)
+  const years=[...new Set(EMP_DATA.map(d=>d['Start Year']).filter(y=>y&&y>2010&&y<=new Date().getFullYear()))].sort((a,b)=>b-a);
+  const yEl=document.getElementById('f-year');
+  years.forEach(y=>{const o=document.createElement('option');o.value=y;o.textContent=`Joined ${y}`;yEl.appendChild(o);});
 }
 
 let filtered=[];
@@ -1151,19 +1159,21 @@ function applyFilter(){
   const city=document.getElementById('f-city').value;
   const squad=document.getElementById('f-squad').value;
   const status=document.getElementById('f-status').value;
+  const year=document.getElementById('f-year').value;
   filtered=EMP_DATA.filter(d=>{
     if(status==='active'   &&d.Status!=='Active'   &&d.ActiveFlag!==1)return false;
     if(status==='inactive' &&d.Status!=='Inactive' &&d.ActiveFlag!==0)return false;
     if(country!=='all'&&d.Country!==country)return false;
     if(city   !=='all'&&d.City   !==city)   return false;
     if(squad  !=='all'&&d.Squad  !==squad)  return false;
+    if(year   !=='all'&&String(d['Start Year'])!==String(year))return false;
     return true;
   });
-  document.getElementById('f-info').textContent=filtered.length+' employee'+(filtered.length!==1?'s':'')+' in view';
+  document.getElementById('f-info').textContent=filtered.length+' employee'+(filtered.length!==1?'s':'')+' in view'+(year!=='all'?' · Joined '+year:'');
   render();
 }
 function resetFilters(){
-  ['f-country','f-city','f-squad'].forEach(id=>document.getElementById(id).value='all');
+  ['f-country','f-city','f-squad','f-year'].forEach(id=>document.getElementById(id).value='all');
   document.getElementById('f-status').value='active'; applyFilter();
 }
 
