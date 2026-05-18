@@ -392,6 +392,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
     <button class="tab" onclick="goTab(this,'p5')">⭐ Performance</button>
     <button class="tab" onclick="goTab(this,'p7')">🧭 Leadership Summary</button>
     <button class="tab" onclick="goTab(this,'p9')">🌳 Org Chart</button>
+    <button class="tab" onclick="goTab(this,'p10')">🤖 AI Intel</button>
   </div>
 
   <!-- P1 -->
@@ -530,7 +531,6 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
 
   <!-- P7 LEADERSHIP SUMMARY -->
   <div class="pg" id="p7">
-    <!-- Board KPIs -->
     <div class="card" style="margin-bottom:14px">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;gap:16px;flex-wrap:wrap">
         <div><div class="sum-hl">Leadership Intelligence. <em>Act on what matters.</em></div><div style="font-size:.72rem;color:var(--muted);margin-top:3px" id="sum-sub"></div></div>
@@ -538,24 +538,6 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
       </div>
       <div class="g2" id="act-grid"></div>
       <div class="cta-bar" id="cta-bar"></div>
-    </div>
-    <!-- AI Intel embedded -->
-    <div class="card">
-      <div class="c-title">
-        <div class="c-title-l">🤖 AI Workforce Intelligence</div>
-        <button class="ai-refresh" onclick="runAIIntel()" style="font-family:'Outfit',sans-serif;font-size:.7rem;padding:5px 12px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer">Generate Insights</button>
-      </div>
-      <div class="ai-status" style="margin-bottom:12px">
-        <div class="ai-dot" id="ai-dot"></div>
-        <span id="ai-status-txt" style="font-size:.72rem;color:var(--muted)">Click Generate to analyse live workforce data</span>
-      </div>
-      <div class="ai-cards" id="ai-cards">
-        <div class="ai-card" style="grid-column:1/-1;text-align:center;padding:32px;border-top-color:var(--border);background:var(--bg)">
-          <div style="font-size:1.5rem;margin-bottom:8px">🤖</div>
-          <div style="font-size:.82rem;font-weight:700;margin-bottom:5px">Data-driven workforce insights</div>
-          <div style="font-size:.72rem;color:var(--muted);line-height:1.7">6 insight cards computed from your live data — attrition risk, manager health, performance signals, retention risks. All based on actual numbers only.</div>
-        </div>
-      </div>
     </div>
   </div>
 
@@ -577,6 +559,35 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
       </div>
     </div>
     <div id="galaxy-trees"></div>
+  </div>
+  <!-- P10 AI INTEL -->
+  <div class="pg" id="p10">
+    <div class="card" style="margin-bottom:14px">
+      <div class="c-title"><div class="c-title-l">🤖 AI Workforce Intelligence</div></div>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px">
+        <div>
+          <div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px">View</div>
+          <select id="ai-galaxy-sel" style="font-family:'Outfit',sans-serif;font-size:.78rem;padding:6px 26px 6px 10px;border-radius:6px;border:1.5px solid var(--border);background:var(--bg);min-width:220px;appearance:none">
+            <option value="all">🌐 Whole Organisation</option>
+          </select>
+        </div>
+        <div style="align-self:flex-end">
+          <button onclick="runAIIntel()" style="font-family:'Outfit',sans-serif;font-size:.82rem;padding:8px 20px;border-radius:8px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;cursor:pointer;font-weight:700">🤖 Generate Insights</button>
+        </div>
+        <div style="font-size:.7rem;color:var(--muted);align-self:flex-end;padding-bottom:4px">Insights computed from your live data · no API call · no hallucination</div>
+      </div>
+      <div class="ai-status">
+        <div class="ai-dot" id="ai-dot"></div>
+        <span id="ai-status-txt" style="font-size:.72rem;color:var(--muted)">Select a galaxy and click Generate</span>
+      </div>
+    </div>
+    <div class="ai-cards" id="ai-cards">
+      <div class="ai-card" style="grid-column:1/-1;text-align:center;padding:40px;border-top-color:var(--border);background:var(--bg)">
+        <div style="font-size:2rem;margin-bottom:8px">🤖</div>
+        <div style="font-size:.9rem;font-weight:700;margin-bottom:6px">Galaxy-level Workforce Intelligence</div>
+        <div style="font-size:.76rem;color:var(--muted);line-height:1.7">Select whole org or a specific galaxy leader, then click Generate.<br>6 insight cards on attrition, manager health, performance, engagement, composition and retention.<br>All computed from your actual numbers — nothing made up.</div>
+      </div>
+    </div>
   </div>
 
 </div><!-- /dash -->
@@ -1112,10 +1123,10 @@ function goTab(el,pid){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
   document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
   el.classList.add('on'); document.getElementById(pid).classList.add('on');
-  // Lazy render org chart on first click
-  if(pid==='p9'&&EMP_DATA.length>0){
+  if((pid==='p9'||pid==='p10')&&EMP_DATA.length>0){
     const wrap=document.getElementById('org-tree-root');
-    if(wrap&&!wrap.hasChildNodes())renderOrgChart();
+    const galaxies=document.getElementById('galaxy-trees');
+    if(wrap&&!wrap.hasChildNodes()&&galaxies&&!galaxies.hasChildNodes())renderOrgChart();
   }
 }
 function toggleSquad(hdr){
@@ -1884,46 +1895,51 @@ function renderLeadershipStrip(root){
   document.getElementById('leadership-strip').innerHTML=html;
 }
 
-// ── RENDER A SINGLE GALAXY TREE ───────────────────────────────
-function makeNodeEl(node,depth){
-  const sq=node.Squad||'';
-  const col=sqColor(sq);
-  const isCon=node.Type==='Consultant';
-  const childCount=node.children.length;
-  const flag=node.Country==='India'?'🔵':'🟣';
+// ── GALAXY TREE — vertical indented tree with connecting lines ─
+function makeNodeEl(node, depth){
+  const sq = node.Squad||'';
+  const col = sqColor(sq);
+  const isCon = node.Type==='Consultant';
+  const kids = node.children.length;
+  const flag = node.Country==='India'?'🔵':'🟣';
+  const total = subtreeCount(node)-1;
 
-  const li=document.createElement('li');
-  const a=document.createElement('a');
-  a.style.cssText='text-decoration:none;display:flex;flex-direction:column;align-items:center';
+  const li = document.createElement('li');
 
-  const box=document.createElement('div');
-  box.className='org-node'+(depth===0?' root':'');
-  box.style.background=col;
-  box.style.borderColor=isCon?'rgba(217,119,6,.8)':'rgba(255,255,255,.15)';
-  box.innerHTML=`
-    <div class="org-node-name">${node['First Name']||''} ${node['Last Name']||''}</div>
-    <div class="org-node-title">${node['Corporate Title']||node.Level||''}</div>
-    <div class="org-node-squad">${sq}</div>
-    <div class="org-node-badges">
-      <span class="org-badge ${node.Country==='India'?'ind':'usa'}">${flag} ${node.Country||''}</span>
-      ${isCon?'<span class="org-badge con">CON</span>':''}
+  // Row (clickable)
+  const row = document.createElement('div');
+  row.className = 'org-node-row'+(depth===0?' root-row':'');
+  row.innerHTML=`
+    <span class="on-toggle${kids?'':' hidden'}">${kids?'▸':''}</span>
+    <div class="on-avatar" style="background:${col}">${(node['First Name']||'?')[0]}${(node['Last Name']||'?')[0]||''}</div>
+    <div class="on-info">
+      <div class="on-name">${node['First Name']||''} ${node['Last Name']||''}</div>
+      <div class="on-title">${node['Corporate Title']||node.Level||''}</div>
     </div>
-    ${childCount>0?`<div class="org-expand">▾ ${childCount}</div>`:''}`;
+    <div class="on-right">
+      ${isCon?'<span class="on-con">CON</span>':''}
+      <span class="on-country">${flag}</span>
+      <span class="on-squad-badge" style="background:${col}">${sq}</span>
+      ${kids>0?`<span class="on-count">${total} below</span>`:''}
+    </div>`;
 
-  box.onclick=e=>{
-    e.stopPropagation();
-    li.classList.toggle('collapsed');
-    const expEl=box.querySelector('.org-expand');
-    if(expEl)expEl.textContent=li.classList.contains('collapsed')?`▸ ${childCount}`:`▾ ${childCount}`;
-  };
-  a.appendChild(box);
-  li.appendChild(a);
+  li.appendChild(row);
 
-  if(childCount>0){
-    const ul=document.createElement('ul');
-    [...node.children].sort((a,b)=>b.children.length-a.children.length)
-      .forEach(child=>ul.appendChild(makeNodeEl(child,depth+1)));
+  if(kids>0){
+    const ul = document.createElement('ul');
+    ul.style.display='none'; // collapsed by default
+    [...node.children]
+      .sort((a,b)=>b.children.length-a.children.length)
+      .forEach(c=>ul.appendChild(makeNodeEl(c, depth+1)));
     li.appendChild(ul);
+
+    row.onclick = ()=>{
+      const isOpen = ul.style.display!=='none';
+      ul.style.display = isOpen?'none':'block';
+      const tog = row.querySelector('.on-toggle');
+      if(tog) tog.textContent = isOpen?'▸':'▾';
+      if(tog) tog.classList.toggle('open', !isOpen);
+    };
   }
   return li;
 }
@@ -1989,16 +2005,7 @@ function renderOrgChart(){
       tog.classList.toggle('open');
       // Lazy render tree on first open
       if(!isOpen&&body.dataset.rendered!=='1'){
-        body.dataset.rendered='1';
-        const tree=document.createElement('div');
-        tree.className='org-tree';
-        const ul=document.createElement('ul');
-        ul.style.padding='0';
-        ul.appendChild(makeNodeEl(leader,0));
-        tree.appendChild(ul);
-        body.appendChild(tree);
-        // Default: show top 3 levels
-        collapseGalaxy(body,3);
+        renderGalaxyBody(body, section);
       }
     };
 
@@ -2010,6 +2017,17 @@ function renderOrgChart(){
     section.appendChild(body);
     galaxyWrap.appendChild(section);
   });
+
+  // Populate AI Intel galaxy dropdown once
+  const aiSel=document.getElementById('ai-galaxy-sel');
+  if(aiSel&&aiSel.options.length<=1){
+    sorted.forEach(leader=>{
+      const o=document.createElement('option');
+      o.value=leader.full;
+      o.textContent=`${leader.full} · ${leader['Corporate Title']||leader.Squad||''}`;
+      aiSel.appendChild(o);
+    });
+  }
 }
 
 function gatherSubtree(node){
@@ -2018,16 +2036,30 @@ function gatherSubtree(node){
   return all;
 }
 
-function collapseGalaxy(bodyEl,maxLevel){
-  bodyEl.querySelectorAll('li').forEach(li=>{
-    let depth=0,p=li.parentElement;
-    while(p&&!p.classList.contains('galaxy-body')){if(p.tagName==='UL')depth++;p=p.parentElement;}
-    if(depth>=maxLevel){
-      li.classList.add('collapsed');
-      const exp=li.querySelector(':scope > a .org-expand');
-      if(exp)exp.textContent=exp.textContent.replace('▾','▸');
-    }
-  });
+function expandGalaxyAll(btn){
+  const body=btn.closest('.galaxy-body');
+  body.querySelectorAll('ul').forEach(ul=>ul.style.display='block');
+  body.querySelectorAll('.on-toggle').forEach(t=>{t.textContent='▾';t.classList.add('open');});
+}
+
+function expandGalaxyLevel(btn, maxLevels){
+  const body=btn.closest('.galaxy-body');
+  // First collapse all
+  body.querySelectorAll('ul.org-tree-v ul, .org-tree-v li ul').forEach(ul=>ul.style.display='none');
+  body.querySelectorAll('.on-toggle').forEach(t=>{t.textContent='▸';t.classList.remove('open');});
+  // Then expand to requested depth
+  function expandTo(ul, depth){
+    if(depth<=0)return;
+    ul.style.display='block';
+    ul.querySelectorAll(':scope > li').forEach(li=>{
+      const tog=li.querySelector(':scope > .org-node-row .on-toggle');
+      if(tog){tog.textContent='▾';tog.classList.add('open');}
+      const childUl=li.querySelector(':scope > ul');
+      if(childUl&&depth>1)expandTo(childUl, depth-1);
+    });
+  }
+  const rootUl=body.querySelector('ul.org-tree-v');
+  if(rootUl)expandTo(rootUl, maxLevels);
 }
 
 function expandAllGalaxies(){
@@ -2037,25 +2069,10 @@ function expandAllGalaxies(){
     if(!body.classList.contains('open')){
       body.classList.add('open');
       if(tog)tog.classList.add('open');
-      if(body.dataset.rendered!=='1'){
-        // Find the leader from the header title
-        body.dataset.rendered='1';
-        const leaderName=sec.querySelector('.galaxy-leader-name')?.textContent?.trim();
-        const activeAll=EMP_DATA.filter(d=>d.Status==='Active'||d.ActiveFlag===1);
-        const {nodes}=buildOrgTree(activeAll);
-        if(leaderName&&nodes[leaderName]){
-          const tree=document.createElement('div');tree.className='org-tree';
-          const ul=document.createElement('ul');ul.style.padding='0';
-          ul.appendChild(makeNodeEl(nodes[leaderName],0));
-          tree.appendChild(ul);body.appendChild(tree);
-        }
-      }
+      if(body.dataset.rendered!=='1') renderGalaxyBody(body, sec);
     }
-    body.querySelectorAll('li').forEach(li=>{
-      li.classList.remove('collapsed');
-      const exp=li.querySelector(':scope > a .org-expand');
-      if(exp)exp.textContent=exp.textContent.replace('▸','▾');
-    });
+    body.querySelectorAll('ul').forEach(ul=>ul.style.display='block');
+    body.querySelectorAll('.on-toggle').forEach(t=>{t.textContent='▾';t.classList.add('open');});
   });
 }
 
@@ -2067,26 +2084,55 @@ function collapseAllGalaxies(){
   });
 }
 
+function renderGalaxyBody(body, section){
+  body.dataset.rendered='1';
+  const leaderName=section.querySelector('.galaxy-leader-name')?.textContent?.trim();
+  const activeAll=EMP_DATA.filter(d=>d.Status==='Active'||d.ActiveFlag===1);
+  const {nodes}=buildOrgTree(activeAll);
+  if(!leaderName||!nodes[leaderName])return;
+  const ctrl=document.createElement('div');
+  ctrl.style.cssText='display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap';
+  ctrl.innerHTML=`<button class="org-btn" onclick="expandGalaxyAll(this)">Expand All</button><button class="org-btn" onclick="expandGalaxyLevel(this,1)">Top Level</button><button class="org-btn" onclick="expandGalaxyLevel(this,2)">2 Levels</button><button class="org-btn" onclick="expandGalaxyLevel(this,3)">3 Levels</button>`;
+  body.appendChild(ctrl);
+  const ul=document.createElement('ul');
+  ul.className='org-tree-v';
+  ul.appendChild(makeNodeEl(nodes[leaderName],0));
+  body.appendChild(ul);
+}
+
 // ── AI INTEL - DATA-DRIVEN INSIGHTS ENGINE ───────────────────
 async function runAIIntel(){
   document.getElementById('ai-dot').style.background='var(--amber)';
-  document.getElementById('ai-status-txt').textContent='Analysing your workforce data…';
+  document.getElementById('ai-status-txt').textContent='Analysing workforce data…';
   document.getElementById('ai-cards').innerHTML=`<div class="ai-card" style="grid-column:1/-1;text-align:center;padding:30px;border-top-color:var(--border)"><div class="ai-dot" style="margin:0 auto 10px"></div><div style="font-size:.8rem;color:var(--muted)">Computing insights from live data…</div></div>`;
 
-  // Small delay for UX
-  await new Promise(r=>setTimeout(r,600));
+  await new Promise(r=>setTimeout(r,500));
 
-  const activeAll=EMP_DATA.filter(d=>d.Status==='Active'||d.ActiveFlag===1);
-  const inactAll =EMP_DATA.filter(d=>d.Status==='Inactive'||d.ActiveFlag===0);
+  // Galaxy filter
+  const galaxySel=document.getElementById('ai-galaxy-sel')?.value||'all';
+  const allActive=EMP_DATA.filter(d=>d.Status==='Active'||d.ActiveFlag===1);
+  const allInact =EMP_DATA.filter(d=>d.Status==='Inactive'||d.ActiveFlag===0);
+  let activeAll=allActive, inactAll=allInact, galaxyLabel='Whole Organisation';
 
-  // ── Compute all metrics ──────────────────────────────────────
+  if(galaxySel!=='all'){
+    const {nodes}=buildOrgTree(allActive);
+    if(nodes[galaxySel]){
+      const subtreeNodes=gatherSubtree(nodes[galaxySel]);
+      const names=new Set(subtreeNodes.map(n=>n.full));
+      activeAll=allActive.filter(d=>names.has(`${d['First Name']||''} ${d['Last Name']||''}`.trim()));
+      inactAll =allInact.filter(d=>names.has(`${d['First Name']||''} ${d['Last Name']||''}`.trim())||String(d['L1 Manager']||'').trim()===galaxySel);
+      galaxyLabel=`${galaxySel}'s Galaxy (${activeAll.length} active)`;
+    }
+  }
+
+  // ── Compute metrics ───────────────────────────────────────────
   const total=activeAll.length;
   const india=activeAll.filter(d=>d.Country==='India').length;
   const usa=activeAll.filter(d=>d.Country==='USA').length;
   const female=activeAll.filter(d=>d.Gender==='Female').length;
-  const femPct=Math.round(female/total*100);
+  const femPct=total?Math.round(female/total*100):0;
   const contractors=activeAll.filter(d=>d.Type==='Consultant').length;
-  const conPct=Math.round(contractors/total*100);
+  const conPct=total?Math.round(contractors/total*100):0;
 
   // Attrition
   const A=computeAttrition(EMP_DATA);
@@ -2229,7 +2275,7 @@ async function runAIIntel(){
   const typeIcons={risk:'🔴',good:'✅',signal:'⚠️',info:'💡'};
 
   document.getElementById('ai-dot').style.background='var(--green)';
-  document.getElementById('ai-status-txt').textContent=`${insights.length} insights generated from live data · ${new Date().toLocaleTimeString()} · No API call — 100% from your numbers`;
+  document.getElementById('ai-status-txt').textContent=`${insights.length} insights · ${galaxyLabel} · ${new Date().toLocaleTimeString()} · computed from live data`;
 
   document.getElementById('ai-cards').innerHTML=insights.map(c=>`
     <div class="ai-card" style="border-top-color:${typeColors[c.type]||'var(--border)'}">
