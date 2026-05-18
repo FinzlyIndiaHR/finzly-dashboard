@@ -2366,13 +2366,20 @@ async function captureTab(tabId){
 
 async function snapElement(el, scale=2){
   if(!el)return null;
+  const origOverflow=el.style.overflow;
+  el.style.overflow='visible';
   const canvas=await html2canvas(el,{
-    scale, useCORS:true, backgroundColor:'#ffffff',
-    logging:false, allowTaint:true,
+    scale,
+    useCORS:true,
+    backgroundColor:'#ffffff',
+    logging:false,
+    allowTaint:true,
     scrollX:0, scrollY:0,
-    width:el.offsetWidth, height:el.offsetHeight
+    width:el.scrollWidth,
+    height:el.scrollHeight
   });
-  return canvas.toDataURL('image/png');
+  el.style.overflow=origOverflow;
+  return canvas.toDataURL('image/png',1.0); // max quality PNG
 }
 
 // ── SLIDE BUILDER HELPERS ─────────────────────────────────────
@@ -2465,7 +2472,7 @@ async function addSnapshotSlides(pres,active,inact){
   // Switch to P1 tab and screenshot it
   await captureTab('p1');
   const p1el=document.getElementById('p1');
-  const img=await snapElement(p1el, 1.5);
+  const img=await snapElement(p1el, 2.5);
 
   const A=computeAttrition(EMP_DATA);
   const annAtt=A.length?A[A.length-1].ann_pct:0;
@@ -2491,7 +2498,7 @@ async function addAttritionSlides(pres,active,inact){
 
   await captureTab('p4');
   const p4el=document.getElementById('p4');
-  const img=await snapElement(p4el, 1.5);
+  const img=await snapElement(p4el, 2.5);
 
   const A=computeAttrition(EMP_DATA);
   const annAtt=A.length?A[A.length-1].ann_pct:0;
@@ -2535,7 +2542,7 @@ async function addSquadSlides(pres,active){
 
   await captureTab('p3');
   const p3el=document.getElementById('p3');
-  const img=await snapElement(p3el, 1.5);
+  const img=await snapElement(p3el, 2.5);
 
   const rag={G:0,A:0,R:0};
   active.forEach(d=>{const r=d['Rag Status']||'';if(r==='Green')rag.G++;else if(r==='Amber')rag.A++;else if(r==='Red')rag.R++;});
@@ -2568,7 +2575,7 @@ async function addPerformanceSlides(pres,active){
 
   await captureTab('p5');
   const p5el=document.getElementById('p5');
-  const img=await snapElement(p5el, 1.5);
+  const img=await snapElement(p5el, 2.5);
 
   const r25=active.filter(d=>d['Performance Rating 2025']>=1&&d['Performance Rating 2025']<=5);
   const r24=active.filter(d=>d['Performance Rating 2024']>=1&&d['Performance Rating 2024']<=5);
@@ -2601,7 +2608,7 @@ async function addPerformanceSlides(pres,active){
 async function addSummarySlide(pres,active,inact){
   await captureTab('p7');
   const p7el=document.getElementById('p7');
-  const img=await snapElement(p7el, 1.5);
+  const img=await snapElement(p7el, 2.5);
 
   const s=makeSlide(pres,10);
   slideTitle(s,'Summary – Key Observations');
@@ -2638,49 +2645,107 @@ async function addOrgChartSlides(pres, active){
     `As of ${new Date().toLocaleString('en-IN',{month:'long',year:'numeric'})}`,
     'Bharathkumar Mayakrishnan');
 
-  // Ensure org chart is rendered
+  // Ensure org chart tab is rendered
   await captureTab('p9');
   const galaxies=document.getElementById('galaxy-trees');
   if(!galaxies||galaxies.children.length===0) renderOrgChart();
-  await new Promise(r=>setTimeout(r,600));
+  await new Promise(r=>setTimeout(r,800));
 
-  // Slide 1: Leadership strip screenshot
-  const stripEl=document.getElementById('leadership-strip');
-  const stripImg=await snapElement(stripEl, 2);
-  if(stripImg){
-    const s=makeSlide(pres,2);
-    slideTitle(s,'Leadership Team','Booshan Rengachari · President · Direct Reports');
-    s.addImage({data:stripImg,x:0.3,y:1.0,w:12.7,h:5.8,sizing:{type:'contain',w:12.7,h:5.8}});
+  // Helper: expand every node inside an element
+  function expandAllNodes(container){
+    // Click all collapsed nodes open
+    container.querySelectorAll('.ls-child-subtree').forEach(sub=>{
+      sub.style.display='block';
+    });
+    // Also expand org-tree-v nodes if present
+    container.querySelectorAll('li > ul').forEach(ul=>{
+      ul.style.display='block';
+    });
+    container.querySelectorAll('.on-toggle').forEach(tog=>{
+      tog.textContent='▾';
+      tog.classList.add('open');
+    });
   }
 
-  // One slide per galaxy — expand each and screenshot
+  // Better screenshot: higher scale, white bg, full scroll height
+  async function snapFull(el, scale=2.5){
+    if(!el)return null;
+    // Force full height render
+    const origOverflow=el.style.overflow;
+    el.style.overflow='visible';
+    const canvas=await html2canvas(el,{
+      scale,
+      useCORS:true,
+      backgroundColor:'#ffffff',
+      logging:false,
+      allowTaint:true,
+      scrollX:0, scrollY:0,
+      windowWidth:el.scrollWidth+100,
+      windowHeight:el.scrollHeight+100,
+      width:el.scrollWidth,
+      height:el.scrollHeight
+    });
+    el.style.overflow=origOverflow;
+    return canvas.toDataURL('image/png',1.0);
+  }
+
+  // Helper: add image slide that fits the image properly with no distortion
+  function addImgSlide(pres, title, subtitle, img, slideNum){
+    const s=makeSlide(pres,slideNum);
+    slideTitle(s,title,subtitle);
+    if(!img)return s;
+    // Available area on slide
+    const areaX=0.3, areaY=0.92, areaW=12.73, areaH=6.3;
+    s.addImage({data:img, x:areaX, y:areaY, w:areaW, h:areaH,
+      sizing:{type:'contain', w:areaW, h:areaH}});
+    return s;
+  }
+
+  // Slide 1: Leadership strip
+  const stripEl=document.getElementById('leadership-strip');
+  if(stripEl){
+    expandAllNodes(stripEl);
+    await new Promise(r=>setTimeout(r,300));
+    const stripImg=await snapFull(stripEl, 2.5);
+    addImgSlide(pres,'Leadership Team',
+      'Booshan Rengachari · President · Direct Reports', stripImg, 2);
+  }
+
+  // One slide per galaxy — expand ALL levels then screenshot
   const sections=document.querySelectorAll('#galaxy-trees .galaxy-section');
   let slideNum=3;
+
   for(const sec of sections){
     const leaderName=sec.querySelector('.galaxy-leader-name')?.textContent?.trim()||'';
     const leaderTitle=sec.querySelector('.galaxy-leader-title')?.textContent?.trim()||'';
+    const badge=sec.querySelector('.galaxy-badge')?.textContent?.trim()||'';
     const body=sec.querySelector('.galaxy-body');
     if(!body)continue;
 
     // Open the galaxy
     const wasOpen=body.classList.contains('open');
+    body.classList.add('open');
+    const tog=sec.querySelector('.galaxy-toggle');
+    if(tog)tog.classList.add('open');
+
+    // Render tree if not done yet
+    if(body.dataset.rendered!=='1') renderGalaxyBody(body, sec);
+    await new Promise(r=>setTimeout(r,600));
+
+    // *** EXPAND ALL LEVELS before screenshot ***
+    expandAllNodes(body);
+    await new Promise(r=>setTimeout(r,300));
+
+    const img=await snapFull(body, 2.2);
+    addImgSlide(pres, leaderName, `${leaderTitle} · ${badge}`, img, slideNum++);
+
+    // Restore state
     if(!wasOpen){
-      body.classList.add('open');
-      // Lazy render if needed
-      if(body.dataset.rendered!=='1') renderGalaxyBody(body, sec);
-      await new Promise(r=>setTimeout(r,500));
+      body.classList.remove('open');
+      if(tog)tog.classList.remove('open');
     }
-
-    const img=await snapElement(body, 1.8);
-
-    if(img){
-      const s=makeSlide(pres, slideNum++);
-      slideTitle(s, leaderName, leaderTitle);
-      s.addImage({data:img,x:0.3,y:0.95,w:12.7,h:6.1,sizing:{type:'contain',w:12.7,h:6.1}});
-    }
-
-    // Close it again to keep dashboard clean
-    if(!wasOpen) body.classList.remove('open');
+    // Re-collapse nodes to keep dashboard tidy
+    body.querySelectorAll('.ls-child-subtree').forEach(sub=>sub.style.display='none');
   }
 }
 
