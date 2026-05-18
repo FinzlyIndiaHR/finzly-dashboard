@@ -7,6 +7,7 @@
 <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -270,6 +271,24 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
 .ls-badge.ind{background:rgba(14,165,233,.3);color:#fff;border:1px solid rgba(14,165,233,.5)}
 .ls-badge.usa{background:rgba(124,58,237,.3);color:#fff;border:1px solid rgba(124,58,237,.5)}
 .ls-badge.con{background:rgba(217,119,6,.8);color:#fff}
+/* REPORT TAB */
+.report-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-top:16px}
+.report-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;border-top:4px solid var(--accent);display:flex;flex-direction:column;gap:10px}
+.report-card.blue{border-top-color:var(--blue)}
+.report-card.green{border-top-color:var(--green)}
+.report-card.amber{border-top-color:var(--amber)}
+.report-card.purple{border-top-color:var(--pu)}
+.rc-icon{font-size:1.8rem;margin-bottom:2px}
+.rc-title{font-size:.88rem;font-weight:800;color:var(--ink)}
+.rc-desc{font-size:.72rem;color:var(--muted);line-height:1.6;flex:1}
+.rc-slides{font-size:.62rem;color:var(--muted2);font-family:'Fira Code',monospace}
+.rc-btn{font-family:'Outfit',sans-serif;font-size:.76rem;font-weight:700;padding:9px 16px;border-radius:8px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;cursor:pointer;display:flex;align-items:center;gap:6px;transition:opacity .2s;margin-top:4px}
+.rc-btn:hover{opacity:.85}
+.rc-btn:disabled{opacity:.5;cursor:not-allowed}
+.rc-btn.blue{background:linear-gradient(135deg,var(--blue),#3b82f6)}
+.rc-btn.green{background:linear-gradient(135deg,var(--green),#22c55e)}
+.rc-btn.purple{background:linear-gradient(135deg,var(--pu),#8b5cf6)}
+.rc-progress{font-size:.68rem;color:var(--accent);font-weight:600;display:none}
 /* AI INTEL */
 .ai-status{display:flex;align-items:center;gap:8px;font-size:.74rem;color:var(--muted);margin-bottom:14px;padding:10px 14px;background:var(--card);border-radius:8px;border:1px solid var(--border)}
 .ai-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);animation:pulse 1.5s infinite}
@@ -396,6 +415,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
     <button class="tab" onclick="goTab(this,'p7')">🧭 Leadership Summary</button>
     <button class="tab" onclick="goTab(this,'p9')">🌳 Org Chart</button>
     <button class="tab" onclick="goTab(this,'p10')">🤖 AI Intel</button>
+    <button class="tab" onclick="goTab(this,'p11')">📥 Reports</button>
   </div>
 
   <!-- P1 -->
@@ -590,6 +610,76 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
         <div style="font-size:.9rem;font-weight:700;margin-bottom:6px">Galaxy-level Workforce Intelligence</div>
         <div style="font-size:.76rem;color:var(--muted);line-height:1.7">Select whole org or a specific galaxy leader, then click Generate.<br>6 insight cards on attrition, manager health, performance, engagement, composition and retention.<br>All computed from your actual numbers — nothing made up.</div>
       </div>
+    </div>
+  </div>
+
+  <!-- P11 REPORTS -->
+  <div class="pg" id="p11">
+    <div class="inf blue">
+      <strong>Download Reports</strong> — All reports are generated from your live SharePoint data at the time of download. Select the report you need and click Download.
+    </div>
+    <div class="report-grid">
+
+      <!-- ORG SNAPSHOT -->
+      <div class="report-card">
+        <div class="rc-icon">📊</div>
+        <div class="rc-title">Org Snapshot</div>
+        <div class="rc-desc">Executive summary slide — total headcount, India/USA split, gender, contractors, avg tenure, city breakdown, and key attrition signal. One slide, board-ready.</div>
+        <div class="rc-slides">~2 slides · PPT</div>
+        <button class="rc-btn" onclick="downloadReport('snapshot',this)">⬇ Download PPT</button>
+        <div class="rc-progress" id="prog-snapshot">Generating…</div>
+      </div>
+
+      <!-- ATTRITION REPORT -->
+      <div class="report-card blue">
+        <div class="rc-icon">📉</div>
+        <div class="rc-title">Attrition Report</div>
+        <div class="rc-desc">Year-wise exits, voluntary vs involuntary split, OHC/CHC monthly table, annualised attrition trend, exit reasons, cohort retention analysis.</div>
+        <div class="rc-slides">~4 slides · PPT</div>
+        <button class="rc-btn blue" onclick="downloadReport('attrition',this)">⬇ Download PPT</button>
+        <div class="rc-progress" id="prog-attrition">Generating…</div>
+      </div>
+
+      <!-- SQUAD HEALTH -->
+      <div class="report-card green">
+        <div class="rc-icon">🏗</div>
+        <div class="rc-title">Squad Health Report</div>
+        <div class="rc-desc">Squad headcount, RAG health per squad, manager span of control, sub-squad breakdown. Designed for squad leaders and L2 managers.</div>
+        <div class="rc-slides">~3 slides · PPT</div>
+        <button class="rc-btn green" onclick="downloadReport('squad',this)">⬇ Download PPT</button>
+        <div class="rc-progress" id="prog-squad">Generating…</div>
+      </div>
+
+      <!-- PERFORMANCE REPORT -->
+      <div class="report-card amber">
+        <div class="rc-icon">⭐</div>
+        <div class="rc-title">Performance Report</div>
+        <div class="rc-desc">2024 vs 2025 rating comparison, level distribution pyramid, high/low performer count, unrated employees, tenure by squad.</div>
+        <div class="rc-slides">~3 slides · PPT</div>
+        <button class="rc-btn" onclick="downloadReport('performance',this)">⬇ Download PPT</button>
+        <div class="rc-progress" id="prog-performance">Generating…</div>
+      </div>
+
+      <!-- ORG CHART REPORT -->
+      <div class="report-card purple">
+        <div class="rc-icon">🌳</div>
+        <div class="rc-title">Org Chart</div>
+        <div class="rc-desc">Leadership tree — President + all direct reports (Level 1), then each galaxy leader's direct reports (Level 2). Colour-coded by squad, contractor badges, India/USA flags.</div>
+        <div class="rc-slides">~1 + N galaxy slides · PPT</div>
+        <button class="rc-btn purple" onclick="downloadReport('orgchart',this)">⬇ Download PPT</button>
+        <div class="rc-progress" id="prog-orgchart">Generating…</div>
+      </div>
+
+      <!-- FULL LEADERSHIP DECK -->
+      <div class="report-card purple" style="grid-column:1/-1">
+        <div class="rc-icon">🧭</div>
+        <div class="rc-title">Full Leadership Deck — All Sections</div>
+        <div class="rc-desc">Complete board-ready presentation covering Org Snapshot, People Trend, Squad Health, Attrition, Performance, and Key Actions. Suitable for monthly leadership reviews.</div>
+        <div class="rc-slides">~12 slides · PPT</div>
+        <button class="rc-btn purple" onclick="downloadReport('full',this)">⬇ Download Full Deck PPT</button>
+        <div class="rc-progress" id="prog-full">Generating…</div>
+      </div>
+
     </div>
   </div>
 
@@ -2198,7 +2288,520 @@ function toggleGalaxyChild(el){
   if(badge)badge.style.opacity=isOpen?'1':'0.6';
 }
 
-// ── AI INTEL - DATA-DRIVEN INSIGHTS ENGINE ───────────────────
+// ── REPORT GENERATION ────────────────────────────────────────
+const BRAND={bg:'1A1A2E',accent:'E8541A',accent2:'FF6B35',white:'FFFFFF',
+  dark:'1A1A2E',muted:'7C7568',green:'16A34A',red:'DC2626',amber:'D97706',
+  blue:'2563EB',ch:'0EA5E9',pu:'7C3AED',card:'F8F5F0',border:'E0DBD2'};
+
+async function downloadReport(type, btn){
+  btn.disabled=true;
+  const prog=document.getElementById('prog-'+type);
+  if(prog){prog.style.display='block';prog.textContent='Building slides…';}
+
+  try{
+    const pres=new PptxGenJS();
+    pres.layout='LAYOUT_WIDE'; // 13.3" x 7.5"
+    pres.title='Finzly Leadership Report';
+    pres.author='Finzly HR Intelligence';
+
+    const activeAll=EMP_DATA.filter(d=>d.Status==='Active'||d.ActiveFlag===1);
+    const inactAll =EMP_DATA.filter(d=>d.Status==='Inactive'||d.ActiveFlag===0);
+
+    if(type==='snapshot'||type==='full')  await addSnapshotSlides(pres,activeAll,inactAll);
+    if(type==='attrition'||type==='full') await addAttritionSlides(pres,activeAll,inactAll);
+    if(type==='squad'||type==='full')     await addSquadSlides(pres,activeAll);
+    if(type==='performance'||type==='full') await addPerformanceSlides(pres,activeAll);
+    if(type==='orgchart'||type==='full')  await addOrgChartSlides(pres,activeAll);
+    if(type==='full')                     await addActionSlide(pres,activeAll,inactAll);
+
+    if(prog)prog.textContent='Saving file…';
+    const date=new Date().toISOString().slice(0,10);
+    await pres.writeFile({fileName:`Finzly_HR_${type}_${date}.pptx`});
+    if(prog)prog.textContent='✅ Downloaded!';
+  }catch(e){
+    console.error(e);
+    if(prog)prog.textContent='❌ Error: '+e.message;
+  }finally{
+    btn.disabled=false;
+    setTimeout(()=>{if(prog)prog.style.display='none';},4000);
+  }
+}
+
+// ── SLIDE HELPERS ─────────────────────────────────────────────
+function titleSlide(pres,title,subtitle){
+  const s=pres.addSlide();
+  s.background={color:BRAND.bg};
+  s.addShape(pres.shapes.RECTANGLE,{x:0,y:0,w:0.08,h:7.5,fill:{color:BRAND.accent}});
+  s.addText('F',{x:0.3,y:0.3,w:0.6,h:0.6,fontSize:20,bold:true,color:BRAND.white,
+    fill:{color:BRAND.accent},align:'center',valign:'middle',margin:0});
+  s.addText('Finzly Leadership Intelligence',{x:1.1,y:0.28,w:11,h:0.5,
+    fontSize:11,color:'AAAAAA',fontFace:'Outfit'});
+  s.addText(title,{x:0.3,y:2.5,w:12,h:1.4,fontSize:40,bold:true,color:BRAND.white,fontFace:'Outfit'});
+  s.addText(subtitle,{x:0.3,y:4,w:12,h:0.5,fontSize:14,color:'BBBBBB',fontFace:'Outfit'});
+  s.addText(new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'}),
+    {x:0.3,y:6.8,w:12,h:0.4,fontSize:10,color:'888888',fontFace:'Outfit'});
+  return s;
+}
+
+function sectionHeader(slide,title,x=0.4,y=0.25){
+  slide.addShape(slide.pres?.shapes?.RECTANGLE||'rect',{x,y,w:0.06,h:0.35,fill:{color:BRAND.accent}});
+  slide.addText(title.toUpperCase(),{x:x+0.15,y,w:12,h:0.35,
+    fontSize:9,bold:true,color:BRAND.muted,charSpacing:2,fontFace:'Outfit',margin:0});
+}
+
+function kpiBox(slide,label,value,sub,x,y,w=2.2,h=1.1,color=BRAND.accent){
+  slide.addShape('rect',{x,y,w,h,fill:{color:'FFFFFF'},
+    shadow:{type:'outer',color:'000000',opacity:0.06,blur:8,offset:2,angle:135},
+    line:{color:BRAND.border,pt:1}});
+  slide.addShape('rect',{x,y,w,h:0.06,fill:{color:color}});
+  slide.addText(label.toUpperCase(),{x:x+0.12,y:y+0.1,w:w-0.2,h:0.22,
+    fontSize:7,bold:true,color:BRAND.muted,charSpacing:1,fontFace:'Outfit',margin:0});
+  slide.addText(String(value),{x:x+0.12,y:y+0.28,w:w-0.2,h:0.52,
+    fontSize:28,bold:true,color:color,fontFace:'Outfit',margin:0});
+  slide.addText(sub,{x:x+0.12,y:y+0.82,w:w-0.2,h:0.22,
+    fontSize:8,color:BRAND.muted,fontFace:'Outfit',margin:0});
+}
+
+// ── SNAPSHOT SLIDES ───────────────────────────────────────────
+async function addSnapshotSlides(pres,active,inact){
+  titleSlide(pres,'Org Snapshot','Headcount · Composition · Key Signals');
+
+  const s=pres.addSlide();
+  s.background={color:BRAND.card};
+  sectionHeader(s,'Org Snapshot — As of Today');
+
+  const india=active.filter(d=>d.Country==='India').length;
+  const usa=active.filter(d=>d.Country==='USA').length;
+  const female=active.filter(d=>d.Gender==='Female').length;
+  const contractors=active.filter(d=>d.Type==='Consultant').length;
+  const tenured=active.filter(d=>typeof d['Finzly Experience']==='number');
+  const avgTen=(tenured.reduce((s,d)=>s+d['Finzly Experience'],0)/(tenured.length||1)).toFixed(1);
+  const A=computeAttrition(EMP_DATA);
+  const annAtt=A.length?A[A.length-1].ann_pct:0;
+  const exits2026=inact.filter(d=>{const ts=d['Termination Date Str']||dateStr(d['Termination Date']);return ts&&ts.startsWith('2026');}).length;
+
+  // KPI row
+  const kpis=[
+    ['Active HC',active.length,'employees today',BRAND.green],
+    ['India',india,Math.round(india/active.length*100)+'% of HC',BRAND.ch],
+    ['USA',usa,Math.round(usa/active.length*100)+'% of HC',BRAND.pu],
+    ['Female',female,Math.round(female/active.length*100)+'% — tech avg 28–35%',BRAND.blue],
+    ['Contractors',contractors,Math.round(contractors/active.length*100)+'% — monitor dependency',BRAND.amber],
+    ['Avg Tenure',avgTen+'y','time at Finzly',BRAND.accent],
+  ];
+  kpis.forEach(([lbl,val,sub,col],i)=>kpiBox(s,lbl,val,sub,0.3+i*2.18,0.7,2.1,1.15,col));
+
+  // Attrition signal
+  s.addShape('rect',{x:0.3,y:2.1,w:12.7,h:1.35,fill:{color:annAtt>20?'FEF2F2':'FFF8F0'},
+    line:{color:annAtt>20?'FCA5A5':'FDE68A',pt:1}});
+  s.addText(`${annAtt>20?'🔴':'⚠'} Attrition Signal`,
+    {x:0.5,y:2.2,w:5,h:0.3,fontSize:9,bold:true,color:annAtt>20?BRAND.red:BRAND.amber,fontFace:'Outfit',margin:0});
+  s.addText(`Annualised attrition: ${annAtt.toFixed(1)}%  ·  ${exits2026} exits in 2026 so far  ·  ${Math.round(exits2026/(new Date().getMonth()+1)*12)} projected for year`,
+    {x:0.5,y:2.5,w:12.3,h:0.4,fontSize:12,bold:true,color:BRAND.dark,fontFace:'Outfit',margin:0});
+  s.addText(annAtt>20?'Attrition is above healthy threshold. Voluntary exits dominate — this is a retention issue, not a performance issue. Run structured stay interviews.'
+    :'Attrition is elevated but manageable. Focus on Amber/Red RAG employees and 2023–2024 cohort retention.',
+    {x:0.5,y:2.92,w:12.3,h:0.42,fontSize:10,color:'555555',fontFace:'Outfit',margin:0});
+
+  // Squad distribution chart
+  s.addText('Headcount by Squad',{x:0.3,y:3.65,w:6,h:0.3,fontSize:9,bold:true,color:BRAND.muted,charSpacing:1,fontFace:'Outfit',margin:0});
+  const sqMap={};active.forEach(d=>{const sq=d.Squad||'?';sqMap[sq]=(sqMap[sq]||0)+1;});
+  const sqE=Object.entries(sqMap).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  s.addChart(pres.charts.BAR,[{name:'HC',labels:sqE.map(e=>e[0]),values:sqE.map(e=>e[1])}],{
+    x:0.3,y:3.95,w:6,h:3.3,barDir:'bar',
+    chartColors:[BRAND.accent,BRAND.blue,BRAND.green,BRAND.pu,BRAND.amber,BRAND.ch,'64748B','EC4899','14B8A6','F59E0B'],
+    showValue:true,dataLabelColor:BRAND.white,dataLabelFontSize:9,
+    catAxisLabelColor:BRAND.muted,valAxisLabelColor:BRAND.muted,
+    catGridLine:{style:'none'},valGridLine:{color:'E2E8F0',size:0.5},
+    showLegend:false,chartArea:{fill:{color:'FFFFFF'}},
+  });
+
+  // Composition donut
+  s.addText('Workforce Mix',{x:6.8,y:3.65,w:4,h:0.3,fontSize:9,bold:true,color:BRAND.muted,charSpacing:1,fontFace:'Outfit',margin:0});
+  s.addChart(pres.charts.DOUGHNUT,[{name:'Mix',labels:['India FTE','USA FTE','Contractors'],values:[india-contractors,usa,contractors]}],{
+    x:6.5,y:3.95,w:3.5,h:3.3,
+    chartColors:[BRAND.ch,BRAND.pu,BRAND.amber],
+    showLegend:true,legendPos:'b',showPercent:true,
+    dataLabelColor:BRAND.white,dataLabelFontSize:9,
+    chartArea:{fill:{color:'FFFFFF'}},
+  });
+
+  // City table
+  const cities={};active.forEach(d=>{const c=d.City||'Other';cities[c]=(cities[c]||0)+1;});
+  const cityRows=[['City','HC','%'],...Object.entries(cities).sort((a,b)=>b[1]-a[1]).slice(0,6)
+    .map(([c,n])=>[c,n,Math.round(n/active.length*100)+'%'])];
+  s.addTable(cityRows,{x:10.1,y:3.95,w:3.1,h:3.3,
+    border:{pt:0.5,color:BRAND.border},
+    color:BRAND.dark,fontSize:10,fontFace:'Outfit',
+    rowH:0.42,
+    fill:{color:'F8F5F0'},
+  });
+}
+
+// ── ATTRITION SLIDES ──────────────────────────────────────────
+async function addAttritionSlides(pres,active,inact){
+  titleSlide(pres,'Attrition Report','Exits · Tenure · Cohort Retention');
+
+  // Slide: year-wise exits + OHC/CHC trend
+  const s1=pres.addSlide();
+  s1.background={color:BRAND.card};
+  sectionHeader(s1,'Exit Trends — Year on Year');
+
+  const yrMap={};
+  inact.forEach(d=>{
+    const ts=d['Termination Date Str']||dateStr(d['Termination Date']);
+    if(!ts)return;
+    const yr=ts.slice(0,4);
+    if(parseInt(yr)<2019||parseInt(yr)>2030)return;
+    const t=d['Termination Type']||'Unknown';
+    if(!yrMap[yr])yrMap[yr]={V:0,I:0};
+    if(t==='Voluntary')yrMap[yr].V++;else if(t==='Involuntary')yrMap[yr].I++;
+  });
+  const yrs=Object.keys(yrMap).sort();
+
+  s1.addChart(pres.charts.BAR,[
+    {name:'Voluntary',labels:yrs,values:yrs.map(y=>yrMap[y].V)},
+    {name:'Involuntary',labels:yrs,values:yrs.map(y=>yrMap[y].I)},
+  ],{x:0.3,y:0.7,w:7,h:4.5,barDir:'col',barGrouping:'stacked',
+    chartColors:[BRAND.red,BRAND.amber],
+    showValue:true,dataLabelColor:BRAND.white,dataLabelFontSize:10,
+    catAxisLabelColor:BRAND.muted,valAxisLabelColor:BRAND.muted,
+    catGridLine:{style:'none'},valGridLine:{color:'E2E8F0'},
+    showLegend:true,legendPos:'b',
+    chartArea:{fill:{color:'FFFFFF'}},
+  });
+
+  // KPIs on right
+  const volPct=inact.length?Math.round(inact.filter(d=>d['Termination Type']==='Voluntary').length/inact.length*100):0;
+  const A=computeAttrition(EMP_DATA);
+  const annAtt=A.length?A[A.length-1].ann_pct:0;
+  const exits2026=inact.filter(d=>{const ts=d['Termination Date Str']||dateStr(d['Termination Date']);return ts&&ts.startsWith('2026');}).length;
+  kpiBox(s1,'Annualised',annAtt.toFixed(1)+'%','attrition rate',7.5,0.7,2.1,1.1,BRAND.red);
+  kpiBox(s1,'Voluntary',volPct+'%','of all exits',9.9,0.7,2.1,1.1,BRAND.amber);
+  kpiBox(s1,'2026 Exits',exits2026,'so far this year',12.2,0.7,1.2,1.1,BRAND.red);
+
+  // Insight box
+  s1.addShape('rect',{x:7.5,y:2,w:5.5,h:3.1,fill:{color:'FEF2F2'},line:{color:'FCA5A5',pt:1}});
+  s1.addText('Key Insight',{x:7.7,y:2.1,w:5,h:0.3,fontSize:9,bold:true,color:BRAND.red,fontFace:'Outfit',margin:0});
+  const exitTenures=[];
+  inact.forEach(d=>{
+    const startD=parseEmpDate(d['Start Date']),termD=parseEmpDate(d['Termination Date']);
+    if(!startD||!termD)return;
+    const days=(termD-startD)/(1000*60*60*24);
+    if(days>0&&days<7300)exitTenures.push(days/365.25);
+  });
+  const avgExitTen=exitTenures.length?(exitTenures.reduce((a,b)=>a+b,0)/exitTenures.length).toFixed(1):0;
+  const earlyPct=exitTenures.length?Math.round(exitTenures.filter(y=>y<1).length/exitTenures.length*100):0;
+  s1.addText([
+    {text:`${earlyPct}% of exits happen within the first year.\n`,options:{bold:true,color:BRAND.red,breakLine:true}},
+    {text:`Average tenure at exit: ${avgExitTen} years.\n`,options:{breakLine:true}},
+    {text:`${volPct}% voluntary — people are choosing to leave.\n`,options:{breakLine:true}},
+    {text:`This points to a hiring fit or onboarding problem, not just compensation.`,options:{color:'555555'}},
+  ],{x:7.7,y:2.45,w:5.1,h:2.5,fontSize:11,fontFace:'Outfit',margin:0});
+
+  // Slide: OHC/CHC table
+  const s2=pres.addSlide();
+  s2.background={color:BRAND.card};
+  sectionHeader(s2,'Monthly Attrition — OHC · CHC · Exits · Annualised');
+  const Aall=computeAttrition(EMP_DATA);
+  const recentA=Aall.slice(-12);
+  const tableData=[
+    [{text:'Month',options:{bold:true,color:BRAND.white,fill:{color:BRAND.dark},fontSize:9}},
+     {text:'OHC',options:{bold:true,color:BRAND.white,fill:{color:BRAND.dark},fontSize:9}},
+     {text:'Joins',options:{bold:true,color:BRAND.white,fill:{color:BRAND.dark},fontSize:9}},
+     {text:'Exits',options:{bold:true,color:BRAND.white,fill:{color:BRAND.dark},fontSize:9}},
+     {text:'CHC',options:{bold:true,color:BRAND.white,fill:{color:BRAND.dark},fontSize:9}},
+     {text:'Avg HC',options:{bold:true,color:BRAND.white,fill:{color:BRAND.dark},fontSize:9}},
+     {text:'Monthly%',options:{bold:true,color:BRAND.white,fill:{color:BRAND.dark},fontSize:9}},
+     {text:'Annualised%',options:{bold:true,color:BRAND.white,fill:{color:BRAND.dark},fontSize:9}}],
+    ...recentA.map((r,i)=>[
+      {text:r.month,options:{bold:true,fontSize:9}},
+      {text:String(r.ohc),options:{fontSize:9}},
+      {text:'+'+r.joins,options:{color:BRAND.green,fontSize:9}},
+      {text:r.exits>0?'-'+r.exits:'—',options:{color:r.exits>0?BRAND.red:'888888',bold:r.exits>0,fontSize:9}},
+      {text:String(r.chc),options:{fontSize:9}},
+      {text:String(r.avg_hc),options:{bold:true,fontSize:9}},
+      {text:r.monthly_pct.toFixed(2)+'%',options:{color:r.monthly_pct>2?BRAND.red:r.monthly_pct>1?BRAND.amber:BRAND.green,bold:true,fontSize:9}},
+      {text:r.ann_pct.toFixed(2)+'%',options:{color:r.ann_pct>20?BRAND.red:r.ann_pct>12?BRAND.amber:BRAND.green,bold:true,fontSize:9}},
+    ])
+  ];
+  s2.addTable(tableData,{x:0.3,y:0.65,w:12.7,h:recentA.length*0.44+0.5,
+    border:{pt:0.5,color:BRAND.border},fontSize:9,fontFace:'Outfit',
+    colW:[1.8,1.2,1.2,1.2,1.2,1.3,1.4,1.4],
+    fill:{color:BRAND.card},
+  });
+}
+
+// ── SQUAD SLIDES ──────────────────────────────────────────────
+async function addSquadSlides(pres,active){
+  titleSlide(pres,'Squad Health Report','Headcount · RAG · Manager Span');
+
+  const s=pres.addSlide();
+  s.background={color:BRAND.card};
+  sectionHeader(s,'Squad Health — Headcount + RAG + Manager Span');
+
+  const tree={};
+  active.forEach(d=>{
+    const sq=d.Squad||'?',rag=d['Rag Status']||'Not Set';
+    if(!tree[sq])tree[sq]={hc:0,g:0,a:0,r:0,n:0,mgrs:new Set()};
+    tree[sq].hc++;
+    if(rag==='Green')tree[sq].g++;else if(rag==='Amber')tree[sq].a++;else if(rag==='Red')tree[sq].r++;else tree[sq].n++;
+    const mgr=String(d['L1 Manager']||'').trim();
+    if(mgr)tree[sq].mgrs.add(mgr);
+  });
+  const squads=Object.entries(tree).sort((a,b)=>b[1].hc-a[1].hc).slice(0,12);
+
+  s.addChart(pres.charts.BAR,[
+    {name:'Green',labels:squads.map(e=>e[0]),values:squads.map(e=>e[1].g)},
+    {name:'Amber',labels:squads.map(e=>e[0]),values:squads.map(e=>e[1].a)},
+    {name:'Red',labels:squads.map(e=>e[0]),values:squads.map(e=>e[1].r)},
+    {name:'No Data',labels:squads.map(e=>e[0]),values:squads.map(e=>e[1].n)},
+  ],{x:0.3,y:0.65,w:8.5,h:6.5,barDir:'bar',barGrouping:'stacked',
+    chartColors:[BRAND.green,BRAND.amber,BRAND.red,'CCCCCC'],
+    showValue:true,dataLabelColor:BRAND.white,dataLabelFontSize:8,
+    catAxisLabelColor:BRAND.muted,valAxisLabelColor:BRAND.muted,
+    catGridLine:{style:'none'},valGridLine:{color:'E2E8F0'},
+    showLegend:true,legendPos:'b',
+    chartArea:{fill:{color:'FFFFFF'}},
+  });
+
+  // Manager span table
+  const spanRows=[
+    [{text:'Squad',options:{bold:true,color:BRAND.white,fill:{color:BRAND.dark},fontSize:8}},
+     {text:'HC',options:{bold:true,color:BRAND.white,fill:{color:BRAND.dark},fontSize:8}},
+     {text:'Mgrs',options:{bold:true,color:BRAND.white,fill:{color:BRAND.dark},fontSize:8}},
+     {text:'Span',options:{bold:true,color:BRAND.white,fill:{color:BRAND.dark},fontSize:8}}],
+    ...squads.map(([sq,d])=>{
+      const span=d.mgrs.size>0?(d.hc/d.mgrs.size).toFixed(1):'-';
+      const spanNum=parseFloat(span);
+      return [
+        {text:sq,options:{fontSize:8}},
+        {text:String(d.hc),options:{bold:true,fontSize:8}},
+        {text:String(d.mgrs.size),options:{fontSize:8}},
+        {text:span,options:{color:spanNum>7?BRAND.red:spanNum<2?BRAND.amber:BRAND.green,bold:true,fontSize:8}},
+      ];
+    })
+  ];
+  s.addTable(spanRows,{x:9,y:0.65,w:4.1,h:squads.length*0.45+0.5,
+    border:{pt:0.5,color:BRAND.border},fontFace:'Outfit',
+    colW:[2.0,0.6,0.7,0.8],fill:{color:BRAND.card},
+  });
+}
+
+// ── PERFORMANCE SLIDES ────────────────────────────────────────
+async function addPerformanceSlides(pres,active){
+  titleSlide(pres,'Performance Report','Ratings · Levels · Tenure by Squad');
+
+  const s=pres.addSlide();
+  s.background={color:BRAND.card};
+  sectionHeader(s,'Performance & Level Distribution');
+
+  const r25=active.filter(d=>d['Performance Rating 2025']>=1&&d['Performance Rating 2025']<=5);
+  const r24=active.filter(d=>d['Performance Rating 2024']>=1&&d['Performance Rating 2024']<=5);
+  const avg25=(r25.reduce((s,d)=>s+d['Performance Rating 2025'],0)/(r25.length||1)).toFixed(2);
+  const avg24=(r24.reduce((s,d)=>s+d['Performance Rating 2024'],0)/(r24.length||1)).toFixed(2);
+
+  // Rating comparison
+  s.addChart(pres.charts.BAR,[
+    {name:'2024',labels:['★1','★2','★3','★4','★5'],values:[1,2,3,4,5].map(r=>r24.filter(d=>d['Performance Rating 2024']===r).length)},
+    {name:'2025',labels:['★1','★2','★3','★4','★5'],values:[1,2,3,4,5].map(r=>r25.filter(d=>d['Performance Rating 2025']===r).length)},
+  ],{x:0.3,y:0.7,w:6,h:4,barDir:'col',
+    chartColors:[BRAND.ch,BRAND.accent],
+    showValue:true,dataLabelColor:BRAND.white,dataLabelFontSize:10,
+    catAxisLabelColor:BRAND.muted,valAxisLabelColor:BRAND.muted,
+    showLegend:true,legendPos:'b',chartArea:{fill:{color:'FFFFFF'}},
+  });
+
+  kpiBox(s,'2024 Avg',avg24+'/5','performance rating',6.5,0.7,2.2,1.1,BRAND.ch);
+  kpiBox(s,'2025 Avg',avg25+'/5','performance rating',9.0,0.7,2.2,1.1,BRAND.accent);
+  kpiBox(s,'High Perf',r25.filter(d=>d['Performance Rating 2025']>=4).length,'rated ★4 or ★5',11.5,0.7,1.5,1.1,BRAND.green);
+
+  // Level pyramid
+  const LEVELS=['Trainee Level','Junior Level','Mid Level','Senior Level','Lead Level','Mgmt Level'];
+  const lvlVals=LEVELS.map(l=>active.filter(d=>d.Level===l).length);
+  s.addChart(pres.charts.BAR,[{name:'Count',labels:LEVELS.map(l=>l.replace(' Level','')),values:lvlVals}],{
+    x:6.5,y:2.0,w:6.5,h:5.2,barDir:'bar',
+    chartColors:[BRAND.pu],
+    showValue:true,dataLabelColor:BRAND.white,dataLabelFontSize:10,
+    catAxisLabelColor:BRAND.muted,valAxisLabelColor:BRAND.muted,
+    catGridLine:{style:'none'},valGridLine:{color:'E2E8F0'},
+    showLegend:false,chartArea:{fill:{color:'FFFFFF'}},
+  });
+}
+
+// ── ACTION SLIDE ──────────────────────────────────────────────
+async function addActionSlide(pres,active,inact){
+  const s=pres.addSlide();
+  s.background={color:BRAND.bg};
+  s.addShape('rect',{x:0,y:0,w:0.08,h:7.5,fill:{color:BRAND.accent}});
+  s.addText('Key Actions & Priorities',{x:0.3,y:0.3,w:12,h:0.7,fontSize:28,bold:true,color:BRAND.white,fontFace:'Outfit'});
+
+  const A=computeAttrition(EMP_DATA);
+  const annAtt=A.length?A[A.length-1].ann_pct:0;
+  const rag={G:0,A:0,R:0};
+  active.forEach(d=>{const r=d['Rag Status']||'';if(r==='Green')rag.G++;else if(r==='Amber')rag.A++;else if(r==='Red')rag.R++;});
+
+  const boxes=[
+    {label:'🔴 This Month',color:BRAND.red,actions:[
+      rag.R>0?`Schedule skip-level 1-on-1 for ${rag.R} Red-status employees`:'Maintain monthly 1-on-1 cadence — no Red employees',
+      `Run structured exit interview for all 2026 leavers`,
+      annAtt>20?`Escalate attrition (${annAtt.toFixed(1)}%) to board — action plan needed`:null,
+    ].filter(Boolean)},
+    {label:'📊 This Quarter',color:BRAND.amber,actions:[
+      `Target annualised attrition below 15% (current: ${annAtt.toFixed(1)}%)`,
+      `Structured career conversations for ${rag.A} Amber employees`,
+      `Complete 2025 appraisals for all unrated employees before pay review`,
+    ]},
+    {label:'🏆 This Year',color:BRAND.green,actions:[
+      `Build monthly flight-risk list: RAG Amber/Red + low rating + 2–3yr tenure`,
+      `Review manager span — overloaded managers correlate with higher attrition`,
+      `Formalise India career framework before headcount exceeds 200`,
+    ]},
+  ];
+
+  boxes.forEach((box,i)=>{
+    const x=0.3+i*4.35, y=1.2;
+    s.addShape('rect',{x,y,w:4.1,h:5.9,fill:{color:'FFFFFF'},line:{color:'333333',pt:0},
+      shadow:{type:'outer',color:'000000',opacity:0.12,blur:12,offset:3,angle:135}});
+    s.addShape('rect',{x,y,w:4.1,h:0.45,fill:{color:box.color}});
+    s.addText(box.label,{x:x+0.12,y:y+0.08,w:3.9,h:0.3,fontSize:11,bold:true,color:BRAND.white,fontFace:'Outfit',margin:0});
+    s.addText(box.actions.map(a=>({text:a,options:{bullet:true,breakLine:true}})),
+      {x:x+0.12,y:y+0.55,w:3.86,h:5.2,fontSize:11,color:'1A1A2E',fontFace:'Outfit',paraSpaceAfter:8});
+  });
+
+  s.addText(`Generated by Finzly HR Intelligence · ${new Date().toLocaleDateString('en-IN')}`,
+    {x:0.3,y:7.1,w:12,h:0.3,fontSize:9,color:'888888',fontFace:'Outfit'});
+}
+
+// ── ORG CHART SLIDES ──────────────────────────────────────────
+async function addOrgChartSlides(pres, active){
+  titleSlide(pres,'Org Chart','Leadership Structure · Galaxy Teams');
+
+  const {roots}=buildOrgTree(active);
+  const root=roots[0];
+  if(!root)return;
+
+  const SLIDE_W=13.3;
+
+  function drawBox(slide,person,x,y,w,h,isRoot=false){
+    const col=(sqColor(person.Squad||'')||'#1e3a5f').replace('#','');
+    const isCon=person.Type==='Consultant';
+    slide.addShape('rect',{x,y,w,h,
+      fill:{color:col},
+      line:{color:isCon?'D97706':'FFFFFF',pt:isCon?2:0.5},
+      shadow:{type:'outer',color:'000000',opacity:0.18,blur:6,offset:2,angle:135}});
+    slide.addText(`${person['First Name']||''} ${person['Last Name']||''}`,
+      {x:x+0.06,y:y+0.05,w:w-0.12,h:h*0.42,
+       fontSize:isRoot?10:Math.max(6,Math.min(8.5,w*4.5)),bold:true,
+       color:'FFFFFF',fontFace:'Outfit',align:'center',margin:0,fit:'shrink'});
+    const title=(person['Corporate Title']||person.Level||'').slice(0,26);
+    slide.addText(title,{x:x+0.06,y:y+h*0.44,w:w-0.12,h:h*0.35,
+      fontSize:Math.max(5,Math.min(7,w*3.8)),color:'E0E0E0',
+      fontFace:'Outfit',align:'center',margin:0,fit:'shrink'});
+    const flag=person.Country==='India'?'🔵':'🟣';
+    slide.addText(`${flag}${isCon?' CON':''}`,
+      {x:x+0.06,y:y+h*0.78,w:w-0.12,h:h*0.2,
+       fontSize:5.5,color:'FFFFFF',fontFace:'Outfit',align:'center',margin:0});
+  }
+
+  // ── SLIDE 1: Leadership Level ──────────────────────────────
+  const s1=pres.addSlide();
+  s1.background={color:BRAND.bg};
+  s1.addShape('rect',{x:0,y:0,w:0.08,h:7.5,fill:{color:BRAND.accent}});
+  s1.addText('Leadership Team — Direct Reports to President',
+    {x:0.3,y:0.12,w:12,h:0.42,fontSize:20,bold:true,color:BRAND.white,fontFace:'Outfit',margin:0});
+
+  const rootW=2.2, rootH=0.82;
+  const rootX=(SLIDE_W-rootW)/2, rootY=0.7;
+  drawBox(s1,root,rootX,rootY,rootW,rootH,true);
+
+  const children=[...root.children].sort((a,b)=>subtreeCount(b)-subtreeCount(a));
+  const childW=Math.min(1.75,(SLIDE_W-0.5)/Math.max(children.length,1)-0.14);
+  const gap=Math.min(0.2,(SLIDE_W-0.5-children.length*childW)/(Math.max(children.length-1,1)));
+  const totalW=children.length*childW+(children.length-1)*gap;
+  const startX=Math.max(0.25,(SLIDE_W-totalW)/2);
+  const childY=rootY+rootH+0.72;
+  const midLineY=rootY+rootH+0.35;
+
+  // Root → bar
+  s1.addShape('rect',{x:rootX+rootW/2-0.01,y:rootY+rootH,w:0.02,h:0.35,fill:{color:'666666'},line:{color:'666666',pt:0}});
+  // Horizontal bar
+  if(children.length>1){
+    const barL=startX+childW/2, barR=startX+(children.length-1)*(childW+gap)+childW/2;
+    s1.addShape('rect',{x:barL,y:midLineY-0.01,w:barR-barL,h:0.02,fill:{color:'666666'},line:{color:'666666',pt:0}});
+  }
+
+  children.forEach((child,i)=>{
+    const cx=startX+i*(childW+gap);
+    // Drop line
+    s1.addShape('rect',{x:cx+childW/2-0.01,y:midLineY,w:0.02,h:0.35,fill:{color:'666666'},line:{color:'666666',pt:0}});
+    drawBox(s1,child,cx,childY,childW,0.8);
+    const rpt=subtreeCount(child)-1;
+    if(rpt>0) s1.addText(`${rpt} below`,{x:cx,y:childY+0.83,w:childW,h:0.18,fontSize:6,color:'AAAAAA',align:'center',fontFace:'Outfit',margin:0});
+  });
+
+  s1.addText('🔵 India  🟣 USA  CON = Contractor  · See next slides for each galaxy team',
+    {x:0.3,y:7.15,w:12.7,h:0.28,fontSize:8,color:'888888',align:'center',fontFace:'Outfit'});
+
+  // ── ONE SLIDE PER GALAXY ───────────────────────────────────
+  for(const leader of children){
+    const gKids=[...leader.children].sort((a,b)=>subtreeCount(b)-subtreeCount(a));
+    if(gKids.length===0)continue;
+
+    const sg=pres.addSlide();
+    sg.background={color:BRAND.bg};
+    const lcol=(sqColor(leader.Squad||'')||'#1e3a5f').replace('#','');
+    sg.addShape('rect',{x:0,y:0,w:SLIDE_W,h:0.72,fill:{color:lcol}});
+    sg.addText(`${leader['First Name']} ${leader['Last Name']} — ${leader['Corporate Title']||leader.Squad||''}`,
+      {x:0.25,y:0.1,w:9.5,h:0.32,fontSize:16,bold:true,color:'FFFFFF',fontFace:'Outfit',margin:0});
+    sg.addText(`${subtreeCount(leader)-1} people · ${leader.Squad||''} · ${leader.Country==='India'?'🔵 India':'🟣 USA'}`,
+      {x:0.25,y:0.42,w:9.5,h:0.22,fontSize:9,color:'rgba(255,255,255,0.72)',fontFace:'Outfit',margin:0});
+
+    // Leader box centred
+    const lrootW=2.1, lrootH=0.75;
+    const lrootX=(SLIDE_W-lrootW)/2;
+    drawBox(sg,leader,lrootX,0.88,lrootW,lrootH);
+    sg.addShape('rect',{x:lrootX+lrootW/2-0.01,y:0.88+lrootH,w:0.02,h:0.32,fill:{color:'666666'},line:{color:'666666',pt:0}});
+
+    // Direct reports row(s) — up to 8 per row
+    const rowSize=Math.min(gKids.length,8);
+    const gW=Math.min(1.6,(SLIDE_W-0.4)/rowSize-0.1);
+    const gGap=(SLIDE_W-0.4-rowSize*gW)/(Math.max(rowSize-1,1));
+    const gTotal=rowSize*gW+(rowSize-1)*gGap;
+    const gStartX=(SLIDE_W-gTotal)/2;
+    const row1Y=0.88+lrootH+0.62;
+
+    // Horizontal bar
+    if(rowSize>1){
+      sg.addShape('rect',{x:gStartX+gW/2,y:0.88+lrootH+0.32,w:gTotal-gW,h:0.02,fill:{color:'666666'},line:{color:'666666',pt:0}});
+    }
+
+    gKids.slice(0,rowSize).forEach((child,i)=>{
+      const gx=gStartX+i*(gW+gGap);
+      sg.addShape('rect',{x:gx+gW/2-0.01,y:0.88+lrootH+0.32,w:0.02,h:0.3,fill:{color:'666666'},line:{color:'666666',pt:0}});
+      drawBox(sg,child,gx,row1Y,gW,0.8);
+      const n=child.children.length;
+      if(n>0) sg.addText(`▸ ${n} reports`,{x:gx,y:row1Y+0.83,w:gW,h:0.18,fontSize:6,color:'BBBBBB',align:'center',fontFace:'Outfit',margin:0});
+    });
+
+    // Row 2 if needed
+    if(gKids.length>rowSize){
+      const row2=gKids.slice(rowSize,rowSize*2);
+      const r2W=Math.min(1.6,(SLIDE_W-0.4)/Math.min(row2.length,8)-0.1);
+      const r2Gap=(SLIDE_W-0.4-row2.length*r2W)/(Math.max(row2.length-1,1));
+      const r2StartX=(SLIDE_W-(row2.length*r2W+(row2.length-1)*r2Gap))/2;
+      const r2Y=row1Y+1.05;
+      row2.forEach((child,i)=>{
+        drawBox(sg,child,r2StartX+i*(r2W+r2Gap),r2Y,r2W,0.8);
+        const n=child.children.length;
+        if(n>0) sg.addText(`▸ ${n}`,{x:r2StartX+i*(r2W+r2Gap),y:r2Y+0.83,w:r2W,h:0.18,fontSize:6,color:'BBBBBB',align:'center',fontFace:'Outfit',margin:0});
+      });
+    }
+
+    sg.addText('Finzly Org Chart · '+new Date().toLocaleDateString('en-IN'),
+      {x:0.3,y:7.15,w:12.7,h:0.28,fontSize:8,color:'666666',align:'center',fontFace:'Outfit'});
+  }
+}
+
 async function runAIIntel(){
   document.getElementById('ai-dot').style.background='var(--amber)';
   document.getElementById('ai-status-txt').textContent='Analysing workforce data…';
