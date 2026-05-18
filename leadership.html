@@ -1205,31 +1205,40 @@ function render(){
   const indiaPct=active.length?Math.round(india.length/active.length*100):0;
   const consultants=active.filter(d=>d.Type&&d.Type.toLowerCase().includes('consult')).length;
   const conPct=active.length?Math.round(consultants/active.length*100):0;
+  // P1 INSIGHTS — CEO-level language
+  const attrRisk = EMP_DATA.filter(d=>d.Status==='Inactive'||d.ActiveFlag===0).filter(d=>{
+    const ts=d['Termination Date Str']||dateStr(d['Termination Date']);
+    return ts&&ts.startsWith('2026');
+  }).length;
+  const A_snap=computeAttrition(EMP_DATA);
+  const annSnap=A_snap.length?A_snap[A_snap.length-1].ann_pct:0;
+
   document.getElementById('ins-p1').innerHTML=`
-    <div class="ins info">
-      <div class="ins-head">🌍 Geo Distribution</div>
-      <div class="ins-val blue">${indiaPct}% India</div>
-      <div class="ins-txt">India is the dominant delivery hub at <strong>${india.length} of ${active.length}</strong> headcount. US team at <strong>${usa.length}</strong>. Single-country dependency — consider cross-training for business continuity.</div>
+    <div class="ins ${annSnap>20?'risk':annSnap>12?'signal':'good'}">
+      <div class="ins-head">📉 Attrition Signal</div>
+      <div class="ins-val ${annSnap>20?'red':annSnap>12?'amber':'green'}">${annSnap.toFixed(1)}% Annualised</div>
+      <div class="ins-txt"><strong>${attrRisk} employees</strong> have left in 2026 so far. At this pace, Finzly is on track for <strong>~${Math.round(attrRisk/(new Date().getMonth()+1)*12)} exits this year</strong>. ${annSnap>20?'🔴 Above healthy threshold — retention is the #1 people priority right now.':annSnap>12?'⚠ Elevated — monitor monthly and act on Amber/Red RAG employees.':'✅ Within healthy range.'}</div>
     </div>
-    <div class="ins ${femPct<30?'risk':femPct<35?'signal':'good'}">
-      <div class="ins-head">♀ Gender Balance</div>
-      <div class="ins-val ${femPct<30?'red':femPct<35?'amber':'green'}">${femPct}% Female</div>
-      <div class="ins-txt"><strong>${female.length} women</strong> in active workforce. Industry benchmark for tech is <strong>28–35%</strong>. ${femPct<28?'🔴 Below benchmark — review hiring pipeline for gender diversity.':femPct<35?'⚠ Approaching benchmark — sustain focus on inclusive hiring.':'✅ Above benchmark — strong diversity performance.'}</div>
+    <div class="ins ${femPct<28?'signal':'info'}">
+      <div class="ins-head">👥 Who Makes Up Finzly</div>
+      <div class="ins-val blue">${active.length} Active</div>
+      <div class="ins-txt"><strong>${india.length} in India</strong> (${indiaPct}%) · <strong>${usa.length} in USA</strong>. <strong>${female.length} women</strong> (${femPct}% — tech benchmark is 28–35%). <strong>${consultants} contractors</strong> (${conPct}% of workforce). Avg time at Finzly: <strong>${avgTen.toFixed(1)} years</strong>.</div>
     </div>
-    <div class="ins ${conPct>25?'risk':'signal'}">
-      <div class="ins-head">📋 Workforce Mix</div>
-      <div class="ins-val ${conPct>25?'amber':'green'}">${conPct}% Contractors</div>
-      <div class="ins-txt"><strong>${consultants} contractors</strong> vs <strong>${active.length-consultants} full-time</strong>. ${conPct>25?'⚠ High contractor ratio — review for cost, IP, and knowledge retention risk.':'✅ Healthy mix. Monitor contractor dependency as org scales.'} Avg tenure: <strong>${avgTen.toFixed(1)} years</strong>.</div>
+    <div class="ins ${conPct>20?'signal':'good'}">
+      <div class="ins-head">🏗 Delivery Risk Watch</div>
+      <div class="ins-val ${indiaPct>75?'amber':'green'}">${indiaPct}% Delivery in India</div>
+      <div class="ins-txt">${indiaPct>75?`<strong>${indiaPct}%</strong> of headcount is India-based — strong delivery muscle but a concentration risk. Ensure US team has context on critical systems.`:`Healthy split between India and USA delivery.`} ${conPct>20?`⚠ <strong>${conPct}%</strong> contractors — review conversion to FTE for business-critical roles.`:''}</div>
     </div>`;
+
   document.getElementById('k1').innerHTML=`
-    <div class="kc"><div class="k-lbl">Total Records</div><div class="k-val">${EMP_DATA.length}</div><div class="k-sub">in masterfile</div></div>
     <div class="kc g"><div class="k-lbl">Active HC</div><div class="k-val g">${active.length}</div><div class="k-sub">currently active</div></div>
-    <div class="kc r"><div class="k-lbl">Inactive</div><div class="k-val r">${inactive.length}</div><div class="k-sub">exits / alumni</div></div>
-    <div class="kc ch"><div class="k-lbl">India HC</div><div class="k-val ch">${india.length}</div><div class="k-sub">${active.length?Math.round(india.length/active.length*100):0}%</div></div>
-    <div class="kc pu"><div class="k-lbl">USA HC</div><div class="k-val pu">${usa.length}</div><div class="k-sub">${active.length?Math.round(usa.length/active.length*100):0}%</div></div>
+    <div class="kc r"><div class="k-lbl">2026 Exits</div><div class="k-val r">${attrRisk}</div><div class="k-sub">left this year ⚠</div></div>
+    <div class="kc ch"><div class="k-lbl">India</div><div class="k-val ch">${india.length}</div><div class="k-sub">${indiaPct}% of HC</div></div>
+    <div class="kc pu"><div class="k-lbl">USA</div><div class="k-val pu">${usa.length}</div><div class="k-sub">${active.length?Math.round(usa.length/active.length*100):0}% of HC</div></div>
     <div class="kc a"><div class="k-lbl">Male</div><div class="k-val a">${male.length}</div><div class="k-sub">${active.length?Math.round(male.length/active.length*100):0}%</div></div>
-    <div class="kc b"><div class="k-lbl">Female</div><div class="k-val b">${female.length}</div><div class="k-sub">${active.length?Math.round(female.length/active.length*100):0}%</div></div>
-    <div class="kc"><div class="k-lbl">Avg Tenure</div><div class="k-val">${avgTen.toFixed(1)}y</div><div class="k-sub">Finzly experience</div></div>
+    <div class="kc b"><div class="k-lbl">Female</div><div class="k-val b">${female.length}</div><div class="k-sub">${femPct}%</div></div>
+    <div class="kc ${conPct>20?'a':''}"><div class="k-lbl">Contractors</div><div class="k-val ${conPct>20?'a':''}">${consultants}</div><div class="k-sub">${conPct}% of HC</div></div>
+    <div class="kc"><div class="k-lbl">Avg Tenure</div><div class="k-val">${avgTen.toFixed(1)}y</div><div class="k-sub">at Finzly</div></div>
   `;
 
   // City cards
@@ -1258,42 +1267,56 @@ function render(){
     const conFirst=T[0].us_con+T[0].india_con;
     const conGrowth=conFirst>0?Math.round((conNow-conFirst)/conFirst*100):0;
 
-    // ── P2 INSIGHTS ──────────────────────────────────────────
+    // ── P2 INSIGHTS — leadership narrative ───────────────────
+    const lr=T[T.length-1];
+    const peakTotal=Math.max(...T.map(d=>d.total));
+    const dropFromPeak=peakTotal-last;
+    const eeNow=lr.us_ee+lr.india_ee;
+    const conNowTotal=lr.us_con+lr.india_con;
+    const conPctNow=last>0?Math.round(conNowTotal/last*100):0;
+    const conPctFirst=first>0?Math.round((T[0].us_con+T[0].india_con)/first*100):0;
+
     document.getElementById('ins-p2').innerHTML=`
-      <div class="ins good">
-        <div class="ins-head">📈 Org Growth</div>
-        <div class="ins-val green">+${growth}%</div>
-        <div class="ins-txt">Headcount grew from <strong>${first}</strong> (${T[0].month}) to <strong>${last}</strong> (${T[T.length-1].month}) over <strong>${T.length} months</strong>. Strong expansion trajectory — ensure onboarding and culture can scale at this pace.</div>
+      <div class="ins ${growth>30?'good':'info'}">
+        <div class="ins-head">📈 Headcount Journey</div>
+        <div class="ins-val green">+${growth}% in ${T.length}mo</div>
+        <div class="ins-txt">From <strong>${first}</strong> (${T[0].month}) to <strong>${last}</strong> (${T[T.length-1].month}). ${dropFromPeak>10?`⚠ Currently <strong>${dropFromPeak} below peak of ${peakTotal}</strong> — this gap is driven by attrition outpacing hiring. Hiring pipeline needs to accelerate.`:`At or near peak — growth is healthy.`}</div>
       </div>
-      <div class="ins ${conGrowth>200?'risk':'signal'}">
-        <div class="ins-head">⚠ Consultant Growth</div>
-        <div class="ins-val ${conGrowth>200?'red':'amber'}">+${conGrowth}%</div>
-        <div class="ins-txt">Consultants grew from <strong>${conFirst}</strong> to <strong>${conNow}</strong> — a <strong>${conGrowth}%</strong> rise. ${conGrowth>200?'🔴 Rapid contractor growth signals either strategic flexibility or inability to hire FTE. Review dependency.':'⚠ Monitor — high contractor ratio can increase costs and reduce IP security.'}</div>
+      <div class="ins ${conPctNow>conPctFirst+5?'signal':'good'}">
+        <div class="ins-head">🔄 FTE vs Contractor Shift</div>
+        <div class="ins-val ${conPctNow>20?'amber':'green'}">${conPctNow}% Contractors Now</div>
+        <div class="ins-txt">Started at <strong>${conPctFirst}% contractors</strong> (${T[0].month}), now at <strong>${conPctNow}%</strong> (${T[T.length-1].month}). ${conPctNow>conPctFirst+5?`⚠ Org is increasingly contractor-dependent — higher cost per head, IP exposure, and lower loyalty. Review which contractor roles should become FTE.`:`FTE-contractor balance is stable.`}</div>
       </div>
       <div class="ins info">
-        <div class="ins-head">🏔 Peak Headcount</div>
-        <div class="ins-val blue">${Math.max(...T.map(d=>d.total))}</div>
-        <div class="ins-txt">India peaked at <strong>${maxIndia} EEs</strong>. US peaked at <strong>${maxUS} EEs</strong>. Current drop from peak = <strong>${Math.max(...T.map(d=>d.total))-last}</strong> employees. Understand if this is planned restructuring or unmanaged attrition.</div>
+        <div class="ins-head">🌍 India vs USA Trend</div>
+        <div class="ins-val blue">${lr.india_ee+lr.india_con} India</div>
+        <div class="ins-txt">India: <strong>${lr.india_ee} employees + ${lr.india_con} contractors</strong>. USA: <strong>${lr.us_ee} employees + ${lr.us_con} contractors</strong>. ${lr.us_ee<T[0].us_ee?`⚠ US employee count has <strong>declined</strong> from ${T[0].us_ee} to ${lr.us_ee} — understand if this is planned or unmanaged exits.`:`US employee base is stable or growing.`}</div>
       </div>`;
 
-    document.getElementById('inf-trend').innerHTML=`<strong>Org Growth:</strong> Headcount from <strong>${first}</strong> (${T[0].month}) → <strong>${last}</strong> (${T[T.length-1].month}) = <strong>+${growth}%</strong> over ${T.length} months.`;
-    const lr=T[T.length-1];
-    document.getElementById('inf-trend2').innerHTML=`<strong>Latest (${lr.month}):</strong> US EEs <strong>${lr.us_ee}</strong> · India EEs <strong>${lr.india_ee}</strong> · US Consultants <strong>${lr.us_con}</strong> · India Consultants <strong>${lr.india_con}</strong>.`;
-    document.getElementById('inf-us').innerHTML=`<strong>US peak:</strong> ${Math.max(...T.map(d=>d.us_ee+d.us_con))} total.`;
-    document.getElementById('inf-india').innerHTML=`<strong>India peak:</strong> ${Math.max(...T.map(d=>d.india_ee+d.india_con))} total.`;
+    document.getElementById('inf-trend').innerHTML=`<strong>How to read this:</strong> Solid lines = direct employees (FTE). Dashed lines = contractors. A healthy org shows FTE growing faster than contractors over time.`;
+    document.getElementById('inf-trend2').innerHTML=`<strong>As of ${lr.month}:</strong> ${lr.india_ee} India FTEs · ${lr.us_ee} US FTEs · ${lr.us_con} US Contractors · ${lr.india_con} India Contractors. Total: <strong>${last}</strong>.`;
+
+    // US chart — meaningful label
+    const usConPct=lr.us_ee+lr.us_con>0?Math.round(lr.us_con/(lr.us_ee+lr.us_con)*100):0;
+    document.getElementById('inf-us').innerHTML=`Current US mix: <strong>${lr.us_ee} employees + ${lr.us_con} contractors</strong> (${usConPct}% contractor). ${usConPct>30?'⚠ US is contractor-heavy — high cost and retention risk in key market.':'US contractor ratio manageable.'}`;
+
+    // India chart — meaningful label
+    const indConPct=lr.india_ee+lr.india_con>0?Math.round(lr.india_con/(lr.india_ee+lr.india_con)*100):0;
+    document.getElementById('inf-india').innerHTML=`Current India mix: <strong>${lr.india_ee} employees + ${lr.india_con} contractors</strong> (${indConPct}% contractor). India delivers ${Math.round((lr.india_ee+lr.india_con)/last*100)}% of total headcount.`;
+
     mkChart('ch-trend','line',{labels,datasets:[
-      {label:'India EEs',     data:T.map(d=>d.india_ee), borderColor:'#0ea5e9',backgroundColor:'rgba(14,165,233,.08)',fill:true, tension:.3,borderWidth:2.5,pointRadius:3},
-      {label:'US EEs',        data:T.map(d=>d.us_ee),    borderColor:'#7c3aed',backgroundColor:'rgba(124,58,237,.06)',fill:true, tension:.3,borderWidth:2.5,pointRadius:3},
-      {label:'US Consult.',   data:T.map(d=>d.us_con),   borderColor:'#e8541a',backgroundColor:'rgba(232,84,26,.04)', fill:false,tension:.3,borderWidth:2,  pointRadius:3,borderDash:[5,3]},
-      {label:'India Consult.',data:T.map(d=>d.india_con),borderColor:'#16a34a',backgroundColor:'rgba(22,163,74,.04)', fill:false,tension:.3,borderWidth:2,  pointRadius:3,borderDash:[5,3]},
+      {label:'India Employees', data:T.map(d=>d.india_ee), borderColor:'#0ea5e9',backgroundColor:'rgba(14,165,233,.08)',fill:true, tension:.3,borderWidth:2.5,pointRadius:3},
+      {label:'US Employees',    data:T.map(d=>d.us_ee),    borderColor:'#7c3aed',backgroundColor:'rgba(124,58,237,.06)',fill:true, tension:.3,borderWidth:2.5,pointRadius:3},
+      {label:'US Contractors',  data:T.map(d=>d.us_con),   borderColor:'#e8541a',backgroundColor:'rgba(232,84,26,.04)', fill:false,tension:.3,borderWidth:2,  pointRadius:3,borderDash:[5,3]},
+      {label:'India Contractors',data:T.map(d=>d.india_con),borderColor:'#16a34a',backgroundColor:'rgba(22,163,74,.04)',fill:false,tension:.3,borderWidth:2,  pointRadius:3,borderDash:[5,3]},
     ]},{
       scales:{
         y:{beginAtZero:false,ticks:{font:{family:'Fira Code',size:10}},grid:{color:'#f0ede8'}},
         x:{ticks:{font:{family:'Outfit',size:9},maxRotation:45},grid:{display:false}}
       }
     });
-    mkChart('ch-us','bar',{labels,datasets:[{label:'US EEs',data:T.map(d=>d.us_ee),backgroundColor:'rgba(124,58,237,.8)',borderRadius:4},{label:'US Consultants',data:T.map(d=>d.us_con),backgroundColor:'rgba(232,84,26,.8)',borderRadius:4}]},{scales:{y:{stacked:true},x:{stacked:true}},_datalabels:true});
-    mkChart('ch-india','bar',{labels,datasets:[{label:'India EEs',data:T.map(d=>d.india_ee),backgroundColor:'rgba(14,165,233,.8)',borderRadius:4},{label:'India Consultants',data:T.map(d=>d.india_con),backgroundColor:'rgba(22,163,74,.8)',borderRadius:4}]},{scales:{y:{stacked:true},x:{stacked:true}},_datalabels:true});
+    mkChart('ch-us','bar',{labels,datasets:[{label:'US Employees',data:T.map(d=>d.us_ee),backgroundColor:'rgba(124,58,237,.8)',borderRadius:4},{label:'US Contractors',data:T.map(d=>d.us_con),backgroundColor:'rgba(232,84,26,.8)',borderRadius:4}]},{scales:{y:{stacked:true},x:{stacked:true}},_datalabels:true});
+    mkChart('ch-india','bar',{labels,datasets:[{label:'India Employees',data:T.map(d=>d.india_ee),backgroundColor:'rgba(14,165,233,.8)',borderRadius:4},{label:'India Contractors',data:T.map(d=>d.india_con),backgroundColor:'rgba(22,163,74,.8)',borderRadius:4}]},{scales:{y:{stacked:true},x:{stacked:true}},_datalabels:true});
   }
 
   // P3 SQUAD INTELLIGENCE — HC + RAG + Manager Span all in one
@@ -1335,30 +1358,35 @@ function render(){
     return m&&m.mgrs.size>0?Math.round(m.emps/m.mgrs.size*10)/10:0;
   });
 
-  // P3 insights — meaningful, actionable
+  // P3 insights — what leadership should understand
+  const ragCoverPct=active.length?Math.round((ragTot.Green+ragTot.Amber+ragTot.Red)/active.length*100):0;
+  const avgSquadSpan=sqSpans.filter(s=>s>0).length?Math.round(sqSpans.filter(s=>s>0).reduce((a,b)=>a+b,0)/sqSpans.filter(s=>s>0).length*10)/10:0;
+  const overloadedSquads=squads.filter((sq,i)=>sqSpans[i]>7);
+  const unsetRagSquads=squads.filter(sq=>Object.values(tree[sq]).reduce((s,v)=>s+v.n,0)>Object.values(tree[sq]).reduce((s,v)=>s+v.hc,0)*0.3);
+
   document.getElementById('ins-p3').innerHTML=`
-    <div class="ins ${redSqs.length>0?'risk':ragTot.Amber>active.length*0.2?'signal':'good'}">
-      <div class="ins-head">🚦 Team Health (RAG)</div>
-      <div class="ins-val ${redSqs.length>0?'red':ragTot.Amber>10?'amber':'green'}">${Math.round(ragTot.Green/active.length*100)}% Engaged</div>
-      <div class="ins-txt">${ragTot.Green} Green · ${ragTot.Amber} Amber · ${ragTot.Red} Red · ${ragTot.NotSet} No Data. ${redSqs.length>0?`🔴 <strong>Act now:</strong> ${redSqs.join(', ')} have Red members.`:'✅ No Red flags.'} ${ragTot.Amber>0?`<strong>${ragTot.Amber} Amber</strong> employees need a career conversation this month.`:''}</div>
+    <div class="ins ${ragTot.Red>0?'risk':ragTot.Amber>active.length*0.2?'signal':'good'}">
+      <div class="ins-head">🚦 Team Health Signal</div>
+      <div class="ins-val ${ragTot.Red>0?'red':ragTot.Amber>10?'amber':'green'}">${ragTot.Green}G · ${ragTot.Amber}A · ${ragTot.Red}R</div>
+      <div class="ins-txt">${ragTot.Red>0?`🔴 <strong>${ragTot.Red} employees</strong> in Red — these are your highest flight risks today. <strong>Skip-level 1-on-1 within this week.</strong>`:'✅ No Red employees.'} ${ragTot.Amber>0?`<strong>${ragTot.Amber} Amber</strong> — at-risk, need career conversation in next 2 weeks.`:''} ${ragTot.NotSet>active.length*0.15?`⚠ <strong>${ragTot.NotSet} employees</strong> have no RAG set — managers may not be doing regular check-ins.`:''}</div>
     </div>
-    <div class="ins ${avgSqSize>60?'risk':avgSqSize<10?'signal':'info'}">
-      <div class="ins-head">🏗 Squad Structure</div>
-      <div class="ins-val blue">${squads.length} Squads</div>
-      <div class="ins-txt"><strong>${totalSubSquads} sub-squads</strong> across ${squads.length} squads. Avg size: <strong>${avgSqSize}</strong>. Largest: <strong>${maxSq} (${maxSqHC})</strong>. ${maxSqHC>avgSqSize*2?`⚠ ${maxSq} is 2× avg — consider splitting.`:''} Smallest: <strong>${minSq} (${minSqHC})</strong>.</div>
+    <div class="ins ${overloadedSquads.length>0?'signal':'good'}">
+      <div class="ins-head">👥 Manager Load by Squad</div>
+      <div class="ins-val ${avgSquadSpan>7?'red':avgSquadSpan<3?'amber':'green'}">${avgSquadSpan} avg span</div>
+      <div class="ins-txt">${overloadedSquads.length>0?`⚠ <strong>${overloadedSquads.join(', ')}</strong> — managers carrying more than 7 direct reports. Overloaded managers do fewer 1-on-1s, which directly increases attrition risk.`:`All squad managers within healthy span.`} ${avgSquadSpan<3?`⚠ Avg span of ${avgSquadSpan} suggests too many managers for team size — review management structure.`:''}</div>
     </div>
-    <div class="ins ${sqSpans.some(s=>s>7)?'risk':sqSpans.some(s=>s<2&&s>0)?'signal':'good'}">
-      <div class="ins-head">👥 Manager Load</div>
-      <div class="ins-val ${sqSpans.some(s=>s>7)?'red':'green'}">${Math.round(sqSpans.filter(s=>s>0).reduce((a,b)=>a+b,0)/Math.max(sqSpans.filter(s=>s>0).length,1)*10)/10} avg span</div>
-      <div class="ins-txt">Avg L1 manager has <strong>${Math.round(sqSpans.filter(s=>s>0).reduce((a,b)=>a+b,0)/Math.max(sqSpans.filter(s=>s>0).length,1)*10)/10} direct reports</strong>. ${sqSpans.some(s=>s>7)?`⚠ Some squads above 7 — manager overload risk.`:'Within healthy range (2–7).'} See manager cards below for detail.</div>
+    <div class="ins ${maxSqHC>avgSqSize*2.5?'signal':'info'}">
+      <div class="ins-head">⚖ Squad Size Balance</div>
+      <div class="ins-val blue">${squads.length} squads · ${totalSubSquads} sub-squads</div>
+      <div class="ins-txt">Largest squad: <strong>${maxSq} (${maxSqHC} people)</strong>. Smallest: <strong>${minSq} (${minSqHC})</strong>. ${maxSqHC>avgSqSize*2.5?`⚠ ${maxSq} is significantly larger than average (${avgSqSize}) — may have coordination overhead or unclear ownership. Consider splitting.`:''} Click any squad below to see sub-squad breakdown with RAG and manager detail.</div>
     </div>`;
 
   // Squad HC chart with data labels
-  document.getElementById('inf-sq-hc').textContent=`${squads.length} squads · ${active.length} active employees · Sorted by headcount`;
+  document.getElementById('inf-sq-hc').textContent=`How many people are in each squad. Larger squads may have coordination overhead — watch for communication gaps above 30 people.`;
   mkChart('ch-sq-bar','bar',{labels:squads,datasets:[{label:'HC',data:squadHCs,backgroundColor:squads.map(s=>SQUAD_COLORS[s]||'#64748b'),borderRadius:6}]},{indexAxis:'y',plugins:{legend:{display:false},datalabels:{color:'#fff',font:{family:'Fira Code',size:9,weight:'bold'},anchor:'end',align:'left',formatter:v=>v}},scales:{x:{beginAtZero:true,ticks:{font:{family:'Fira Code',size:10}}},y:{ticks:{font:{family:'Outfit',size:10}}}},_datalabels:true});
 
-  // RAG by squad — stacked, shows health at a glance
-  document.getElementById('inf-sq-rag').textContent=`${ragTot.Green}G · ${ragTot.Amber}A · ${ragTot.Red}R · ${ragTot.NotSet} no data — Red = schedule 1-on-1 immediately`;
+  // RAG by squad
+  document.getElementById('inf-sq-rag').innerHTML=`<strong>Green</strong> = engaged & stable &nbsp;·&nbsp; <strong>Amber</strong> = at risk, needs conversation this month &nbsp;·&nbsp; <strong>Red</strong> = flight risk, act this week &nbsp;·&nbsp; <strong>Grey</strong> = no data, manager not running 1-on-1s`;
   mkChart('ch-sq-rag','bar',{labels:squads,datasets:[
     {label:'Green ✓',data:squads.map(sq=>Object.values(tree[sq]).reduce((s,v)=>s+v.g,0)),backgroundColor:'rgba(22,163,74,.85)',borderRadius:3},
     {label:'Amber ⚠',data:squads.map(sq=>Object.values(tree[sq]).reduce((s,v)=>s+v.a,0)),backgroundColor:'rgba(217,119,6,.85)',borderRadius:3},
@@ -1367,7 +1395,7 @@ function render(){
   ]},{indexAxis:'y',scales:{x:{stacked:true,beginAtZero:true,ticks:{font:{family:'Fira Code',size:10}}},y:{stacked:true,ticks:{font:{family:'Outfit',size:10}}}},_datalabels:true});
 
   // Manager span chart
-  document.getElementById('inf-sq-span').textContent=`Industry benchmark: 5–7. Red = overloaded (>7). Yellow = underloaded (≤1)`;
+  document.getElementById('inf-sq-span').innerHTML=`<strong>Green</strong> = healthy span (2–7) &nbsp;·&nbsp; <strong>Red</strong> = overloaded (&gt;7, manager cannot give enough attention) &nbsp;·&nbsp; <strong>Yellow</strong> = under-managed (≤1)`;
   mkChart('ch-span-sq','bar',{labels:squads,datasets:[{label:'Avg reports/L1',data:sqSpans,backgroundColor:sqSpans.map(v=>v>7?'rgba(220,38,38,.8)':v<=1&&v>0?'rgba(217,119,6,.8)':'rgba(22,163,74,.8)'),borderRadius:6}]},{indexAxis:'y',plugins:{legend:{display:false},datalabels:{color:'#fff',font:{family:'Fira Code',size:9,weight:'bold'},anchor:'end',align:'left',formatter:v=>v>0?v:''}},scales:{x:{beginAtZero:true,ticks:{font:{family:'Fira Code',size:10}}},y:{ticks:{font:{family:'Outfit',size:10}}}},_datalabels:true});
 
   document.getElementById('squad-tree').innerHTML=squads.map(sq=>{
@@ -2092,14 +2120,72 @@ function renderGalaxyBody(body, section){
   const activeAll=EMP_DATA.filter(d=>d.Status==='Active'||d.ActiveFlag===1);
   const {nodes}=buildOrgTree(activeAll);
   if(!leaderName||!nodes[leaderName])return;
-  const ctrl=document.createElement('div');
-  ctrl.style.cssText='display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap';
-  ctrl.innerHTML=`<button class="org-btn" onclick="expandGalaxyAll(this)">Expand All</button><button class="org-btn" onclick="expandGalaxyLevel(this,1)">Top Level</button><button class="org-btn" onclick="expandGalaxyLevel(this,2)">2 Levels</button><button class="org-btn" onclick="expandGalaxyLevel(this,3)">3 Levels</button>`;
-  body.appendChild(ctrl);
-  const ul=document.createElement('ul');
-  ul.className='org-tree-v';
-  ul.appendChild(makeNodeEl(nodes[leaderName],0));
-  body.appendChild(ul);
+
+  const leader=nodes[leaderName];
+  // Build horizontal tree exactly like leadership strip but starting from this leader
+  body.innerHTML=buildHorizontalTree(leader, 0);
+}
+
+// Build a horizontal org tree (same visual as leadership strip, recursive)
+function buildHorizontalTree(node, depth){
+  const col=sqColor(node.Squad||'');
+  const isCon=node.Type==='Consultant';
+  const flag=node.Country==='India'?'🔵':'🟣';
+  const kids=[...node.children].sort((a,b)=>subtreeCount(b)-subtreeCount(a));
+  const total=subtreeCount(node)-1;
+
+  const nodeHtml=`
+    <div class="ls-root-box" style="background:${col};border-color:${isCon?'rgba(217,119,6,.9)':'rgba(255,255,255,.2)'}">
+      <div class="ls-name">${node['First Name']||''} ${node['Last Name']||''}</div>
+      <div class="ls-title">${node['Corporate Title']||node.Level||''}</div>
+      <div class="ls-badges">
+        <span class="ls-badge ${node.Country==='India'?'ind':'usa'}">${flag}</span>
+        ${isCon?'<span class="ls-badge con">CON</span>':''}
+        ${total>0?`<span class="ls-badge" style="background:rgba(255,255,255,.2)">${total}</span>`:''}
+      </div>
+    </div>`;
+
+  if(kids.length===0) return `<div class="ls-wrap">${nodeHtml}</div>`;
+
+  const childrenHtml=kids.map(child=>buildHorizontalTree(child, depth+1)).join('');
+
+  return `<div class="ls-wrap">
+    ${nodeHtml}
+    <div class="ls-connector"></div>
+    <div style="width:100%;display:flex;flex-direction:column;align-items:center">
+      <div class="ls-hbar"></div>
+      <div class="ls-children-row">${kids.map(child=>{
+        const cc=sqColor(child.Squad||'');
+        const cf=child.Country==='India'?'🔵':'🟣';
+        const cCon=child.Type==='Consultant';
+        const cTotal=subtreeCount(child)-1;
+        const cKids=child.children.length;
+        return `<div class="ls-child" onclick="toggleGalaxyChild(this)" style="cursor:${cKids?'pointer':'default'}">
+          <div class="ls-child-vbar"></div>
+          <div class="ls-card" style="background:${cc};${cCon?'border:2px solid rgba(217,119,6,.8)':''}">
+            <div class="ls-card-name">${child['First Name']||''} ${child['Last Name']||''}</div>
+            <div class="ls-card-title">${child['Corporate Title']||child.Level||''}</div>
+            <div class="ls-badges">
+              <span class="ls-badge ${child.Country==='India'?'ind':'usa'}">${cf}</span>
+              ${cCon?'<span class="ls-badge con">CON</span>':''}
+              ${cTotal>0?`<span class="ls-badge" style="background:rgba(255,255,255,.2)">${cTotal} below${cKids?` · click`:''}</span>`:''}
+            </div>
+          </div>
+          ${cKids>0?`<div class="ls-child-subtree" style="display:none;margin-top:0">${buildHorizontalTree(child,depth+1)}</div>`:''}
+        </div>`;
+      }).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+function toggleGalaxyChild(el){
+  const sub=el.querySelector('.ls-child-subtree');
+  if(!sub)return;
+  const isOpen=sub.style.display!=='none';
+  sub.style.display=isOpen?'none':'block';
+  const badge=el.querySelector('.ls-badge:last-child');
+  if(badge)badge.style.opacity=isOpen?'1':'0.6';
 }
 
 // ── AI INTEL - DATA-DRIVEN INSIGHTS ENGINE ───────────────────
