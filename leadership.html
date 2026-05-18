@@ -1065,6 +1065,8 @@ async function loadData(){
     // Populate filters & render
     populateFilters();
     applyFilter();
+    // Pre-render org chart to populate galaxy dropdown for AI Intel
+    renderOrgChart();
     setStep('ls-render','done');
 
     const now=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
@@ -1123,10 +1125,10 @@ function goTab(el,pid){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
   document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
   el.classList.add('on'); document.getElementById(pid).classList.add('on');
+  // Render org chart on first visit to p9 or p10
   if((pid==='p9'||pid==='p10')&&EMP_DATA.length>0){
-    const wrap=document.getElementById('org-tree-root');
     const galaxies=document.getElementById('galaxy-trees');
-    if(wrap&&!wrap.hasChildNodes()&&galaxies&&!galaxies.hasChildNodes())renderOrgChart();
+    if(galaxies&&galaxies.children.length===0) renderOrgChart();
   }
 }
 function toggleSquad(hdr){
