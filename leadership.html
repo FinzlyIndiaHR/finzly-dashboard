@@ -196,6 +196,50 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
 .act-ul li::before{content:'→ ';color:var(--accent);font-weight:700}
 .cta-bar{padding:11px 14px;background:var(--bbg);border:1px solid var(--bbr);border-radius:8px;font-size:.74rem;line-height:1.7}
 .cta-bar strong{color:var(--accent)}
+/* MANAGER SPAN */
+.mgr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-top:14px}
+.mgr-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;border-left:4px solid var(--accent)}
+.mgr-card.overloaded{border-left-color:var(--red)}
+.mgr-card.lean{border-left-color:var(--amber)}
+.mgr-card.healthy{border-left-color:var(--green)}
+.mgr-name{font-size:.82rem;font-weight:700;color:var(--ink);margin-bottom:4px}
+.mgr-meta{font-size:.66rem;color:var(--muted);margin-bottom:8px}
+.mgr-reports{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
+.mgr-rep{font-size:.6rem;padding:2px 7px;border-radius:20px;background:var(--bg);border:1px solid var(--border);color:var(--ink)}
+.mgr-stat{display:flex;align-items:center;justify-content:space-between}
+.mgr-count{font-family:'Fira Code',monospace;font-size:1.4rem;font-weight:700}
+.mgr-count.r{color:var(--red)}.mgr-count.a{color:var(--amber)}.mgr-count.g{color:var(--green)}
+.mgr-badge{font-size:.6rem;padding:2px 8px;border-radius:20px;font-weight:700}
+.mgr-badge.r{background:var(--rbg);color:var(--red);border:1px solid var(--rbr)}
+.mgr-badge.a{background:var(--abg);color:var(--amber);border:1px solid var(--abr)}
+.mgr-badge.g{background:var(--gbg);color:var(--green);border:1px solid var(--gbr)}
+/* ORG CHART */
+.org-wrap{overflow:auto;padding:20px;background:var(--bg);border-radius:10px;border:1px solid var(--border)}
+.org-squad{margin-bottom:28px}
+.org-squad-title{font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#fff;padding:6px 14px;border-radius:6px;display:inline-block;margin-bottom:12px}
+.org-l1-row{display:flex;flex-wrap:wrap;gap:10px;margin-left:20px;position:relative}
+.org-l1-row::before{content:'';position:absolute;left:-12px;top:0;bottom:0;width:2px;background:var(--border)}
+.org-l1{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 13px;min-width:160px}
+.org-l1-name{font-size:.76rem;font-weight:700;color:var(--ink);margin-bottom:2px}
+.org-l1-squad{font-size:.6rem;color:var(--muted);margin-bottom:8px}
+.org-l1-reports{display:flex;flex-direction:column;gap:3px}
+.org-emp{font-size:.62rem;padding:2px 8px;border-radius:4px;background:var(--bg);border:1px solid var(--border2);color:var(--ink);display:flex;align-items:center;gap:5px}
+.org-emp::before{content:'└';color:var(--muted);font-size:.58rem}
+.org-emp.ind{border-left:2px solid var(--ch)}
+.org-emp.usa{border-left:2px solid var(--pu)}
+/* AI INTEL */
+.ai-status{display:flex;align-items:center;gap:8px;font-size:.74rem;color:var(--muted);margin-bottom:14px;padding:10px 14px;background:var(--card);border-radius:8px;border:1px solid var(--border)}
+.ai-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.ai-cards{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.ai-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 20px;border-top:3px solid var(--accent)}
+.ai-card-title{font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.ai-card-body{font-size:.78rem;color:var(--ink);line-height:1.7}
+.ai-card-body strong{color:var(--accent)}
+.ai-card-body ul{margin:6px 0 0 14px}
+.ai-card-body li{margin-bottom:3px}
+.ai-refresh{font-family:'Outfit',sans-serif;font-size:.72rem;padding:6px 14px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;margin-top:10px}
+.ai-refresh:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
 /* INSIGHT CARDS */
 .insight-strip{display:grid;gap:10px;margin-bottom:14px}
 .insight-strip.cols2{grid-template-columns:1fr 1fr}
@@ -305,6 +349,9 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
     <button class="tab" onclick="goTab(this,'p5')">⭐ Performance & Levels</button>
     <button class="tab" onclick="goTab(this,'p6')">🚦 RAG Report</button>
     <button class="tab" onclick="goTab(this,'p7')">🧭 Leadership Summary</button>
+    <button class="tab" onclick="goTab(this,'p8')">👥 Manager Span</button>
+    <button class="tab" onclick="goTab(this,'p9')">🌳 Org Chart</button>
+    <button class="tab" onclick="goTab(this,'p10')">🤖 AI Intel</button>
   </div>
 
   <!-- P1 -->
@@ -429,6 +476,57 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
       <div class="cta-bar" id="cta-bar"></div>
     </div>
   </div>
+  <!-- P8 MANAGER SPAN -->
+  <div class="pg" id="p8">
+    <div class="insight-strip cols3" id="ins-p8"></div>
+    <div class="inf blue" id="inf-mgr"></div>
+    <div class="g2" style="margin-bottom:14px">
+      <div class="ch-box"><div class="ch-title">Span of Control by Squad</div><div class="ch-wrap tall"><canvas id="ch-span-sq"></canvas></div></div>
+      <div class="ch-box"><div class="ch-title">Reports per L1 Manager (distribution)</div><div class="ch-wrap tall"><canvas id="ch-span-dist"></canvas></div></div>
+    </div>
+    <div class="card">
+      <div class="c-title">
+        <div class="c-title-l">All L1 Managers · Direct Reports</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="f-mgr-squad" onchange="renderMgrFilter()" style="font-family:'Outfit',sans-serif;font-size:.72rem;padding:4px 22px 4px 8px;border-radius:6px;border:1.5px solid var(--border);background:var(--bg);appearance:none"><option value="all">All Squads</option></select>
+          <span style="font-size:.62rem;color:var(--muted)">🔴 &gt;7 reports · 🟡 1 report · 🟢 2–7</span>
+        </div>
+      </div>
+      <div id="mgr-grid" class="mgr-grid"></div>
+    </div>
+  </div>
+
+  <!-- P9 ORG CHART -->
+  <div class="pg" id="p9">
+    <div class="inf blue" id="inf-org-chart"></div>
+    <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
+      <select id="f-org-squad" onchange="renderOrgChart()" style="font-family:'Outfit',sans-serif;font-size:.78rem;padding:5px 26px 5px 10px;border-radius:6px;border:1.5px solid var(--border);background:var(--bg);appearance:none"><option value="all">All Squads</option></select>
+      <select id="f-org-country" onchange="renderOrgChart()" style="font-family:'Outfit',sans-serif;font-size:.78rem;padding:5px 26px 5px 10px;border-radius:6px;border:1.5px solid var(--border);background:var(--bg);appearance:none">
+        <option value="all">All Countries</option>
+        <option value="India">India</option>
+        <option value="USA">USA</option>
+      </select>
+      <span style="font-size:.68rem;color:var(--muted)">🔵 India &nbsp; 🟣 USA &nbsp; Grouped by L1 Manager</span>
+    </div>
+    <div id="org-chart-wrap" class="org-wrap"></div>
+  </div>
+
+  <!-- P10 AI INTEL -->
+  <div class="pg" id="p10">
+    <div class="ai-status">
+      <div class="ai-dot" id="ai-dot"></div>
+      <span id="ai-status-txt">Ready — click Generate to analyse your workforce data</span>
+      <button class="ai-refresh" onclick="runAIIntel()" style="margin-left:auto">🤖 Generate AI Insights</button>
+    </div>
+    <div class="ai-cards" id="ai-cards">
+      <div class="ai-card" style="grid-column:1/-1;text-align:center;padding:40px;border-top-color:var(--border)">
+        <div style="font-size:2rem;margin-bottom:8px">🤖</div>
+        <div style="font-size:.9rem;font-weight:700;margin-bottom:6px">AI-Powered Workforce Intelligence</div>
+        <div style="font-size:.76rem;color:var(--muted);line-height:1.7">Analyses your live Finzly HR data — attrition patterns, manager health, performance signals, and retention risks — using only your actual numbers. No hallucination.</div>
+      </div>
+    </div>
+  </div>
+
 </div><!-- /dash -->
 
 <script>
@@ -585,7 +683,7 @@ function processEmpMaster(values){
       'Last Name':   g(I.lname),
       Status:        statusVal,
       ActiveFlag:    activeFlag,
-      Type:          g(I.type),
+      Type: (()=>{const t=String(g(I.type)||'').trim();return /^full.?time$/i.test(t)?'Full Time':/^consultant$/i.test(t)?'Consultant':t;})(),
       Practice:      g(I.practice),
       Squad:         cleanSquad(String(g(I.squad)||'').trim()),
       'Scrum Master':g(I.scrumMaster),
@@ -1521,6 +1619,302 @@ function render(){
     </ul></div>
   `;
   document.getElementById('cta-bar').innerHTML=`<strong>Board Headline:</strong> <strong>${active.length} active employees</strong> (India ${india.length} · USA ${usa.length}). Attrition at <strong>${lastAnnNum.toFixed(1)}% annualised</strong>. <strong>${inact2026} exits already in 2026</strong>. RAG: ${rag.Green} Green · ${rag.Amber} Amber · ${rag.Red} Red. ${rag.Red>0?`<strong>Action required: ${rag.Red} Red-status employees.</strong>`:'All employees in healthy range.'}`;
+
+  // ── P8 MANAGER SPAN ──────────────────────────────────────────
+  renderManagerSpan(active);
+
+  // ── P9 ORG CHART ─────────────────────────────────────────────
+  renderOrgChart();
+}
+
+// ── MANAGER SPAN LOGIC ────────────────────────────────────────
+function buildMgrMap(activeEmps){
+  const mgrMap={};  // { mgrName: {reports:[], squads:Set, countries:Set} }
+  activeEmps.forEach(d=>{
+    const mgr=String(d['L1 Manager']||'').trim();
+    if(!mgr)return;
+    if(!mgrMap[mgr])mgrMap[mgr]={reports:[],squads:new Set(),countries:new Set()};
+    mgrMap[mgr].reports.push(d);
+    if(d.Squad)mgrMap[mgr].squads.add(d.Squad);
+    if(d.Country)mgrMap[mgr].countries.add(d.Country);
+  });
+  return mgrMap;
+}
+
+function renderManagerSpan(activeEmps){
+  const mgrMap=buildMgrMap(activeEmps);
+  const entries=Object.entries(mgrMap).sort((a,b)=>b[1].reports.length-a[1].reports.length);
+  const counts=entries.map(e=>e[1].reports.length);
+  const avgSpan=counts.length?Math.round(counts.reduce((a,b)=>a+b,0)/counts.length*10)/10:0;
+  const overloaded=entries.filter(e=>e[1].reports.length>7).length;
+  const lean=entries.filter(e=>e[1].reports.length===1).length;
+  const healthy=entries.filter(e=>e[1].reports.length>=2&&e[1].reports.length<=7).length;
+
+  // Insights
+  document.getElementById('ins-p8').innerHTML=`
+    <div class="ins ${overloaded>0?'risk':'good'}">
+      <div class="ins-head">⚠ Overloaded Managers</div>
+      <div class="ins-val ${overloaded>0?'red':'green'}">${overloaded}</div>
+      <div class="ins-txt">Managers with <strong>&gt;7 direct reports</strong> — above industry best practice. ${overloaded>0?`Review workload distribution for these ${overloaded} managers.`:'All managers within healthy span.'}</div>
+    </div>
+    <div class="ins signal">
+      <div class="ins-head">📐 Avg Span of Control</div>
+      <div class="ins-val amber">${avgSpan}</div>
+      <div class="ins-txt">Org-wide average is <strong>${avgSpan} direct reports per L1</strong>. Industry benchmark: <strong>5–7</strong>. ${avgSpan<4?'⚠ Org may be too top-heavy — review if all L1s are genuine people managers or SMEs.':'Within range.'}</div>
+    </div>
+    <div class="ins ${lean>5?'risk':'good'}">
+      <div class="ins-head">🔍 Single-Report Managers</div>
+      <div class="ins-val ${lean>5?'amber':'green'}">${lean}</div>
+      <div class="ins-txt"><strong>${lean} managers</strong> have only 1 direct report. This may indicate role misclassification, org transitions, or bloated management layers. Review these roles for consolidation.</div>
+    </div>`;
+
+  document.getElementById('inf-mgr').innerHTML=`<strong>Span of Control:</strong> ${entries.length} L1 managers for ${activeEmps.length} active employees = <strong>1:${avgSpan} avg ratio</strong>. ${healthy} healthy (2–7) · ${overloaded} overloaded (&gt;7) · ${lean} single-report. Industry best practice = <strong>1:5–7</strong>.`;
+
+  // Squad-wise span chart
+  const squadSpan={};
+  activeEmps.forEach(d=>{
+    const sq=d.Squad||'Unknown',mgr=String(d['L1 Manager']||'').trim();
+    if(!squadSpan[sq])squadSpan[sq]={emps:0,mgrs:new Set()};
+    squadSpan[sq].emps++;
+    if(mgr)squadSpan[sq].mgrs.add(mgr);
+  });
+  const sqLabels=Object.keys(squadSpan).sort((a,b)=>squadSpan[b].emps-squadSpan[a].emps);
+  const sqSpans=sqLabels.map(sq=>{
+    const m=squadSpan[sq];
+    return m.mgrs.size>0?Math.round(m.emps/m.mgrs.size*10)/10:0;
+  });
+  mkChart('ch-span-sq','bar',{
+    labels:sqLabels,
+    datasets:[{
+      label:'Avg Direct Reports per L1',
+      data:sqSpans,
+      backgroundColor:sqSpans.map(v=>v>7?'rgba(220,38,38,.8)':v<2?'rgba(217,119,6,.8)':'rgba(22,163,74,.8)'),
+      borderRadius:6
+    }]
+  },{
+    indexAxis:'y',
+    plugins:{legend:{display:false},datalabels:{color:'#fff',font:{family:'Fira Code',size:9,weight:'bold'},anchor:'end',align:'left',formatter:v=>v}},
+    scales:{x:{beginAtZero:true,ticks:{font:{family:'Fira Code',size:10}}},y:{ticks:{font:{family:'Outfit',size:10}}}},
+    _datalabels:true
+  });
+
+  // Distribution chart (how many mgrs have 1,2,3...N reports)
+  const distMap={};
+  counts.forEach(c=>{distMap[c]=(distMap[c]||0)+1;});
+  const distKeys=Object.keys(distMap).map(Number).sort((a,b)=>a-b);
+  mkChart('ch-span-dist','bar',{
+    labels:distKeys.map(k=>k+' report'+(k===1?'':'s')),
+    datasets:[{
+      label:'# Managers',
+      data:distKeys.map(k=>distMap[k]),
+      backgroundColor:distKeys.map(k=>k>7?'rgba(220,38,38,.8)':k===1?'rgba(217,119,6,.8)':'rgba(22,163,74,.8)'),
+      borderRadius:6
+    }]
+  },{plugins:{legend:{display:false},datalabels:{color:'#fff',font:{family:'Fira Code',size:9,weight:'bold'},anchor:'center',align:'center',formatter:v=>v>0?v:''}},_datalabels:true});
+
+  // Populate squad filter
+  const mgrSquadSel=document.getElementById('f-mgr-squad');
+  if(mgrSquadSel.options.length<=1){
+    sqLabels.forEach(sq=>{const o=document.createElement('option');o.value=o.textContent=sq;mgrSquadSel.appendChild(o);});
+  }
+
+  renderMgrFilter();
+}
+
+function renderMgrFilter(){
+  const activeAll=EMP_DATA.filter(d=>d.Status==='Active'||d.ActiveFlag===1);
+  const sq=document.getElementById('f-mgr-squad')?.value||'all';
+  const emps=sq==='all'?activeAll:activeAll.filter(d=>d.Squad===sq);
+  const mgrMap=buildMgrMap(emps);
+  const entries=Object.entries(mgrMap).sort((a,b)=>b[1].reports.length-a[1].reports.length);
+
+  document.getElementById('mgr-grid').innerHTML=entries.map(([mgr,data])=>{
+    const n=data.reports.length;
+    const cls=n>7?'overloaded':n===1?'lean':'healthy';
+    const badge=n>7?'r':n===1?'a':'g';
+    const label=n>7?'Overloaded':n===1?'Single IC':'Healthy';
+    const squads=[...data.squads].join(', ');
+    const countries=[...data.countries].join(' · ');
+    const repList=data.reports.slice(0,6).map(r=>{
+      const flag=r.Country==='India'?'🔵':'🟣';
+      const isCon=r.Type==='Consultant';
+      const conTag=isCon?'<span style="font-size:.5rem;color:var(--amber);font-weight:700"> CON</span>':'';
+      return `<span class="mgr-rep" style="${isCon?'border-color:rgba(217,119,6,.4);background:rgba(217,119,6,.06)':''}">${flag} ${r['First Name']} ${r['Last Name']||''}${conTag}</span>`;
+    }).join('');
+    const conInTeam=data.reports.filter(r=>r.Type==='Consultant').length;
+    const conNote=conInTeam>0?` · <span style="color:var(--amber);font-weight:600">${conInTeam} contractor${conInTeam>1?'s':''}</span>`:'';
+    const more=n>6?`<span class="mgr-rep" style="color:var(--muted)">+${n-6} more</span>`:'';
+    return `<div class="mgr-card ${cls}">
+      <div class="mgr-name">${mgr}</div>
+      <div class="mgr-meta">${squads} · ${countries}${conNote}</div>
+      <div class="mgr-reports">${repList}${more}</div>
+      <div class="mgr-stat">
+        <div>
+          <div class="mgr-count ${badge}">${n}</div>
+          <div style="font-size:.58rem;color:var(--muted)">direct reports</div>
+        </div>
+        <span class="mgr-badge ${badge}">${label}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── ORG CHART LOGIC ───────────────────────────────────────────
+function renderOrgChart(){
+  const activeAll=EMP_DATA.filter(d=>d.Status==='Active'||d.ActiveFlag===1);
+  const sq=document.getElementById('f-org-squad')?.value||'all';
+  const country=document.getElementById('f-org-country')?.value||'all';
+  let emps=activeAll;
+  if(sq!=='all')emps=emps.filter(d=>d.Squad===sq);
+  if(country!=='all')emps=emps.filter(d=>d.Country===country);
+
+  const conCount=emps.filter(d=>d.Type==='Consultant').length;
+  const fteCount=emps.length-conCount;
+  document.getElementById('inf-org-chart').innerHTML=`<strong>Org Chart:</strong> Showing <strong>${emps.length} active employees</strong> — <strong>${fteCount} FTE</strong> + <span style="color:var(--amber);font-weight:700">${conCount} Consultants</span>${sq!=='all'?' · Squad: '+sq:''}${country!=='all'?' · Country: '+country:''}. 🔵 India &nbsp;🟣 USA &nbsp;<span style="background:rgba(217,119,6,.1);color:var(--amber);padding:1px 5px;border-radius:3px;font-size:.72rem;font-weight:700">CON</span> = Consultant`;
+
+  // Group by squad → then L1 manager
+  const sqGroups={};
+  emps.forEach(d=>{
+    const s=d.Squad||'Unknown';
+    const mgr=String(d['L1 Manager']||'(No Manager)').trim();
+    if(!sqGroups[s])sqGroups[s]={};
+    if(!sqGroups[s][mgr])sqGroups[s][mgr]=[];
+    sqGroups[s][mgr].push(d);
+  });
+
+  // Populate org squad filter
+  const orgSquadSel=document.getElementById('f-org-squad');
+  if(orgSquadSel.options.length<=1){
+    [...new Set(activeAll.map(d=>d.Squad).filter(Boolean))].sort().forEach(s=>{
+      const o=document.createElement('option');o.value=o.textContent=s;orgSquadSel.appendChild(o);
+    });
+  }
+
+  const html=Object.keys(sqGroups).sort().map(squad=>{
+    const color=SQUAD_COLORS[squad]||'#1a1a2e';
+    const mgrBlocks=Object.entries(sqGroups[squad])
+      .sort((a,b)=>b[1].length-a[1].length)
+      .map(([mgr,reports])=>{
+        const repHtml=reports.map(r=>{
+          const flag=r.Country==='India'?'🔵':'🟣';
+          const level=r.Level?r.Level.replace(' Level',''):'';
+          const isCon=r.Type==='Consultant';
+          const conBadge=isCon?`<span style="font-size:.5rem;padding:1px 4px;border-radius:3px;background:rgba(217,119,6,.15);color:var(--amber);border:1px solid rgba(217,119,6,.3);font-weight:700">CON</span>`:'';
+          const style=isCon?'background:rgba(217,119,6,.04);border-left:2px solid var(--amber)':'';
+          return `<div class="org-emp" style="${style}">${flag} <strong>${r['First Name']}</strong> ${r['Last Name']||''} ${level?`<span style="font-size:.55rem;color:var(--muted)">(${level})</span>`:''} ${conBadge}</div>`;
+        }).join('');
+        const conCount=reports.filter(r=>r.Type==='Consultant').length;
+        const ftCount=reports.length-conCount;
+        return `<div class="org-l1" style="${conCount>0?'border-top:2px solid var(--amber)':'border-top:2px solid var(--green)'}">
+          <div class="org-l1-name">👤 ${mgr}</div>
+          <div class="org-l1-squad">${ftCount} FTE${conCount>0?` · <span style="color:var(--amber);font-weight:700">${conCount} Consultant${conCount>1?'s':''}</span>`:''}</div>
+          <div class="org-l1-reports">${repHtml}</div>
+        </div>`;
+      }).join('');
+    return `<div class="org-squad">
+      <div class="org-squad-title" style="background:${color}">${squad} · ${Object.values(sqGroups[squad]).reduce((s,a)=>s+a.length,0)} people</div>
+      <div class="org-l1-row">${mgrBlocks}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('org-chart-wrap').innerHTML=html||'<div style="text-align:center;padding:40px;color:var(--muted)">No employees match the current filters.</div>';
+}
+
+// ── AI INTEL ─────────────────────────────────────────────────
+async function runAIIntel(){
+  const activeAll=EMP_DATA.filter(d=>d.Status==='Active'||d.ActiveFlag===1);
+  const inactiveAll=EMP_DATA.filter(d=>d.Status==='Inactive'||d.ActiveFlag===0);
+
+  // Build real data summary — no hallucination possible
+  const india=activeAll.filter(d=>d.Country==='India').length;
+  const usa=activeAll.filter(d=>d.Country==='USA').length;
+  const female=activeAll.filter(d=>d.Gender==='Female').length;
+  const femPct=Math.round(female/activeAll.length*100);
+  const mgrMap=buildMgrMap(activeAll);
+  const mgrEntries=Object.entries(mgrMap);
+  const avgSpan=mgrEntries.length?Math.round(mgrEntries.reduce((s,e)=>s+e[1].reports.length,0)/mgrEntries.length*10)/10:0;
+  const overloaded=mgrEntries.filter(e=>e[1].reports.length>7).map(e=>e[0]);
+  const lean=mgrEntries.filter(e=>e[1].reports.length===1).length;
+
+  const A=computeAttrition(EMP_DATA);
+  const lastAnn=A.length?A[A.length-1].ann_pct:0;
+  const exits2026=inactiveAll.filter(d=>{const ts=d['Termination Date Str'];return ts&&ts.startsWith('2026');}).length;
+  const volPct=inactiveAll.length?Math.round(inactiveAll.filter(d=>d['Termination Type']==='Voluntary').length/inactiveAll.length*100):0;
+
+  const r25=activeAll.filter(d=>d['Performance Rating 2025']>=1&&d['Performance Rating 2025']<=5);
+  const avg25=r25.length?Math.round(r25.reduce((s,d)=>s+d['Performance Rating 2025'],0)/r25.length*100)/100:0;
+  const highPerf=r25.filter(d=>d['Performance Rating 2025']>=4).length;
+  const lowPerf=r25.filter(d=>d['Performance Rating 2025']<=2).length;
+
+  const rag={Green:0,Amber:0,Red:0};
+  activeAll.forEach(d=>{if(d['Rag Status']&&rag[d['Rag Status']]!==undefined)rag[d['Rag Status']]++;});
+
+  const sqMap={};
+  activeAll.forEach(d=>{const s=d.Squad||'?';sqMap[s]=(sqMap[s]||0)+1;});
+  const topSq=Object.entries(sqMap).sort((a,b)=>b[1]-a[1])[0]||['?',0];
+
+  const avgTenure=Math.round(activeAll.filter(d=>typeof d['Finzly Experience']==='number').reduce((s,d)=>s+d['Finzly Experience'],0)/Math.max(activeAll.filter(d=>typeof d['Finzly Experience']==='number').length,1)*10)/10;
+
+  const dataPayload=`
+Finzly HR Data as of today (${new Date().toLocaleDateString()}):
+- Active employees: ${activeAll.length} (India: ${india}, USA: ${usa})
+- Female employees: ${female} (${femPct}% of active)
+- Total inactive/exits: ${inactiveAll.length}
+- 2026 exits so far: ${exits2026}
+- Voluntary exit %: ${volPct}%
+- Annualised attrition: ${lastAnn}%
+- Avg L1 span of control: ${avgSpan} direct reports (industry best: 5-7)
+- Overloaded managers (>7 reports): ${overloaded.length} — ${overloaded.slice(0,3).join(', ')}${overloaded.length>3?'...':''}
+- Single-report managers: ${lean}
+- Total L1 managers: ${mgrEntries.length}
+- Avg performance rating 2025: ${avg25}/5
+- High performers (★4-5): ${highPerf}
+- Low performers (★1-2): ${lowPerf}
+- RAG: Green=${rag.Green}, Amber=${rag.Amber}, Red=${rag.Red}
+- Largest squad: ${topSq[0]} (${topSq[1]} people)
+- Avg Finzly tenure: ${avgTenure} years`;
+
+  document.getElementById('ai-dot').style.background='var(--amber)';
+  document.getElementById('ai-status-txt').textContent='Analysing your workforce data…';
+  document.getElementById('ai-cards').innerHTML=`<div class="ai-card" style="grid-column:1/-1;text-align:center;padding:30px;border-top-color:var(--border)"><div class="ai-dot" style="margin:0 auto 10px"></div><div style="font-size:.8rem;color:var(--muted)">Generating insights from your data…</div></div>`;
+
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1500,
+        system:`You are an expert HR analytics advisor analysing real workforce data for Finzly, a fintech company. 
+Generate exactly 6 insight cards in JSON format. Each card must be grounded ONLY in the numbers provided — no hallucination, no made-up benchmarks beyond what is stated.
+Return ONLY a valid JSON array, no markdown, no explanation:
+[{"title":"...","type":"risk|good|signal|info","metric":"...","body":"...","actions":["action1","action2"]}]
+Keep body under 60 words. Keep actions to 2 short bullet points. type must be one of: risk, good, signal, info.`,
+        messages:[{role:'user',content:`Analyse this Finzly HR data and generate 6 insight cards:\n${dataPayload}`}]
+      })
+    });
+    const data=await res.json();
+    const text=data.content?.find(c=>c.type==='text')?.text||'[]';
+    const clean=text.replace(/```json|```/g,'').trim();
+    const cards=JSON.parse(clean);
+
+    document.getElementById('ai-dot').style.background='var(--green)';
+    document.getElementById('ai-status-txt').textContent=`Generated ${cards.length} insights from your live data · ${new Date().toLocaleTimeString()}`;
+
+    document.getElementById('ai-cards').innerHTML=cards.map(c=>`
+      <div class="ai-card" style="border-top-color:${c.type==='risk'?'var(--red)':c.type==='good'?'var(--green)':c.type==='signal'?'var(--amber)':'var(--blue)'}">
+        <div class="ai-card-title">${c.type==='risk'?'🔴':c.type==='good'?'✅':c.type==='signal'?'⚠️':'💡'} ${c.title}</div>
+        <div class="ai-card-body">
+          <div style="font-family:'Fira Code',monospace;font-size:1.3rem;font-weight:700;color:${c.type==='risk'?'var(--red)':c.type==='good'?'var(--green)':c.type==='signal'?'var(--amber)':'var(--blue)'};margin-bottom:8px">${c.metric}</div>
+          ${c.body}
+          ${c.actions?.length?`<ul style="margin-top:8px">${c.actions.map(a=>`<li>${a}</li>`).join('')}</ul>`:''}
+        </div>
+      </div>`).join('');
+  }catch(e){
+    document.getElementById('ai-dot').style.background='var(--red)';
+    document.getElementById('ai-status-txt').textContent='Error: '+e.message;
+    document.getElementById('ai-cards').innerHTML=`<div class="ai-card" style="grid-column:1/-1;border-top-color:var(--red)"><div class="ai-card-title">❌ Could not generate insights</div><div class="ai-card-body">${e.message}</div></div>`;
+  }
 }
 
 // ── SHOW/HIDE SCREENS ─────────────────────────────────────────
