@@ -387,14 +387,11 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
   <div class="tabs">
     <button class="tab on" onclick="goTab(this,'p1')">📊 Org Snapshot</button>
     <button class="tab" onclick="goTab(this,'p2')">📈 People Trend</button>
-    <button class="tab" onclick="goTab(this,'p3')">🏗 Squad & Sub Squad</button>
+    <button class="tab" onclick="goTab(this,'p3')">🏗 Squad Intelligence</button>
     <button class="tab" onclick="goTab(this,'p4')">📉 Attrition</button>
-    <button class="tab" onclick="goTab(this,'p5')">⭐ Performance & Levels</button>
-    <button class="tab" onclick="goTab(this,'p6')">🚦 RAG Report</button>
+    <button class="tab" onclick="goTab(this,'p5')">⭐ Performance</button>
     <button class="tab" onclick="goTab(this,'p7')">🧭 Leadership Summary</button>
-    <button class="tab" onclick="goTab(this,'p8')">👥 Manager Span</button>
     <button class="tab" onclick="goTab(this,'p9')">🌳 Org Chart</button>
-    <button class="tab" onclick="goTab(this,'p10')">🤖 AI Intel</button>
   </div>
 
   <!-- P1 -->
@@ -431,14 +428,46 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
   <!-- P3 -->
   <div class="pg" id="p3">
     <div class="insight-strip cols3" id="ins-p3"></div>
-    <div class="inf blue" id="inf-sq-top"></div>
-    <div class="g2" style="margin-bottom:14px">
-      <div class="ch-box"><div class="ch-title">Squad HC</div><div class="ch-wrap tall"><canvas id="ch-sq-bar"></canvas></div></div>
-      <div class="ch-box"><div class="ch-title">RAG by Squad</div><div class="ch-wrap tall"><canvas id="ch-sq-rag"></canvas></div></div>
+    <div class="insight-strip cols3" id="ins-p3"></div>
+
+    <!-- SQUAD HEALTH: HC + RAG + Manager Span in one row -->
+    <div class="g3" style="margin-bottom:14px">
+      <div class="ch-box">
+        <div class="ch-title">Headcount by Squad</div>
+        <div class="ch-inf" id="inf-sq-hc"></div>
+        <div class="ch-wrap tall"><canvas id="ch-sq-bar"></canvas></div>
+      </div>
+      <div class="ch-box">
+        <div class="ch-title">RAG Health by Squad <span style="font-size:.58rem;color:var(--muted);font-weight:400">Green = engaged, Amber = at-risk, Red = act now</span></div>
+        <div class="ch-inf" id="inf-sq-rag"></div>
+        <div class="ch-wrap tall"><canvas id="ch-sq-rag"></canvas></div>
+      </div>
+      <div class="ch-box">
+        <div class="ch-title">Manager Span by Squad <span style="font-size:.58rem;color:var(--muted);font-weight:400">Avg direct reports per L1 manager</span></div>
+        <div class="ch-inf" id="inf-sq-span"></div>
+        <div class="ch-wrap tall"><canvas id="ch-span-sq"></canvas></div>
+      </div>
     </div>
-    <div class="card">
-      <div class="c-title"><div class="c-title-l">Squad → Sub Squad Headcount Drilldown</div><span style="font-size:.62rem;color:var(--muted)">Click to expand / collapse</span></div>
+
+    <!-- SUB SQUAD DRILLDOWN -->
+    <div class="card" style="margin-bottom:14px">
+      <div class="c-title">
+        <div class="c-title-l">Squad → Sub Squad · Headcount · RAG · Manager</div>
+        <span style="font-size:.62rem;color:var(--muted)">Click squad to expand</span>
+      </div>
       <div id="squad-tree"></div>
+    </div>
+
+    <!-- MANAGER CARDS -->
+    <div class="card">
+      <div class="c-title">
+        <div class="c-title-l">L1 Managers · Direct Reports · Span Health</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="f-mgr-squad" onchange="renderMgrFilter()" style="font-family:'Outfit',sans-serif;font-size:.72rem;padding:4px 22px 4px 8px;border-radius:6px;border:1.5px solid var(--border);background:var(--bg);appearance:none"><option value="all">All Squads</option></select>
+          <span style="font-size:.6rem;color:var(--muted)">🔴 &gt;7 reports · 🟡 1 report · 🟢 2–7</span>
+        </div>
+      </div>
+      <div id="mgr-grid" class="mgr-grid"></div>
     </div>
   </div>
 
@@ -497,20 +526,12 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
     <div class="card"><div class="c-title"><div class="c-title-l">Avg Finzly Tenure by Squad (years)</div></div><div id="tenure-bars"></div></div>
   </div>
 
-  <!-- P6 -->
-  <div class="pg" id="p6">
-    <div class="inf amber" id="inf-rag"></div>
-    <div class="g4" id="rag-kpis"></div>
-    <div class="g2" style="margin-top:14px">
-      <div class="ch-box"><div class="ch-title">RAG — Overall</div><div class="ch-inf" id="inf-rag2"></div><div class="ch-wrap"><canvas id="ch-rag-donut"></canvas></div></div>
-      <div class="ch-box"><div class="ch-title">RAG by Squad</div><div class="ch-inf" id="inf-rag3"></div><div class="ch-wrap tall"><canvas id="ch-rag-sq"></canvas></div></div>
-    </div>
-    <div class="card"><div class="c-title"><div class="c-title-l">RAG by Practice</div></div><div id="rag-practice"></div></div>
-  </div>
+  <!-- P6 removed - RAG now in Squad Intelligence (P3) -->
 
-  <!-- P7 -->
+  <!-- P7 LEADERSHIP SUMMARY -->
   <div class="pg" id="p7">
-    <div class="card">
+    <!-- Board KPIs -->
+    <div class="card" style="margin-bottom:14px">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;gap:16px;flex-wrap:wrap">
         <div><div class="sum-hl">Leadership Intelligence. <em>Act on what matters.</em></div><div style="font-size:.72rem;color:var(--muted);margin-top:3px" id="sum-sub"></div></div>
         <div class="sum-kpis" id="sum-kpis"></div>
@@ -518,63 +539,44 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
       <div class="g2" id="act-grid"></div>
       <div class="cta-bar" id="cta-bar"></div>
     </div>
-  </div>
-  <!-- P8 MANAGER SPAN -->
-  <div class="pg" id="p8">
-    <div class="insight-strip cols3" id="ins-p8"></div>
-    <div class="inf blue" id="inf-mgr"></div>
-    <div class="g2" style="margin-bottom:14px">
-      <div class="ch-box"><div class="ch-title">Span of Control by Squad</div><div class="ch-wrap tall"><canvas id="ch-span-sq"></canvas></div></div>
-      <div class="ch-box"><div class="ch-title">Reports per L1 Manager (distribution)</div><div class="ch-wrap tall"><canvas id="ch-span-dist"></canvas></div></div>
-    </div>
+    <!-- AI Intel embedded -->
     <div class="card">
       <div class="c-title">
-        <div class="c-title-l">All L1 Managers · Direct Reports</div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <select id="f-mgr-squad" onchange="renderMgrFilter()" style="font-family:'Outfit',sans-serif;font-size:.72rem;padding:4px 22px 4px 8px;border-radius:6px;border:1.5px solid var(--border);background:var(--bg);appearance:none"><option value="all">All Squads</option></select>
-          <span style="font-size:.62rem;color:var(--muted)">🔴 &gt;7 reports · 🟡 1 report · 🟢 2–7</span>
+        <div class="c-title-l">🤖 AI Workforce Intelligence</div>
+        <button class="ai-refresh" onclick="runAIIntel()" style="font-family:'Outfit',sans-serif;font-size:.7rem;padding:5px 12px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer">Generate Insights</button>
+      </div>
+      <div class="ai-status" style="margin-bottom:12px">
+        <div class="ai-dot" id="ai-dot"></div>
+        <span id="ai-status-txt" style="font-size:.72rem;color:var(--muted)">Click Generate to analyse live workforce data</span>
+      </div>
+      <div class="ai-cards" id="ai-cards">
+        <div class="ai-card" style="grid-column:1/-1;text-align:center;padding:32px;border-top-color:var(--border);background:var(--bg)">
+          <div style="font-size:1.5rem;margin-bottom:8px">🤖</div>
+          <div style="font-size:.82rem;font-weight:700;margin-bottom:5px">Data-driven workforce insights</div>
+          <div style="font-size:.72rem;color:var(--muted);line-height:1.7">6 insight cards computed from your live data — attrition risk, manager health, performance signals, retention risks. All based on actual numbers only.</div>
         </div>
       </div>
-      <div id="mgr-grid" class="mgr-grid"></div>
     </div>
   </div>
+
+  <!-- P8 removed - Manager Span now in Squad Intelligence (P3) -->
 
   <!-- P9 ORG CHART -->
   <div class="pg" id="p9">
     <div class="inf blue" id="inf-org-chart"></div>
-
-    <!-- SECTION 1: Leadership Team -->
     <div class="card" style="margin-bottom:18px">
       <div class="c-title"><div class="c-title-l">🏛 Leadership Team — Direct Reports to President</div></div>
       <div id="leadership-strip" style="overflow-x:auto;padding:10px 0"></div>
     </div>
-
-    <!-- SECTION 2: Galaxy Trees -->
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
       <div style="font-size:.78rem;font-weight:700;color:var(--ink)">🌌 Galaxy Trees — Click to Expand</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="org-btn" onclick="expandAllGalaxies()">Expand All</button>
         <button class="org-btn" onclick="collapseAllGalaxies()">Collapse All</button>
-        <span style="font-size:.62rem;color:var(--muted);line-height:1;align-self:center"><span style="background:rgba(217,119,6,.15);color:var(--amber);padding:1px 5px;border-radius:3px;font-weight:700">CON</span> Contractor · 🔵 India · 🟣 USA</span>
+        <span style="font-size:.62rem;color:var(--muted);align-self:center"><span style="background:rgba(217,119,6,.15);color:var(--amber);padding:1px 5px;border-radius:3px;font-weight:700">CON</span> Contractor · 🔵 India · 🟣 USA</span>
       </div>
     </div>
     <div id="galaxy-trees"></div>
-  </div>
-
-  <!-- P10 AI INTEL -->
-  <div class="pg" id="p10">
-    <div class="ai-status">
-      <div class="ai-dot" id="ai-dot"></div>
-      <span id="ai-status-txt">Ready — click Generate to analyse your workforce data</span>
-      <button class="ai-refresh" onclick="runAIIntel()" style="margin-left:auto">🤖 Generate AI Insights</button>
-    </div>
-    <div class="ai-cards" id="ai-cards">
-      <div class="ai-card" style="grid-column:1/-1;text-align:center;padding:40px;border-top-color:var(--border)">
-        <div style="font-size:2rem;margin-bottom:8px">🤖</div>
-        <div style="font-size:.9rem;font-weight:700;margin-bottom:6px">AI-Powered Workforce Intelligence</div>
-        <div style="font-size:.76rem;color:var(--muted);line-height:1.7">Analyses your live Finzly HR data — attrition patterns, manager health, performance signals, and retention risks — using only your actual numbers. No hallucination.</div>
-      </div>
-    </div>
   </div>
 
 </div><!-- /dash -->
@@ -1281,7 +1283,7 @@ function render(){
     mkChart('ch-india','bar',{labels,datasets:[{label:'India EEs',data:T.map(d=>d.india_ee),backgroundColor:'rgba(14,165,233,.8)',borderRadius:4},{label:'India Consultants',data:T.map(d=>d.india_con),backgroundColor:'rgba(22,163,74,.8)',borderRadius:4}]},{scales:{y:{stacked:true},x:{stacked:true}},_datalabels:true});
   }
 
-  // P3 SQUAD TREE
+  // P3 SQUAD INTELLIGENCE — HC + RAG + Manager Span all in one
   const tree={};
   active.forEach(d=>{
     const sq=d.Squad||'Unknown',sub=d['Sub Squad']||'Unknown',rag=d['Rag Status']||'Not Set';
@@ -1303,32 +1305,57 @@ function render(){
   const maxSq=squads[0]||'—'; const maxSqHC=squadHCs[0]||0;
   const minSq=squads[squads.length-1]||'—'; const minSqHC=squadHCs[squadHCs.length-1]||0;
 
-  // P3 insights
+  // RAG totals across active
+  const ragTot={Green:0,Amber:0,Red:0,NotSet:0};
+  active.forEach(d=>{const r=d['Rag Status']||'Not Set';if(r==='Green')ragTot.Green++;else if(r==='Amber')ragTot.Amber++;else if(r==='Red')ragTot.Red++;else ragTot.NotSet++;});
+
+  // Manager span per squad
+  const sqSpanMap={};
+  active.forEach(d=>{
+    const sq=d.Squad||'Unknown',mgr=String(d['L1 Manager']||'').trim();
+    if(!sqSpanMap[sq])sqSpanMap[sq]={emps:0,mgrs:new Set()};
+    sqSpanMap[sq].emps++;
+    if(mgr)sqSpanMap[sq].mgrs.add(mgr);
+  });
+  const sqSpans=squads.map(sq=>{
+    const m=sqSpanMap[sq];
+    return m&&m.mgrs.size>0?Math.round(m.emps/m.mgrs.size*10)/10:0;
+  });
+
+  // P3 insights — meaningful, actionable
   document.getElementById('ins-p3').innerHTML=`
-    <div class="ins info">
-      <div class="ins-head">🏗 Squad Landscape</div>
+    <div class="ins ${redSqs.length>0?'risk':ragTot.Amber>active.length*0.2?'signal':'good'}">
+      <div class="ins-head">🚦 Team Health (RAG)</div>
+      <div class="ins-val ${redSqs.length>0?'red':ragTot.Amber>10?'amber':'green'}">${Math.round(ragTot.Green/active.length*100)}% Engaged</div>
+      <div class="ins-txt">${ragTot.Green} Green · ${ragTot.Amber} Amber · ${ragTot.Red} Red · ${ragTot.NotSet} No Data. ${redSqs.length>0?`🔴 <strong>Act now:</strong> ${redSqs.join(', ')} have Red members.`:'✅ No Red flags.'} ${ragTot.Amber>0?`<strong>${ragTot.Amber} Amber</strong> employees need a career conversation this month.`:''}</div>
+    </div>
+    <div class="ins ${avgSqSize>60?'risk':avgSqSize<10?'signal':'info'}">
+      <div class="ins-head">🏗 Squad Structure</div>
       <div class="ins-val blue">${squads.length} Squads</div>
-      <div class="ins-txt"><strong>${totalSubSquads} sub-squads</strong> total. Avg squad size: <strong>${avgSqSize} people</strong>. Largest: <strong>${maxSq} (${maxSqHC})</strong>. Smallest: <strong>${minSq} (${minSqHC})</strong>. ${maxSqHC>avgSqSize*2?`⚠ ${maxSq} is over 2× avg — review if it needs splitting.`:''}</div>
+      <div class="ins-txt"><strong>${totalSubSquads} sub-squads</strong> across ${squads.length} squads. Avg size: <strong>${avgSqSize}</strong>. Largest: <strong>${maxSq} (${maxSqHC})</strong>. ${maxSqHC>avgSqSize*2?`⚠ ${maxSq} is 2× avg — consider splitting.`:''} Smallest: <strong>${minSq} (${minSqHC})</strong>.</div>
     </div>
-    <div class="ins ${redSqs.length>0?'risk':'good'}">
-      <div class="ins-head">🚦 RAG Risk</div>
-      <div class="ins-val ${redSqs.length>0?'red':'green'}">${redSqs.length} Red Squads</div>
-      <div class="ins-txt">${redSqs.length>0?`🔴 <strong>${redSqs.join(', ')}</strong> have Red-status members — escalate to L1 managers immediately.`:'✅ No squads with Red-status employees.'} <strong>${amberSqs.length} squads</strong> have Amber members — monitor closely.</div>
-    </div>
-    <div class="ins signal">
-      <div class="ins-head">⚖ Squad Balance</div>
-      <div class="ins-val amber">${Math.round(maxSqHC/Math.max(minSqHC,1))}× range</div>
-      <div class="ins-txt">Largest squad (<strong>${maxSqHC}</strong>) is <strong>${Math.round(maxSqHC/Math.max(minSqHC,1))}×</strong> the smallest (<strong>${minSqHC}</strong>). High imbalance can indicate resourcing gaps. Use filters to drill into specific squads.</div>
+    <div class="ins ${sqSpans.some(s=>s>7)?'risk':sqSpans.some(s=>s<2&&s>0)?'signal':'good'}">
+      <div class="ins-head">👥 Manager Load</div>
+      <div class="ins-val ${sqSpans.some(s=>s>7)?'red':'green'}">${Math.round(sqSpans.filter(s=>s>0).reduce((a,b)=>a+b,0)/Math.max(sqSpans.filter(s=>s>0).length,1)*10)/10} avg span</div>
+      <div class="ins-txt">Avg L1 manager has <strong>${Math.round(sqSpans.filter(s=>s>0).reduce((a,b)=>a+b,0)/Math.max(sqSpans.filter(s=>s>0).length,1)*10)/10} direct reports</strong>. ${sqSpans.some(s=>s>7)?`⚠ Some squads above 7 — manager overload risk.`:'Within healthy range (2–7).'} See manager cards below for detail.</div>
     </div>`;
 
-  document.getElementById('inf-sq-top').innerHTML=`<strong>Squad Overview:</strong> ${squads.length} squads · ${active.length} active. Largest: <strong>${squads[0]||'—'}</strong> (${squadHCs[0]||0}). ${redSqs.length>0?`🔴 Red RAG: <strong>${redSqs.join(', ')}</strong>`:'✅ No Red RAG squads.'}`;
+  // Squad HC chart with data labels
+  document.getElementById('inf-sq-hc').textContent=`${squads.length} squads · ${active.length} active employees · Sorted by headcount`;
   mkChart('ch-sq-bar','bar',{labels:squads,datasets:[{label:'HC',data:squadHCs,backgroundColor:squads.map(s=>SQUAD_COLORS[s]||'#64748b'),borderRadius:6}]},{indexAxis:'y',plugins:{legend:{display:false},datalabels:{color:'#fff',font:{family:'Fira Code',size:9,weight:'bold'},anchor:'end',align:'left',formatter:v=>v}},scales:{x:{beginAtZero:true,ticks:{font:{family:'Fira Code',size:10}}},y:{ticks:{font:{family:'Outfit',size:10}}}},_datalabels:true});
+
+  // RAG by squad — stacked, shows health at a glance
+  document.getElementById('inf-sq-rag').textContent=`${ragTot.Green}G · ${ragTot.Amber}A · ${ragTot.Red}R · ${ragTot.NotSet} no data — Red = schedule 1-on-1 immediately`;
   mkChart('ch-sq-rag','bar',{labels:squads,datasets:[
-    {label:'Green',data:squads.map(sq=>Object.values(tree[sq]).reduce((s,v)=>s+v.g,0)),backgroundColor:'rgba(22,163,74,.8)',borderRadius:3},
-    {label:'Amber',data:squads.map(sq=>Object.values(tree[sq]).reduce((s,v)=>s+v.a,0)),backgroundColor:'rgba(217,119,6,.8)',borderRadius:3},
-    {label:'Red',data:squads.map(sq=>Object.values(tree[sq]).reduce((s,v)=>s+v.r,0)),backgroundColor:'rgba(220,38,38,.8)',borderRadius:3},
-    {label:'Not Set',data:squads.map(sq=>Object.values(tree[sq]).reduce((s,v)=>s+v.n,0)),backgroundColor:'rgba(180,180,180,.4)',borderRadius:3},
-  ]},{indexAxis:'y',scales:{x:{stacked:true,beginAtZero:true,ticks:{font:{family:'Fira Code',size:10}}},y:{stacked:true,ticks:{font:{family:'Outfit',size:10}}}}});
+    {label:'Green ✓',data:squads.map(sq=>Object.values(tree[sq]).reduce((s,v)=>s+v.g,0)),backgroundColor:'rgba(22,163,74,.85)',borderRadius:3},
+    {label:'Amber ⚠',data:squads.map(sq=>Object.values(tree[sq]).reduce((s,v)=>s+v.a,0)),backgroundColor:'rgba(217,119,6,.85)',borderRadius:3},
+    {label:'Red ✕',data:squads.map(sq=>Object.values(tree[sq]).reduce((s,v)=>s+v.r,0)),backgroundColor:'rgba(220,38,38,.9)',borderRadius:3},
+    {label:'No Data',data:squads.map(sq=>Object.values(tree[sq]).reduce((s,v)=>s+v.n,0)),backgroundColor:'rgba(180,180,180,.35)',borderRadius:3},
+  ]},{indexAxis:'y',scales:{x:{stacked:true,beginAtZero:true,ticks:{font:{family:'Fira Code',size:10}}},y:{stacked:true,ticks:{font:{family:'Outfit',size:10}}}},_datalabels:true});
+
+  // Manager span chart
+  document.getElementById('inf-sq-span').textContent=`Industry benchmark: 5–7. Red = overloaded (>7). Yellow = underloaded (≤1)`;
+  mkChart('ch-span-sq','bar',{labels:squads,datasets:[{label:'Avg reports/L1',data:sqSpans,backgroundColor:sqSpans.map(v=>v>7?'rgba(220,38,38,.8)':v<=1&&v>0?'rgba(217,119,6,.8)':'rgba(22,163,74,.8)'),borderRadius:6}]},{indexAxis:'y',plugins:{legend:{display:false},datalabels:{color:'#fff',font:{family:'Fira Code',size:9,weight:'bold'},anchor:'end',align:'left',formatter:v=>v>0?v:''}},scales:{x:{beginAtZero:true,ticks:{font:{family:'Fira Code',size:10}}},y:{ticks:{font:{family:'Outfit',size:10}}}},_datalabels:true});
 
   document.getElementById('squad-tree').innerHTML=squads.map(sq=>{
     const subs=tree[sq];
@@ -1601,43 +1628,10 @@ function render(){
   const maxT=Math.max(...tenE.map(e=>e[1]),1);
   document.getElementById('tenure-bars').innerHTML=tenE.map(([sq,t])=>`<div class="brow"><div class="blbl">${sq}</div><div class="btrack"><div class="bfill" style="width:${Math.round(t/maxT*100)}%;background:${SQUAD_COLORS[sq]||'var(--accent)'}"></div></div><div class="bval">${t.toFixed(1)}y</div></div>`).join('');
 
-  // P6 RAG
-  const rag={Green:0,Amber:0,Red:0,'Not Set':0};
-  active.forEach(d=>{const r=d['Rag Status']||'Not Set';if(rag[r]!==undefined)rag[r]++;else rag['Not Set']++;});
-  const rPct=v=>active.length?Math.round(v/active.length*100):0;
-  document.getElementById('inf-rag').innerHTML=`<strong>RAG Health:</strong> ${rPct(rag.Green)}% Green (${rag.Green}) · ${rPct(rag.Amber)}% Amber (${rag.Amber}) · ${rPct(rag.Red)}% Red (${rag.Red}) · ${rPct(rag['Not Set'])}% Not Set (${rag['Not Set']}). ${rag.Red>0?`🔴 <strong>${rag.Red} need immediate 1-on-1.</strong>`:'✅ No Red.'} ${rag['Not Set']>0?`⚠ ${rag['Not Set']} missing RAG.`:''}`;
-  document.getElementById('rag-kpis').innerHTML=`
-    <div class="kc g"><div class="k-lbl">Green</div><div class="k-val g">${rag.Green}</div><div class="k-sub">${rPct(rag.Green)}%</div></div>
-    <div class="kc a"><div class="k-lbl">Amber</div><div class="k-val a">${rag.Amber}</div><div class="k-sub">${rPct(rag.Amber)}%</div></div>
-    <div class="kc r"><div class="k-lbl">Red</div><div class="k-val r">${rag.Red}</div><div class="k-sub">${rPct(rag.Red)}%</div></div>
-    <div class="kc"><div class="k-lbl">Not Set</div><div class="k-val">${rag['Not Set']}</div><div class="k-sub">${rPct(rag['Not Set'])}%</div></div>
-  `;
-  document.getElementById('inf-rag2').innerHTML=`<strong>Org health:</strong> ${rPct(rag.Green)}% Green. Target >85% by year-end.`;
-  mkChart('ch-rag-donut','doughnut',{labels:['Green ✓','Amber ⚠','Red ✕','Not Set'],datasets:[{data:[rag.Green,rag.Amber,rag.Red,rag['Not Set']],backgroundColor:['#16a34a','#d97706','#dc2626','#cbd5e1'],borderWidth:3,borderColor:'#fff'}]});
-  document.getElementById('inf-rag3').innerHTML=`<strong>Squad focus:</strong> Red employees need skip-level 1-on-1 this week.`;
-  mkChart('ch-rag-sq','bar',{labels:squads,datasets:[
-    {label:'Green',data:squads.map(sq=>Object.values(tree[sq]||{}).reduce((s,v)=>s+v.g,0)),backgroundColor:'rgba(22,163,74,.8)',borderRadius:3},
-    {label:'Amber',data:squads.map(sq=>Object.values(tree[sq]||{}).reduce((s,v)=>s+v.a,0)),backgroundColor:'rgba(217,119,6,.8)',borderRadius:3},
-    {label:'Red',data:squads.map(sq=>Object.values(tree[sq]||{}).reduce((s,v)=>s+v.r,0)),backgroundColor:'rgba(220,38,38,.8)',borderRadius:3},
-    {label:'Not Set',data:squads.map(sq=>Object.values(tree[sq]||{}).reduce((s,v)=>s+v.n,0)),backgroundColor:'rgba(180,180,180,.4)',borderRadius:3},
-  ]},{indexAxis:'y',scales:{x:{stacked:true,beginAtZero:true,ticks:{font:{family:'Fira Code',size:10}}},y:{stacked:true,ticks:{font:{family:'Outfit',size:10}}}}});
-  const pracMap={};
-  active.forEach(d=>{const p=d.Practice||'Unknown',r=d['Rag Status']||'Not Set';
-    if(!pracMap[p])pracMap[p]={g:0,a:0,r:0,n:0,total:0};
-    pracMap[p].total++;
-    if(r==='Green')pracMap[p].g++;else if(r==='Amber')pracMap[p].a++;else if(r==='Red')pracMap[p].r++;else pracMap[p].n++;
-  });
-  const maxPT=Math.max(...Object.values(pracMap).map(v=>v.total),1);
-  document.getElementById('rag-practice').innerHTML=Object.entries(pracMap).sort((a,b)=>b[1].total-a[1].total)
-    .map(([p,v])=>`<div class="brow"><div class="blbl" style="min-width:130px">${p}</div><div class="btrack" style="flex:3;height:10px"><div style="height:100%;display:flex;border-radius:99px;overflow:hidden"><div style="width:${Math.round(v.g/maxPT*100)}%;background:var(--green)"></div><div style="width:${Math.round(v.a/maxPT*100)}%;background:var(--amber)"></div><div style="width:${Math.round(v.r/maxPT*100)}%;background:var(--red)"></div><div style="width:${Math.round(v.n/maxPT*100)}%;background:var(--border2)"></div></div></div><div style="font-family:'Fira Code',monospace;font-size:.66rem;width:90px;text-align:right;flex-shrink:0"><span style="color:var(--green)">${v.g}G</span> <span style="color:var(--amber)">${v.a}A</span> <span style="color:var(--red)">${v.r}R</span></div></div>`).join('');
-
-  // P7 SUMMARY
+  // P7 SUMMARY — uses ragTot already computed in P3
   const lastAnnNum=A.length?+A[A.length-1].ann_pct:0;
   const avgTenure=avg(active.filter(d=>typeof d['Finzly Experience']==='number').map(d=>d['Finzly Experience']));
-  const inact2026=attrInactive.filter(d=>{
-    const ts=d['Termination Date Str'];
-    return ts&&ts.startsWith('2026');
-  }).length;
+  const inact2026=attrInactive.filter(d=>{const ts=d['Termination Date Str'];return ts&&ts.startsWith('2026');}).length;
   document.getElementById('sum-sub').textContent=`${active.length} active · ${india.length} India · ${usa.length} USA · ${squads.length} squads · Live: SharePoint`;
   document.getElementById('sum-kpis').innerHTML=`
     <div class="sum-k"><div class="sum-kv">${active.length}</div><div class="sum-kl">Active HC</div></div>
@@ -1645,41 +1639,34 @@ function render(){
     <div class="sum-k"><div class="sum-kv" style="color:var(--pu)">${usa.length}</div><div class="sum-kl">USA</div></div>
     <div class="sum-k"><div class="sum-kv" style="color:var(--red)">${lastAnnNum.toFixed(0)}%</div><div class="sum-kl">Ann. Attrition</div></div>
     <div class="sum-k"><div class="sum-kv" style="color:var(--red)">${inact2026}</div><div class="sum-kl">2026 Exits ⚠</div></div>
-    <div class="sum-k"><div class="sum-kv" style="color:${rag.Red>0?'var(--red)':rag.Amber>0?'var(--amber)':'var(--green)'}">${rag.Green}G·${rag.Amber}A·${rag.Red}R</div><div class="sum-kl">RAG</div></div>
+    <div class="sum-k"><div class="sum-kv" style="color:${ragTot.Red>0?'var(--red)':ragTot.Amber>0?'var(--amber)':'var(--green)'}">${ragTot.Green}G·${ragTot.Amber}A·${ragTot.Red}R</div><div class="sum-kl">RAG</div></div>
     <div class="sum-k"><div class="sum-kv">${avg25}</div><div class="sum-kl">Avg Rating</div></div>
     <div class="sum-k"><div class="sum-kv">${avgTenure.toFixed(1)}y</div><div class="sum-kl">Avg Tenure</div></div>
   `;
   document.getElementById('act-grid').innerHTML=`
-    <div class="act-box"><div class="act-box-t">🔴 Do This Month</div><ul class="act-ul">
-      ${rag.Red>0?`<li>🔴 <strong>${rag.Red} Red-status employees</strong> — schedule skip-level 1-on-1 immediately</li>`:''}
-      <li>2026 already <strong>${inact2026} exits</strong> — conduct manager check-ins across all squads</li>
-      <li>Voluntary exits ~60%+ of total — run quick pulse: "What would make you leave?"</li>
-      ${ratedPct<80?`<li>Complete 2025 appraisals for <strong>${active.length-r25.length} employees</strong></li>`:''}
+    <div class="act-box"><div class="act-box-t">🔴 Act This Month</div><ul class="act-ul">
+      ${ragTot.Red>0?`<li>🔴 <strong>${ragTot.Red} Red-status employees</strong> — schedule skip-level 1-on-1 immediately. Check Squad Intelligence tab for names.</li>`:'<li>✅ No Red-status employees — maintain monthly 1-on-1 cadence</li>'}
+      <li>2026 already <strong>${inact2026} exits</strong> — run structured exit conversation with all departing employees</li>
+      ${ratedPct<80?`<li>Complete 2025 appraisals for <strong>${active.length-r25.length} unrated employees</strong> before any pay or promotion decision</li>`:''}
     </ul></div>
-    <div class="act-box"><div class="act-box-t">📊 Do This Quarter</div><ul class="act-ul">
-      <li>Target annualised attrition <strong>&lt;20%</strong> by Q3 (current: ${lastAnnNum.toFixed(1)}%)</li>
-      <li>Review 2022–2023 cohort employees — these are mid-tenure flight risks</li>
-      <li>Squad RAG review with all L1 managers — target 90%+ Green</li>
-      <li>Set ActiveFlag for all employees missing it in masterfile</li>
+    <div class="act-box"><div class="act-box-t">📊 This Quarter</div><ul class="act-ul">
+      <li>Attrition at <strong>${lastAnnNum.toFixed(1)}% annualised</strong> — target &lt;15%. Voluntary exits dominate: fix growth path, not just pay</li>
+      <li>${ragTot.Amber>0?`<strong>${ragTot.Amber} Amber employees</strong> at flight risk — structured career conversations needed`:'RAG trending green — maintain check-in cadence'}</li>
+      <li>Review 2023–2024 cohort retention — early-career exits signal onboarding or manager gaps</li>
     </ul></div>
-    <div class="act-box"><div class="act-box-t">🏆 Scale What Works</div><ul class="act-ul">
-      <li>Pre-2020 cohorts show strong loyalty — document what keeps them and replicate</li>
-      <li>Avg tenure ${avgTenure.toFixed(1)} years — long-tenure employees are knowledge anchors, protect them</li>
-      <li>India team growing — formalise career framework before scale creates confusion</li>
+    <div class="act-box"><div class="act-box-t">🏆 Protect What Works</div><ul class="act-ul">
+      <li>Long-tenure employees (3+ years) are your institutional knowledge — identify top 20 and run targeted retention conversations</li>
+      <li>India team at ${india.length} — formalise career ladder before scale makes it harder</li>
     </ul></div>
-    <div class="act-box"><div class="act-box-t">📆 Plan This Year</div><ul class="act-ul">
-      <li>Build attrition risk score: RAG + rating trend + tenure + cohort = monthly flight risk list</li>
-      <li>Target annualised attrition <strong>&lt;12%</strong> by year-end</li>
-      <li>Dashboard auto-refreshes every 10 mins — data is always live from SharePoint</li>
+    <div class="act-box"><div class="act-box-t">📅 Plan Ahead</div><ul class="act-ul">
+      <li>Build a monthly flight-risk list: combine RAG Amber/Red + low rating + 2–3yr tenure = early warning</li>
+      <li>Target annualised attrition <strong>&lt;12%</strong> by year-end — requires ~${Math.max(0,Math.round((lastAnnNum-12)/12*active.length))} fewer exits than current pace</li>
     </ul></div>
   `;
-  document.getElementById('cta-bar').innerHTML=`<strong>Board Headline:</strong> <strong>${active.length} active employees</strong> (India ${india.length} · USA ${usa.length}). Attrition at <strong>${lastAnnNum.toFixed(1)}% annualised</strong>. <strong>${inact2026} exits already in 2026</strong>. RAG: ${rag.Green} Green · ${rag.Amber} Amber · ${rag.Red} Red. ${rag.Red>0?`<strong>Action required: ${rag.Red} Red-status employees.</strong>`:'All employees in healthy range.'}`;
+  document.getElementById('cta-bar').innerHTML=`<strong>Board Headline:</strong> <strong>${active.length} active</strong> (India ${india.length} · USA ${usa.length}). Attrition <strong>${lastAnnNum.toFixed(1)}% annualised</strong> · <strong>${inact2026} exits in 2026</strong>. RAG: ${ragTot.Green} Green · ${ragTot.Amber} Amber · ${ragTot.Red} Red. ${ragTot.Red>0?`<strong>🔴 ${ragTot.Red} employees need immediate attention.</strong>`:'Engagement stable — focus on attrition prevention.'}`;
 
-  // ── P8 MANAGER SPAN ──────────────────────────────────────────
-  renderManagerSpan(active);
-
-  // ── P9 ORG CHART ─────────────────────────────────────────────
-  renderOrgChart();
+  // P3 Manager cards (at bottom of Squad Intelligence)
+  renderMgrFilter();
 }
 
 // ── MANAGER SPAN LOGIC ────────────────────────────────────────
