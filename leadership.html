@@ -2153,8 +2153,11 @@ function renderOrgChart(){
   if(aiSel&&aiSel.options.length<=1){
     sorted.forEach(leader=>{
       const o=document.createElement('option');
-      o.value=leader.full;
-      o.textContent=`${leader.full} · ${leader['Corporate Title']||leader.Squad||''}`;
+      o.value=leader.full; // keep leader name as value for filtering
+      // Show "Payment Galaxy", "Trade Galaxy" etc. — squad-based galaxy name
+      const squad=leader.Squad||leader['Corporate Title']||leader.full;
+      const galaxyName=squad.endsWith('Galaxy')?squad:`${squad} Galaxy`;
+      o.textContent=`🌌 ${galaxyName}`;
       aiSel.appendChild(o);
     });
   }
@@ -2841,7 +2844,10 @@ async function runAIIntel(){
         return activeNames.has(ownName) || galaxyMgrNames.has(l1);
       });
 
-      galaxyLabel=`${galaxySel}'s Galaxy`;
+      const leaderNode=nodes[galaxySel];
+      const squad=leaderNode.Squad||leaderNode['Corporate Title']||galaxySel;
+      const galaxyName=squad.endsWith('Galaxy')?squad:`${squad} Galaxy`;
+      galaxyLabel=galaxyName;
       console.log(`🌌 Galaxy filter: ${activeAll.length} active, ${inactAll.length} inactive (exits from this galaxy)`);
     }
   }
