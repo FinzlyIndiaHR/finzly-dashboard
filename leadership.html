@@ -589,15 +589,26 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
       <div class="c-title"><div class="c-title-l">🤖 AI Workforce Intelligence</div></div>
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px">
         <div>
-          <div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px">View</div>
-          <select id="ai-galaxy-sel" style="font-family:'Outfit',sans-serif;font-size:.78rem;padding:6px 26px 6px 10px;border-radius:6px;border:1.5px solid var(--border);background:var(--bg);min-width:220px;appearance:none">
-            <option value="all">🌐 Whole Organisation</option>
+          <div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px">Squad</div>
+          <select id="ai-galaxy-sel" style="font-family:'Outfit',sans-serif;font-size:.78rem;padding:6px 26px 6px 10px;border-radius:6px;border:1.5px solid var(--border);background:var(--bg);min-width:200px;appearance:none">
+            <option value="all">🌐 All Squads</option>
+          </select>
+        </div>
+        <div>
+          <div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px">Year</div>
+          <select id="ai-year-sel" style="font-family:'Outfit',sans-serif;font-size:.78rem;padding:6px 26px 6px 10px;border-radius:6px;border:1.5px solid var(--border);background:var(--bg);min-width:140px;appearance:none">
+            <option value="all">📅 All Years</option>
+            <option value="2026">2026</option>
+            <option value="2025">2025</option>
+            <option value="2024">2024</option>
+            <option value="2023">2023</option>
+            <option value="2022">2022</option>
           </select>
         </div>
         <div style="align-self:flex-end">
           <button onclick="runAIIntel()" style="font-family:'Outfit',sans-serif;font-size:.82rem;padding:8px 20px;border-radius:8px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;cursor:pointer;font-weight:700">🤖 Generate Insights</button>
         </div>
-        <div style="font-size:.7rem;color:var(--muted);align-self:flex-end;padding-bottom:4px">Insights computed from your live data · no API call · no hallucination</div>
+        <div style="font-size:.7rem;color:var(--muted);align-self:flex-end;padding-bottom:4px">Computed from live data · squad + year specific · no hallucination</div>
       </div>
       <div class="ai-status">
         <div class="ai-dot" id="ai-dot"></div>
@@ -2819,20 +2830,45 @@ async function runAIIntel(){
 
   await new Promise(r=>setTimeout(r,500));
 
-  // Squad filter from column G
+  // Squad + Year filter
   const galaxySel=document.getElementById('ai-galaxy-sel')?.value||'all';
+  const yearSel=document.getElementById('ai-year-sel')?.value||'all';
   const allActive=EMP_DATA.filter(d=>d.Status==='Active'||d.ActiveFlag===1);
   const allInact =EMP_DATA.filter(d=>d.Status==='Inactive'||d.ActiveFlag===0);
   let activeAll=allActive, inactAll=allInact, galaxyLabel='Whole Organisation';
 
+  // Apply squad filter
   if(galaxySel!=='all'){
-    // Filter active employees by Squad (column G)
-    activeAll=allActive.filter(d=>d.Squad===galaxySel);
-    // Filter inactive by Squad too
-    inactAll=allInact.filter(d=>d.Squad===galaxySel);
+    activeAll=activeAll.filter(d=>d.Squad===galaxySel);
+    inactAll=inactAll.filter(d=>d.Squad===galaxySel);
     galaxyLabel=`${galaxySel} Squad`;
-    console.log(`🏗 Squad filter: ${activeAll.length} active, ${inactAll.length} inactive in ${galaxySel}`);
   }
+
+  // Apply year filter
+  // For active employees: filter by join year (Start Year)
+  // For inactive employees: filter by exit year (Termination Date)
+  // For attrition insights: show that specific year's exits
+  let yearLabel='All Years';
+  let inactFiltered=inactAll; // exits in the selected year (for attrition cards)
+  let activeJoinYear=activeAll; // people who joined in that year (for cohort cards)
+
+  if(yearSel!=='all'){
+    yearLabel=yearSel;
+    // Inactive filtered to exits in selected year
+    inactFiltered=inactAll.filter(d=>{
+      const ts=d['Termination Date Str']||dateStr(d['Termination Date']);
+      return ts&&ts.startsWith(yearSel);
+    });
+    // Active who joined in selected year (for cohort/tenure analysis)
+    activeJoinYear=activeAll.filter(d=>
+      String(d['Start Year']||'')==yearSel||
+      (d['Start Date']&&String(d['Start Date']).startsWith(yearSel))
+    );
+    galaxyLabel=`${galaxySel==='all'?'All Squads':galaxySel} · ${yearSel}`;
+  }
+
+  const scopeLabel=`${galaxySel==='all'?'Whole Org':galaxySel} · ${yearLabel}`;
+  console.log(`📊 AI Intel scope: ${scopeLabel} | Active: ${activeAll.length} | Exits this period: ${inactFiltered.length}`);
 
   // ── Compute metrics from galaxy-filtered data ─────────────────
   const total=activeAll.length;
@@ -2849,14 +2885,22 @@ async function runAIIntel(){
   const A=computeAttrition(galaxyPool);
   const lastAnn=A.length?A[A.length-1].ann_pct:0;
   const lastAnnMonth=A.length?A[A.length-1].month:'';
-  console.log(`📊 Galaxy attrition: ${A.length} months computed, last ann=${lastAnn}% (${lastAnnMonth}) for ${galaxyLabel}`);
+
+  // Exits scoped to selected year (or all if no year selected)
+  const exitsPool = yearSel==='all' ? inactAll
+    : inactAll.filter(d=>{
+        const ts=d['Termination Date Str']||dateStr(d['Termination Date']);
+        return ts&&ts.startsWith(yearSel);
+      });
+
   const exits2026=inactAll.filter(d=>{const ts=d['Termination Date Str']||dateStr(d['Termination Date']);return ts&&ts.startsWith('2026');}).length;
   const exits2025=inactAll.filter(d=>{const ts=d['Termination Date Str']||dateStr(d['Termination Date']);return ts&&ts.startsWith('2025');}).length;
   const exits2024=inactAll.filter(d=>{const ts=d['Termination Date Str']||dateStr(d['Termination Date']);return ts&&ts.startsWith('2024');}).length;
-  const volExits=inactAll.filter(d=>d['Termination Type']==='Voluntary').length;
-  const volPct=inactAll.length?Math.round(volExits/inactAll.length*100):0;
-  const moSoFar=new Date().getMonth()+1;
-  const proj2026=moSoFar>0?Math.round(exits2026/moSoFar*12):0;
+  const exitsThisPeriod=exitsPool.length;
+  const volExits=exitsPool.filter(d=>d['Termination Type']==='Voluntary').length;
+  const volPct=exitsThisPeriod?Math.round(volExits/exitsThisPeriod*100):0;
+  const moSoFar=yearSel==='2026'?new Date().getMonth()+1:12;
+  const proj2026=yearSel==='2026'&&moSoFar>0?Math.round(exits2026/moSoFar*12):exits2026;
 
   // Manager span
   const mgrMap=buildMgrMap(activeAll);
@@ -2864,9 +2908,10 @@ async function runAIIntel(){
   const avgSpan=mgrEntries.length?Math.round(mgrEntries.reduce((s,e)=>s+e[1].reports.length,0)/mgrEntries.length*10)/10:0;
   const overloaded=mgrEntries.filter(e=>e[1].reports.length>7);
   const singleReport=mgrEntries.filter(e=>e[1].reports.length===1).length;
-  const mgrPct=Math.round(mgrEntries.length/total*100);
+  const mgrPct=Math.round(mgrEntries.length/Math.max(total,1)*100);
 
-  // Performance
+  // Performance — filter by year if selected
+  const perfYear = yearSel==='all'||yearSel==='2026'||yearSel==='2025' ? '2025' : '2024';
   const r25=activeAll.filter(d=>d['Performance Rating 2025']>=1&&d['Performance Rating 2025']<=5);
   const avg25=r25.length?Math.round(r25.reduce((s,d)=>s+d['Performance Rating 2025'],0)/r25.length*100)/100:0;
   const r24=activeAll.filter(d=>d['Performance Rating 2024']>=1&&d['Performance Rating 2024']<=5);
@@ -2890,16 +2935,15 @@ async function runAIIntel(){
   const longTenure=tenured.filter(d=>d['Finzly Experience']>=3).length;
   const newJoins=tenured.filter(d=>d['Finzly Experience']<1).length;
 
-  // ── EXIT TENURE ANALYSIS — the core of what the user asked for ──
-  // Compute tenure at exit for each inactive employee using their Start Date + Termination Date
+  // Exit tenure — scoped to selected year
   const exitTenures=[];
   const exitBuckets={'<3m':0,'3-6m':0,'6-12m':0,'1-2y':0,'2-3y':0,'3y+':0};
-  inactAll.forEach(d=>{
+  exitsPool.forEach(d=>{
     const startD=parseEmpDate(d['Start Date']);
     const termD=parseEmpDate(d['Termination Date']);
     if(!startD||!termD)return;
     const days=(termD-startD)/(1000*60*60*24);
-    if(days<0||days>7300)return; // sanity check (max 20 years)
+    if(days<0||days>7300)return;
     const yrs=Math.round(days/365.25*100)/100;
     exitTenures.push({yrs,days,type:d['Termination Type']||'Unknown',reason:d['Reason of Termination']||''});
     if(days<90)exitBuckets['<3m']++;
@@ -2911,16 +2955,19 @@ async function runAIIntel(){
   });
   const avgExitTenure=exitTenures.length?Math.round(exitTenures.reduce((s,e)=>s+e.yrs,0)/exitTenures.length*100)/100:0;
   const medianExitTenure=exitTenures.length?exitTenures.slice().sort((a,b)=>a.yrs-b.yrs)[Math.floor(exitTenures.length/2)].yrs:0;
-  const earlyExits=exitTenures.filter(e=>e.yrs<1).length; // left within first year
-  const veryEarlyExits=exitTenures.filter(e=>e.days<180).length; // left within 6 months
+  const earlyExits=exitTenures.filter(e=>e.yrs<1).length;
+  const veryEarlyExits=exitTenures.filter(e=>e.days<180).length;
   const earlyPct=exitTenures.length?Math.round(earlyExits/exitTenures.length*100):0;
   const earlyVoluntary=exitTenures.filter(e=>e.yrs<1&&e.type==='Voluntary').length;
   const earlyInvoluntary=exitTenures.filter(e=>e.yrs<1&&e.type==='Involuntary').length;
 
-  // Cohort retention — scoped to this squad
-  const cohort2024=galaxyPool.filter(d=>(d['Start Year']===2024||String(d['Start Year'])==='2024'));
+  // Cohort retention — show the year's cohort if selected
+  const cohortYear=yearSel==='all'?'2024':yearSel;
+  const cohortCurr=galaxyPool.filter(d=>String(d['Start Year']||'')==cohortYear);
+  const cohortCurrRet=cohortCurr.length?Math.round(cohortCurr.filter(d=>d.Status==='Active').length/cohortCurr.length*100):0;
+  const cohort2024=galaxyPool.filter(d=>String(d['Start Year']||'')==='2024');
   const cohort2024ret=cohort2024.length?Math.round(cohort2024.filter(d=>d.Status==='Active').length/cohort2024.length*100):0;
-  const cohort2023=galaxyPool.filter(d=>(d['Start Year']===2023||String(d['Start Year'])==='2023'));
+  const cohort2023=galaxyPool.filter(d=>String(d['Start Year']||'')==='2023');
   const cohort2023ret=cohort2023.length?Math.round(cohort2023.filter(d=>d.Status==='Active').length/cohort2023.length*100):0;
 
   // Galaxy health score (0-100) — composite signal
