@@ -2148,16 +2148,17 @@ function renderOrgChart(){
     galaxyWrap.appendChild(section);
   });
 
-  // Populate AI Intel galaxy dropdown once
+  // Populate AI Intel dropdown from Squad column (col G) — unique squads only
   const aiSel=document.getElementById('ai-galaxy-sel');
   if(aiSel&&aiSel.options.length<=1){
-    sorted.forEach(leader=>{
+    const squads=[...new Set(
+      EMP_DATA.filter(d=>d.Status==='Active'||d.ActiveFlag===1)
+        .map(d=>d.Squad).filter(Boolean)
+    )].sort();
+    squads.forEach(sq=>{
       const o=document.createElement('option');
-      o.value=leader.full; // keep leader name as value for filtering
-      // Show "Payment Galaxy", "Trade Galaxy" etc. — squad-based galaxy name
-      const squad=leader.Squad||leader['Corporate Title']||leader.full;
-      const galaxyName=squad.endsWith('Galaxy')?squad:`${squad} Galaxy`;
-      o.textContent=`🌌 ${galaxyName}`;
+      o.value=sq;
+      o.textContent=`🏗 ${sq}`;
       aiSel.appendChild(o);
     });
   }
@@ -2818,38 +2819,19 @@ async function runAIIntel(){
 
   await new Promise(r=>setTimeout(r,500));
 
-  // Galaxy filter
+  // Squad filter from column G
   const galaxySel=document.getElementById('ai-galaxy-sel')?.value||'all';
   const allActive=EMP_DATA.filter(d=>d.Status==='Active'||d.ActiveFlag===1);
   const allInact =EMP_DATA.filter(d=>d.Status==='Inactive'||d.ActiveFlag===0);
   let activeAll=allActive, inactAll=allInact, galaxyLabel='Whole Organisation';
 
   if(galaxySel!=='all'){
-    const {nodes}=buildOrgTree(allActive);
-    if(nodes[galaxySel]){
-      // Get ALL names in this galaxy's subtree (active employees)
-      const subtreeNodes=gatherSubtree(nodes[galaxySel]);
-      const activeNames=new Set(subtreeNodes.map(n=>n.full));
-      // Also collect ALL L1 manager names within this galaxy's subtree
-      // This lets us find inactive employees who reported to anyone in this galaxy
-      const galaxyMgrNames=new Set(subtreeNodes.map(n=>n.full));
-
-      activeAll=allActive.filter(d=>activeNames.has(`${d['First Name']||''} ${d['Last Name']||''}`.trim()));
-
-      // Inactive: their L1 Manager must be in the galaxy subtree (at any level)
-      inactAll=allInact.filter(d=>{
-        const l1=String(d['L1 Manager']||'').trim();
-        const ownName=`${d['First Name']||''} ${d['Last Name']||''}`.trim();
-        // They were directly in the subtree (name match) OR their L1 manager is in the subtree
-        return activeNames.has(ownName) || galaxyMgrNames.has(l1);
-      });
-
-      const leaderNode=nodes[galaxySel];
-      const squad=leaderNode.Squad||leaderNode['Corporate Title']||galaxySel;
-      const galaxyName=squad.endsWith('Galaxy')?squad:`${squad} Galaxy`;
-      galaxyLabel=galaxyName;
-      console.log(`🌌 Galaxy filter: ${activeAll.length} active, ${inactAll.length} inactive (exits from this galaxy)`);
-    }
+    // Filter active employees by Squad (column G)
+    activeAll=allActive.filter(d=>d.Squad===galaxySel);
+    // Filter inactive by Squad too
+    inactAll=allInact.filter(d=>d.Squad===galaxySel);
+    galaxyLabel=`${galaxySel} Squad`;
+    console.log(`🏗 Squad filter: ${activeAll.length} active, ${inactAll.length} inactive in ${galaxySel}`);
   }
 
   // ── Compute metrics from galaxy-filtered data ─────────────────
@@ -2935,11 +2917,10 @@ async function runAIIntel(){
   const earlyVoluntary=exitTenures.filter(e=>e.yrs<1&&e.type==='Voluntary').length;
   const earlyInvoluntary=exitTenures.filter(e=>e.yrs<1&&e.type==='Involuntary').length;
 
-  // Cohort retention (scoped to galaxy pool)
-  const cohort2024=galaxyPool.filter(d=>d['Start Year']===2024||d['Start Year']==='2024'||(d['Start Date']&&String(d['Start Date']).startsWith('2024')));
-  const cohort2024still=cohort2024.filter(d=>d.Status==='Active').length;
-  const cohort2024ret=cohort2024.length?Math.round(cohort2024still/cohort2024.length*100):0;
-  const cohort2023=galaxyPool.filter(d=>d['Start Year']===2023||d['Start Year']==='2023'||(d['Start Date']&&String(d['Start Date']).startsWith('2023')));
+  // Cohort retention — scoped to this squad
+  const cohort2024=galaxyPool.filter(d=>(d['Start Year']===2024||String(d['Start Year'])==='2024'));
+  const cohort2024ret=cohort2024.length?Math.round(cohort2024.filter(d=>d.Status==='Active').length/cohort2024.length*100):0;
+  const cohort2023=galaxyPool.filter(d=>(d['Start Year']===2023||String(d['Start Year'])==='2023'));
   const cohort2023ret=cohort2023.length?Math.round(cohort2023.filter(d=>d.Status==='Active').length/cohort2023.length*100):0;
 
   // Galaxy health score (0-100) — composite signal
