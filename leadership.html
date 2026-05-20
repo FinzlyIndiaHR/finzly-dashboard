@@ -2222,15 +2222,8 @@ function renderGalaxyBody(body, section){
   if(!leaderName||!nodes[leaderName])return;
 
   const leader=nodes[leaderName];
-
-  // Render as proper horizontal tree — same style as leadership strip
-  // This correctly shows Prashant → Vinay → Anandhraj → ... as a hierarchy
   body.innerHTML=buildHorizontalTree(leader, 0);
-
-  // Auto-expand ALL levels so full tree is visible immediately
-  body.querySelectorAll('.ls-child-subtree').forEach(sub=>{
-    sub.style.display='block';
-  });
+  // Subtrees start COLLAPSED — click any card to expand their team
 }
 
 // Build a horizontal org tree (same visual as leadership strip, recursive)
@@ -2254,7 +2247,7 @@ function buildChildrenHtml(node, depth){
           <div class="ls-badges">
             <span class="ls-badge ${child.Country==='India'?'ind':'usa'}">${cf}</span>
             ${cCon?'<span class="ls-badge con">CON</span>':''}
-            ${cTotal>0?`<span class="ls-badge" style="background:rgba(255,255,255,.2)">${cTotal} below${cKids?``:''}</span>`:''}
+            ${cTotal>0?`<span class="ls-badge" style="background:rgba(255,255,255,.2)">${cTotal} below${cKids?` 👆`:''}</span>`:''}
           </div>
         </div>
         ${cKids>0?`<div class="ls-child-subtree" style="display:none">${buildChildrenHtml(child, depth+1)}</div>`:''}
@@ -2303,7 +2296,7 @@ function buildHorizontalTree(node, depth){
             <div class="ls-badges">
               <span class="ls-badge ${child.Country==='India'?'ind':'usa'}">${cf}</span>
               ${cCon?'<span class="ls-badge con">CON</span>':''}
-              ${cTotal>0?`<span class="ls-badge" style="background:rgba(255,255,255,.2)">${cTotal} below${cKids?``:''}</span>`:''}
+              ${cTotal>0?`<span class="ls-badge" style="background:rgba(255,255,255,.2)">${cTotal} below${cKids?` 👆`:''}</span>`:''}
             </div>
           </div>
           ${cKids>0?`<div class="ls-child-subtree" style="display:none">${buildChildrenHtml(child, depth+1)}</div>`:''}
