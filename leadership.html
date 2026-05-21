@@ -1394,75 +1394,68 @@ function render(){
   document.getElementById('city-cards').innerHTML=Object.entries(cities).sort((a,b)=>b[1]-a[1])
     .map(([c,n])=>`<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;border-top:3px solid var(--accent)"><div style="font-family:'Fira Code',monospace;font-size:1.6rem;font-weight:700;color:var(--accent)">${n}</div><div style="font-size:.72rem;font-weight:600;margin-top:3px">📍 ${c}</div><div style="font-size:.62rem;color:var(--muted);margin-top:2px">${active.length?Math.round(n/active.length*100):0}%</div></div>`).join('');
 
-  // ── COUNTRY SPLIT — world map with pins ──────────────────
+  // ── COUNTRY SPLIT — proper world map + pins ──────────────
   const indPct2=Math.round(india.length/active.length*100);
   const usaPct2=100-indPct2;
   const indiaMale=india.filter(d=>d.Gender==='Male').length;
   const indiaFemale=india.filter(d=>d.Gender==='Female').length;
   const usaMale=usa.filter(d=>d.Gender==='Male').length;
   const usaFemale=usa.filter(d=>d.Gender==='Female').length;
+
+  // Mercator % positions for pin placement on the world map image
+  // India centre ~79°E, 22°N  →  x=(79+180)/360=71.9%,  y=(90-22)/180=37.8%
+  // USA centre  ~96°W, 38°N  →  x=(-96+180)/360=23.3%,  y=(90-38)/180=28.9%
   document.getElementById('country-visual').innerHTML=`
-    <div style="position:relative;width:100%">
-      <!-- World map SVG — simplified -->
-      <svg viewBox="0 0 500 260" width="100%" style="display:block;border-radius:8px;background:linear-gradient(135deg,#e8f4fd,#dbeafe)">
-        <!-- Ocean background -->
-        <rect width="500" height="260" fill="#dbeafe" rx="8"/>
-        <!-- Very simplified world continents -->
-        <!-- North America -->
-        <path d="M55 55 L120 45 L140 60 L145 85 L130 110 L110 130 L90 125 L70 140 L55 130 L45 110 L50 85 Z" fill="#93c5fd" opacity=".7"/>
-        <!-- South America -->
-        <path d="M110 145 L140 140 L155 160 L150 195 L130 215 L110 210 L100 190 L105 165 Z" fill="#93c5fd" opacity=".7"/>
-        <!-- Europe -->
-        <path d="M210 45 L250 40 L265 55 L260 70 L245 80 L225 78 L210 68 Z" fill="#93c5fd" opacity=".7"/>
-        <!-- Africa -->
-        <path d="M215 90 L255 85 L270 100 L265 145 L245 170 L225 168 L210 150 L205 120 L210 100 Z" fill="#93c5fd" opacity=".7"/>
-        <!-- Asia (large) -->
-        <path d="M270 40 L380 35 L410 50 L415 80 L395 100 L370 105 L340 95 L310 100 L285 90 L270 75 L265 58 Z" fill="#93c5fd" opacity=".7"/>
-        <!-- India peninsula -->
-        <path d="M315 100 L340 95 L350 115 L345 140 L330 150 L318 140 L310 120 Z" fill="#93c5fd" opacity=".8"/>
-        <!-- South East Asia -->
-        <path d="M370 100 L410 95 L420 115 L405 125 L380 120 Z" fill="#93c5fd" opacity=".7"/>
-        <!-- Australia -->
-        <path d="M380 155 L430 148 L445 165 L440 190 L415 200 L390 192 L378 175 Z" fill="#93c5fd" opacity=".7"/>
-
-        <!-- USA pin — approx centre of USA ~(90,85) -->
-        <g transform="translate(90,82)">
-          <line x1="0" y1="0" x2="0" y2="-30" stroke="#1d4ed8" stroke-width="2"/>
-          <circle cx="0" cy="-30" r="18" fill="#1d4ed8" opacity=".95"/>
-          <text x="0" y="-26" text-anchor="middle" font-size="9" font-weight="800" fill="white">${usa.length}</text>
-          <text x="0" y="-17" text-anchor="middle" font-size="6" fill="white">USA</text>
-          <!-- Small male/female -->
-          <text x="0" y="-8" text-anchor="middle" font-size="5.5" fill="rgba(255,255,255,.85)">♂${usaMale} ♀${usaFemale}</text>
-          <circle cx="0" cy="-30" r="18" fill="none" stroke="white" stroke-width="1" opacity=".5"/>
-        </g>
-
-        <!-- India pin — approx centre of India ~(328,118) -->
-        <g transform="translate(328,115)">
-          <line x1="0" y1="0" x2="0" y2="-30" stroke="#0369a1" stroke-width="2"/>
-          <circle cx="0" cy="-30" r="22" fill="#0369a1" opacity=".95"/>
-          <text x="0" y="-26" text-anchor="middle" font-size="10" font-weight="800" fill="white">${india.length}</text>
-          <text x="0" y="-16" text-anchor="middle" font-size="6" fill="white">INDIA</text>
-          <text x="0" y="-7" text-anchor="middle" font-size="5.5" fill="rgba(255,255,255,.85)">♂${indiaMale} ♀${indiaFemale}</text>
-          <circle cx="0" cy="-30" r="22" fill="none" stroke="white" stroke-width="1" opacity=".5"/>
-        </g>
-
-        <!-- Legend -->
-        <rect x="8" y="220" width="200" height="32" rx="6" fill="white" opacity=".8"/>
-        <circle cx="22" cy="236" r="7" fill="#0369a1"/>
-        <text x="33" y="240" font-size="8" fill="#334155">India: ${india.length} (${indPct2}%)</text>
-        <circle cx="110" cy="236" r="7" fill="#1d4ed8"/>
-        <text x="121" y="240" font-size="8" fill="#334155">USA: ${usa.length} (${usaPct2}%)</text>
-      </svg>
-      <!-- Split bar below map -->
-      <div style="display:flex;height:20px;border-radius:10px;overflow:hidden;margin-top:8px;box-shadow:0 2px 6px rgba(0,0,0,.08)">
-        <div style="width:${indPct2}%;background:linear-gradient(90deg,#0369a1,#38bdf8);display:flex;align-items:center;justify-content:center">
-          <span style="font-size:.65rem;font-weight:700;color:#fff;white-space:nowrap;padding:0 6px">🇮🇳 India ${indPct2}%</span>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <!-- World map with pins -->
+      <div style="position:relative;width:100%;border-radius:10px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.1)">
+        <img
+          src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/World_map_-_low_resolution.svg/1280px-World_map_-_low_resolution.svg.png"
+          style="width:100%;display:block;filter:saturate(.35) brightness(1.05)"
+          onerror="this.src='https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson'; this.style.display='none'"
+        />
+        <!-- India pin -->
+        <div style="position:absolute;left:71.9%;top:37.8%;transform:translate(-50%,-100%)">
+          <div style="display:flex;flex-direction:column;align-items:center;filter:drop-shadow(0 2px 4px rgba(0,0,0,.3))">
+            <div style="background:#0369a1;color:#fff;border-radius:50%;width:44px;height:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px solid #fff;cursor:default">
+              <div style="font-size:.8rem;font-weight:800;line-height:1">${india.length}</div>
+              <div style="font-size:.45rem;font-weight:700;opacity:.85">INDIA</div>
+            </div>
+            <div style="width:2px;height:12px;background:#0369a1"></div>
+            <div style="width:6px;height:6px;background:#0369a1;border-radius:50%"></div>
+          </div>
         </div>
-        <div style="flex:1;background:linear-gradient(90deg,#1d4ed8,#818cf8);display:flex;align-items:center;justify-content:center">
-          <span style="font-size:.65rem;font-weight:700;color:#fff;white-space:nowrap;padding:0 6px">🇺🇸 USA ${usaPct2}%</span>
+        <!-- India tooltip -->
+        <div style="position:absolute;left:71.9%;top:37.8%;transform:translate(6px,-100%) translateY(-52px);background:rgba(3,105,161,.95);color:#fff;padding:5px 8px;border-radius:6px;font-size:.58rem;white-space:nowrap;line-height:1.5;pointer-events:none">
+          🇮🇳 India · ${india.length} (${indPct2}%)<br>♂ ${indiaMale} · ♀ ${indiaFemale}
+        </div>
+        <!-- USA pin -->
+        <div style="position:absolute;left:23.3%;top:28.9%;transform:translate(-50%,-100%)">
+          <div style="display:flex;flex-direction:column;align-items:center;filter:drop-shadow(0 2px 4px rgba(0,0,0,.3))">
+            <div style="background:#1d4ed8;color:#fff;border-radius:50%;width:40px;height:40px;display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px solid #fff;cursor:default">
+              <div style="font-size:.75rem;font-weight:800;line-height:1">${usa.length}</div>
+              <div style="font-size:.42rem;font-weight:700;opacity:.85">USA</div>
+            </div>
+            <div style="width:2px;height:12px;background:#1d4ed8"></div>
+            <div style="width:6px;height:6px;background:#1d4ed8;border-radius:50%"></div>
+          </div>
+        </div>
+        <!-- USA tooltip -->
+        <div style="position:absolute;left:23.3%;top:28.9%;transform:translate(6px,-100%) translateY(-48px);background:rgba(29,78,216,.95);color:#fff;padding:5px 8px;border-radius:6px;font-size:.58rem;white-space:nowrap;line-height:1.5;pointer-events:none">
+          🇺🇸 USA · ${usa.length} (${usaPct2}%)<br>♂ ${usaMale} · ♀ ${usaFemale}
+        </div>
+      </div>
+      <!-- Split bar -->
+      <div style="display:flex;height:22px;border-radius:11px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.1)">
+        <div style="width:${indPct2}%;background:linear-gradient(90deg,#0369a1,#0ea5e9);display:flex;align-items:center;justify-content:center">
+          <span style="font-size:.65rem;font-weight:700;color:#fff;padding:0 6px;white-space:nowrap">🇮🇳 India ${indPct2}%</span>
+        </div>
+        <div style="flex:1;background:linear-gradient(90deg,#1d4ed8,#6366f1);display:flex;align-items:center;justify-content:center">
+          <span style="font-size:.65rem;font-weight:700;color:#fff;padding:0 6px;white-space:nowrap">🇺🇸 USA ${usaPct2}%</span>
         </div>
       </div>
     </div>`;
+;
 
   // ── EMPLOYMENT TYPE — icon blocks ─────────────────────────
   const typeMap={};active.forEach(d=>{const t=d.Type||'Unknown';typeMap[t]=(typeMap[t]||0)+1;});
