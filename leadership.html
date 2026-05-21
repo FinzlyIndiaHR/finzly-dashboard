@@ -459,17 +459,17 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
       <div class="ch-box">
         <div class="ch-title">Headcount by Squad</div>
         <div class="ch-inf" id="inf-sq-hc"></div>
-        <div class="ch-wrap tall"><canvas id="ch-sq-bar"></canvas></div>
+        <div class="ch-wrap" style="height:420px"><canvas id="ch-sq-bar"></canvas></div>
       </div>
       <div class="ch-box">
         <div class="ch-title">RAG Health by Squad <span style="font-size:.58rem;color:var(--muted);font-weight:400">Green = engaged, Amber = at-risk, Red = act now</span></div>
         <div class="ch-inf" id="inf-sq-rag"></div>
-        <div class="ch-wrap tall"><canvas id="ch-sq-rag"></canvas></div>
+        <div class="ch-wrap" style="height:420px"><canvas id="ch-sq-rag"></canvas></div>
       </div>
       <div class="ch-box">
         <div class="ch-title">Manager Span by Squad <span style="font-size:.58rem;color:var(--muted);font-weight:400">Avg direct reports per L1 manager</span></div>
         <div class="ch-inf" id="inf-sq-span"></div>
-        <div class="ch-wrap tall"><canvas id="ch-span-sq"></canvas></div>
+        <div class="ch-wrap" style="height:420px"><canvas id="ch-span-sq"></canvas></div>
       </div>
     </div>
 
@@ -1492,22 +1492,66 @@ function render(){
       <div class="ins-txt">Largest squad: <strong>${maxSq} (${maxSqHC} people)</strong>. Smallest: <strong>${minSq} (${minSqHC})</strong>. ${maxSqHC>avgSqSize*2.5?`⚠ ${maxSq} is significantly larger than average (${avgSqSize}) — may have coordination overhead or unclear ownership. Consider splitting.`:''} Click any squad below to see sub-squad breakdown with RAG and manager detail.</div>
     </div>`;
 
-  // Squad HC chart with data labels
-  document.getElementById('inf-sq-hc').textContent=`How many people are in each squad. Larger squads may have coordination overhead — watch for communication gaps above 30 people.`;
-  mkChart('ch-sq-bar','bar',{labels:squads,datasets:[{label:'HC',data:squadHCs,backgroundColor:squads.map(s=>SQUAD_COLORS[s]||'#64748b'),borderRadius:6}]},{indexAxis:'y',plugins:{legend:{display:false},datalabels:{color:'#fff',font:{family:'Fira Code',size:9,weight:'bold'},anchor:'end',align:'left',formatter:v=>v}},scales:{x:{beginAtZero:true,ticks:{font:{family:'Fira Code',size:10}}},y:{ticks:{font:{family:'Outfit',size:10}}}},_datalabels:true});
+  // Squad HC chart — one bar per squad, clear labels
+  document.getElementById('inf-sq-hc').textContent=`Headcount per squad. Larger squads may have coordination overhead — watch above 30 people.`;
+  mkChart('ch-sq-bar','bar',{
+    labels:squads,
+    datasets:[{
+      label:'Active HC',
+      data:squadHCs,
+      backgroundColor:squads.map(s=>SQUAD_COLORS[s]||'#64748b'),
+      borderRadius:5,
+      barThickness:18,
+    }]
+  },{
+    indexAxis:'y',
+    plugins:{
+      legend:{display:false},
+      datalabels:{color:'#fff',font:{family:'Fira Code',size:9,weight:'bold'},anchor:'end',align:'left',formatter:v=>v}
+    },
+    scales:{
+      x:{beginAtZero:true,ticks:{font:{family:'Fira Code',size:10}},grid:{color:'#f0ede8'}},
+      y:{ticks:{font:{family:'Outfit',size:11},padding:4},grid:{display:false}}
+    },
+    _datalabels:true
+  });
 
   // RAG by squad
-  document.getElementById('inf-sq-rag').innerHTML=`<strong>Green</strong> = engaged & stable &nbsp;·&nbsp; <strong>Amber</strong> = at risk, needs conversation this month &nbsp;·&nbsp; <strong>Red</strong> = flight risk, act this week &nbsp;·&nbsp; <strong>Grey</strong> = no data, manager not running 1-on-1s`;
+  document.getElementById('inf-sq-rag').innerHTML=`<strong>Green</strong> = engaged & stable &nbsp;·&nbsp; <strong>Amber</strong> = at risk &nbsp;·&nbsp; <strong>Red</strong> = act this week &nbsp;·&nbsp; <strong>Grey</strong> = no RAG set`;
   mkChart('ch-sq-rag','bar',{labels:squads,datasets:[
-    {label:'Green ✓',data:squads.map(sq=>Object.values(tree[sq]).reduce((s,v)=>s+v.g,0)),backgroundColor:'rgba(22,163,74,.85)',borderRadius:3},
-    {label:'Amber ⚠',data:squads.map(sq=>Object.values(tree[sq]).reduce((s,v)=>s+v.a,0)),backgroundColor:'rgba(217,119,6,.85)',borderRadius:3},
-    {label:'Red ✕',data:squads.map(sq=>Object.values(tree[sq]).reduce((s,v)=>s+v.r,0)),backgroundColor:'rgba(220,38,38,.9)',borderRadius:3},
-    {label:'No Data',data:squads.map(sq=>Object.values(tree[sq]).reduce((s,v)=>s+v.n,0)),backgroundColor:'rgba(180,180,180,.35)',borderRadius:3},
-  ]},{indexAxis:'y',scales:{x:{stacked:true,beginAtZero:true,ticks:{font:{family:'Fira Code',size:10}}},y:{stacked:true,ticks:{font:{family:'Outfit',size:10}}}},_datalabels:true});
+    {label:'Green ✓',data:squads.map(sq=>Object.values(tree[sq]).reduce((s,v)=>s+v.g,0)),backgroundColor:'rgba(22,163,74,.85)',borderRadius:3,barThickness:18},
+    {label:'Amber ⚠',data:squads.map(sq=>Object.values(tree[sq]).reduce((s,v)=>s+v.a,0)),backgroundColor:'rgba(217,119,6,.85)',borderRadius:3,barThickness:18},
+    {label:'Red ✕',data:squads.map(sq=>Object.values(tree[sq]).reduce((s,v)=>s+v.r,0)),backgroundColor:'rgba(220,38,38,.9)',borderRadius:3,barThickness:18},
+    {label:'No Data',data:squads.map(sq=>Object.values(tree[sq]).reduce((s,v)=>s+v.n,0)),backgroundColor:'rgba(180,180,180,.35)',borderRadius:3,barThickness:18},
+  ]},{
+    indexAxis:'y',
+    scales:{
+      x:{stacked:true,beginAtZero:true,ticks:{font:{family:'Fira Code',size:10}},grid:{color:'#f0ede8'}},
+      y:{stacked:true,ticks:{font:{family:'Outfit',size:11},padding:4},grid:{display:false}}
+    },
+    _datalabels:true
+  });
 
   // Manager span chart
-  document.getElementById('inf-sq-span').innerHTML=`<strong>Green</strong> = healthy span (2–7) &nbsp;·&nbsp; <strong>Red</strong> = overloaded (&gt;7, manager cannot give enough attention) &nbsp;·&nbsp; <strong>Yellow</strong> = under-managed (≤1)`;
-  mkChart('ch-span-sq','bar',{labels:squads,datasets:[{label:'Avg reports/L1',data:sqSpans,backgroundColor:sqSpans.map(v=>v>7?'rgba(220,38,38,.8)':v<=1&&v>0?'rgba(217,119,6,.8)':'rgba(22,163,74,.8)'),borderRadius:6}]},{indexAxis:'y',plugins:{legend:{display:false},datalabels:{color:'#fff',font:{family:'Fira Code',size:9,weight:'bold'},anchor:'end',align:'left',formatter:v=>v>0?v:''}},scales:{x:{beginAtZero:true,ticks:{font:{family:'Fira Code',size:10}}},y:{ticks:{font:{family:'Outfit',size:10}}}},_datalabels:true});
+  document.getElementById('inf-sq-span').innerHTML=`<strong>Green</strong> = healthy (2–7) &nbsp;·&nbsp; <strong>Red</strong> = overloaded (&gt;7) &nbsp;·&nbsp; <strong>Yellow</strong> = under-managed (≤1)`;
+  mkChart('ch-span-sq','bar',{labels:squads,datasets:[{
+    label:'Avg reports/L1',
+    data:sqSpans,
+    backgroundColor:sqSpans.map(v=>v>7?'rgba(220,38,38,.8)':v<=1&&v>0?'rgba(217,119,6,.8)':'rgba(22,163,74,.8)'),
+    borderRadius:5,
+    barThickness:18,
+  }]},{
+    indexAxis:'y',
+    plugins:{
+      legend:{display:false},
+      datalabels:{color:'#fff',font:{family:'Fira Code',size:9,weight:'bold'},anchor:'end',align:'left',formatter:v=>v>0?v:''}
+    },
+    scales:{
+      x:{beginAtZero:true,ticks:{font:{family:'Fira Code',size:10}},grid:{color:'#f0ede8'}},
+      y:{ticks:{font:{family:'Outfit',size:11},padding:4},grid:{display:false}}
+    },
+    _datalabels:true
+  });
 
   document.getElementById('squad-tree').innerHTML=squads.map(sq=>{
     const subs=tree[sq];
