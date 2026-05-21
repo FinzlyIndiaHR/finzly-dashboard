@@ -1632,34 +1632,85 @@ function render(){
 
   const exitYrs=Object.keys(exitYrMap).sort();
 
-  // KPIs — use year-filtered attrInactiveYr
+  // ── Dynamic analytical KPIs based on current slice ──────────
   const totalInactiveYr = attrInactiveYr.length;
   const volCountYr = attrInactiveYr.filter(d=>d['Termination Type']==='Voluntary').length;
+  const involCountYr = attrInactiveYr.filter(d=>d['Termination Type']==='Involuntary').length;
   const volPct = totalInactiveYr ? Math.round(volCountYr/totalInactiveYr*100) : 0;
 
-  // 2026 exits (always from full pool for the banner)
   const exits2026=exitYrMap['2026']||{Voluntary:0,Involuntary:0,Unknown:0};
   const total2026=exits2026.Voluntary+exits2026.Involuntary+exits2026.Unknown;
   const moSoFar=new Date().getMonth()+1;
   const proj2026=moSoFar>0?Math.round(total2026/moSoFar*12):0;
 
-  // Year label for KPIs
   const yrLabel = selYear==='all'?'All time':selYear;
-  const exitsYrTotal = selYear==='all'
-    ? exitYrs.reduce((s,y)=>s+Object.values(exitYrMap[y]).reduce((a,b)=>a+b,0),0)
-    : (exitYrMap[selYear]?Object.values(exitYrMap[selYear]).reduce((a,b)=>a+b,0):0);
-
-  // Last annualised from filtered A
   const lastAnn=A.length?A[A.length-1].ann_pct:null;
   const lastMonth=A.length?A[A.length-1].month:'';
 
-  document.getElementById('inf-attr').innerHTML=`<strong>⚠ Exit Trend:</strong> ${exitYrs.map(y=>`<strong>${y}: ${Object.values(exitYrMap[y]).reduce((s,v)=>s+v,0)}</strong>`).join(' → ')} exits. 2026 already <strong>${total2026}</strong> in ${moSoFar} months → projected <strong>~${proj2026}/year</strong>. ${proj2026>40?'🚨 Highest ever — immediate retention action needed.':'⚠ Monitor closely.'} <strong>${volPct}% voluntary</strong> (${yrLabel}).`;
+  // Avg tenure at exit for this slice
+  const tenuresYr=[];
+  attrInactiveYr.forEach(d=>{
+    const sd=parseEmpDate(d['Start Date']),td=parseEmpDate(d['Termination Date']);
+    if(!sd||!td)return;
+    const days=(td-sd)/(1000*60*60*24);
+    if(days>0&&days<7300) tenuresYr.push(days/365.25);
+  });
+  const avgExitTenureYr=tenuresYr.length?(tenuresYr.reduce((a,b)=>a+b,0)/tenuresYr.length).toFixed(1):null;
+  const earlyExitPct=tenuresYr.length?Math.round(tenuresYr.filter(t=>t<1).length/tenuresYr.length*100):0;
+
+  // Trend vs prior year
+  const priorYear=selYear==='all'?null:String(parseInt(selYear)-1);
+  const priorExits=priorYear&&exitYrMap[priorYear]?Object.values(exitYrMap[priorYear]).reduce((a,b)=>a+b,0):null;
+  const trendVsPrior=priorExits!=null?Math.round((totalInactiveYr-priorExits)/Math.max(priorExits,1)*100):null;
+
+  // Active HC in the current filtered view
+  const activeInView=filtered.filter(d=>d.Status==='Active'||d.ActiveFlag===1).length;
+
+  // Context label
+  const sliceCtx=[
+    selYear!=='all'?selYear:'All Years',
+    document.getElementById('f-squad')?.value!=='all'?document.getElementById('f-squad').value:'All Squads',
+    document.getElementById('f-country')?.value!=='all'?document.getElementById('f-country').value:'All Countries',
+  ].filter(Boolean).join(' · ');
+
+  document.getElementById('inf-attr').innerHTML=
+    `<strong>Viewing:</strong> ${sliceCtx} &nbsp;|&nbsp; `+
+    `Exit trend: ${exitYrs.map(y=>`<strong>${y}: ${Object.values(exitYrMap[y]).reduce((s,v)=>s+v,0)}</strong>`).join(' → ')}. `+
+    `${selYear==='2026'?`2026 on pace for <strong>~${proj2026} exits</strong> (${moSoFar} months elapsed).`:''}`;
+
+  const annColor  = lastAnn>20?'var(--red)':lastAnn>12?'var(--amber)':'var(--green)';
+  const annSignal = lastAnn>20?'🔴 Above threshold — act now':lastAnn>12?'⚠ Elevated — monitor closely':'✅ Within healthy range';
+  const volSignal = volPct>60?'People choosing to leave — review growth & recognition':'Mix of managed exits — check hiring quality';
+  const tenureSignal = earlyExitPct>50?'Onboarding or hiring fit gap':'Retention gap at mid-tenure';
+  const trendColor = trendVsPrior==null?'var(--muted)':trendVsPrior>0?'var(--red)':'var(--green)';
+  const trendVal   = trendVsPrior==null?'—':(trendVsPrior>0?'↑':'↓')+Math.abs(trendVsPrior)+'%';
+  const trendSub   = trendVsPrior==null
+    ? 'Select a year to compare'
+    : trendVsPrior>0
+      ? `${totalInactiveYr} exits vs ${priorExits} in ${priorYear} — worsening`
+      : `${totalInactiveYr} exits vs ${priorExits} in ${priorYear} — improving`;
 
   document.getElementById('attr-kpis').innerHTML=`
-    <div class="attr-kpi"><div class="ak-lbl">Exits · ${yrLabel}</div><div class="ak-val">${totalInactiveYr}</div><div class="ak-sub">${selYear==='all'?'all years':'in '+selYear+' only'}</div></div>
-    <div class="attr-kpi a"><div class="ak-lbl">2026 Exits (so far)</div><div class="ak-val">${total2026}</div><div class="ak-sub">~${proj2026} projected/yr 🔴</div></div>
-    <div class="attr-kpi r"><div class="ak-lbl">Voluntary % · ${yrLabel}</div><div class="ak-val">${volPct}%</div><div class="ak-sub">${volCountYr} of ${totalInactiveYr} exits</div></div>
-    <div class="attr-kpi"><div class="ak-lbl">Annualised Attrition</div><div class="ak-val" style="color:var(--red)">${lastAnn?lastAnn.toFixed(1)+'%':'—'}</div><div class="ak-sub">${lastMonth?'as of '+lastMonth:'—'}</div></div>
+    <div class="attr-kpi">
+      <div class="ak-lbl">Annualised Rate · ${lastMonth||yrLabel}</div>
+      <div class="ak-val" style="color:${annColor}">${lastAnn?lastAnn.toFixed(1)+'%':'—'}</div>
+      <div class="ak-sub">${annSignal}</div>
+    </div>
+    <div class="attr-kpi a">
+      <div class="ak-lbl">Voluntary vs Involuntary · ${yrLabel}</div>
+      <div class="ak-val">${volPct}<span style="font-size:1rem">%</span> <span style="font-size:.75rem;color:var(--muted);font-weight:400">vol</span></div>
+      <div class="ak-sub">${volCountYr} voluntary · ${involCountYr} involuntary · ${volSignal}</div>
+    </div>
+    <div class="attr-kpi">
+      <div class="ak-lbl">Avg Tenure at Exit · ${yrLabel}</div>
+      <div class="ak-val" style="color:${earlyExitPct>50?'var(--red)':'var(--amber)'}">${avgExitTenureYr?avgExitTenureYr+'y':'—'}</div>
+      <div class="ak-sub">${earlyExitPct}% left within Year 1 · ${tenureSignal}</div>
+    </div>
+    <div class="attr-kpi g">
+      <div class="ak-lbl">Trend vs ${priorYear||'Prior Year'}</div>
+      <div class="ak-val" style="color:${trendColor}">${trendVal}</div>
+      <div class="ak-sub">${trendSub}</div>
+    </div>
   `;
 
   // Year-wise exits chart
