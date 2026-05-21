@@ -431,7 +431,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
       <div class="card"><div class="c-title"><div class="c-title-l">Employment Type</div></div><div class="ch-wrap" style="height:170px"><canvas id="ch-type"></canvas></div></div>
       <div class="card"><div class="c-title"><div class="c-title-l">Gender Distribution</div></div><div class="ch-wrap" style="height:170px"><canvas id="ch-gender"></canvas></div></div>
     </div>
-    <div class="ch-box"><div class="ch-title">Active Headcount by Squad</div><div class="ch-wrap tall"><canvas id="ch-sq-snap"></canvas></div></div>
+    <div class="ch-box"><div class="ch-title">Active Headcount by Squad</div><div class="ch-wrap" style="height:420px"><canvas id="ch-sq-snap"></canvas></div></div>
   </div>
 
   <!-- P2 -->
@@ -1364,7 +1364,18 @@ function render(){
   mkChart('ch-gender','doughnut',{labels:['Male','Female'],datasets:[{data:[male.length,female.length],backgroundColor:['#2563eb','#ec4899'],borderWidth:3,borderColor:'#fff'}]});
   const sqMap={};active.forEach(d=>{const s=d.Squad||'?';sqMap[s]=(sqMap[s]||0)+1;});
   const sqS=Object.entries(sqMap).sort((a,b)=>b[1]-a[1]);
-  mkChart('ch-sq-snap','bar',{labels:sqS.map(e=>e[0]),datasets:[{label:'HC',data:sqS.map(e=>e[1]),backgroundColor:sqS.map(e=>SQUAD_COLORS[e[0]]||'#64748b'),borderRadius:6}]},{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{font:{family:'Fira Code',size:10}}},y:{ticks:{font:{family:'Outfit',size:10}}}}});
+  mkChart('ch-sq-snap','bar',{
+    labels:sqS.map(e=>e[0]),
+    datasets:[{label:'HC',data:sqS.map(e=>e[1]),backgroundColor:sqS.map(e=>SQUAD_COLORS[e[0]]||'#64748b'),borderRadius:5,barThickness:18}]
+  },{
+    indexAxis:'y',
+    plugins:{legend:{display:false},datalabels:{color:'#fff',font:{family:'Fira Code',size:9,weight:'bold'},anchor:'end',align:'left',formatter:v=>v}},
+    scales:{
+      x:{beginAtZero:true,ticks:{font:{family:'Fira Code',size:10}},grid:{color:'#f0ede8'}},
+      y:{ticks:{font:{family:'Outfit',size:11},padding:4},grid:{display:false}}
+    },
+    _datalabels:true
+  });
 
   // P2 TREND
   const T=TREND_DATA;
