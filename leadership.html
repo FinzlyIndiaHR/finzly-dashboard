@@ -2009,16 +2009,31 @@ function renderMgrFilter(){
 }
 
 // ── ORG CHART - PROPER TOP-DOWN TREE ─────────────────────────
+// Eye-appealing medium-tone desaturated palette — not dark, not bright
 const SQUAD_DARK={
-  'Payment':'#b84010','Trade':'#0369a1','Professional Services':'#5b21b6',
-  'Digital':'#15803d','GTM':'#b45309','Production Support':'#1d4ed8',
-  'DevOps':'#374151','HR':'#be185d','Finance':'#0f766e',
-  'Account':'#b45309','InfoSec':'#4338ca','Management':'#44403c',
-  'Client Services':'#4d7c0f','Mgmt':'#44403c','PS':'#5b21b6',
-  'Prod Sup':'#1d4ed8','Infosec':'#4338ca','Customer Success':'#0e7490',
-  'Legal':'#92400e','Operation':'#78350f','Marketing':'#be185d',
+  'Payment':              '#5B8DB8',  // calm steel blue
+  'Trade':                '#5F9EA0',  // cadet teal
+  'Professional Services':'#7B8EB8',  // dusty periwinkle
+  'Digital':              '#5F8B6E',  // sage green
+  'GTM':                  '#8B7BAB',  // soft lavender
+  'Production Support':   '#5B8BA8',  // muted ocean
+  'DevOps':               '#7A8A8F',  // warm slate
+  'HR':                   '#A87B8B',  // dusty rose
+  'Finance':              '#5B8B7A',  // muted jade
+  'Account':              '#8B8B6B',  // warm khaki
+  'InfoSec':              '#6B7BAB',  // soft indigo
+  'Management':           '#8B8A88',  // warm grey
+  'Client Services':      '#5B9B8B',  // soft teal-green
+  'Marketing':            '#A8806B',  // warm adobe
+  'Legal':                '#7B8B6B',  // muted olive
+  'Operation':            '#7B8A9B',  // steel grey-blue
+  'Mgmt':                 '#8B8A88',
+  'PS':                   '#7B8EB8',
+  'Prod Sup':             '#5B8BA8',
+  'Infosec':              '#6B7BAB',
+  'Customer Success':     '#5B9B8B',
 };
-function sqColor(sq){return SQUAD_DARK[sq]||'#1e3a5f';}
+function sqColor(sq){return SQUAD_DARK[sq]||'#6B7A8B';}
 
 // ── BUILD TREE FROM L1 RELATIONSHIPS ─────────────────────────
 function buildOrgTree(employees){
