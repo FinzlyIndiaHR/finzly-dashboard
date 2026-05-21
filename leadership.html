@@ -399,7 +399,13 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
       <option value="inactive">Inactive Only</option>
     </select>
     <select id="f-year" onchange="applyFilter()">
-      <option value="all">All Join Years</option>
+      <option value="all">All Years</option>
+      <option value="2026">As of 2026</option>
+      <option value="2025">As of 2025</option>
+      <option value="2024">As of 2024</option>
+      <option value="2023">As of 2023</option>
+      <option value="2022">As of 2022</option>
+      <option value="2021">As of 2021</option>
     </select>
     <div class="fb-sep"></div>
     <button class="fb-reset" onclick="resetFilters()">↺ Reset</button>
@@ -1261,9 +1267,8 @@ function populateFilters(){
   squads.forEach(s=>{const o=document.createElement('option');o.value=o.textContent=s;sEl.appendChild(o);});
 
   // Populate join year filter from all employees (active + inactive)
-  const years=[...new Set(EMP_DATA.map(d=>d['Start Year']).filter(y=>y&&y>2010&&y<=new Date().getFullYear()))].sort((a,b)=>b-a);
-  const yEl=document.getElementById('f-year');
-  years.forEach(y=>{const o=document.createElement('option');o.value=y;o.textContent=`Joined ${y}`;yEl.appendChild(o);});
+  // Year dropdown already populated with fixed options in HTML — remove old dynamic population
+  // (static options: As of 2021–2026 already in HTML)
 }
 
 let filtered=[];
@@ -1273,16 +1278,35 @@ function applyFilter(){
   const squad=document.getElementById('f-squad').value;
   const status=document.getElementById('f-status').value;
   const year=document.getElementById('f-year').value;
+
   filtered=EMP_DATA.filter(d=>{
-    if(status==='active'   &&d.Status!=='Active'   &&d.ActiveFlag!==1)return false;
-    if(status==='inactive' &&d.Status!=='Inactive' &&d.ActiveFlag!==0)return false;
+    // "As of YEAR" = joined on or before Dec 31 of that year AND (still active OR left after that year)
+    if(year!=='all'){
+      const yr=parseInt(year);
+      const startYr=d['Start Year']?parseInt(d['Start Year']):null;
+      if(!startYr||startYr>yr)return false; // joined after this year → exclude
+      // If inactive, check if they left after this year end (still counted as active AS OF that year)
+      if(d.Status==='Inactive'||d.ActiveFlag===0){
+        const ts=d['Termination Date Str']||dateStr(d['Termination Date']);
+        if(!ts)return false;
+        const termYr=parseInt(ts.slice(0,4));
+        if(termYr<=yr){
+          // They left during or before this year — only include if status filter wants inactive
+          if(status==='active')return false;
+        }
+        // They left after this year — they were active AS OF that year
+      }
+    }
+    if(status==='active'   &&year==='all'&&d.Status!=='Active'   &&d.ActiveFlag!==1)return false;
+    if(status==='inactive' &&year==='all'&&d.Status!=='Inactive' &&d.ActiveFlag!==0)return false;
     if(country!=='all'&&d.Country!==country)return false;
     if(city   !=='all'&&d.City   !==city)   return false;
     if(squad  !=='all'&&d.Squad  !==squad)  return false;
-    if(year   !=='all'&&String(d['Start Year'])!==String(year))return false;
     return true;
   });
-  document.getElementById('f-info').textContent=filtered.length+' employee'+(filtered.length!==1?'s':'')+' in view'+(year!=='all'?' · Joined '+year:'');
+
+  const yearLabel=year==='all'?'':` · Active as of ${year}`;
+  document.getElementById('f-info').textContent=filtered.length+' employee'+(filtered.length!==1?'s':'')+' in view'+yearLabel;
   render();
 }
 function resetFilters(){
@@ -1370,32 +1394,74 @@ function render(){
   document.getElementById('city-cards').innerHTML=Object.entries(cities).sort((a,b)=>b[1]-a[1])
     .map(([c,n])=>`<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;border-top:3px solid var(--accent)"><div style="font-family:'Fira Code',monospace;font-size:1.6rem;font-weight:700;color:var(--accent)">${n}</div><div style="font-size:.72rem;font-weight:600;margin-top:3px">📍 ${c}</div><div style="font-size:.62rem;color:var(--muted);margin-top:2px">${active.length?Math.round(n/active.length*100):0}%</div></div>`).join('');
 
-  // ── COUNTRY SPLIT — flags + progress bar ─────────────────
+  // ── COUNTRY SPLIT — world map with pins ──────────────────
   const indPct2=Math.round(india.length/active.length*100);
   const usaPct2=100-indPct2;
+  const indiaMale=india.filter(d=>d.Gender==='Male').length;
+  const indiaFemale=india.filter(d=>d.Gender==='Female').length;
+  const usaMale=usa.filter(d=>d.Gender==='Male').length;
+  const usaFemale=usa.filter(d=>d.Gender==='Female').length;
   document.getElementById('country-visual').innerHTML=`
-    <div style="display:flex;flex-direction:column;gap:10px">
-      <div style="display:flex;height:26px;border-radius:14px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.1)">
-        <div style="width:${indPct2}%;background:linear-gradient(90deg,#0ea5e9,#38bdf8);display:flex;align-items:center;justify-content:center;transition:width .8s">
-          <span style="font-size:.68rem;font-weight:700;color:#fff;white-space:nowrap;padding:0 6px">${indPct2}%</span>
+    <div style="position:relative;width:100%">
+      <!-- World map SVG — simplified -->
+      <svg viewBox="0 0 500 260" width="100%" style="display:block;border-radius:8px;background:linear-gradient(135deg,#e8f4fd,#dbeafe)">
+        <!-- Ocean background -->
+        <rect width="500" height="260" fill="#dbeafe" rx="8"/>
+        <!-- Very simplified world continents -->
+        <!-- North America -->
+        <path d="M55 55 L120 45 L140 60 L145 85 L130 110 L110 130 L90 125 L70 140 L55 130 L45 110 L50 85 Z" fill="#93c5fd" opacity=".7"/>
+        <!-- South America -->
+        <path d="M110 145 L140 140 L155 160 L150 195 L130 215 L110 210 L100 190 L105 165 Z" fill="#93c5fd" opacity=".7"/>
+        <!-- Europe -->
+        <path d="M210 45 L250 40 L265 55 L260 70 L245 80 L225 78 L210 68 Z" fill="#93c5fd" opacity=".7"/>
+        <!-- Africa -->
+        <path d="M215 90 L255 85 L270 100 L265 145 L245 170 L225 168 L210 150 L205 120 L210 100 Z" fill="#93c5fd" opacity=".7"/>
+        <!-- Asia (large) -->
+        <path d="M270 40 L380 35 L410 50 L415 80 L395 100 L370 105 L340 95 L310 100 L285 90 L270 75 L265 58 Z" fill="#93c5fd" opacity=".7"/>
+        <!-- India peninsula -->
+        <path d="M315 100 L340 95 L350 115 L345 140 L330 150 L318 140 L310 120 Z" fill="#93c5fd" opacity=".8"/>
+        <!-- South East Asia -->
+        <path d="M370 100 L410 95 L420 115 L405 125 L380 120 Z" fill="#93c5fd" opacity=".7"/>
+        <!-- Australia -->
+        <path d="M380 155 L430 148 L445 165 L440 190 L415 200 L390 192 L378 175 Z" fill="#93c5fd" opacity=".7"/>
+
+        <!-- USA pin — approx centre of USA ~(90,85) -->
+        <g transform="translate(90,82)">
+          <line x1="0" y1="0" x2="0" y2="-30" stroke="#1d4ed8" stroke-width="2"/>
+          <circle cx="0" cy="-30" r="18" fill="#1d4ed8" opacity=".95"/>
+          <text x="0" y="-26" text-anchor="middle" font-size="9" font-weight="800" fill="white">${usa.length}</text>
+          <text x="0" y="-17" text-anchor="middle" font-size="6" fill="white">USA</text>
+          <!-- Small male/female -->
+          <text x="0" y="-8" text-anchor="middle" font-size="5.5" fill="rgba(255,255,255,.85)">♂${usaMale} ♀${usaFemale}</text>
+          <circle cx="0" cy="-30" r="18" fill="none" stroke="white" stroke-width="1" opacity=".5"/>
+        </g>
+
+        <!-- India pin — approx centre of India ~(328,118) -->
+        <g transform="translate(328,115)">
+          <line x1="0" y1="0" x2="0" y2="-30" stroke="#0369a1" stroke-width="2"/>
+          <circle cx="0" cy="-30" r="22" fill="#0369a1" opacity=".95"/>
+          <text x="0" y="-26" text-anchor="middle" font-size="10" font-weight="800" fill="white">${india.length}</text>
+          <text x="0" y="-16" text-anchor="middle" font-size="6" fill="white">INDIA</text>
+          <text x="0" y="-7" text-anchor="middle" font-size="5.5" fill="rgba(255,255,255,.85)">♂${indiaMale} ♀${indiaFemale}</text>
+          <circle cx="0" cy="-30" r="22" fill="none" stroke="white" stroke-width="1" opacity=".5"/>
+        </g>
+
+        <!-- Legend -->
+        <rect x="8" y="220" width="200" height="32" rx="6" fill="white" opacity=".8"/>
+        <circle cx="22" cy="236" r="7" fill="#0369a1"/>
+        <text x="33" y="240" font-size="8" fill="#334155">India: ${india.length} (${indPct2}%)</text>
+        <circle cx="110" cy="236" r="7" fill="#1d4ed8"/>
+        <text x="121" y="240" font-size="8" fill="#334155">USA: ${usa.length} (${usaPct2}%)</text>
+      </svg>
+      <!-- Split bar below map -->
+      <div style="display:flex;height:20px;border-radius:10px;overflow:hidden;margin-top:8px;box-shadow:0 2px 6px rgba(0,0,0,.08)">
+        <div style="width:${indPct2}%;background:linear-gradient(90deg,#0369a1,#38bdf8);display:flex;align-items:center;justify-content:center">
+          <span style="font-size:.65rem;font-weight:700;color:#fff;white-space:nowrap;padding:0 6px">🇮🇳 India ${indPct2}%</span>
         </div>
-        <div style="flex:1;background:linear-gradient(90deg,#7c3aed,#a78bfa);display:flex;align-items:center;justify-content:center">
-          <span style="font-size:.68rem;font-weight:700;color:#fff;white-space:nowrap;padding:0 6px">${usaPct2}%</span>
+        <div style="flex:1;background:linear-gradient(90deg,#1d4ed8,#818cf8);display:flex;align-items:center;justify-content:center">
+          <span style="font-size:.65rem;font-weight:700;color:#fff;white-space:nowrap;padding:0 6px">🇺🇸 USA ${usaPct2}%</span>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <div style="background:linear-gradient(135deg,#e0f2fe,#bae6fd);border-radius:12px;padding:12px;display:flex;align-items:center;gap:10px">
-          <span style="font-size:2rem">🇮🇳</span>
-          <div><div style="font-size:1.7rem;font-weight:800;color:#0369a1;line-height:1">${india.length}</div>
-          <div style="font-size:.6rem;font-weight:700;color:#0284c7">INDIA · ${indPct2}%</div></div>
-        </div>
-        <div style="background:linear-gradient(135deg,#ede9fe,#ddd6fe);border-radius:12px;padding:12px;display:flex;align-items:center;gap:10px">
-          <span style="font-size:2rem">🇺🇸</span>
-          <div><div style="font-size:1.7rem;font-weight:800;color:#6d28d9;line-height:1">${usa.length}</div>
-          <div style="font-size:.6rem;font-weight:700;color:#7c3aed">USA · ${usaPct2}%</div></div>
-        </div>
-      </div>
-      <div style="font-size:.62rem;color:var(--muted);text-align:center;padding:4px">🏢 India-heavy org · ${Math.round(india.filter(d=>d.Type==='Full Time').length/Math.max(india.length,1)*100)}% FTE in India · ${Math.round(usa.filter(d=>d.Type==='Full Time').length/Math.max(usa.length,1)*100)}% FTE in USA</div>
     </div>`;
 
   // ── EMPLOYMENT TYPE — icon blocks ─────────────────────────
@@ -1429,30 +1495,40 @@ function render(){
       <div style="font-size:.62rem;color:var(--muted);text-align:center;padding:4px">${conP>15?'⚠ High contractor ratio — review cost & dependency':'✅ Healthy FTE-to-contractor balance'}</div>
     </div>`;
 
-  // ── GENDER — avatar dot grid ──────────────────────────────
+  // ── GENDER — person silhouette style (like reference image) ─
   const malePct2=Math.round(male.length/active.length*100);
   const femPct2=100-malePct2;
-  const totalDots=50;
-  const femaleDots=Math.round(female.length/active.length*totalDots);
-  const avatarDots=Array.from({length:totalDots},(_,i)=>
-    `<span style="font-size:1.25rem;line-height:1.15">${i<femaleDots?'👩':'👨'}</span>`
-  ).join('');
+  // SVG person silhouettes
+  const maleSVG=`<svg viewBox="0 0 40 80" width="32" height="64" fill="#8B6914"><circle cx="20" cy="12" r="10"/><path d="M8 28 Q8 20 20 20 Q32 20 32 28 L36 60 Q36 65 30 65 L28 80 L20 75 L12 80 L10 65 Q4 65 4 60 Z"/></svg>`;
+  const femSVG=`<svg viewBox="0 0 40 80" width="32" height="64" fill="#C2185B"><circle cx="20" cy="12" r="10"/><path d="M8 28 Q8 20 20 20 Q32 20 32 28 L38 50 Q38 58 30 58 L28 80 L20 75 L12 80 L10 58 Q2 58 2 50 Z"/><path d="M6 34 Q20 42 34 34" stroke="#C2185B" stroke-width="3" fill="none"/></svg>`;
+
   document.getElementById('gender-visual').innerHTML=`
     <div style="display:flex;flex-direction:column;gap:10px">
-      <div style="display:flex;flex-wrap:wrap;gap:1px;padding:8px 6px;background:#f8f8f6;border-radius:10px;justify-content:center;line-height:1.3">${avatarDots}</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <div style="background:linear-gradient(135deg,#eff6ff,#bfdbfe);border-radius:12px;padding:12px;display:flex;align-items:center;gap:10px">
-          <span style="font-size:1.8rem">👨</span>
-          <div><div style="font-size:1.7rem;font-weight:800;color:#1d4ed8;line-height:1">${male.length}</div>
-          <div style="font-size:.6rem;font-weight:700;color:#2563eb">MALE · ${malePct2}%</div></div>
+      <!-- Silhouette figures row -->
+      <div style="display:flex;align-items:flex-end;justify-content:center;gap:24px;padding:8px 0">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+          <div style="font-size:2.4rem;line-height:1">🚹</div>
+          <div style="font-size:1.6rem;font-weight:800;color:#1d4ed8;line-height:1">${male.length}</div>
+          <div style="font-size:.75rem;font-weight:700;color:#2563eb">${malePct2}%</div>
+          <div style="font-size:.58rem;color:var(--muted)">Male</div>
         </div>
-        <div style="background:linear-gradient(135deg,#fdf2f8,#fbcfe8);border-radius:12px;padding:12px;display:flex;align-items:center;gap:10px">
-          <span style="font-size:1.8rem">👩</span>
-          <div><div style="font-size:1.7rem;font-weight:800;color:#be185d;line-height:1">${female.length}</div>
-          <div style="font-size:.6rem;font-weight:700;color:#db2777">FEMALE · ${femPct2}%</div></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+          <div style="font-size:2.4rem;line-height:1">🚺</div>
+          <div style="font-size:1.6rem;font-weight:800;color:#be185d;line-height:1">${female.length}</div>
+          <div style="font-size:.75rem;font-weight:700;color:#db2777">${femPct2}%</div>
+          <div style="font-size:.58rem;color:var(--muted)">Female</div>
         </div>
       </div>
-      <div style="font-size:.62rem;color:var(--muted);text-align:center;padding:4px">${femPct2<28?`⚠ ${femPct2}% female — tech industry avg 28–35%. Opportunity to improve.`:femPct2<=40?`✅ ${femPct2}% female — strong diversity for a fintech org.`:`🌟 ${femPct2}% female — above average for the industry.`}</div>
+      <!-- Split bar -->
+      <div style="display:flex;height:20px;border-radius:10px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.08)">
+        <div style="width:${malePct2}%;background:linear-gradient(90deg,#1d4ed8,#60a5fa);display:flex;align-items:center;justify-content:center">
+          <span style="font-size:.62rem;font-weight:700;color:#fff;padding:0 5px;white-space:nowrap">${malePct2}%</span>
+        </div>
+        <div style="flex:1;background:linear-gradient(90deg,#be185d,#f472b6);display:flex;align-items:center;justify-content:center">
+          <span style="font-size:.62rem;font-weight:700;color:#fff;padding:0 5px;white-space:nowrap">${femPct2}%</span>
+        </div>
+      </div>
+      <div style="font-size:.62rem;color:var(--muted);text-align:center">${femPct2<28?`⚠ ${femPct2}% female — tech avg 28–35%. Room to improve.`:femPct2<=40?`✅ ${femPct2}% female — strong diversity for fintech.`:`🌟 ${femPct2}% female — above industry average.`}</div>
     </div>`;
 
   // Squad breakdown
