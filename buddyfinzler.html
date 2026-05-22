@@ -638,9 +638,19 @@ const FLOWS = {
   }
 };
 
+function isNewQuestion(u){
+  const t=u.toLowerCase().trim();
+  // Short dept-keyword replies stay in flow (they're role answers)
+  if(/\b(engineer|qa|hr|product|finance|support|devops|engineering|testing|operations)\b/.test(t)&&t.split(' ').length<8)return false;
+  // Detect new question patterns
+  return/what is|what are|how do|how can|how to|how much|how many|can i|who is|who are|who should|where is|tell me|icc|posh|leave policy|insurance|salary|travel|probation|notice period|appraisal|dress code|parking|wifi|locker|udemy|adp|payslip|onboard|equipment|biometric|referral|medical|maternity|paternity|bereavement|holiday|comp off|resign|quit|bgv|nda|retirement|eeo/.test(t);
+}
+
 function routeFlowStep(u){
   const{flow,step}=conversationState;
   if(!flow)return null;
+  // Soft flows: if user asks a new question, clear flow and let engine handle it fresh
+  if(["why_role","concern"].includes(flow)&&isNewQuestion(u)){clearFlow();return null;}
   if(flow==="resign"){
     if(step==="ask_manager")return FLOWS.resign_ask_manager(u);
     if(step==="ask_resolved")return FLOWS.resign_ask_resolved(u);
@@ -650,7 +660,6 @@ function routeFlowStep(u){
   if(flow==="harassment")return FLOWS.harassment_immediate();
   if(flow==="sick"&&step==="ask_days")return FLOWS.sick_ask_days(u);
   if(flow==="performance"&&step==="ask_type")return FLOWS.performance_ask_type(u);
-  // leave_balance flow removed
   if(flow==="maternity"&&step==="ask_service")return FLOWS.maternity_ask_service(u);
   if(flow==="why_role"&&step==="pick_dept")return FLOWS.why_finzly_role(u);
   if(flow==="concern"){
@@ -658,86 +667,6 @@ function routeFlowStep(u){
     if(step==="ask_spoken_manager")return FLOWS.concern_ask_spoken_manager(u);
     if(step==="manager_concern")return FLOWS.concern_manager_concern(u);
   }
-  // REIMBURSEMENT — bare word without context: ask what type
-  if (/\b(reimbursement|reimburse|claim back|get back money|expense claim|expenses)\b/i.test(t)) {
-    const hasTravel  = /\b(travel|trip|hotel|flight|train|cab|driving|pune|chennai|charlotte|outstation)\b/i.test(t);
-    const hasMedical = /\b(hospital|medical|doctor|medicine|treatment|surgery|icu|health)\b/i.test(t);
-    const hasFood    = /\b(food|dinner|lunch|meal|cab after 8|late night|working late)\b/i.test(t);
-
-    // If context is clear, let travel handler or KB deal with it
-    if (hasTravel)  CTX.topic = "travel";
-    if (hasMedical) CTX.topic = null; // let mediclaim KB handle
-
-    // If bare reimbursement with no clear context — ask
-    if (!hasTravel && !hasMedical && !hasFood) {
-      return {
-        lines:[
-          "Of course — happy to help with reimbursements! 😊",
-          "Could you tell me a bit more about what you'd like to claim? Just so I give you the right answer."
-        ],
-        quickReplies:[
-          {label:"Travel / hotel / food on trip", type:"neutral", reply:"I want to know about travel reimbursement hotel food allowance"},
-          {label:"Driving / per km / vehicle", type:"neutral", reply:"I am driving and want to know per km reimbursement"},
-          {label:"Medical / hospital bill", type:"neutral", reply:"I want to claim medical hospital reimbursement"},
-          {label:"Late night dinner / cab", type:"neutral", reply:"I want to claim late night dinner or cab reimbursement"}
-        ]
-      };
-    }
-  }
-
-  // TRAVEL — domestic or international per diem / hotel / driving / vehicle reimbursement
-  if (CTX.topic === "travel" || /\b(travel|traveling|travelling|per diem|perdiem|per-diem|hotel|trip to|outstation|going to|business trip|driving|drive to|per km|km reimbursement|travel reimbursement)\b/i.test(t)) {
-    const isPune = /pune/i.test(t);
-    const isChennai = /chennai/i.test(t);
-    // Only international if explicitly mentioning USA/abroad — NOT if mentioning Indian cities
-    const isIntl = /\b(usa|united states|international|abroad|onsite|charlotte)\b/i.test(t) && !isPune && !isChennai;
-    const isDriving = /\b(driving|drive|per km|km|vehicle|own vehicle|bike|car|cab|two wheeler|two-wheeler)\b/i.test(t);
-    const city = isPune ? "**Pune**" : isChennai ? "**Chennai**" : "your destination";
-
-    // Driving / vehicle reimbursement query
-    if (isDriving) {
-      return {
-        section:"Section 16 – Travel Policy",
-        lines:[
-          "For travel by personal vehicle, Finzly reimburses at a **per-km rate**. 😊",
-          "The exact per-km rate is based on your designation/band and is confirmed by HR.\n\nFor reference, typical domestic travel is handled by:\n- 🚗 **Company-arranged cab** — at actuals\n- 🚆 **Train:** AC 2 or 3 Tier reimbursed\n- ✈️ **Air:** Economy class reimbursed",
-          "For the specific per-km rate applicable to your grade, please reach out to **HR** at hr-india@finzly.com with your designation. 😊"
-        ],
-        needsHR: true,
-        routingReason: "Per-km vehicle reimbursement rate — depends on designation/band",
-        followUps:["What is the domestic travel per diem?","What is the hotel allowance?"]
-      };
-    }
-
-    if (isIntl) {
-      return {
-        section:"Section 16 – Travel Policy",
-        lines:[
-          "For **international travel**, Finzly covers all the major expenses. 😊",
-          "- ✈️ Flights, visa, travel insurance, lodging — all company-paid\n- 🍽️ **USA Per Diem: USD 80/day** — covers food + incidentals, no bills needed\n- Starts from the day you land, ends the day you depart\n- Additional official expenses (client meals): claim at actuals with PM approval",
-          "**Next step:** Submit travel request to HR with Practice Head approval 3 days in advance. 😊"
-        ],
-        followUps:["What is the domestic travel policy?","What does the company pay for hotel?"]
-      };
-    }
-
-    // Domestic travel — give Pune-specific or general answer
-    const hotelRate = isPune ? "Rs. 4,000/night" : "Rs. 3,000–5,000/night (depends on city type)";
-    const foodRate  = isPune ? "Rs. 500/day"     : "Rs. 400–600/day (depends on city type)";
-
-    return {
-      section:"Section 16 – Travel Policy",
-      lines:[
-        "Here's your **domestic travel entitlement** for " + city + ". 😊",
-        "- 🏨 **Hotel:** " + hotelRate + "\n- 🍽️ **Food allowance:** " + foodRate + "\n- ✈️ Air: Economy class | 🚆 Train: AC 2 or 3 Tier\n- 🕒 Give **3 days notice** before travel",
-        "Non-reimbursable: alcohol, cigarettes, clothing, personal entertainment.",
-        "**Next step:** Submit your travel request to HR with Practice Head approval. 😊"
-      ],
-      followUps:["What is the USA per diem?","What is the vehicle/driving reimbursement?","What counts as Type 1 city?"]
-    };
-  }
-
-
   return null;
 }
 
@@ -767,6 +696,18 @@ function getFlowOpeningQuestion(flow){
 // HR POLICY KB
 // ─────────────────────────────────────────────────────────────────
 const KB = [
+  {
+    keys:["icc","internal complaints committee","icc details","icc members","icc contact","posh committee","who is icc","icc chennai","icc pune","complaint committee","harassment committee","internal committee","posh icc","file complaint","icc member details","icc contacts","need icc","icc information"],
+    section:"Section 15 – POSH / ICC",
+    lines:[
+      "Of course — here are the **Internal Complaints Committee (ICC)** members at Finzly. 💙",
+      "**Chennai ICC Members:**\n- Divya Moorthy — divya.moorthy@finzly.com\n- Bharathkumar M — Bharathkumar.m@finzly.com\n- Abirami R — abirami.r@finzly.com",
+      "**Pune ICC Members:**\n- Vishwata Mayekar — vishwata.mayekar@finzly.com\n- Andleeb Sohail — andleeb.sohail@finzly.com\n- Prashant Choudhary — prashant@finzly.com",
+      "The ICC handles all complaints under the **POSH (Prevention of Sexual Harassment)** policy.\n\n- File your complaint **within 15 days** of the incident\n- All proceedings are **strictly confidential**\n- You are **fully protected** — zero retaliation permitted\n- You can also raise via **She-Box** (Ministry of Women & Child Development)",
+      "Please reach out to any ICC member directly — you don't have to go through HR first. You are safe here. 💙"
+    ],
+    followUps:["What is the POSH policy?","What is the open door policy?","What is EEO?"]
+  },
   {keys:["office timing","work hours","working hours","timing","start time","login time","office hours","9:30","what are my office timings","when do i start"],section:"Section 5 – Work Timings",lines:["Great question! 😊 Here are your **office timings** at Finzly.","**Mon–Fri**, 45 hrs/week (including 1-hr lunch) | Minimum **40 hrs/week** (excl. lunch) | **6 hrs in office/day** (excl. breaks) | Log in by **9:30 AM**","WFH employees log in/out via **ADP** for attendance compliance. Late? Inform manager **at least 1 hr before** start time. 😊"],followUps:["What is the attendance policy?","What is the dress code?"]},
   {keys:["earned leave","el","annual leave","how many leave","how many leaves","leave entitlement","leave balance","leaves do i get","leave policy","types of leave","how many el","earned leave balance","how many days leave"],section:"Section 7.4.1 – Earned Leave",lines:["Of course! 😊 Happy to help with your leave questions.","**Earned Leave (EL):** 10 days/year | Accrued at 0.8 days/month | Apply **2 days in advance** via **HRMS portal** with manager approval","EL carries forward — max **30 days**. Above 30 lapses. On **resignation**, unused EL encashed at basic salary. 😊"],followUps:["Can I carry forward my earned leaves?","How do I apply for leave?","What is sick leave?"]},
     {
@@ -874,6 +815,28 @@ const KB = [
   {keys:["eeo","equal opportunity","discrimination","diversity","inclusion","equal employment"],section:"Section 2 – EEO",lines:["Finzly is committed to **Equal Employment Opportunity**. 💙","No discrimination on basis of race, colour, gender, age, religion, disability, marital status, or sexual orientation. Report to manager or HR — **no retaliation** guaranteed.","Email hr-india@finzly.com for full confidential support. 💙"],followUps:["What is the open door policy?","What is POSH?"]},
   {keys:["nda","non disclosure","confidentiality","confidential","non-disclosure"],section:"Section 3.5 – NDA",lines:["All employees must **sign an NDA** on joining Finzly. It protects confidential, proprietary, and trade secret information.","Confidentiality obligations **continue even after you leave**. Breach = grounds for **summary dismissal**. 😊"],followUps:["What documents do I need on Day 1?"]},
   {keys:["retirement","retire","retirement age"],section:"Section 3.7 – Retirement Age",lines:["Retirement age at Finzly is **60 years**. Service automatically ceases on attaining that age. For queries, reach out to HR. 😊"],followUps:["What is the notice period?"]},
+  {
+    keys:["icc","icc details","icc members","internal complaints","complaints committee","icc contact","icc member","icc committee","who is icc","posh committee","posh members","posh contact","complaint committee","sexual harassment committee","icc chennai","icc pune","raise complaint","file complaint"],
+    section:"Section 15 – POSH / ICC",
+    lines:[
+      "Here are the **Internal Complaints Committee (ICC)** members at Finzly. 💙",
+      "**Chennai ICC:**\n- Divya Moorthy — divya.moorthy@finzly.com\n- Bharathkumar M — Bharathkumar.m@finzly.com\n- Abirami R — abirami.r@finzly.com",
+      "**Pune ICC:**\n- Vishwata Mayekar — vishwata.mayekar@finzly.com\n- Andleeb Sohail — andleeb.sohail@finzly.com\n- Prashant Choudhary — prashant@finzly.com",
+      "The ICC handles complaints under the **POSH Act (Prevention of Sexual Harassment)**. All complaints are completely confidential and you are fully protected from any retaliation.\n\nYou can also raise via **She-Box** (Ministry of Women & Child Development). 💙"
+    ],
+    followUps:["What is the POSH policy?","How do I file a complaint?","What is EEO?"]
+  },
+  {
+    keys:["icc","icc details","icc members","internal complaints","complaints committee","icc contact","icc member","icc committee","who is icc","posh committee","posh members","posh contact","icc chennai","icc pune","raise complaint","file complaint","file posh complaint"],
+    section:"Section 15 – POSH / ICC",
+    lines:[
+      "Here are the **Internal Complaints Committee (ICC)** members at Finzly. 💙",
+      "**Chennai ICC:**\n- Divya Moorthy — divya.moorthy@finzly.com\n- Bharathkumar M — Bharathkumar.m@finzly.com\n- Abirami R — abirami.r@finzly.com",
+      "**Pune ICC:**\n- Vishwata Mayekar — vishwata.mayekar@finzly.com\n- Andleeb Sohail — andleeb.sohail@finzly.com\n- Prashant Choudhary — prashant@finzly.com",
+      "All complaints are completely **confidential** and you are fully protected from retaliation. You can also raise via **She-Box** (Ministry of Women & Child Development). 💙"
+    ],
+    followUps:["What is the POSH policy?","What is EEO?","What is the open door policy?"]
+  },
   {keys:["night shift","night shift allowance","night allowance","shift allowance"],section:"Section 17 – Night Shift Allowance",needsHR:true,routingReason:"Night shift allowance is role/band specific — HR can confirm your exact entitlement",lines:["Finzly has a **Night Shift Allowance** policy (updated Nov 2025). Specific rates depend on your **role and designation**.","Email **hr-india@finzly.com** with your employee ID and designation for exact details. 😊"],followUps:["What is the late night dinner benefit?","What are office timings?"]},
   {keys:["bgv","background verification","background check","criminal check"],section:"Section 3.4 – Background Verification",lines:["**BGV covers:** Employment verification · Address · Identity · Criminal background check.","A **positive BGV report** is required for international travel (including probationers). Ensure all joining documents are accurate for a smooth process. 😊"],followUps:["What documents do I need on Day 1?","What is probation?"]},
   {keys:["intern leave","probation leave","fresher leave","leave during probation","leave as intern"],section:"Section 7.4.9 – Intern/Probation Leave",lines:["After **more than 1 month** of continuous service: **1 day of leave per month** (0.5 Sick + 0.5 Casual). Any unused leave **lapses** at end of period — cannot be encashed.","Apply via **ADP** with manager approval. 😊"],followUps:["What is probation?","How do I apply for leave?"]},
@@ -1037,11 +1000,11 @@ function findKB(q){
   }
   if(bestScore>0)return best;
   // Fallback: partial word match
-  const words=low.split(/\s+/).filter(w=>w.length>3);
+  const words=low.split(/\s+/).filter(w=>w.length>4);
   for(const e of [...COMPANY_KB,...KB])
     for(const k of e.keys)
       for(const w of words)
-        if(k.includes(w)&&w.length>4)return e;
+        if(k.includes(w)&&w.length>5)return e;
   return null;
 }
 
@@ -1699,10 +1662,21 @@ function handleSend(overrideText){
   // 1. Update conversation context (role, emotion, topic, location, history)
   updateCTX(text);
 
-  // 2. If we're inside an active flow, route to it
+  // 2. If we're inside an active flow, check if user is asking something NEW
   if(conversationState.flow){
-    const fr=routeFlowStep(text);
-    if(fr){streamResponse(fr,text);return;}
+    // If user clearly switched topic — exit flow and answer fresh
+    const isNewQuestion = findKB(text) !== null;
+    const isNewTrigger = detectFlowTrigger(text) !== null;
+    const isSmartMatch = smartConversationalResponse(text) !== null;
+    
+    // Only stay in flow if none of the above match (i.e. user is genuinely responding to our question)
+    if(!isNewQuestion && !isNewTrigger && !isSmartMatch){
+      const fr=routeFlowStep(text);
+      if(fr){streamResponse(fr,text);return;}
+    } else {
+      // User changed topic — clear the flow and fall through to answer their new question
+      clearFlow();
+    }
   }
 
   // 3. Check for immediate triggers (harassment, sick, performance, maternity)
