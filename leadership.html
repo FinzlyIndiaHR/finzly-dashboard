@@ -1344,27 +1344,60 @@ function render(){
   const female=active.filter(d=>d.Gender==='Female');
   document.getElementById('h-active').textContent='Active: '+active.length;
 
-  // P1 KPIs
+  // ── P1 YEAR-AWARE CALCULATIONS ────────────────────────────
+  const snapYear=document.getElementById('f-year').value; // "all" or "2024" etc.
+  const snapYrLabel=snapYear==='all'?'All Time':`As of ${snapYear}`;
+  const snapYrInt=snapYear==='all'?null:parseInt(snapYear);
+
+  // Exits scoped to the selected year (if "as of 2024" → exits that happened IN 2024 or before)
+  const allInactive=EMP_DATA.filter(d=>d.Status==='Inactive'||d.ActiveFlag===0);
+  const exitsInYear= snapYrInt
+    ? allInactive.filter(d=>{
+        const ts=d['Termination Date Str']||dateStr(d['Termination Date']);
+        if(!ts)return false;
+        const termYr=parseInt(ts.slice(0,4));
+        return termYr===snapYrInt;
+      })
+    : allInactive.filter(d=>{
+        const ts=d['Termination Date Str']||dateStr(d['Termination Date']);
+        return ts&&ts.startsWith(String(new Date().getFullYear()));
+      });
+
+  const exitsLabel = snapYrInt ? `${snapYear} Exits` : `${new Date().getFullYear()} Exits`;
+  const exitsCount = exitsInYear.length;
+  const moInYear = snapYrInt===new Date().getFullYear() ? new Date().getMonth()+1 : 12;
+  const projExits = snapYrInt===new Date().getFullYear()&&moInYear>0
+    ? Math.round(exitsCount/moInYear*12) : null;
+
+  // Attrition rate — use A_full already computed above, scoped to year
+  // For "As of YEAR" — take annualised rate at end of that year
+  let annSnap=0;
+  if(snapYrInt){
+    const monthsOfYear=A_full.filter(r=>r.month.slice(-4)===String(snapYrInt));
+    annSnap=monthsOfYear.length?monthsOfYear[monthsOfYear.length-1].ann_pct:0;
+  } else {
+    annSnap=A_full.length?A_full[A_full.length-1].ann_pct:0;
+  }
+
+  // Avg tenure computed from active employees in this snapshot
   const avgTen=avg(active.filter(d=>typeof d['Finzly Experience']==='number').map(d=>d['Finzly Experience']));
 
-  // ── P1 INSIGHTS ───────────────────────────────────────────
   const femPct=active.length?Math.round(female.length/active.length*100):0;
   const indiaPct=active.length?Math.round(india.length/active.length*100):0;
   const consultants=active.filter(d=>d.Type&&d.Type.toLowerCase().includes('consult')).length;
   const conPct=active.length?Math.round(consultants/active.length*100):0;
-  // P1 INSIGHTS — CEO-level language
-  const attrRisk = EMP_DATA.filter(d=>d.Status==='Inactive'||d.ActiveFlag===0).filter(d=>{
-    const ts=d['Termination Date Str']||dateStr(d['Termination Date']);
-    return ts&&ts.startsWith('2026');
-  }).length;
-  const A_snap=computeAttrition(EMP_DATA);
-  const annSnap=A_snap.length?A_snap[A_snap.length-1].ann_pct:0;
+
+  // Insight cards — year-aware language
+  const attrInsight = snapYrInt
+    ? `<strong>${exitsCount} exits</strong> happened in ${snapYear}. Annualised attrition at end of ${snapYear}: <strong>${annSnap.toFixed(1)}%</strong>. ${annSnap>20?'🔴 Above threshold — retention action needed.':annSnap>12?'⚠ Elevated — monitor closely.':'✅ Within healthy range.'}`
+    : `<strong>${exitsCount} employees</strong> have left in ${new Date().getFullYear()} so far${projExits?`. At this pace, on track for <strong>~${projExits} exits this year</strong>`:''}.  ${annSnap>20?'🔴 Above healthy threshold — retention is the #1 people priority.':annSnap>12?'⚠ Elevated — monitor monthly.':'✅ Within healthy range.'}`;
+
 
   document.getElementById('ins-p1').innerHTML=`
     <div class="ins ${annSnap>20?'risk':annSnap>12?'signal':'good'}">
-      <div class="ins-head">📉 Attrition Signal</div>
+      <div class="ins-head">📉 Attrition Signal · ${snapYrLabel}</div>
       <div class="ins-val ${annSnap>20?'red':annSnap>12?'amber':'green'}">${annSnap.toFixed(1)}% Annualised</div>
-      <div class="ins-txt"><strong>${attrRisk} employees</strong> have left in 2026 so far. At this pace, Finzly is on track for <strong>~${Math.round(attrRisk/(new Date().getMonth()+1)*12)} exits this year</strong>. ${annSnap>20?'🔴 Above healthy threshold — retention is the #1 people priority right now.':annSnap>12?'⚠ Elevated — monitor monthly and act on Amber/Red RAG employees.':'✅ Within healthy range.'}</div>
+      <div class="ins-txt">${attrInsight}</div>
     </div>
     <div class="ins ${femPct<28?'signal':'info'}">
       <div class="ins-head">👥 Who Makes Up Finzly</div>
@@ -1378,14 +1411,14 @@ function render(){
     </div>`;
 
   document.getElementById('k1').innerHTML=`
-    <div class="kc g"><div class="k-lbl">Active HC</div><div class="k-val g">${active.length}</div><div class="k-sub">currently active</div></div>
-    <div class="kc r"><div class="k-lbl">2026 Exits</div><div class="k-val r">${attrRisk}</div><div class="k-sub">left this year ⚠</div></div>
+    <div class="kc g"><div class="k-lbl">Active HC · ${snapYrLabel}</div><div class="k-val g">${active.length}</div><div class="k-sub">${snapYrInt?`active as of ${snapYear}`:'currently active'}</div></div>
+    <div class="kc r"><div class="k-lbl">${exitsLabel}</div><div class="k-val r">${exitsCount}</div><div class="k-sub">${snapYrInt?`exited in ${snapYear}`:projExits?`~${projExits} projected ⚠`:'left this year ⚠'}</div></div>
     <div class="kc ch"><div class="k-lbl">India</div><div class="k-val ch">${india.length}</div><div class="k-sub">${indiaPct}% of HC</div></div>
     <div class="kc pu"><div class="k-lbl">USA</div><div class="k-val pu">${usa.length}</div><div class="k-sub">${active.length?Math.round(usa.length/active.length*100):0}% of HC</div></div>
     <div class="kc a"><div class="k-lbl">Male</div><div class="k-val a">${male.length}</div><div class="k-sub">${active.length?Math.round(male.length/active.length*100):0}%</div></div>
     <div class="kc b"><div class="k-lbl">Female</div><div class="k-val b">${female.length}</div><div class="k-sub">${femPct}%</div></div>
     <div class="kc ${conPct>20?'a':''}"><div class="k-lbl">Contractors</div><div class="k-val ${conPct>20?'a':''}">${consultants}</div><div class="k-sub">${conPct}% of HC</div></div>
-    <div class="kc"><div class="k-lbl">Avg Tenure</div><div class="k-val">${avgTen.toFixed(1)}y</div><div class="k-sub">at Finzly</div></div>
+    <div class="kc"><div class="k-lbl">Avg Tenure</div><div class="k-val">${avgTen.toFixed(1)}y</div><div class="k-sub">${snapYrInt?`as of ${snapYear}`:'at Finzly'}</div></div>
   `;
 
   // City cards
