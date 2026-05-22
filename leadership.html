@@ -2272,7 +2272,7 @@ function render(){
 
 // ── MANAGER SPAN LOGIC ────────────────────────────────────────
 function buildMgrMap(activeEmps){
-  const mgrMap={};  // { mgrName: {reports:[], squads:Set, countries:Set} }
+  const mgrMap={};
   activeEmps.forEach(d=>{
     const mgr=String(d['L1 Manager']||'').trim();
     if(!mgr)return;
@@ -2280,6 +2280,17 @@ function buildMgrMap(activeEmps){
     mgrMap[mgr].reports.push(d);
     if(d.Squad)mgrMap[mgr].squads.add(d.Squad);
     if(d.Country)mgrMap[mgr].countries.add(d.Country);
+  });
+  // Enrich with total subtree (indirect + direct)
+  const {nodes:orgNodes}=buildOrgTree(activeEmps);
+  const rootNames=new Set(Object.values(orgNodes)
+    .filter(n=>!orgNodes[String(n['L1 Manager']||'').trim()])
+    .map(n=>n.full));
+  Object.keys(mgrMap).forEach(mgr=>{
+    const node=orgNodes[mgr];
+    mgrMap[mgr].total=node?subtreeCount(node)-1:mgrMap[mgr].reports.length;
+    mgrMap[mgr].isTopLevel=rootNames.has(mgr)||
+      (node&&!orgNodes[String(node['L1 Manager']||'').trim()]);
   });
   return mgrMap;
 }
@@ -2369,13 +2380,16 @@ function renderMgrFilter(){
   const sq=document.getElementById('f-mgr-squad')?.value||'all';
   const emps=sq==='all'?activeAll:activeAll.filter(d=>d.Squad===sq);
   const mgrMap=buildMgrMap(emps);
-  const entries=Object.entries(mgrMap).sort((a,b)=>b[1].reports.length-a[1].reports.length);
+  const entries=Object.entries(mgrMap).sort((a,b)=>b[1].total-a[1].total);
 
   document.getElementById('mgr-grid').innerHTML=entries.map(([mgr,data])=>{
-    const n=data.reports.length;
-    const cls=n>7?'overloaded':n===1?'lean':'healthy';
-    const badge=n>7?'r':n===1?'a':'g';
-    const label=n>7?'Overloaded':n===1?'Single IC':'Healthy';
+    const direct=data.reports.length;
+    const total=data.total||direct;
+    const isTop=data.isTopLevel; // CEO / galaxy heads — don't flag as overloaded
+    // Span health based on DIRECT reports only, but skip top-level leaders
+    const cls=isTop?'healthy':direct>SPAN_MAX?'overloaded':direct===1?'lean':'healthy';
+    const badge=isTop?'g':direct>SPAN_MAX?'r':direct===1?'a':'g';
+    const label=isTop?'Leader':direct>SPAN_MAX?'Overloaded':direct===1?'Single IC':'Healthy';
     const squads=[...data.squads].join(', ');
     const countries=[...data.countries].join(' · ');
     const repList=data.reports.slice(0,6).map(r=>{
@@ -2385,16 +2399,17 @@ function renderMgrFilter(){
       return `<span class="mgr-rep" style="${isCon?'border-color:rgba(217,119,6,.4);background:rgba(217,119,6,.06)':''}">${flag} ${r['First Name']} ${r['Last Name']||''}${conTag}</span>`;
     }).join('');
     const conInTeam=data.reports.filter(r=>r.Type==='Consultant').length;
-    const conNote=conInTeam>0?` · <span style="color:var(--amber);font-weight:600">${conInTeam} contractor${conInTeam>1?'s':''}</span>`:'';
-    const more=n>6?`<span class="mgr-rep" style="color:var(--muted)">+${n-6} more</span>`:'';
+    const conNote=conInTeam>0?` · <span style="color:var(--amber);font-weight:600">${conInTeam} CON</span>`:'';
+    const more=direct>6?`<span class="mgr-rep" style="color:var(--muted)">+${direct-6} more</span>`:'';
+    const totalNote=total>direct?`<span style="font-size:.62rem;color:var(--muted);margin-left:8px">/ ${total} total in branch</span>`:'';
     return `<div class="mgr-card ${cls}">
       <div class="mgr-name">${mgr}</div>
       <div class="mgr-meta">${squads} · ${countries}${conNote}</div>
       <div class="mgr-reports">${repList}${more}</div>
       <div class="mgr-stat">
         <div>
-          <div class="mgr-count ${badge}">${n}</div>
-          <div style="font-size:.58rem;color:var(--muted)">direct reports</div>
+          <div class="mgr-count ${badge}">${direct}</div>
+          <div style="font-size:.58rem;color:var(--muted)">direct reports${totalNote}</div>
         </div>
         <span class="mgr-badge ${badge}">${label}</span>
       </div>
@@ -3161,7 +3176,7 @@ async function addOrgChartSlides(pres, active){
     s.addText('India',{x:11.65,y:0.12,w:0.9,h:0.22,fontSize:8,color:'555555',fontFace:'Calibri',margin:0});
   }
 
-  function drawBox(s, person, x, y, w, h){
+  function drawBox(s,person,x,y,w,h){
     const isIndia=person.Country==='India';
     const isCon=person.Type==='Consultant';
     const bg=isIndia?'156082':'0E2841';
@@ -3172,16 +3187,14 @@ async function addOrgChartSlides(pres, active){
     s.addText(`${person['First Name']||''} ${person['Last Name']||''}`,
       {x:x+0.04,y:y+0.03,w:w-0.08,h:h*0.44,fontSize:fs,bold:true,
        color:'FFFFFF',fontFace:'Calibri',align:'center',margin:0,fit:'shrink'});
-    if(w>0.65){
+    if(w>0.65)
       s.addText((person['Corporate Title']||person.Level||'').replace(' Level','').slice(0,22),
         {x:x+0.04,y:y+h*0.46,w:w-0.08,h:h*0.32,
          fontSize:Math.max(4.5,fs*0.75),color:'DDDDDD',
          fontFace:'Calibri',align:'center',margin:0,fit:'shrink'});
-    }
-    s.addText(`${person.Country==='India'?'🔵':'🟣'}${isCon?' C':''}`,
+    s.addText(`${isIndia?'🔵':'🟣'}${isCon?' C':''}`,
       {x:x+0.04,y:y+h*0.78,w:w-0.08,h:h*0.2,
-       fontSize:Math.max(4,fs*0.62),color:'FFFFFF',
-       fontFace:'Calibri',align:'center',margin:0});
+       fontSize:Math.max(4,fs*0.62),color:'FFFFFF',fontFace:'Calibri',align:'center',margin:0});
   }
 
   function drawLine(s,x1,y1,x2,y2){
@@ -3192,96 +3205,118 @@ async function addOrgChartSlides(pres, active){
     s.addShape('rect',{x:x2-lw/2,y:my,w:lw,h:y2-my,fill:{color:'AAAAAA'},line:{color:'AAAAAA',pt:0}});
   }
 
-  function leafCount(node){
-    return !node.children||node.children.length===0?1:
-      node.children.reduce((s,c)=>s+leafCount(c),0);
-  }
-  function maxDepth(node,d=0){
-    return !node.children||node.children.length===0?d:
-      Math.max(...node.children.map(c=>maxDepth(c,d+1)));
-  }
-
-  // Draw full horizontal tree in given area — the core layout engine
-  function drawTree(s, node, treeX, treeY, treeW, treeH){
-    const levels=maxDepth(node)+1;
-    const levelH=treeH/levels;
-    const boxH=Math.min(0.72,levelH*0.66);
-    const totalLeaves=leafCount(node);
-    const unitW=treeW/totalLeaves;
-    const minW=0.48;
-
-    const placements=[];
-    function place(nd,leftLeaves,level){
-      const leaves=leafCount(nd);
-      const bw=Math.max(minW,unitW*leaves-0.06);
-      const bx=treeX+leftLeaves*unitW+(unitW*leaves-bw)/2;
-      const by=treeY+level*levelH+(levelH-boxH)/2;
-      const cx=treeX+leftLeaves*unitW+unitW*leaves/2;
-      placements.push({nd,bx,by,bw,bh:boxH,cx});
-      let cl=leftLeaves;
-      if(nd.children)
-        [...nd.children].sort((a,b)=>leafCount(b)-leafCount(a))
-          .forEach(c=>{place(c,cl,level+1);cl+=leafCount(c);});
-    }
-    place(node,0,0);
-
-    const pm={};
-    placements.forEach(p=>pm[p.nd.full]=p);
-
-    // Lines behind boxes
-    placements.forEach(p=>{
-      const par=pm[String(p.nd['L1 Manager']||'').trim()];
-      if(par) drawLine(s,par.cx,par.by+par.bh,p.cx,p.by);
-    });
-    // Boxes on top
-    placements.forEach(p=>drawBox(s,p.nd,p.bx,p.by,p.bw,p.bh));
-  }
-
-  // Generate one slide for a given team lead showing their full subtree
+  // ── CORE: Draw exactly 2 levels — leader + direct reports only ──
+  // parentNode is shown as greyed breadcrumb above the leader
   let slideNum=2;
-  function makeTreeSlide(leader, parentContext){
-    if(subtreeCount(leader)<=1) return; // skip if no reports
-    const sg=makeSlide(pres,slideNum++);
-    addLegend(sg);
+
+  function makeTwoLevelSlide(leader, parentNode, ancestorLabel){
+    if(!leader.children||leader.children.length===0) return;
+
+    const s=makeSlide(pres,slideNum++);
+    addLegend(s);
+
     const leaderFull=`${leader['First Name']} ${leader['Last Name']}`;
-    const ctx=parentContext?`${parentContext} › `:'';
-    slideTitle(sg,
-      leaderFull,
-      `${ctx}${leader['Corporate Title']||leader.Squad||''} · ${subtreeCount(leader)-1} reports`);
-    drawTree(sg,leader,0.1,0.9,W-0.2,6.35);
-    // Footer
+    const totalBelow=subtreeCount(leader)-1;
     const all=gatherSubtree(leader);
     const ind=all.filter(e=>e.Country==='India').length;
     const con=all.filter(e=>e.Type==='Consultant').length;
-    sg.addText(
-      `${leaderFull} · ${subtreeCount(leader)-1} people · ${ind} 🔵 India · ${subtreeCount(leader)-1-ind} 🟣 USA${con>0?` · ${con} contractors`:''}`,
+
+    // Slide title + subtitle
+    slideTitle(s, leaderFull,
+      `${leader['Corporate Title']||leader.Squad||''} · ${totalBelow} people total in team`);
+
+    // ── Parent breadcrumb (who this person reports to) ──────
+    let topY=0.88;
+    if(parentNode){
+      const parentFull=`${parentNode['First Name']} ${parentNode['Last Name']}`;
+      const crumb=ancestorLabel
+        ? `▲ Reports to: ${parentFull}  (${parentNode['Corporate Title']||''})  |  ${ancestorLabel}`
+        : `▲ Reports to: ${parentFull}  (${parentNode['Corporate Title']||''})`;
+      s.addShape('rect',{x:0.3,y:topY,w:W-0.6,h:0.28,fill:{color:'F0F4F8'},line:{color:'CCCCCC',pt:0.5}});
+      s.addText(crumb,{x:0.5,y:topY+0.04,w:W-1.0,h:0.2,fontSize:8,color:'555555',fontFace:'Calibri',margin:0,italic:true,fit:'shrink'});
+      topY+=0.36;
+    }
+
+    // ── Leader box centred ──────────────────────────────────
+    const lW=2.2,lH=0.82,lX=(W-lW)/2,lY=topY;
+    drawBox(s,leader,lX,lY,lW,lH);
+    s.addShape('rect',{x:lX+lW/2-0.006,y:lY+lH,w:0.012,h:0.28,fill:{color:'AAAAAA'},line:{color:'AAAAAA',pt:0}});
+
+    // ── Direct reports row ──────────────────────────────────
+    const kids=[...leader.children].sort((a,b)=>subtreeCount(b)-subtreeCount(a));
+    const maxPerRow=Math.min(kids.length,10);
+    const cW=Math.min(1.55,(W-0.3)/maxPerRow-0.1);
+    const cGap=(W-0.3-maxPerRow*cW)/Math.max(maxPerRow-1,1);
+    const cStartX=0.15;
+    const cY=lY+lH+0.52;
+    const midY=lY+lH+0.28;
+
+    // Horizontal bar
+    if(kids.length>1){
+      const barL=cStartX+cW/2,barR=cStartX+(maxPerRow-1)*(cW+cGap)+cW/2;
+      s.addShape('rect',{x:barL,y:midY-0.006,w:barR-barL,h:0.012,fill:{color:'AAAAAA'},line:{color:'AAAAAA',pt:0}});
+    }
+
+    kids.slice(0,maxPerRow).forEach((child,i)=>{
+      const cx=cStartX+i*(cW+cGap);
+      s.addShape('rect',{x:cx+cW/2-0.006,y:midY,w:0.012,h:0.28,fill:{color:'AAAAAA'},line:{color:'AAAAAA',pt:0}});
+      drawBox(s,child,cx,cY,cW,0.78);
+      const n=subtreeCount(child)-1;
+      if(n>0)
+        s.addText(`+ ${n} below ↓`,
+          {x:cx,y:cY+0.81,w:cW,h:0.18,fontSize:6.5,color:'888888',align:'center',fontFace:'Calibri',margin:0});
+    });
+
+    // Second row if > 10 direct reports
+    if(kids.length>maxPerRow){
+      const row2=kids.slice(maxPerRow,maxPerRow+10);
+      const r2W=Math.min(1.55,(W-0.3)/row2.length-0.1);
+      const r2G=(W-0.3-row2.length*r2W)/Math.max(row2.length-1,1);
+      const r2Y=cY+1.05;
+      row2.forEach((child,i)=>{
+        drawBox(s,child,0.15+i*(r2W+r2G),r2Y,r2W,0.78);
+        const n=subtreeCount(child)-1;
+        if(n>0)
+          s.addText(`+ ${n} below ↓`,
+            {x:0.15+i*(r2W+r2G),y:r2Y+0.81,w:r2W,h:0.18,fontSize:6.5,color:'888888',align:'center',fontFace:'Calibri',margin:0});
+      });
+    }
+
+    // Footer
+    s.addText(
+      `${leaderFull} · ${totalBelow} total · ${ind} 🔵 India · ${totalBelow-ind} 🟣 USA${con>0?` · ${con} contractors`:''}`,
       {x:0.3,y:7.1,w:12.7,h:0.25,fontSize:7.5,color:'AAAAAA',align:'center',fontFace:'Calibri'});
   }
 
-  // ── SLIDE 1: Leadership Team (Booshan + direct reports only) ─
-  const s1=makeSlide(pres,slideNum++);
-  addLegend(s1);
-  slideTitle(s1,'Leadership Team','All direct reports to President');
-  // Show just 2 levels: root + children (flatten children)
-  drawTree(s1,
-    {...root, children:root.children.map(c=>({...c,children:[]}))},
-    0.2,0.9,W-0.4,6.0);
+  // ── SLIDE 1: Leadership Team ────────────────────────────────
+  makeTwoLevelSlide(root, null, null);
 
-  // ── For each galaxy + their sub-leads ─────────────────────
+  // ── For each galaxy head: their own slide, then each sub-lead's slide ──
   const galaxyHeads=[...root.children].sort((a,b)=>subtreeCount(b)-subtreeCount(a));
 
   galaxyHeads.forEach(galaxy=>{
-    const galaxyName=`${galaxy['First Name']} ${galaxy['Last Name']}`;
+    const galaxyFull=`${galaxy['First Name']} ${galaxy['Last Name']}`;
 
-    // Slide for the galaxy head's full tree
-    makeTreeSlide(galaxy, null);
+    // Galaxy head slide (reports to Booshan)
+    makeTwoLevelSlide(galaxy, root, null);
 
-    // Slide for EACH direct report of the galaxy head who has their own team
+    // Each direct report of galaxy who has their own team → own slide
     [...galaxy.children]
       .sort((a,b)=>subtreeCount(b)-subtreeCount(a))
       .forEach(subLead=>{
         if(subLead.children.length>0){
-          makeTreeSlide(subLead, galaxyName);
+          // subLead reports to galaxy, galaxy reports to Booshan
+          makeTwoLevelSlide(subLead, galaxy, galaxyFull);
+
+          // Go one more level if the sub-lead also has sub-leads
+          [...subLead.children]
+            .sort((a,b)=>subtreeCount(b)-subtreeCount(a))
+            .forEach(subSubLead=>{
+              if(subSubLead.children.length>0){
+                const subLeadFull=`${subLead['First Name']} ${subLead['Last Name']}`;
+                makeTwoLevelSlide(subSubLead, subLead, `${galaxyFull} › ${subLeadFull}`);
+              }
+            });
         }
       });
   });
