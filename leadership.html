@@ -393,11 +393,6 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
     </select>
     <select id="f-city" onchange="applyFilter()"><option value="all">All Cities</option></select>
     <select id="f-squad" onchange="applyFilter()"><option value="all">All Squads</option></select>
-    <select id="f-status" onchange="applyFilter()">
-      <option value="active">Active Only</option>
-      <option value="all">All Employees</option>
-      <option value="inactive">Inactive Only</option>
-    </select>
     <select id="f-year" onchange="applyFilter()">
       <option value="all">All Years</option>
       <option value="2026">As of 2026</option>
@@ -559,7 +554,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
     <div class="inf green" id="inf-perf"></div>
     <div class="g2">
       <div class="card"><div class="c-title"><div class="c-title-l">Level Distribution — Active</div></div><div id="level-pyramid"></div></div>
-      <div class="card"><div class="c-title"><div class="c-title-l">Performance Rating 2025</div></div><div id="perf-2025"></div></div>
+      <div class="card"><div class="c-title"><div class="c-title-l" id="perf-card-title">Performance Rating</div></div><div id="perf-2025"></div></div>
     </div>
     <div class="g2">
       <div class="ch-box"><div class="ch-title">Rating 2024 vs 2025</div><div class="ch-inf" id="inf-perf2"></div><div class="ch-wrap tall"><canvas id="ch-perf"></canvas></div></div>
@@ -723,6 +718,24 @@ const FILE_ID    = '788b3929-4077-4e6e-9909-e26c071ffab4';  // Master Employee D
 const REDIRECT   = 'https://finzlyindiahr.github.io/finzly-dashboard/leadership.html';
 const SCOPES     = ['Files.Read.All','User.Read'];
 
+// ── AUTO-UPDATING CONFIG — no manual changes needed year to year ──
+const CURR_YEAR       = new Date().getFullYear();           // auto: 2026→2027→2028
+const PREV_YEAR       = CURR_YEAR - 1;
+const PERF_COL_CURR   = `Performance Rating ${CURR_YEAR}`; // auto: column name in Excel
+const PERF_COL_PREV   = `Performance Rating ${PREV_YEAR}`;
+const COPY_YEAR       = CURR_YEAR;                          // © footer year
+const REPORT_AUTHOR   = 'Bharathkumar Mayakrishnan';  // change here if needed
+// HR benchmark thresholds — change here if policy updates
+const ATTRITION_RED        = 20;   // annualised % → red alert
+const ATTRITION_AMBER      = 12;   // annualised % → amber watch
+const CONTRACTOR_THRESHOLD = 15;   // % of HC → flag if exceeded
+const GENDER_BENCH_LOW     = 28;   // % female → below = diversity gap
+const GENDER_BENCH_HIGH    = 35;   // % female → above = strong
+const SPAN_MIN             = 5;    // healthy min direct reports per manager
+const SPAN_MAX             = 7;    // healthy max direct reports per manager
+const PERF_HIGH            = 4;    // rating ≥ this = high performer
+const PERF_LOW             = 2;    // rating ≤ this = low performer
+
 const msalConfig = {
   auth:  { clientId:CLIENT_ID, authority:'https://login.microsoftonline.com/'+TENANT_ID, redirectUri:REDIRECT },
   cache: { cacheLocation:'sessionStorage' }
@@ -836,8 +849,8 @@ function processEmpMaster(values){
     finzlyExp:ci(['Finzly Experience']),   // col 28
     level:    ci(['Level']),               // col 29
     rag:      ci(['Rag Status']),          // col 30
-    perf24:   ci(['Performance Rating 2024']), // col 31
-    perf25:   ci(['Performance Rating 2025']), // col 33
+    perf24:   ci([PERF_COL_PREV]), // col 31
+    perf25:   ci([PERF_COL_CURR]), // col 33
   };
   console.log('🗂 Squad col:',I.squad,'SubSquad col:',I.subSquad,'Status col:',I.status,'Country col:',I.country,'RAG col:',I.rag);
 
@@ -890,8 +903,8 @@ function processEmpMaster(values){
       'Finzly Experience':  gn(I.finzlyExp),
       Level:         g(I.level),
       'Rag Status':  cleanRag(String(g(I.rag)||'').trim()),
-      'Performance Rating 2024': gn(I.perf24),
-      'Performance Rating 2025': gn(I.perf25),
+      PERF_COL_PREV: gn(I.perf24),
+      PERF_COL_CURR: gn(I.perf25),
     });
   }
   const activeCount =data.filter(d=>d.Status==='Active').length;
@@ -1276,7 +1289,6 @@ function applyFilter(){
   const country=document.getElementById('f-country').value;
   const city=document.getElementById('f-city').value;
   const squad=document.getElementById('f-squad').value;
-  const status=document.getElementById('f-status').value;
   const year=document.getElementById('f-year').value;
 
   filtered=EMP_DATA.filter(d=>{
@@ -1292,13 +1304,11 @@ function applyFilter(){
         const termYr=parseInt(ts.slice(0,4));
         if(termYr<=yr){
           // They left during or before this year — only include if status filter wants inactive
-          if(status==='active')return false;
-        }
+              }
         // They left after this year — they were active AS OF that year
       }
     }
-    if(status==='active'   &&year==='all'&&d.Status!=='Active'   &&d.ActiveFlag!==1)return false;
-    if(status==='inactive' &&year==='all'&&d.Status!=='Inactive' &&d.ActiveFlag!==0)return false;
+    if(year==='all'&&(d.Status!=='Active'&&d.ActiveFlag!==1))return false;
     if(country!=='all'&&d.Country!==country)return false;
     if(city   !=='all'&&d.City   !==city)   return false;
     if(squad  !=='all'&&d.Squad  !==squad)  return false;
@@ -1311,7 +1321,7 @@ function applyFilter(){
 }
 function resetFilters(){
   ['f-country','f-city','f-squad','f-year'].forEach(id=>document.getElementById(id).value='all');
-  document.getElementById('f-status').value='active'; applyFilter();
+  applyFilter();
 }
 
 // ── RENDER ────────────────────────────────────────────────────
@@ -1389,25 +1399,25 @@ function render(){
 
   // Insight cards — year-aware language
   const attrInsight = snapYrInt
-    ? `<strong>${exitsCount} exits</strong> happened in ${snapYear}. Annualised attrition at end of ${snapYear}: <strong>${annSnap.toFixed(1)}%</strong>. ${annSnap>20?'🔴 Above threshold — retention action needed.':annSnap>12?'⚠ Elevated — monitor closely.':'✅ Within healthy range.'}`
-    : `<strong>${exitsCount} employees</strong> have left in ${new Date().getFullYear()} so far${projExits?`. At this pace, on track for <strong>~${projExits} exits this year</strong>`:''}.  ${annSnap>20?'🔴 Above healthy threshold — retention is the #1 people priority.':annSnap>12?'⚠ Elevated — monitor monthly.':'✅ Within healthy range.'}`;
+    ? `<strong>${exitsCount} exits</strong> happened in ${snapYear}. Annualised attrition at end of ${snapYear}: <strong>${annSnap.toFixed(1)}%</strong>. ${annSnap>ATTRITION_RED?'🔴 Above threshold — retention action needed.':annSnap>ATTRITION_AMBER?'⚠ Elevated — monitor closely.':'✅ Within healthy range.'}`
+    : `<strong>${exitsCount} employees</strong> have left in ${new Date().getFullYear()} so far${projExits?`. At this pace, on track for <strong>~${projExits} exits this year</strong>`:''}.  ${annSnap>ATTRITION_RED?'🔴 Above healthy threshold — retention is the #1 people priority.':annSnap>ATTRITION_AMBER?'⚠ Elevated — monitor monthly.':'✅ Within healthy range.'}`;
 
 
   document.getElementById('ins-p1').innerHTML=`
-    <div class="ins ${annSnap>20?'risk':annSnap>12?'signal':'good'}">
+    <div class="ins ${annSnap>ATTRITION_RED?'risk':annSnap>ATTRITION_AMBER?'signal':'good'}">
       <div class="ins-head">📉 Attrition Signal · ${snapYrLabel}</div>
-      <div class="ins-val ${annSnap>20?'red':annSnap>12?'amber':'green'}">${annSnap.toFixed(1)}% Annualised</div>
+      <div class="ins-val ${annSnap>ATTRITION_RED?'red':annSnap>ATTRITION_AMBER?'amber':'green'}">${annSnap.toFixed(1)}% Annualised</div>
       <div class="ins-txt">${attrInsight}</div>
     </div>
-    <div class="ins ${femPct<28?'signal':'info'}">
+    <div class="ins ${femPct<GENDER_BENCH_LOW?'signal':'info'}">
       <div class="ins-head">👥 Who Makes Up Finzly</div>
       <div class="ins-val blue">${active.length} Active</div>
       <div class="ins-txt"><strong>${india.length} in India</strong> (${indiaPct}%) · <strong>${usa.length} in USA</strong>. <strong>${female.length} women</strong> (${femPct}% — tech benchmark is 28–35%). <strong>${consultants} contractors</strong> (${conPct}% of workforce). Avg time at Finzly: <strong>${avgTen.toFixed(1)} years</strong>.</div>
     </div>
-    <div class="ins ${conPct>20?'signal':'good'}">
+    <div class="ins ${conPct>CONTRACTOR_THRESHOLD?'signal':'good'}">
       <div class="ins-head">🏗 Delivery Risk Watch</div>
       <div class="ins-val ${indiaPct>75?'amber':'green'}">${indiaPct}% Delivery in India</div>
-      <div class="ins-txt">${indiaPct>75?`<strong>${indiaPct}%</strong> of headcount is India-based — strong delivery muscle but a concentration risk. Ensure US team has context on critical systems.`:`Healthy split between India and USA delivery.`} ${conPct>20?`⚠ <strong>${conPct}%</strong> contractors — review conversion to FTE for business-critical roles.`:''}</div>
+      <div class="ins-txt">${indiaPct>75?`<strong>${indiaPct}%</strong> of headcount is India-based — strong delivery muscle but a concentration risk. Ensure US team has context on critical systems.`:`Healthy split between India and USA delivery.`} ${conPct>CONTRACTOR_THRESHOLD?`⚠ <strong>${conPct}%</strong> contractors — review conversion to FTE for business-critical roles.`:''}</div>
     </div>`;
 
   document.getElementById('k1').innerHTML=`
@@ -1417,7 +1427,7 @@ function render(){
     <div class="kc pu"><div class="k-lbl">USA</div><div class="k-val pu">${usa.length}</div><div class="k-sub">${active.length?Math.round(usa.length/active.length*100):0}% of HC</div></div>
     <div class="kc a"><div class="k-lbl">Male</div><div class="k-val a">${male.length}</div><div class="k-sub">${active.length?Math.round(male.length/active.length*100):0}%</div></div>
     <div class="kc b"><div class="k-lbl">Female</div><div class="k-val b">${female.length}</div><div class="k-sub">${femPct}%</div></div>
-    <div class="kc ${conPct>20?'a':''}"><div class="k-lbl">Contractors</div><div class="k-val ${conPct>20?'a':''}">${consultants}</div><div class="k-sub">${conPct}% of HC</div></div>
+    <div class="kc ${conPct>CONTRACTOR_THRESHOLD?'a':''}"><div class="k-lbl">Contractors</div><div class="k-val ${conPct>CONTRACTOR_THRESHOLD?'a':''}">${consultants}</div><div class="k-sub">${conPct}% of HC</div></div>
     <div class="kc"><div class="k-lbl">Avg Tenure</div><div class="k-val">${avgTen.toFixed(1)}y</div><div class="k-sub">${snapYrInt?`as of ${snapYear}`:'at Finzly'}</div></div>
   `;
 
@@ -1518,7 +1528,7 @@ function render(){
           <div style="font-size:.6rem;font-weight:700;color:#16a34a;margin-top:3px">CONSULTANT · ${conP}%</div>
         </div>
       </div>
-      <div style="font-size:.62rem;color:var(--muted);text-align:center;padding:4px">${conP>15?'⚠ High contractor ratio — review cost & dependency':'✅ Healthy FTE-to-contractor balance'}</div>
+      <div style="font-size:.62rem;color:var(--muted);text-align:center;padding:4px">${conP>CONTRACTOR_THRESHOLD?'⚠ High contractor ratio — review cost & dependency':'✅ Healthy FTE-to-contractor balance'}</div>
     </div>`;
 
   // ── GENDER — person silhouette style (like reference image) ─
@@ -1554,7 +1564,7 @@ function render(){
           <span style="font-size:.62rem;font-weight:700;color:#fff;padding:0 5px;white-space:nowrap">${femPct2}%</span>
         </div>
       </div>
-      <div style="font-size:.62rem;color:var(--muted);text-align:center">${femPct2<28?`⚠ ${femPct2}% female — tech avg 28–35%. Room to improve.`:femPct2<=40?`✅ ${femPct2}% female — strong diversity for fintech.`:`🌟 ${femPct2}% female — above industry average.`}</div>
+      <div style="font-size:.62rem;color:var(--muted);text-align:center">${femPct2<GENDER_BENCH_LOW?`⚠ ${femPct2}% female — tech avg 28–35%. Room to improve.`:femPct2<=40?`✅ ${femPct2}% female — strong diversity for fintech.`:`🌟 ${femPct2}% female — above industry average.`}</div>
     </div>`;
 
   // Squad breakdown
@@ -1602,7 +1612,7 @@ function render(){
       </div>
       <div class="ins ${conPctNow>conPctFirst+5?'signal':'good'}">
         <div class="ins-head">🔄 FTE vs Contractor Shift</div>
-        <div class="ins-val ${conPctNow>20?'amber':'green'}">${conPctNow}% Contractors Now</div>
+        <div class="ins-val ${conPctNow>CONTRACTOR_THRESHOLD?'amber':'green'}">${conPctNow}% Contractors Now</div>
         <div class="ins-txt">Started at <strong>${conPctFirst}% contractors</strong> (${T[0].month}), now at <strong>${conPctNow}%</strong> (${T[T.length-1].month}). ${conPctNow>conPctFirst+5?`⚠ Org is increasingly contractor-dependent — higher cost per head, IP exposure, and lower loyalty. Review which contractor roles should become FTE.`:`FTE-contractor balance is stable.`}</div>
       </div>
       <div class="ins info">
@@ -1834,8 +1844,8 @@ function render(){
   const involCountYr = attrInactiveYr.filter(d=>d['Termination Type']==='Involuntary').length;
   const volPct = totalInactiveYr ? Math.round(volCountYr/totalInactiveYr*100) : 0;
 
-  const exits2026=exitYrMap['2026']||{Voluntary:0,Involuntary:0,Unknown:0};
-  const total2026=exits2026.Voluntary+exits2026.Involuntary+exits2026.Unknown;
+  const exitsCurrYear=exitYrMap[String(CURR_YEAR)]||{Voluntary:0,Involuntary:0,Unknown:0};
+  const total2026=exitsCurrYear.Voluntary+exitsCurrYear.Involuntary+exitsCurrYear.Unknown;
   const moSoFar=new Date().getMonth()+1;
   const proj2026=moSoFar>0?Math.round(total2026/moSoFar*12):0;
 
@@ -1872,10 +1882,10 @@ function render(){
   document.getElementById('inf-attr').innerHTML=
     `<strong>Viewing:</strong> ${sliceCtx} &nbsp;|&nbsp; `+
     `Exit trend: ${exitYrs.map(y=>`<strong>${y}: ${Object.values(exitYrMap[y]).reduce((s,v)=>s+v,0)}</strong>`).join(' → ')}. `+
-    `${selYear==='2026'?`2026 on pace for <strong>~${proj2026} exits</strong> (${moSoFar} months elapsed).`:''}`;
+    `${selYear===String(CURR_YEAR)?`${CURR_YEAR} on pace for <strong>~${proj2026} exits</strong> (${moSoFar} months elapsed).`:''}`;
 
-  const annColor  = lastAnn>20?'var(--red)':lastAnn>12?'var(--amber)':'var(--green)';
-  const annSignal = lastAnn>20?'🔴 Above threshold — act now':lastAnn>12?'⚠ Elevated — monitor closely':'✅ Within healthy range';
+  const annColor  = lastAnn>ATTRITION_RED?'var(--red)':lastAnn>ATTRITION_AMBER?'var(--amber)':'var(--green)';
+  const annSignal = lastAnn>ATTRITION_RED?'🔴 Above threshold — act now':lastAnn>ATTRITION_AMBER?'⚠ Elevated — monitor closely':'✅ Within healthy range';
   const volSignal = volPct>60?'People choosing to leave — review growth & recognition':'Mix of managed exits — check hiring quality';
   const tenureSignal = earlyExitPct>50?'Onboarding or hiring fit gap':'Retention gap at mid-tenure';
   const trendColor = trendVsPrior==null?'var(--muted)':trendVsPrior>0?'var(--red)':'var(--green)';
@@ -2021,7 +2031,7 @@ function render(){
         <td><strong>${r.avg_hc}</strong></td>
         <td class="${r.monthly_pct>2?'td-red':r.monthly_pct>1?'td-amber':r.exits===0&&isCurrentMonth?'':'td-green'}">${r.monthly_pct.toFixed(2)}%${isCurrentMonth?' *':''}</td>
         <td>${r.ytd_exits}</td><td>${r.ytd_avg_hc}</td>
-        <td class="${r.ann_pct>20?'td-red':r.ann_pct>12?'td-amber':'td-green'}">${r.ann_pct.toFixed(2)}%</td>
+        <td class="${r.ann_pct>ATTRITION_RED?'td-red':r.ann_pct>ATTRITION_AMBER?'td-amber':'td-green'}">${r.ann_pct.toFixed(2)}%</td>
       </tr>`;
     }).join('')}</tbody>
     <tfoot><tr><td colspan="12" style="padding:6px 10px;font-size:.64rem;color:var(--muted);font-style:italic">* Current month is partial — exits after today (${new Date().toISOString().slice(0,10)}) not yet in data. Update masterfile to reflect latest exits.</td></tr></tfoot>`;
@@ -2043,8 +2053,8 @@ function render(){
     return `<div class="lvl-row"><div class="lvl-lbl" style="color:${col}">${l.replace(' Level','')}</div><div class="lvl-track"><div class="lvl-fill" style="width:${Math.round(n/maxL*100)}%;background:${col}"><span>${n>0?n:''}</span></div></div><div class="lvl-count">${n}</div><div class="lvl-pct">${p}%</div></div>`;
   }).join('');
 
-  const r25=active.filter(d=>d['Performance Rating 2025']>=1&&d['Performance Rating 2025']<=5).map(d=>d['Performance Rating 2025']);
-  const r24=active.filter(d=>d['Performance Rating 2024']>=1&&d['Performance Rating 2024']<=5).map(d=>d['Performance Rating 2024']);
+  const r25=active.filter(d=>d[PERF_COL_CURR]>=1&&d[PERF_COL_CURR]<=5).map(d=>d[PERF_COL_CURR]);
+  const r24=active.filter(d=>d[PERF_COL_PREV]>=1&&d[PERF_COL_PREV]<=5).map(d=>d[PERF_COL_PREV]);
   const avg25=avg(r25).toFixed(2),avg24=avg(r24).toFixed(2);
   const ratedPct=active.length?Math.round(r25.length/active.length*100):0;
   const highPerf=r25.filter(v=>v>=4).length;
@@ -2070,9 +2080,10 @@ function render(){
     </div>`;
   const pm={1:0,2:0,3:0,4:0,5:0};r25.forEach(v=>{pm[v]++;});
   const maxP=Math.max(...Object.values(pm),1);
+  document.getElementById('perf-card-title').textContent=`Performance Rating ${CURR_YEAR}`;
   document.getElementById('perf-2025').innerHTML=[5,4,3,2,1].map(r=>`<div class="perf-row"><div class="star-lbl">★${r}</div><div class="star-track"><div class="star-fill" style="width:${Math.round(pm[r]/maxP*100)}%"></div></div><div class="star-count">${pm[r]}</div></div>`).join('');
   document.getElementById('inf-perf2').innerHTML=`<strong>YoY:</strong> 2024 avg ${avg24} → 2025 avg ${avg25}.`;
-  mkChart('ch-perf','bar',{labels:['★1','★2','★3','★4','★5'],datasets:[{label:'2024',data:[1,2,3,4,5].map(r=>active.filter(d=>d['Performance Rating 2024']===r).length),backgroundColor:'rgba(14,165,233,.7)',borderRadius:5},{label:'2025',data:[1,2,3,4,5].map(r=>active.filter(d=>d['Performance Rating 2025']===r).length),backgroundColor:'rgba(232,84,26,.8)',borderRadius:5}]},{_datalabels:true});
+  mkChart('ch-perf','bar',{labels:['★1','★2','★3','★4','★5'],datasets:[{label:String(PREV_YEAR),data:[1,2,3,4,5].map(r=>active.filter(d=>d[PERF_COL_PREV]===r).length),backgroundColor:'rgba(14,165,233,.7)',borderRadius:5},{label:String(CURR_YEAR),data:[1,2,3,4,5].map(r=>active.filter(d=>d[PERF_COL_CURR]===r).length),backgroundColor:'rgba(232,84,26,.8)',borderRadius:5}]},{_datalabels:true});
   const topSqs=squads.slice(0,8);
   document.getElementById('inf-lvl-sq').innerHTML=`<strong>Level by squad:</strong> Top ${topSqs.length} squads. Use filters to drill into a specific squad.`;
   mkChart('ch-lvl-sq','bar',{labels:topSqs,datasets:LEVELS.map((l,i)=>({label:l.replace(' Level',''),data:topSqs.map(sq=>active.filter(d=>d.Squad===sq&&d.Level===l).length),backgroundColor:LCOLS[i],borderRadius:3}))},{scales:{y:{stacked:true,ticks:{font:{family:'Fira Code',size:10}}},x:{stacked:true,ticks:{font:{family:'Outfit',size:10}}}},_datalabels:true});
@@ -2085,7 +2096,7 @@ function render(){
   // P7 SUMMARY — uses ragTot already computed in P3
   const lastAnnNum=A.length?+A[A.length-1].ann_pct:0;
   const avgTenure=avg(active.filter(d=>typeof d['Finzly Experience']==='number').map(d=>d['Finzly Experience']));
-  const inact2026=attrInactive.filter(d=>{const ts=d['Termination Date Str'];return ts&&ts.startsWith('2026');}).length;
+  const inact2026=attrInactive.filter(d=>{const ts=d['Termination Date Str'];return ts&&ts.startsWith(String(CURR_YEAR));}).length;
   document.getElementById('sum-sub').textContent=`${active.length} active · ${india.length} India · ${usa.length} USA · ${squads.length} squads · Live: SharePoint`;
   document.getElementById('sum-kpis').innerHTML=`
     <div class="sum-k"><div class="sum-kv">${active.length}</div><div class="sum-kl">Active HC</div></div>
@@ -2668,7 +2679,7 @@ async function downloadReport(type, btn){
     const pres=new PptxGenJS();
     pres.layout='LAYOUT_WIDE';
     pres.title='Finzly HR Report';
-    pres.author='Bharathkumar Mayakrishnan';
+    pres.author=REPORT_AUTHOR;
 
     const activeAll=EMP_DATA.filter(d=>d.Status==='Active'||d.ActiveFlag===1);
     const inactAll =EMP_DATA.filter(d=>d.Status==='Inactive'||d.ActiveFlag===0);
@@ -2752,7 +2763,7 @@ function makeSlide(pres, slideNum){
     color:'5200FF',fontFace:'Calibri',margin:0,align:'right'});
   // Page number
   s.addText(String(slideNum),{x:0.3,y:7.22,w:0.5,h:0.22,fontSize:8,color:'999999',fontFace:'Calibri',margin:0});
-  s.addText('© Finzly Confidential 2025',{x:3,y:7.22,w:7.3,h:0.22,
+  s.addText(`© Finzly Confidential ${COPY_YEAR}`,{x:3,y:7.22,w:7.3,h:0.22,
     fontSize:8,color:'999999',align:'center',fontFace:'Calibri',margin:0});
   return s;
 }
@@ -2778,7 +2789,7 @@ function titleSlide(pres, title, subtitle, author){
     {x:0.85,y:3.5,w:12.0,h:0.38,fontSize:13,color:'888888',fontFace:'Calibri',margin:0});
   if(author) s.addText(author,{x:0.85,y:4.0,w:12.0,h:0.35,fontSize:12,
     color:'666666',fontFace:'Calibri',margin:0});
-  s.addText('© Finzly Confidential 2025',{x:3,y:7.22,w:7.3,h:0.22,
+  s.addText(`© Finzly Confidential ${COPY_YEAR}`,{x:3,y:7.22,w:7.3,h:0.22,
     fontSize:8,color:'AAAAAA',align:'center',fontFace:'Calibri',margin:0});
   return s;
 }
@@ -2825,7 +2836,7 @@ function kpiBox(s, label, value, sub, x, y, w=2.1, h=1.05, valColor='0E2841'){
 
 // ── SNAPSHOT ──────────────────────────────────────────────────
 async function addSnapshotSlides(pres,active,inact){
-  titleSlide(pres,'People Snapshot','Current Headcount & Workforce Overview','Bharathkumar Mayakrishnan');
+  titleSlide(pres,'People Snapshot','Current Headcount & Workforce Overview',REPORT_AUTHOR);
 
   // Switch to P1 tab and screenshot it
   await captureTab('p1');
@@ -2836,7 +2847,7 @@ async function addSnapshotSlides(pres,active,inact){
   const annAtt=A.length?A[A.length-1].ann_pct:0;
   const india=active.filter(d=>d.Country==='India').length;
   const usa=active.filter(d=>d.Country==='USA').length;
-  const exits2026=inact.filter(d=>{const ts=d['Termination Date Str']||dateStr(d['Termination Date']);return ts&&ts.startsWith('2026');}).length;
+  const exitsCurrYear=inact.filter(d=>{const ts=d['Termination Date Str']||dateStr(d['Termination Date']);return ts&&ts.startsWith(String(CURR_YEAR));}).length;
 
   const s=makeSlide(pres,2);
   slideTitle(s,'People Snapshot – As of Today','Headcount · Composition · Key Signals');
@@ -2845,14 +2856,14 @@ async function addSnapshotSlides(pres,active,inact){
     s.addImage({data:img,x:0.3,y:0.95,w:12.7,h:4.8});
   }
   insightBox(s,
-    `${active.length} active — India ${india} (${Math.round(india/active.length*100)}%), USA ${usa}. Attrition: ${annAtt.toFixed(1)}% annualised. ${exits2026} exits in 2026.`,
+    `${active.length} active — India ${india} (${Math.round(india/active.length*100)}%), USA ${usa}. Attrition: ${annAtt.toFixed(1)}% annualised. ${exitsCurrYear} exits in 2026.`,
     annAtt>20?`Above healthy threshold — retention is the #1 priority. Run stay interviews with Amber/Red RAG employees this month.`:`Attrition within range. Focus on 2024 cohort retention and manager engagement cadence.`
   );
 }
 
 // ── ATTRITION ─────────────────────────────────────────────────
 async function addAttritionSlides(pres,active,inact){
-  titleSlide(pres,'Attrition Report','Exit Trends · Tenure at Exit · Cohort Retention','Bharathkumar Mayakrishnan');
+  titleSlide(pres,'Attrition Report','Exit Trends · Tenure at Exit · Cohort Retention',REPORT_AUTHOR);
 
   await captureTab('p4');
   const p4el=document.getElementById('p4');
@@ -2860,9 +2871,9 @@ async function addAttritionSlides(pres,active,inact){
 
   const A=computeAttrition(EMP_DATA);
   const annAtt=A.length?A[A.length-1].ann_pct:0;
-  const exits2026=inact.filter(d=>{const ts=d['Termination Date Str']||dateStr(d['Termination Date']);return ts&&ts.startsWith('2026');}).length;
+  const exitsCurrYear=inact.filter(d=>{const ts=d['Termination Date Str']||dateStr(d['Termination Date']);return ts&&ts.startsWith(String(CURR_YEAR));}).length;
   const moSoFar=new Date().getMonth()+1;
-  const proj=Math.round(exits2026/moSoFar*12);
+  const proj=Math.round(exitsCurrYear/moSoFar*12);
   const volPct=inact.length?Math.round(inact.filter(d=>d['Termination Type']==='Voluntary').length/inact.length*100):0;
   const exitTenures=[];
   inact.forEach(d=>{
@@ -2880,7 +2891,7 @@ async function addAttritionSlides(pres,active,inact){
   // KPI row
   kpiBox(s,'Annualised',annAtt.toFixed(1)+'%','attrition rate',0.3,0.95,1.9,1.0,annAtt>20?'C00000':annAtt>12?'D97706':'196B24');
   kpiBox(s,'Voluntary',volPct+'%','of all exits',2.28,0.95,1.9,1.0,'0E2841');
-  kpiBox(s,'2026 Exits',exits2026,'YTD',4.26,0.95,1.9,1.0,'C00000');
+  kpiBox(s,'2026 Exits',exitsCurrYear,'YTD',4.26,0.95,1.9,1.0,'C00000');
   kpiBox(s,'Projected',proj+'/yr','2026 run-rate',6.24,0.95,1.9,1.0,'0E2841');
   kpiBox(s,'Avg Exit Tenure',avgET+'y','before leaving',8.22,0.95,1.9,1.0,'0E2841');
   kpiBox(s,'Early Exits',earlyPct+'%','left in Year 1',10.2,0.95,1.9,1.0,earlyPct>50?'C00000':'D97706');
@@ -2896,7 +2907,7 @@ async function addAttritionSlides(pres,active,inact){
 
 // ── SQUAD ─────────────────────────────────────────────────────
 async function addSquadSlides(pres,active){
-  titleSlide(pres,'Squad Health Report','Headcount · RAG Engagement · Manager Span','Bharathkumar Mayakrishnan');
+  titleSlide(pres,'Squad Health Report','Headcount · RAG Engagement · Manager Span',REPORT_AUTHOR);
 
   await captureTab('p3');
   const p3el=document.getElementById('p3');
@@ -2929,18 +2940,18 @@ async function addSquadSlides(pres,active){
 
 // ── PERFORMANCE ───────────────────────────────────────────────
 async function addPerformanceSlides(pres,active){
-  titleSlide(pres,'Performance Distribution','Ratings · Level Mix · Year-on-Year','Bharathkumar Mayakrishnan');
+  titleSlide(pres,'Performance Distribution','Ratings · Level Mix · Year-on-Year',REPORT_AUTHOR);
 
   await captureTab('p5');
   const p5el=document.getElementById('p5');
   const img=await snapElement(p5el, 2.5);
 
-  const r25=active.filter(d=>d['Performance Rating 2025']>=1&&d['Performance Rating 2025']<=5);
-  const r24=active.filter(d=>d['Performance Rating 2024']>=1&&d['Performance Rating 2024']<=5);
-  const avg25=(r25.reduce((a,d)=>a+d['Performance Rating 2025'],0)/(r25.length||1)).toFixed(2);
-  const avg24=(r24.reduce((a,d)=>a+d['Performance Rating 2024'],0)/(r24.length||1)).toFixed(2);
-  const highPerf=r25.filter(d=>d['Performance Rating 2025']>=4).length;
-  const lowPerf=r25.filter(d=>d['Performance Rating 2025']<=2).length;
+  const r25=active.filter(d=>d[PERF_COL_CURR]>=1&&d[PERF_COL_CURR]<=5);
+  const r24=active.filter(d=>d[PERF_COL_PREV]>=1&&d[PERF_COL_PREV]<=5);
+  const avg25=(r25.reduce((a,d)=>a+d[PERF_COL_CURR],0)/(r25.length||1)).toFixed(2);
+  const avg24=(r24.reduce((a,d)=>a+d[PERF_COL_PREV],0)/(r24.length||1)).toFixed(2);
+  const highPerf=r25.filter(d=>d[PERF_COL_CURR]>=4).length;
+  const lowPerf=r25.filter(d=>d[PERF_COL_CURR]<=2).length;
   const unrated=active.length-r25.length;
   const highPct=r25.length?Math.round(highPerf/r25.length*100):0;
 
@@ -2975,8 +2986,8 @@ async function addSummarySlide(pres,active,inact){
   const annAtt=A.length?A[A.length-1].ann_pct:0;
   const rag={G:0,A:0,R:0};
   active.forEach(d=>{const r=d['Rag Status']||'';if(r==='Green')rag.G++;else if(r==='Amber')rag.A++;else if(r==='Red')rag.R++;});
-  const r25=active.filter(d=>d['Performance Rating 2025']>=1&&d['Performance Rating 2025']<=5);
-  const avg25=(r25.reduce((a,d)=>a+d['Performance Rating 2025'],0)/(r25.length||1)).toFixed(2);
+  const r25=active.filter(d=>d[PERF_COL_CURR]>=1&&d[PERF_COL_CURR]<=5);
+  const avg25=(r25.reduce((a,d)=>a+d[PERF_COL_CURR],0)/(r25.length||1)).toFixed(2);
 
   const points=[
     {label:'Growth',body:`Headcount at ${active.length} active — India ${active.filter(d=>d.Country==='India').length}, USA ${active.filter(d=>d.Country==='USA').length}. Consistent additions in core practices.`},
@@ -3001,7 +3012,7 @@ async function addSummarySlide(pres,active,inact){
 async function addOrgChartSlides(pres, active){
   titleSlide(pres,'Finzly Organization Chart',
     `As of ${new Date().toLocaleString('en-IN',{month:'long',year:'numeric'})}`,
-    'Bharathkumar Mayakrishnan');
+    REPORT_AUTHOR);
 
   const {roots,nodes}=buildOrgTree(active);
   const root=roots[0]; if(!root)return;
@@ -3210,14 +3221,14 @@ async function runAIIntel(){
         return ts&&ts.startsWith(yearSel);
       });
 
-  const exits2026=inactAll.filter(d=>{const ts=d['Termination Date Str']||dateStr(d['Termination Date']);return ts&&ts.startsWith('2026');}).length;
+  const exitsCurrYear=inactAll.filter(d=>{const ts=d['Termination Date Str']||dateStr(d['Termination Date']);return ts&&ts.startsWith(String(CURR_YEAR));}).length;
   const exits2025=inactAll.filter(d=>{const ts=d['Termination Date Str']||dateStr(d['Termination Date']);return ts&&ts.startsWith('2025');}).length;
   const exits2024=inactAll.filter(d=>{const ts=d['Termination Date Str']||dateStr(d['Termination Date']);return ts&&ts.startsWith('2024');}).length;
   const exitsThisPeriod=exitsPool.length;
   const volExits=exitsPool.filter(d=>d['Termination Type']==='Voluntary').length;
   const volPct=exitsThisPeriod?Math.round(volExits/exitsThisPeriod*100):0;
   const moSoFar=yearSel==='2026'?new Date().getMonth()+1:12;
-  const proj2026=yearSel==='2026'&&moSoFar>0?Math.round(exits2026/moSoFar*12):exits2026;
+  const proj2026=yearSel==='2026'&&moSoFar>0?Math.round(exitsCurrYear/moSoFar*12):exitsCurrYear;
 
   // Manager span
   const mgrMap=buildMgrMap(activeAll);
@@ -3229,12 +3240,12 @@ async function runAIIntel(){
 
   // Performance — filter by year if selected
   const perfYear = yearSel==='all'||yearSel==='2026'||yearSel==='2025' ? '2025' : '2024';
-  const r25=activeAll.filter(d=>d['Performance Rating 2025']>=1&&d['Performance Rating 2025']<=5);
-  const avg25=r25.length?Math.round(r25.reduce((s,d)=>s+d['Performance Rating 2025'],0)/r25.length*100)/100:0;
-  const r24=activeAll.filter(d=>d['Performance Rating 2024']>=1&&d['Performance Rating 2024']<=5);
-  const avg24=r24.length?Math.round(r24.reduce((s,d)=>s+d['Performance Rating 2024'],0)/r24.length*100)/100:0;
-  const highPerf=r25.filter(d=>d['Performance Rating 2025']>=4).length;
-  const lowPerf =r25.filter(d=>d['Performance Rating 2025']<=2).length;
+  const r25=activeAll.filter(d=>d[PERF_COL_CURR]>=1&&d[PERF_COL_CURR]<=5);
+  const avg25=r25.length?Math.round(r25.reduce((s,d)=>s+d[PERF_COL_CURR],0)/r25.length*100)/100:0;
+  const r24=activeAll.filter(d=>d[PERF_COL_PREV]>=1&&d[PERF_COL_PREV]<=5);
+  const avg24=r24.length?Math.round(r24.reduce((s,d)=>s+d[PERF_COL_PREV],0)/r24.length*100)/100:0;
+  const highPerf=r25.filter(d=>d[PERF_COL_CURR]>=4).length;
+  const lowPerf =r25.filter(d=>d[PERF_COL_CURR]<=2).length;
   const unrated=total-r25.length;
   const highPct=r25.length?Math.round(highPerf/r25.length*100):0;
 
@@ -3312,19 +3323,19 @@ async function runAIIntel(){
     metric:`${healthScore}/100 — ${healthLabel}`,
     body:`Composite of: RAG health <strong>${ragHealthPct}%</strong> · Attrition <strong>${lastAnn.toFixed(1)}%</strong> · Early exit rate <strong>${earlyPct}%</strong> · Avg active tenure <strong>${avgTen}y</strong>. ${healthScore<55?'🔴 Multiple risk signals — immediate leadership review needed.':healthScore<75?'⚠ Some risk areas need attention — review actions below.':'✅ Team is broadly healthy — maintain momentum.'}`,
     actions:[
-      healthScore<75?`Focus on the lowest scoring dimension: ${ragHealthPct<60?'RAG engagement':earlyPct>50?'early exit prevention':lastAnn>20?'attrition reduction':'tenure building'}.`:`Use this as a baseline — track monthly to detect deterioration early.`,
+      healthScore<75?`Focus on the lowest scoring dimension: ${ragHealthPct<60?'RAG engagement':earlyPct>50?'early exit prevention':lastAnn>ATTRITION_RED?'attrition reduction':'tenure building'}.`:`Use this as a baseline — track monthly to detect deterioration early.`,
       `Compare across galaxies to identify which teams need priority investment.`
     ]
   });
 
   // 2. ATTRITION
   const attrType=lastAnn>25?'risk':lastAnn>15?'signal':'good';
-  const exitTrendStr=exits2026>exits2025?'🔴 Accelerating':exits2026<exits2025?'🟢 Improving':'⚠ Flat';
+  const exitTrendStr=exitsCurrYear>exits2025?'🔴 Accelerating':exitsCurrYear<exits2025?'🟢 Improving':'⚠ Flat';
   insights.push({
     type:attrType,
     title:'Attrition Rate',
     metric:`${lastAnn.toFixed(1)}% Annualised${lastAnnMonth?' · '+lastAnnMonth:''}`,
-    body:`Exits: <strong>2024: ${exits2024}</strong> → <strong>2025: ${exits2025}</strong> → <strong>2026 YTD: ${exits2026}</strong>. ${exitTrendStr} — projected <strong>~${proj2026}/year</strong>. <strong>${volPct}% voluntary</strong> exits.`,
+    body:`Exits: <strong>2024: ${exits2024}</strong> → <strong>2025: ${exits2025}</strong> → <strong>2026 YTD: ${exitsCurrYear}</strong>. ${exitTrendStr} — projected <strong>~${proj2026}/year</strong>. <strong>${volPct}% voluntary</strong> exits.`,
     actions:[
       volPct>60?`${volPct}% voluntary = people choosing to leave. Conduct stay interviews — ask: "What would make you leave?" before they decide.`:`Involuntary exits elevated — review hiring quality and onboarding expectations alignment.`,
       proj2026>exits2025?`Projected to exceed last year — escalate retention interventions now, not at year-end.`:`Exit pace stabilising — continue current retention efforts.`
@@ -3390,7 +3401,7 @@ async function runAIIntel(){
     type:stabType,
     title:'Workforce Stability',
     metric:`${avgTen}y avg active tenure · ${longTenure} anchors`,
-    body:`<strong>${longTenure} employees</strong> with 3+ years tenure — your institutional knowledge anchors. <strong>${newJoins} employees</strong> joined in last 12 months (${total?Math.round(newJoins/total*100):0}% of team). <strong>${contractors} contractors</strong> (${conPct}%). ${conPct>20?'⚠ High contractor ratio.':'Contractor mix manageable.'}`,
+    body:`<strong>${longTenure} employees</strong> with 3+ years tenure — your institutional knowledge anchors. <strong>${newJoins} employees</strong> joined in last 12 months (${total?Math.round(newJoins/total*100):0}% of team). <strong>${contractors} contractors</strong> (${conPct}%). ${conPct>CONTRACTOR_THRESHOLD?'⚠ High contractor ratio.':'Contractor mix manageable.'}`,
     actions:[
       longTenure<total*0.25?`Only ${Math.round(longTenure/total*100)}% of team has 3+ years — shallow institutional knowledge base. Prioritise retaining your top 5 long-tenure employees with retention conversations now.`:`${Math.round(longTenure/total*100)}% long-tenure base is solid — document their knowledge and build succession plans.`,
       newJoins>total*0.3?`${newJoins} employees are in their first year (${Math.round(newJoins/total*100)}%) — heavy onboarding burden. Ensure buddy system and structured 30/60/90 check-ins are in place for all.`:`New join ratio is manageable — maintain structured onboarding without overwhelming existing team.`
@@ -3403,10 +3414,10 @@ async function runAIIntel(){
     type:compType,
     title:'Team Composition',
     metric:`${femPct}% Female · ${conPct}% Contractors`,
-    body:`<strong>${india} India · ${usa} USA</strong>. <strong>${female} women</strong> of ${total} (tech benchmark: 28–35%). ${femPct<28?'⚠ Below benchmark.':femPct<35?'Approaching benchmark.':'✅ Above benchmark.'} <strong>${contractors} contractors</strong> (${conPct}%) — ${conPct>20?'above':'within'} recommended threshold.`,
+    body:`<strong>${india} India · ${usa} USA</strong>. <strong>${female} women</strong> of ${total} (tech benchmark: 28–35%). ${femPct<GENDER_BENCH_LOW?'⚠ Below benchmark.':femPct<35?'Approaching benchmark.':'✅ Above benchmark.'} <strong>${contractors} contractors</strong> (${conPct}%) — ${conPct>CONTRACTOR_THRESHOLD?'above':'within'} recommended threshold.`,
     actions:[
-      femPct<28?`${femPct}% female representation is below benchmark for a tech team — review hiring panels, job descriptions, and sourcing channels.`:`Gender mix is healthy — maintain focus on inclusive culture to sustain it.`,
-      conPct>20?`${contractors} contractors represent cost and IP risk — evaluate which roles could be converted to FTE for long-term stability.`:`Contractor mix is healthy.`
+      femPct<GENDER_BENCH_LOW?`${femPct}% female representation is below benchmark for a tech team — review hiring panels, job descriptions, and sourcing channels.`:`Gender mix is healthy — maintain focus on inclusive culture to sustain it.`,
+      conPct>CONTRACTOR_THRESHOLD?`${contractors} contractors represent cost and IP risk — evaluate which roles could be converted to FTE for long-term stability.`:`Contractor mix is healthy.`
     ]
   });
 
