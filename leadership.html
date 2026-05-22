@@ -415,7 +415,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
     <button class="tab" onclick="goTab(this,'p5')">⭐ Performance</button>
     <button class="tab" onclick="goTab(this,'p7')">🧭 Leadership Summary</button>
     <button class="tab" onclick="goTab(this,'p9')">🌳 Org Chart</button>
-    <button class="tab" onclick="goTab(this,'p10')">🤖 AI Intel</button>
+    <button class="tab" onclick="goTab(this,'p8')">🧠 Team Radar</button>
     <button class="tab" onclick="goTab(this,'p11')">📥 Reports</button>
   </div>
 
@@ -500,17 +500,6 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
       <div id="squad-tree"></div>
     </div>
 
-    <!-- MANAGER CARDS -->
-    <div class="card">
-      <div class="c-title">
-        <div class="c-title-l">L1 Managers · Direct Reports · Span Health</div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <select id="f-mgr-squad" onchange="renderMgrFilter()" style="font-family:'Outfit',sans-serif;font-size:.72rem;padding:4px 22px 4px 8px;border-radius:6px;border:1.5px solid var(--border);background:var(--bg);appearance:none"><option value="all">All Squads</option></select>
-          <span style="font-size:.6rem;color:var(--muted)">🔴 &gt;7 reports · 🟡 1 report · 🟢 2–7</span>
-        </div>
-      </div>
-      <div id="mgr-grid" class="mgr-grid"></div>
-    </div>
   </div>
 
   <!-- P4 -->
@@ -580,29 +569,9 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
       <div class="g2" id="act-grid"></div>
       <div class="cta-bar" id="cta-bar"></div>
     </div>
-  </div>
+    <!-- AI Intel moved here from P10 -->
+    <div style="margin-top:18px"><div style="font-size:.9rem;font-weight:800;color:var(--ink);margin-bottom:10px">🤖 AI Workforce Intelligence</div>
 
-  <!-- P8 removed - Manager Span now in Squad Intelligence (P3) -->
-
-  <!-- P9 ORG CHART -->
-  <div class="pg" id="p9">
-    <div class="inf blue" id="inf-org-chart"></div>
-    <div class="card" style="margin-bottom:18px">
-      <div class="c-title"><div class="c-title-l">🏛 Leadership Team — Direct Reports to President</div></div>
-      <div id="leadership-strip" style="overflow-x:auto;padding:10px 0"></div>
-    </div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-      <div style="font-size:.78rem;font-weight:700;color:var(--ink)">🌌 Galaxy Trees — Click to Expand</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="org-btn" onclick="expandAllGalaxies()">Expand All</button>
-        <button class="org-btn" onclick="collapseAllGalaxies()">Collapse All</button>
-        <span style="font-size:.62rem;color:var(--muted);align-self:center"><span style="background:rgba(217,119,6,.15);color:var(--amber);padding:1px 5px;border-radius:3px;font-weight:700">CON</span> Contractor · 🔵 India · 🟣 USA</span>
-      </div>
-    </div>
-    <div id="galaxy-trees"></div>
-  </div>
-  <!-- P10 AI INTEL -->
-  <div class="pg" id="p10">
     <div class="card" style="margin-bottom:14px">
       <div class="c-title"><div class="c-title-l">🤖 AI Workforce Intelligence</div></div>
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px">
@@ -640,8 +609,58 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
         <div style="font-size:.76rem;color:var(--muted);line-height:1.7">Select whole org or a specific galaxy leader, then click Generate.<br>6 insight cards on attrition, manager health, performance, engagement, composition and retention.<br>All computed from your actual numbers — nothing made up.</div>
       </div>
     </div>
+
+    </div>
   </div>
 
+  <!-- P8 removed - Manager Span now in Squad Intelligence (P3) -->
+
+
+  <!-- P8 TEAM RADAR — Manager Intelligence -->
+  <div class="pg" id="p8">
+    <div class="card" style="margin-bottom:14px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:12px">
+        <div>
+          <div class="sum-hl">🧠 Team Radar <em style="font-size:.75rem;font-weight:400">· Manager Span Intelligence</em></div>
+          <div style="font-size:.72rem;color:var(--muted);margin-top:3px">Who is carrying how much? Identify overloaded managers, thin spans, and leadership leverage across squads.</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="f-mgr-squad" onchange="renderMgrFilter()" style="font-family:'Outfit',sans-serif;font-size:.78rem;padding:6px 22px 6px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);appearance:none;min-width:160px">
+            <option value="all">All Squads</option>
+          </select>
+          <select id="f-mgr-level" onchange="renderMgrFilter()" style="font-family:'Outfit',sans-serif;font-size:.78rem;padding:6px 22px 6px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);appearance:none;min-width:150px">
+            <option value="all">All Levels</option>
+            <option value="l0">CEO / President</option>
+            <option value="l1">L1 Galaxy Heads</option>
+            <option value="l2">L2 Sub Leads</option>
+            <option value="l3plus">L3+ Managers</option>
+          </select>
+        </div>
+      </div>
+      <!-- KPI strip for span health -->
+      <div id="radar-kpis" style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:18px"></div>
+      <!-- Manager cards grid -->
+      <div id="mgr-grid" class="mgr-grid"></div>
+    </div>
+  </div>
+
+  <!-- P9 ORG CHART -->
+  <div class="pg" id="p9">
+    <div class="inf blue" id="inf-org-chart"></div>
+    <div class="card" style="margin-bottom:18px">
+      <div class="c-title"><div class="c-title-l">🏛 Leadership Team — Direct Reports to President</div></div>
+      <div id="leadership-strip" style="overflow-x:auto;padding:10px 0"></div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div style="font-size:.78rem;font-weight:700;color:var(--ink)">🌌 Galaxy Trees — Click to Expand</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="org-btn" onclick="expandAllGalaxies()">Expand All</button>
+        <button class="org-btn" onclick="collapseAllGalaxies()">Collapse All</button>
+        <span style="font-size:.62rem;color:var(--muted);align-self:center"><span style="background:rgba(217,119,6,.15);color:var(--amber);padding:1px 5px;border-radius:3px;font-weight:700">CON</span> Contractor · 🔵 India · 🟣 USA</span>
+      </div>
+    </div>
+    <div id="galaxy-trees"></div>
+  </div>
   <!-- P11 REPORTS -->
   <div class="pg" id="p11">
     <div class="inf blue">
@@ -2377,19 +2396,109 @@ function renderManagerSpan(activeEmps){
 
 function renderMgrFilter(){
   const activeAll=EMP_DATA.filter(d=>d.Status==='Active'||d.ActiveFlag===1);
-  const sq=document.getElementById('f-mgr-squad')?.value||'all';
-  const emps=sq==='all'?activeAll:activeAll.filter(d=>d.Squad===sq);
+  const sqF=document.getElementById('f-mgr-squad')?.value||'all';
+  const lvlF=document.getElementById('f-mgr-level')?.value||'all';
+  const emps=sqF==='all'?activeAll:activeAll.filter(d=>d.Squad===sqF);
   const mgrMap=buildMgrMap(emps);
-  const entries=Object.entries(mgrMap).sort((a,b)=>b[1].total-a[1].total);
+
+  // Determine org level of each manager using tree depth
+  const {nodes:orgNodes}=buildOrgTree(activeAll);
+  function getOrgLevel(name){
+    const node=orgNodes[name];
+    if(!node)return 99;
+    let d=0,cur=node;
+    while(cur&&cur['L1 Manager']&&orgNodes[String(cur['L1 Manager']||'').trim()]){
+      cur=orgNodes[String(cur['L1 Manager']||'').trim()];
+      d++;
+      if(d>10)break;
+    }
+    return d; // 0=CEO, 1=L1 galaxy heads, 2=L2 sub-leads, 3+=L3 managers
+  }
+
+  const entries=Object.entries(mgrMap)
+    .map(([mgr,data])=>{
+      const orgLevel=getOrgLevel(mgr);
+      data.orgLevel=orgLevel;
+      return [mgr,data];
+    })
+    .filter(([mgr,data])=>{
+      if(lvlF==='l0') return data.orgLevel===0;
+      if(lvlF==='l1') return data.orgLevel===1;
+      if(lvlF==='l2') return data.orgLevel===2;
+      if(lvlF==='l3plus') return data.orgLevel>=3;
+      return true;
+    })
+    .sort((a,b)=>b[1].total-a[1].total);
+
+  // Span logic by org level:
+  // L0 (CEO): always "Leader" — informational only
+  // L1 (Galaxy heads): always "Galaxy Lead" — no red/amber flag for span
+  //   (they're supposed to have many direct reports as galaxy coordinators)
+  // L2 (Sub-leads like Prashant): span threshold 5-10 is normal for team leads
+  // L3+ (actual people managers): strict 2-7 span rules apply
+  function getSpanHealth(direct, orgLevel, isTop){
+    if(orgLevel===0) return {cls:'healthy',badge:'g',label:'President'};
+    if(orgLevel===1) return {cls:'healthy',badge:'g',label:'Galaxy Lead'};
+    if(orgLevel===2){
+      // Sub-leads — slightly relaxed threshold (they manage managers, not just ICs)
+      if(direct>10) return {cls:'overloaded',badge:'r',label:'Overloaded'};
+      if(direct===1) return {cls:'lean',badge:'a',label:'Thin Span'};
+      return {cls:'healthy',badge:'g',label:'Healthy'};
+    }
+    // L3+ — strict span rules
+    if(direct>SPAN_MAX) return {cls:'overloaded',badge:'r',label:'Overloaded'};
+    if(direct===1) return {cls:'lean',badge:'a',label:'Single IC'};
+    if(direct>=2&&direct<=SPAN_MAX) return {cls:'healthy',badge:'g',label:'Healthy'};
+    return {cls:'healthy',badge:'g',label:'Healthy'};
+  }
+
+  // Radar KPIs
+  const radarKpis=document.getElementById('radar-kpis');
+  if(radarKpis){
+    const l0count=Object.values(mgrMap).filter((_,i)=>Object.values(mgrMap).map(v=>v.orgLevel||getOrgLevel(Object.keys(mgrMap)[i]))[i]===0).length;
+    const allEntries=Object.entries(mgrMap).map(([m,d])=>({...d,orgLevel:getOrgLevel(m),direct:d.reports.length}));
+    const totalMgrs=allEntries.length;
+    const overloaded=allEntries.filter(d=>d.orgLevel>=2&&d.direct>SPAN_MAX).length;
+    const lean=allEntries.filter(d=>d.orgLevel>=2&&d.direct===1).length;
+    const healthy=allEntries.filter(d=>d.orgLevel>=2&&d.direct>=2&&d.direct<=SPAN_MAX).length;
+    const avgSpanL3=allEntries.filter(d=>d.orgLevel>=2);
+    const avgSpan=avgSpanL3.length?Math.round(avgSpanL3.reduce((s,d)=>s+d.direct,0)/avgSpanL3.length*10)/10:0;
+
+    radarKpis.innerHTML=`
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px;text-align:center">
+        <div style="font-size:.6rem;font-weight:700;text-transform:uppercase;color:#15803d;margin-bottom:4px">Total Managers</div>
+        <div style="font-size:1.8rem;font-weight:800;color:#15803d">${totalMgrs}</div>
+        <div style="font-size:.62rem;color:var(--muted)">across org</div>
+      </div>
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px;text-align:center">
+        <div style="font-size:.6rem;font-weight:700;text-transform:uppercase;color:#15803d;margin-bottom:4px">Healthy Span</div>
+        <div style="font-size:1.8rem;font-weight:800;color:#15803d">${healthy}</div>
+        <div style="font-size:.62rem;color:var(--muted)">2–${SPAN_MAX} direct reports</div>
+      </div>
+      <div style="background:${overloaded>0?'#fef2f2':'#f0fdf4'};border:1px solid ${overloaded>0?'#fecaca':'#bbf7d0'};border-radius:10px;padding:12px;text-align:center">
+        <div style="font-size:.6rem;font-weight:700;text-transform:uppercase;color:${overloaded>0?'#dc2626':'#15803d'};margin-bottom:4px">Overloaded</div>
+        <div style="font-size:1.8rem;font-weight:800;color:${overloaded>0?'#dc2626':'#15803d'}">${overloaded}</div>
+        <div style="font-size:.62rem;color:var(--muted)">&gt;${SPAN_MAX} direct reports</div>
+      </div>
+      <div style="background:${lean>3?'#fffbeb':'#f0fdf4'};border:1px solid ${lean>3?'#fde68a':'#bbf7d0'};border-radius:10px;padding:12px;text-align:center">
+        <div style="font-size:.6rem;font-weight:700;text-transform:uppercase;color:${lean>3?'#d97706':'#15803d'};margin-bottom:4px">Thin Span</div>
+        <div style="font-size:1.8rem;font-weight:800;color:${lean>3?'#d97706':'#15803d'}">${lean}</div>
+        <div style="font-size:.62rem;color:var(--muted)">1 direct report</div>
+      </div>
+      <div style="background:#f8f7ff;border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
+        <div style="font-size:.6rem;font-weight:700;text-transform:uppercase;color:var(--accent);margin-bottom:4px">Avg Span (L2+)</div>
+        <div style="font-size:1.8rem;font-weight:800;color:var(--accent)">${avgSpan}</div>
+        <div style="font-size:.62rem;color:var(--muted)">benchmark: ${SPAN_MIN}–${SPAN_MAX}</div>
+      </div>`;
+  }
 
   document.getElementById('mgr-grid').innerHTML=entries.map(([mgr,data])=>{
     const direct=data.reports.length;
     const total=data.total||direct;
-    const isTop=data.isTopLevel; // CEO / galaxy heads — don't flag as overloaded
-    // Span health based on DIRECT reports only, but skip top-level leaders
-    const cls=isTop?'healthy':direct>SPAN_MAX?'overloaded':direct===1?'lean':'healthy';
-    const badge=isTop?'g':direct>SPAN_MAX?'r':direct===1?'a':'g';
-    const label=isTop?'Leader':direct>SPAN_MAX?'Overloaded':direct===1?'Single IC':'Healthy';
+    const orgLevel=data.orgLevel;
+    const {cls,badge,label}=getSpanHealth(direct,orgLevel,false);
+    const levelTag=orgLevel===0?'CEO':orgLevel===1?'L1 Galaxy':orgLevel===2?'L2 Lead':'L3+ Mgr';
+    const levelColor=orgLevel===0?'#7c3aed':orgLevel===1?'#0369a1':orgLevel===2?'#0f766e':'#374151';
     const squads=[...data.squads].join(', ');
     const countries=[...data.countries].join(' · ');
     const repList=data.reports.slice(0,6).map(r=>{
@@ -2401,20 +2510,25 @@ function renderMgrFilter(){
     const conInTeam=data.reports.filter(r=>r.Type==='Consultant').length;
     const conNote=conInTeam>0?` · <span style="color:var(--amber);font-weight:600">${conInTeam} CON</span>`:'';
     const more=direct>6?`<span class="mgr-rep" style="color:var(--muted)">+${direct-6} more</span>`:'';
-    const totalNote=total>direct?`<span style="font-size:.62rem;color:var(--muted);margin-left:8px">/ ${total} total in branch</span>`:'';
+    const branchNote=total>direct
+      ?`<div style="font-size:.6rem;color:var(--muted);margin-top:2px">/ <strong>${total}</strong> total in branch</div>`:'';
     return `<div class="mgr-card ${cls}">
-      <div class="mgr-name">${mgr}</div>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:4px">
+        <div class="mgr-name">${mgr}</div>
+        <span style="font-size:.58rem;font-weight:700;padding:2px 7px;border-radius:12px;background:${levelColor}20;color:${levelColor};white-space:nowrap;flex-shrink:0">${levelTag}</span>
+      </div>
       <div class="mgr-meta">${squads} · ${countries}${conNote}</div>
       <div class="mgr-reports">${repList}${more}</div>
       <div class="mgr-stat">
         <div>
           <div class="mgr-count ${badge}">${direct}</div>
-          <div style="font-size:.58rem;color:var(--muted)">direct reports${totalNote}</div>
+          <div style="font-size:.58rem;color:var(--muted)">direct reports</div>
+          ${branchNote}
         </div>
         <span class="mgr-badge ${badge}">${label}</span>
       </div>
     </div>`;
-  }).join('');
+  }).join('')||'<div style="padding:20px;color:var(--muted);text-align:center">No managers found for this filter.</div>';
 }
 
 // ── ORG CHART - PROPER TOP-DOWN TREE ─────────────────────────
