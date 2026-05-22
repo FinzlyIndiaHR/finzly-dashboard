@@ -486,21 +486,18 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
       </div>
     </div>
 
-    <!-- SUB SQUAD DRILLDOWN — dropdown panel -->
+    <!-- SUB SQUAD DRILLDOWN — accordion tabs -->
     <div class="card" style="margin-bottom:14px">
       <div class="c-title">
-        <div class="c-title-l">Squad Intelligence · Sub Squad Detail</div>
+        <div class="c-title-l">Squad → Sub Squad · Headcount · RAG · Manager</div>
         <div style="display:flex;gap:8px;align-items:center">
-          <select id="sq-picker" onchange="renderSquadPanel()" style="font-family:'Outfit',sans-serif;font-size:.8rem;padding:6px 28px 6px 12px;border-radius:8px;border:2px solid var(--border);background:var(--bg);appearance:none;font-weight:600;min-width:180px">
-            <option value="">— Select a Squad —</option>
-          </select>
-          <select id="sq-subsquad-filter" onchange="filterSubSquad()" style="font-family:'Outfit',sans-serif;font-size:.76rem;padding:5px 22px 5px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);appearance:none;display:none">
+          <select id="sq-subsquad-filter" onchange="filterSubSquad()" style="font-family:'Outfit',sans-serif;font-size:.76rem;padding:5px 22px 5px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);appearance:none;display:none;min-width:160px">
             <option value="all">All Sub Squads</option>
           </select>
-          <span id="sq-panel-info" style="font-size:.65rem;color:var(--muted)">Select a squad to explore</span>
+          <span id="sq-panel-info" style="font-size:.65rem;color:var(--muted)">Click a squad to expand</span>
         </div>
       </div>
-      <div id="squad-panel" style="min-height:80px"></div>
+      <div id="squad-tree"></div>
     </div>
 
     <!-- MANAGER CARDS -->
@@ -1274,122 +1271,63 @@ function goTab(el,pid){
     if(galaxies&&galaxies.children.length===0) renderOrgChart();
   }
 }
-function renderSquadPanel(){
-  const sq=document.getElementById('sq-picker').value;
-  const panel=document.getElementById('squad-panel');
-  const info=document.getElementById('sq-panel-info');
-  const subFilter=document.getElementById('sq-subsquad-filter');
-  if(!sq||!window._sqTree){
-    panel.innerHTML=`<div style="padding:32px;text-align:center;color:var(--muted);font-size:.85rem">👈 Select a squad from the dropdown to explore its sub-squads, RAG health and people</div>`;
-    info.textContent='Select a squad to explore';
-    subFilter.style.display='none';
-    return;
+function toggleSquad2(sqId){
+  const panel = document.getElementById(sqId+'-panel');
+  const arrow = document.getElementById(sqId+'-arrow');
+  if(!panel) return;
+  const isOpen = panel.style.display !== 'none';
+  panel.style.display = isOpen ? 'none' : 'block';
+  if(arrow) arrow.textContent = isOpen ? '▼' : '▲';
+}
+
+function filterSubSquadInline(sel, sqId){
+  const val = sel.value;
+  const rows = document.querySelectorAll(`#${sqId}-rows .ss-panel-row`);
+  rows.forEach(r => {
+    r.style.display = (val==='all' || r.dataset.sub===val) ? 'grid' : 'none';
+  });
+  const pg = document.getElementById(sqId+'-people');
+  if(pg) pg.innerHTML = '';
+  if(val !== 'all') {
+    const sq = sel.closest('.squad-section')?.querySelector('.sq-title')?.textContent?.trim() || '';
+    selectSubSquad(val, sq || val, sqId);
   }
-  const subs=window._sqTree[sq]||{};
-  const col=SQUAD_COLORS[sq]||'#6b7a8b';
-  const sqHC=Object.values(subs).reduce((s,v)=>s+v.hc,0);
-  const sqG=Object.values(subs).reduce((s,v)=>s+v.g,0);
-  const sqA=Object.values(subs).reduce((s,v)=>s+v.a,0);
-  const sqR=Object.values(subs).reduce((s,v)=>s+v.r,0);
-
-  // Populate sub-squad filter dropdown
-  subFilter.innerHTML='<option value="all">All Sub Squads</option>';
-  Object.keys(subs).sort().forEach(ss=>{
-    const o=document.createElement('option');
-    o.value=ss; o.textContent=`${ss} (${subs[ss].hc})`;
-    subFilter.appendChild(o);
-  });
-  subFilter.style.display='block';
-  info.textContent=`${sqHC} people · ✓${sqG} Green · ⚠${sqA} Amber · ✕${sqR} Red`;
-
-  const rowsHtml=Object.entries(subs).sort((a,b)=>b[1].hc-a[1].hc).map(([sub,v],i)=>{
-    const gW=v.hc?Math.round(v.g/v.hc*100):0;
-    const aW=v.hc?Math.round(v.a/v.hc*100):0;
-    const rW=v.hc?Math.round(v.r/v.hc*100):0;
-    const nW=100-gW-aW-rW;
-    const pct=sqHC?Math.round(v.hc/sqHC*100):0;
-    const subEsc=sub.replace(/'/g,"\\'");
-    return `<div class="ss-panel-row" data-sub="${sub}" style="display:grid;grid-template-columns:2fr 70px 90px 90px 90px 70px 70px;align-items:center;padding:9px 14px;background:${i%2?'var(--bg)':'#fff'};cursor:pointer;border-bottom:1px solid var(--border)" onclick="selectSubSquad('${subEsc}')" onmouseover="this.style.background='#f5f3ff'" onmouseout="this.style.background='${i%2?'var(--bg)':'#fff'}'">
-      <div>
-        <div style="font-weight:600;font-size:.78rem;margin-bottom:4px">${sub}</div>
-        <div style="display:flex;height:5px;border-radius:3px;overflow:hidden;background:var(--border);width:140px">
-          <div style="width:${gW}%;background:var(--green)"></div>
-          <div style="width:${aW}%;background:var(--amber)"></div>
-          <div style="width:${rW}%;background:var(--red)"></div>
-        </div>
-      </div>
-      <div style="text-align:center;font-weight:700">${v.hc}</div>
-      <div style="text-align:center;color:var(--green);font-weight:${v.g?700:400}">${v.g||'—'}</div>
-      <div style="text-align:center;color:var(--amber);font-weight:${v.a?700:400}">${v.a||'—'}</div>
-      <div style="text-align:center;color:var(--red);font-weight:${v.r?700:400}">${v.r||'—'}</div>
-      <div style="text-align:center;color:var(--muted);font-size:.75rem">${v.n||'—'}</div>
-      <div style="text-align:center;font-size:.7rem;color:var(--muted)">${pct}%</div>
-    </div>`;
-  }).join('');
-
-  panel.innerHTML=`
-    <div style="background:${col};padding:12px 16px;border-radius:10px 10px 0 0;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-      <span style="font-size:1rem;font-weight:800;color:#fff">${sq}</span>
-      <span style="background:rgba(255,255,255,.2);color:#fff;padding:3px 12px;border-radius:20px;font-size:.72rem;font-weight:700">${sqHC} people</span>
-      <div style="margin-left:auto;display:flex;gap:8px">
-        ${sqG>0?`<span style="background:rgba(255,255,255,.15);color:#fff;padding:3px 10px;border-radius:20px;font-size:.7rem">✓ ${sqG}</span>`:''}
-        ${sqA>0?`<span style="background:rgba(255,255,255,.15);color:#fff;padding:3px 10px;border-radius:20px;font-size:.7rem">⚠ ${sqA}</span>`:''}
-        ${sqR>0?`<span style="background:rgba(255,255,255,.15);color:#fff;padding:3px 10px;border-radius:20px;font-size:.7rem">✕ ${sqR}</span>`:''}
-      </div>
-    </div>
-    <div style="display:grid;grid-template-columns:2fr 70px 90px 90px 90px 70px 70px;padding:7px 14px;background:#f0ede8;border:1px solid var(--border);font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">
-      <div>Sub Squad</div><div style="text-align:center">HC</div>
-      <div style="text-align:center;color:var(--green)">Green</div>
-      <div style="text-align:center;color:var(--amber)">Amber</div>
-      <div style="text-align:center;color:var(--red)">Red</div>
-      <div style="text-align:center">N/S</div><div style="text-align:center">%</div>
-    </div>
-    <div id="sq-sub-rows" style="border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;overflow:hidden">${rowsHtml}</div>
-    <div id="sq-people-grid" style="margin-top:10px"></div>`;
 }
 
-function filterSubSquad(){
-  const subSel=document.getElementById('sq-subsquad-filter').value;
-  document.querySelectorAll('.ss-panel-row').forEach(r=>{
-    r.style.display=(subSel==='all'||r.dataset.sub===subSel)?'grid':'none';
-  });
-  const pg=document.getElementById('sq-people-grid');
-  if(subSel!=='all') selectSubSquad(subSel);
-  else if(pg) pg.innerHTML='';
-}
-
-function selectSubSquad(sub){
-  const sq=document.getElementById('sq-picker').value;
-  if(!sq||!window._sqActive)return;
-  const people=window._sqActive.filter(d=>d.Squad===sq&&d['Sub Squad']===sub);
-  const col=SQUAD_COLORS[sq]||'#6b7a8b';
-  const grid=document.getElementById('sq-people-grid');
-  if(!grid)return;
-  if(!people.length){grid.innerHTML='';return;}
-  grid.innerHTML=`
-    <div style="padding:8px 14px;background:#f8f7ff;border:1px solid var(--border);border-radius:8px 8px 0 0;display:flex;align-items:center;justify-content:space-between">
+function selectSubSquad(sub, sq, sqId){
+  if(!window._sqActive) return;
+  const people = window._sqActive.filter(d => d.Squad===sq && d['Sub Squad']===sub);
+  const col = SQUAD_COLORS[sq] || '#6b7a8b';
+  const pgId = sqId ? sqId+'-people' : 'sq-people-grid';
+  const grid = document.getElementById(pgId);
+  if(!grid || !people.length){ if(grid) grid.innerHTML=''; return; }
+  const gCnt = people.filter(p=>p['Rag Status']==='Green').length;
+  const aCnt = people.filter(p=>p['Rag Status']==='Amber').length;
+  const rCnt = people.filter(p=>p['Rag Status']==='Red').length;
+  grid.innerHTML = `
+    <div style="padding:8px 14px;background:#f8f7ff;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
       <span style="font-size:.72rem;font-weight:700;color:${col}">${sub} — ${people.length} people</span>
-      <div style="display:flex;gap:6px">
-        <span style="font-size:.62rem;color:var(--green)">✓${people.filter(p=>p['Rag Status']==='Green').length}</span>
-        <span style="font-size:.62rem;color:var(--amber)">⚠${people.filter(p=>p['Rag Status']==='Amber').length}</span>
-        <span style="font-size:.62rem;color:var(--red)">✕${people.filter(p=>p['Rag Status']==='Red').length}</span>
+      <div style="display:flex;gap:8px">
+        <span style="font-size:.65rem;color:var(--green);font-weight:700">✓${gCnt}</span>
+        <span style="font-size:.65rem;color:var(--amber);font-weight:700">⚠${aCnt}</span>
+        <span style="font-size:.65rem;color:var(--red);font-weight:700">✕${rCnt}</span>
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:7px;padding:10px;border:1px solid var(--border);border-top:none;border-radius:0 0 8px 8px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:7px;padding:10px;background:var(--card)">
       ${people.map(p=>{
-        const rag=p['Rag Status']||'Not Set';
-        const ragCol=rag==='Green'?'var(--green)':rag==='Red'?'var(--red)':rag==='Amber'?'var(--amber)':'var(--muted)';
-        const flag=p.Country==='India'?'🔵':'🟣';
-        const isCon=p.Type&&p.Type.toLowerCase().includes('consult');
-        return `<div style="display:flex;align-items:center;gap:8px;padding:8px;background:#fff;border-radius:8px;border:1px solid var(--border);border-left:3px solid ${ragCol}">
-          <span>${flag}</span>
+        const rag = p['Rag Status']||'Not Set';
+        const rc  = rag==='Green'?'var(--green)':rag==='Red'?'var(--red)':rag==='Amber'?'var(--amber)':'var(--muted)';
+        const flag= p.Country==='India'?'🔵':'🟣';
+        const isCon= p.Type&&p.Type.toLowerCase().includes('consult');
+        return `<div style="display:flex;align-items:center;gap:8px;padding:8px;background:#fff;border-radius:8px;border:1px solid var(--border);border-left:3px solid ${rc}">
+          <span style="font-size:.9rem">${flag}</span>
           <div style="flex:1;min-width:0">
             <div style="font-size:.75rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p['First Name']||''} ${p['Last Name']||''}</div>
             <div style="font-size:.6rem;color:var(--muted)">${(p['Corporate Title']||p.Level||'').slice(0,26)}</div>
           </div>
-          <div style="text-align:right">
-            <div style="font-size:.58rem;color:${ragCol};font-weight:700">${rag}</div>
-            ${isCon?'<div style="font-size:.5rem;background:#fef3c7;color:#92400e;padding:1px 3px;border-radius:3px;font-weight:700">CON</div>':''}
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:.58rem;color:${rc};font-weight:700">${rag}</div>
+            ${isCon?'<div style="font-size:.5rem;background:#fef3c7;color:#92400e;padding:1px 4px;border-radius:3px;font-weight:700;margin-top:2px">CON</div>':''}
           </div>
         </div>`;
       }).join('')}
@@ -1398,7 +1336,7 @@ function selectSubSquad(sub){
 
 function toggleSquad(hdr){
   hdr.nextElementSibling.classList.toggle('hidden');
-  hdr.querySelector('.sq-toggle').classList.toggle('open');
+  hdr.querySelector('.sq-toggle')?.classList.toggle('open');
 }
 
 function populateFilters(){
@@ -1900,26 +1838,99 @@ function render(){
     _datalabels:true
   });
 
-  // ── SQUAD PANEL — populate dropdown ────────────────────────
-  const sqPicker=document.getElementById('sq-picker');
-  const prevSq=sqPicker.value;
-  sqPicker.innerHTML='<option value="">— Select a Squad —</option>';
-  squads.forEach(sq=>{
-    const hc=Object.values(tree[sq]||{}).reduce((s,v)=>s+v.hc,0);
-    const col=SQUAD_COLORS[sq]||'#6b7a8b';
-    const o=document.createElement('option');
-    o.value=sq;
-    o.textContent=`${sq}  (${hc} people)`;
-    o.style.color=col;
-    sqPicker.appendChild(o);
-  });
-  if(prevSq&&squads.includes(prevSq)) sqPicker.value=prevSq;
+  // ── SQUAD TREE — always-visible bars, click to expand panel ─
+  window._sqTree = tree;
+  window._sqActive = active;
 
-  // Store for panel renderer
-  window._sqTree=tree;
-  window._sqActive=active;
+  document.getElementById('squad-tree').innerHTML = squads.map(sq => {
+    const subs = tree[sq] || {};
+    const sqHC = Object.values(subs).reduce((s,v)=>s+v.hc, 0);
+    const sqG  = Object.values(subs).reduce((s,v)=>s+v.g,  0);
+    const sqA  = Object.values(subs).reduce((s,v)=>s+v.a,  0);
+    const sqR  = Object.values(subs).reduce((s,v)=>s+v.r,  0);
+    const sqN  = Object.values(subs).reduce((s,v)=>s+v.n,  0);
+    const col  = SQUAD_COLORS[sq] || '#6b7a8b';
+    const sqId = 'sq-' + sq.replace(/\s+/g,'_');
 
-  renderSquadPanel();
+    // Sub-squad filter options
+    const subOpts = Object.keys(subs).sort()
+      .map(ss=>`<option value="${ss}">${ss} (${subs[ss].hc})</option>`).join('');
+
+    // Sub-squad rows
+    const rows = Object.entries(subs).sort((a,b)=>b[1].hc-a[1].hc).map(([sub,v],i)=>{
+      const gW = v.hc?Math.round(v.g/v.hc*100):0;
+      const aW = v.hc?Math.round(v.a/v.hc*100):0;
+      const rW = v.hc?Math.round(v.r/v.hc*100):0;
+      const pct= sqHC?Math.round(v.hc/sqHC*100):0;
+      const subEsc = sub.replace(/'/g,"\\'");
+      return `<div class="ss-panel-row" data-sub="${sub}" data-squad="${sq}"
+        style="display:grid;grid-template-columns:2fr 70px 90px 90px 90px 70px 70px;align-items:center;padding:9px 14px;background:${i%2?'var(--bg)':'#fff'};cursor:pointer;border-bottom:1px solid var(--border)"
+        onclick="selectSubSquad('${subEsc}','${sq.replace(/'/g,"\\'")}','${sqId}')"
+        onmouseover="this.style.background='#f5f3ff'"
+        onmouseout="this.style.background='${i%2?'var(--bg)':'#fff'}'">
+        <div>
+          <div style="font-weight:600;font-size:.78rem;margin-bottom:4px">${sub}</div>
+          <div style="display:flex;height:5px;border-radius:3px;overflow:hidden;background:var(--border);width:140px">
+            <div style="width:${gW}%;background:var(--green)"></div>
+            <div style="width:${aW}%;background:var(--amber)"></div>
+            <div style="width:${rW}%;background:var(--red)"></div>
+          </div>
+        </div>
+        <div style="text-align:center;font-weight:700">${v.hc}</div>
+        <div style="text-align:center;color:var(--green);font-weight:${v.g?700:400}">${v.g||'—'}</div>
+        <div style="text-align:center;color:var(--amber);font-weight:${v.a?700:400}">${v.a||'—'}</div>
+        <div style="text-align:center;color:var(--red);font-weight:${v.r?700:400}">${v.r||'—'}</div>
+        <div style="text-align:center;color:var(--muted);font-size:.75rem">${v.n||'—'}</div>
+        <div style="text-align:center;font-size:.7rem;color:var(--muted)">${pct}%</div>
+      </div>`;
+    }).join('');
+
+    return `<div class="squad-section" id="${sqId}-wrap" style="margin-bottom:8px;border-radius:10px;overflow:hidden;border:1px solid var(--border)">
+      <!-- Squad header bar — always visible, click to toggle -->
+      <div class="squad-hdr" style="background:${col};border-radius:0;cursor:pointer" onclick="toggleSquad2('${sqId}')">
+        <div class="sq-hdr-left">
+          <div class="sq-title">${sq}</div>
+          <span class="sq-hc-badge">${sqHC} people</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="sq-rag-row">
+            ${sqG>0?`<span class="rag-chip g">✓${sqG}</span>`:''}
+            ${sqA>0?`<span class="rag-chip a">⚠${sqA}</span>`:''}
+            ${sqR>0?`<span class="rag-chip r">✕${sqR}</span>`:''}
+            ${sqN>0?`<span class="rag-chip n">○${sqN}</span>`:''}
+          </div>
+          <span class="sq-toggle" id="${sqId}-arrow">▼</span>
+        </div>
+      </div>
+
+      <!-- Expandable panel — hidden by default -->
+      <div id="${sqId}-panel" style="display:none">
+        <!-- Filter bar inside the panel -->
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#f8f7ff;border-bottom:1px solid var(--border)">
+          <span style="font-size:.68rem;font-weight:700;color:${col}">Filter:</span>
+          <select onchange="filterSubSquadInline(this,'${sqId}')"
+            style="font-family:'Outfit',sans-serif;font-size:.75rem;padding:5px 22px 5px 10px;border-radius:7px;border:1.5px solid ${col};background:#fff;appearance:none;font-weight:600;color:${col}">
+            <option value="all">All Sub Squads</option>
+            ${subOpts}
+          </select>
+          <span style="font-size:.62rem;color:var(--muted);margin-left:4px">Click a row to see people detail</span>
+        </div>
+        <!-- Table header -->
+        <div style="display:grid;grid-template-columns:2fr 70px 90px 90px 90px 70px 70px;padding:7px 14px;background:#f0ede8;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">
+          <div>Sub Squad</div><div style="text-align:center">HC</div>
+          <div style="text-align:center;color:var(--green)">Green</div>
+          <div style="text-align:center;color:var(--amber)">Amber</div>
+          <div style="text-align:center;color:var(--red)">Red</div>
+          <div style="text-align:center">N/S</div>
+          <div style="text-align:center">%</div>
+        </div>
+        <!-- Rows -->
+        <div id="${sqId}-rows">${rows}</div>
+        <!-- People grid (populated on row click) -->
+        <div id="${sqId}-people" style="padding:0 0 4px 0"></div>
+      </div>
+    </div>`;
+  }).join('');
 
   // Manager filter
   const mgrSel=document.getElementById('f-mgr-squad');
