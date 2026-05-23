@@ -402,6 +402,13 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
       <option value="2022">As of 2022</option>
       <option value="2021">As of 2021</option>
     </select>
+    <select id="f-quarter" onchange="applyFilter()" style="display:none">
+      <option value="all">All Quarters</option>
+      <option value="Q1">Q1 (Jan–Mar)</option>
+      <option value="Q2">Q2 (Apr–Jun)</option>
+      <option value="Q3">Q3 (Jul–Sep)</option>
+      <option value="Q4">Q4 (Oct–Dec)</option>
+    </select>
     <div class="fb-sep"></div>
     <button class="fb-reset" onclick="resetFilters()">↺ Reset</button>
     <span class="fb-info" id="f-info">Loading…</span>
@@ -1389,40 +1396,60 @@ function populateFilters(){
 let filtered=[];
 function applyFilter(){
   const country=document.getElementById('f-country').value;
-  const city=document.getElementById('f-city').value;
-  const squad=document.getElementById('f-squad').value;
-  const year=document.getElementById('f-year').value;
+  const city   =document.getElementById('f-city').value;
+  const squad  =document.getElementById('f-squad').value;
+  const year   =document.getElementById('f-year').value;
+  const qSel   =document.getElementById('f-quarter');
+  const quarter=qSel?qSel.value:'all';
+
+  // Show quarter dropdown only when a specific year is selected
+  if(qSel) qSel.style.display=year!=='all'?'':'none';
+  if(year==='all'&&qSel) qSel.value='all';
+
+  // Quarter → month range
+  const qMonths={Q1:[1,2,3],Q2:[4,5,6],Q3:[7,8,9],Q4:[10,11,12]};
+  const activeQMonths=quarter!=='all'?qMonths[quarter]:null;
 
   filtered=EMP_DATA.filter(d=>{
-    // "As of YEAR" = joined on or before Dec 31 of that year AND (still active OR left after that year)
-    if(year!=='all'){
+    if(year==='all'){
+      // No year filter — active employees only
+      if(d.Status!=='Active'&&d.ActiveFlag!==1)return false;
+    } else {
       const yr=parseInt(year);
       const startYr=d['Start Year']?parseInt(d['Start Year']):null;
-      if(!startYr||startYr>yr)return false; // joined after this year → exclude
-      // If inactive, check if they left after this year end (still counted as active AS OF that year)
+      if(!startYr||startYr>yr)return false;
       if(d.Status==='Inactive'||d.ActiveFlag===0){
         const ts=d['Termination Date Str']||dateStr(d['Termination Date']);
         if(!ts)return false;
         const termYr=parseInt(ts.slice(0,4));
-        if(termYr<=yr){
-          // They left during or before this year — only include if status filter wants inactive
-              }
-        // They left after this year — they were active AS OF that year
+        if(termYr<=yr) return false; // left in or before the selected year
+      }
+      // Quarter filter — only include employees who joined in that quarter of that year
+      if(activeQMonths&&startYr===yr){
+        const startM=d['Start Date']?new Date((d['Start Date']-25569)*86400000).getUTCMonth()+1:null;
+        if(startM&&!activeQMonths.includes(startM))return false;
       }
     }
-    if(year==='all'&&(d.Status!=='Active'&&d.ActiveFlag!==1))return false;
     if(country!=='all'&&d.Country!==country)return false;
     if(city   !=='all'&&d.City   !==city)   return false;
     if(squad  !=='all'&&d.Squad  !==squad)  return false;
     return true;
   });
 
-  const yearLabel=year==='all'?'':` · Active as of ${year}`;
-  document.getElementById('f-info').textContent=filtered.length+' employee'+(filtered.length!==1?'s':'')+' in view'+yearLabel;
+  const parts=[];
+  if(year!=='all') parts.push(`As of ${year}`);
+  if(quarter!=='all') parts.push(quarter);
+  if(country!=='all') parts.push(country);
+  if(squad!=='all') parts.push(squad);
+  document.getElementById('f-info').textContent=`${filtered.length} employee${filtered.length!==1?'s':''} in view${parts.length?' · '+parts.join(' · '):''}`;
   render();
 }
 function resetFilters(){
-  ['f-country','f-city','f-squad','f-year'].forEach(id=>document.getElementById(id).value='all');
+  ['f-country','f-city','f-squad','f-year','f-quarter'].forEach(id=>{
+    const el=document.getElementById(id); if(el)el.value='all';
+  });
+  const qSel=document.getElementById('f-quarter');
+  if(qSel)qSel.style.display='none';
   applyFilter();
 }
 
@@ -1522,9 +1549,43 @@ function render(){
       <div class="ins-txt">${indiaPct>75?`<strong>${indiaPct}%</strong> of headcount is India-based — strong delivery muscle but a concentration risk. Ensure US team has context on critical systems.`:`Healthy split between India and USA delivery.`} ${conPct>CONTRACTOR_THRESHOLD?`⚠ <strong>${conPct}%</strong> contractors — review conversion to FTE for business-critical roles.`:''}</div>
     </div>`;
 
+  // ── Period-aware Joiners & Exits ─────────────────────────
+  const qFilter=document.getElementById('f-quarter')?.value||'all';
+  const qMonthsMap={Q1:[1,2,3],Q2:[4,5,6],Q3:[7,8,9],Q4:[10,11,12]};
+  const activeQM=qFilter!=='all'?qMonthsMap[qFilter]:null;
+
+  // Joiners in selected year/quarter (from ALL data)
+  const joiners=EMP_DATA.filter(d=>{
+    const sy=d['Start Year']?parseInt(d['Start Year']):null; if(!sy)return false;
+    if(snapYrInt){if(sy!==snapYrInt)return false;}
+    else{if(sy!==CURR_YEAR)return false;}
+    if(activeQM){
+      const sm=d['Start Date']?new Date((d['Start Date']-25569)*86400000).getUTCMonth()+1:null;
+      if(!sm||!activeQM.includes(sm))return false;
+    }
+    return true;
+  }).filter(d=>snapYear==='all'||(d.Country===undefined||true)); // respect squad/country filter
+  const joinerInd=joiners.filter(d=>d.Country==='India').length;
+  const joinerUSA=joiners.filter(d=>d.Country==='USA').length;
+
+  // Exits in selected year/quarter
+  const exitsPool2=EMP_DATA.filter(d=>{
+    if(d.Status==='Active'||d.ActiveFlag===1)return false;
+    const ts=d['Termination Date Str']||dateStr(d['Termination Date']); if(!ts)return false;
+    const ty=parseInt(ts.slice(0,4)),tm=parseInt(ts.slice(4,6));
+    if(snapYrInt){if(ty!==snapYrInt)return false;}
+    else{if(ty!==CURR_YEAR)return false;}
+    if(activeQM&&!activeQM.includes(tm))return false;
+    return true;
+  });
+  const exitVolPct=exitsPool2.length?Math.round(exitsPool2.filter(d=>d['Termination Type']==='Voluntary').length/exitsPool2.length*100):0;
+
+  const periodTag=snapYrInt?(qFilter!=='all'?`${qFilter} ${snapYear}`:snapYear):(qFilter!=='all'?`${qFilter} ${CURR_YEAR}`:CURR_YEAR);
+
   document.getElementById('k1').innerHTML=`
-    <div class="kc g"><div class="k-lbl">Active HC · ${snapYrLabel}</div><div class="k-val g">${active.length}</div><div class="k-sub">${snapYrInt?`active as of ${snapYear}`:'currently active'}</div></div>
-    <div class="kc r"><div class="k-lbl">${exitsLabel}</div><div class="k-val r">${exitsCount}</div><div class="k-sub">${snapYrInt?`exited in ${snapYear}`:projExits?`~${projExits} projected ⚠`:'left this year ⚠'}</div></div>
+    <div class="kc g"><div class="k-lbl">Active HC · ${snapYrLabel}</div><div class="k-val g">${active.length}</div><div class="k-sub">${snapYrInt?`as of ${snapYear}`:'currently active'}</div></div>
+    <div class="kc" style="border-top:3px solid #16a34a"><div class="k-lbl">New Joiners · ${periodTag}</div><div class="k-val" style="color:#15803d;font-size:1.8rem;font-weight:800">${joiners.length}</div><div class="k-sub">${joinerInd} India · ${joinerUSA} USA</div></div>
+    <div class="kc r"><div class="k-lbl">Exits · ${periodTag}</div><div class="k-val r">${exitsPool2.length}</div><div class="k-sub">${exitsPool2.length>0?exitVolPct+'% voluntary':'no exits'}</div></div>
     <div class="kc ch"><div class="k-lbl">India</div><div class="k-val ch">${india.length}</div><div class="k-sub">${indiaPct}% of HC</div></div>
     <div class="kc pu"><div class="k-lbl">USA</div><div class="k-val pu">${usa.length}</div><div class="k-sub">${active.length?Math.round(usa.length/active.length*100):0}% of HC</div></div>
     <div class="kc a"><div class="k-lbl">Male</div><div class="k-val a">${male.length}</div><div class="k-sub">${active.length?Math.round(male.length/active.length*100):0}%</div></div>
