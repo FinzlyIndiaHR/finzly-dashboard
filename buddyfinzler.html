@@ -1246,6 +1246,312 @@ function updateCTX(text) {
   if (CTX.history.length > 6) CTX.history.shift();
 }
 
+
+// ═══════════════════════════════════════════════════════════════
+// FUZZY INTENT DETECTION LAYER
+// Handles: wrong spellings, Tamil-English mix, slang, emotional,
+// indirect wording, abbreviations, casual typing
+// ═══════════════════════════════════════════════════════════════
+
+function normalizeText(t) {
+  return t
+    .toLowerCase()
+    // Fix common misspellings
+    .replace(/harres+ment|harassement|harasment|harashment/g, 'harassment')
+    .replace(/poshh+|possh/g, 'posh')
+    .replace(/resigna?tion|resignn|resin/g, 'resign')
+    .replace(/sik+\s*leave|sic leave|sickleave/g, 'sick leave')
+    .replace(/mc\b/g, 'medical certificate')
+    .replace(/hlth|helth/g, 'health')
+    .replace(/\bel\b/g, 'earned leave')
+    .replace(/\bsl\b/g, 'sick leave')
+    .replace(/\bml\b/g, 'management leave')
+    .replace(/\blop\b/g, 'loss of pay')
+    .replace(/\bco\b|\bcomp\s*off\b/g, 'compensatory leave')
+    .replace(/\bpf\b/g, 'provident fund')
+    .replace(/\bepf\b/g, 'provident fund')
+    .replace(/\bctc\b/g, 'salary')
+    .replace(/\bhrms\b/g, 'adp')
+    .replace(/\bwfh\b/g, 'work from home')
+    .replace(/\bpip\b/g, 'performance improvement plan')
+    .replace(/\btpa\b/g, 'insurance')
+    .replace(/\bfnf\b|\bf&f\b/g, 'full and final')
+    .replace(/\bhr\b/g, 'hr')
+    .replace(/\bicc\b|\bic\b/g, 'icc')
+    // Tamil-English patterns → English intent
+    .replace(/venum|vendum/g, 'need')
+    .replace(/epdi|eppadi|engana/g, 'how')
+    .replace(/enna/g, 'what')
+    .replace(/evlo|evvalo/g, 'how much')
+    .replace(/vandala|varala/g, 'not received')
+    .replace(/panna\s*epdi|panrathu|pannunga/g, 'how to do')
+    .replace(/romba/g, 'very much')
+    .replace(/kudupangala|kudupaangala/g, 'will they give')
+    .replace(/check\s*panrathu/g, 'how to check')
+    .replace(/pressure\s*panrar/g, 'giving pressure')
+    // Shorthand fixes
+    .replace(/sal\b/g, 'salary')
+    .replace(/lv\b/g, 'leave')
+    .replace(/mgr\b/g, 'manager')
+    .replace(/doc\b/g, 'doctor')
+    .replace(/cert\b/g, 'certificate')
+    .replace(/exp\b/g, 'experience')
+    .replace(/rlvg\b/g, 'relieving')
+    .trim();
+}
+
+// ── INTENT DETECTION MAP ─────────────────────────────────────────
+// Maps fuzzy patterns → clean intent keys that match CTX.topic
+function detectIntent(raw) {
+  const t = normalizeText(raw);
+
+  // POSH / ICC / Harassment — broadest possible net
+  if (/\b(harassment|icc|posh|unsafe|uncomfortable|inappropriate|stalking|stalk|crosses limits|crossing limits|touching|touched me|texting weirdly|mentally torturing|making me uncomfortable|don.t feel safe|scared to complain|complain confidential|report anonymous|women safety|women committee|she.?box|shebox|complaint against|toxic manager|complaint lead|male harassment|men complaint|anyone harass|senior behav|someone behav)\b/.test(t) ||
+      /\b(somebody is|someone is|one person is|a person is).*(touch|text|stalk|follow|uncomfort|inappro|torture|scare)\b/.test(t)) {
+    return 'posh_icc';
+  }
+
+  // SICK LEAVE — physical, mental, emotional
+  if (/\b(fever|cold|cough|vomit|vomiting|food poison|migraine|viral|throat|body pain|headache|diarrhea|motions|covid|hospitali|admitted|bed rest|doctor ask|doctor said|unwell|not feeling well|not well|feeling sick|can.t come|cannot come|wont come|not coming|work from home sick|wfh sick|mental rest|emotional rest|not okay today|anxiety attack|panic|mental health today|i need rest|i need break today|burned out today)\b/.test(t)) {
+    return 'sick_leave';
+  }
+
+  // RESIGNATION / EXIT — emotional and direct
+  if (/\b(quit|leaving|want to leave|want to go|done here|done with this|fed up|had enough|another offer|got offer|other company|notice period|relieve|relieving|exit process|last day|fnf|full and final|experience letter|service certificate|gratuity|pf transfer|buyout|notice buyout|reduce notice|immediate resign|resign without notice|leave silently|nobody values|not valued|planning to quit|i.m done|i am done|feeling like resigning|seriously thinking of leaving|bgv at exit|exit interview)\b/.test(t)) {
+    return 'resignation';
+  }
+
+  // LEAVE — all types, human language
+  if (/\b(leave tomorrow|take leave|emergency leave|marriage leave|wedding leave|function leave|baby delivery|wife delivery|delivery leave|father expired|mother expired|death in family|funeral|hometown|native place|village|leave balance|how many leave|leaves left|comp off|compensatory|lop|loss of pay|advance leave|leave without balance|manager reject|leave reject|earned leave|casual leave|cl\b|el\b|medical leave|maternity after probation|paternity leave|new baby|newborn leave|bereavement)\b/.test(t) ||
+      /\bworked (saturday|sunday|weekend|holiday).*(comp|leave|off)\b/.test(t)) {
+    return 'leave';
+  }
+
+  // ATTENDANCE / TIMING
+  if (/\b(office timing|what time|login time|minimum hours|forgot punch|missed punch|punch in|punch out|swipe|late coming|coming late|leave early|early leave|compensate late|lunch in hours|work from cafe|coffee shop work|internet issue home|wfh login|wfh attendance|hrms login|night shift allowance|overtime|worked late yesterday|long hours yesterday|comp for late)\b/.test(t)) {
+    return 'attendance';
+  }
+
+  // PAYROLL / SALARY
+  if (/\b(salary not credited|salary not received|salary late|salary delay|payslip needed|payslip download|tax deduction|tds|form 16|form16|pf number|uan number|bonus not received|incentive issue|wrong salary|salary discrepancy|reimbursement pending|night shift allowance missing|salary query|pay query|payroll contact|salary cut|salary hold)\b/.test(t)) {
+    return 'payroll';
+  }
+
+  // INSURANCE
+  if (/\b(insurance card|mediclaim coverage|parents covered|cashless hospital|cashless claim|maternity insurance|dental covered|eye covered|insurance after resign|term insurance amount|insurance contact|hospital list|network hospital|claim reject|claim denied|policy number|insurance policy)\b/.test(t)) {
+    return 'insurance';
+  }
+
+  // PIP / PERFORMANCE
+  if (/\b(pip|performance issue|manager said performance|bad rating|low rating|salary hike delay|hike not given|no increment|manager bias|unfair appraisal|appraisal appeal|i feel targeted|forced resign|am i getting fired|will i be fired|termination|scared after pip|am i fired|manager hates me|worked hard low rating|manager not feedback|poor performer)\b/.test(t)) {
+    return 'performance';
+  }
+
+  // TRAVEL
+  if (/\b(travel policy|hotel allowance|food allowance|per diem|perdiem|per km|driving allowance|vehicle reimbursement|outstation|going to pune|going to chennai|going to charlotte|business trip|trip allowance|domestic travel|international travel|visa process|flight booking|train booking|travel approval)\b/.test(t)) {
+    return 'travel';
+  }
+
+  // WFH
+  if (/\b(work from home|wfh policy|can i wfh|wfh eligibility|wfh days|remote work|work remotely|wfh approval|who approves wfh|wfh request|hybrid|home office|can i work from home)\b/.test(t)) {
+    return 'wfh';
+  }
+
+  // REFERRAL
+  if (/\b(refer|referral|refer a friend|referral bonus|referral amount|when referral paid|can i refer|how to refer|referral process|candidate referral)\b/.test(t)) {
+    return 'referral';
+  }
+
+  return null; // no strong intent detected
+}
+
+// ── INTENT → ACTION ROUTER ───────────────────────────────────────
+// Called from handleSend BEFORE KB lookup
+// Returns a response object or null
+
+function intentRouter(text, raw) {
+  const intent = detectIntent(raw);
+  if (!intent) return null;
+
+  const ack = emotionAck();
+
+  switch(intent) {
+
+    case 'posh_icc': {
+      // Detect sub-intent: info request vs active situation
+      const t = text.toLowerCase();
+      const isActive = /uncomfortable|not safe|scared|touching|touched|texting|stalk|torturing|crosses|crossing|inappropriate|making me|someone is|somebody|a senior|a person|one person|i am scared|can i complain|will company/.test(t);
+      if (isActive) {
+        // Immediate empathy + ICC contacts
+        clearFlow();
+        return {
+          section: "Section 15 – POSH",
+          needsHR: true,
+          routingReason: "Active harassment / unsafe situation — ICC immediate support",
+          lines: [
+            "I'm really sorry you're going through this. Please know — you are not alone and Finzly stands firmly by you. 💙",
+            "You can reach your **ICC (Internal Complaints Committee)** directly and confidentially right now.",
+            "**Chennai:** Divya Moorthy (divya.moorthy@finzly.com) · Bharathkumar M (Bharathkumar.m@finzly.com) · Abirami R (abirami.r@finzly.com)\n\n**Pune:** Vishwata Mayekar (vishwata.mayekar@finzly.com) · Andleeb Sohail (andleeb.sohail@finzly.com) · Prashant Choudhary (prashant@finzly.com)",
+            "✅ Complaints are **completely confidential**\n✅ You are **fully protected** — zero retaliation permitted\n✅ Both men and women can raise complaints\n✅ You can also raise via **She-Box** (Ministry of Women & Child Development)\n✅ Filing window: **within 15 days** of incident",
+            "You are heard. You are safe. Please reach out to ICC today. 💙"
+          ]
+        };
+      }
+      // Info request — give full ICC details
+      return {
+        section: "Section 15 – POSH / ICC",
+        lines: [
+          "Of course! 😊 Here are the **Internal Complaints Committee (ICC)** details.",
+          "**Chennai ICC:**\n- Divya Moorthy — divya.moorthy@finzly.com\n- Bharathkumar M — Bharathkumar.m@finzly.com\n- Abirami R — abirami.r@finzly.com",
+          "**Pune ICC:**\n- Vishwata Mayekar — vishwata.mayekar@finzly.com\n- Andleeb Sohail — andleeb.sohail@finzly.com\n- Prashant Choudhary — prashant@finzly.com",
+          "The ICC handles **POSH (Prevention of Sexual Harassment)** complaints. Both men and women can raise complaints. Everything is 100% confidential — no retaliation permitted. You can also raise via **She-Box**. 💙"
+        ],
+        followUps: ["How do I file a complaint?", "What is EEO?", "What is the open door policy?"]
+      };
+    }
+
+    case 'sick_leave': {
+      const t = text.toLowerCase();
+      const isMental = /mental|anxiety|panic|burned out|emotionally|not okay|emotional rest|i need rest|i need break|can.t handle/.test(t);
+      const isLong = /admitted|hospitali|bed rest|week|many days|few days/.test(t);
+
+      if (isMental) {
+        return {
+          lines: [
+            ack || "I hear you — and your wellbeing comes first. 💙 Please don't push through when you're not okay.",
+            "Finzly has **Sick Leave** available for mental health days too — you don't need to give a detailed reason.",
+            "Apply on **ADP** → Time Off section. If you need more than a couple of days, a brief doctor's note may help.",
+            "If this is something deeper — burnout, anxiety, or ongoing stress — I'd also encourage a quiet conversation with HR. They're there to support you, not just process paperwork. 💙"
+          ],
+          followUps: ["How do I apply sick leave on ADP?", "What is the open door policy?", "Can I work from home?"]
+        };
+      }
+      if (isLong) {
+        setFlow("sick", "ask_days");
+        return {
+          lines: [
+            ack || "Oh no — I hope you feel better soon! Please take care. 🙏",
+            "Since it sounds like you'll need more than a day or two — a **medical certificate** will be required for sick leave beyond 2 continuous days.",
+            "How many days are you likely to be away?"
+          ],
+          quickReplies: [
+            {label: "3–5 days", type: "neutral", reply: "3 to 5 days sick"},
+            {label: "More than a week", type: "neutral", reply: "more than a week sick admitted"}
+          ]
+        };
+      }
+      // Short sick day
+      return {
+        section: "Section 7.4.3 – Sick Leave",
+        lines: [
+          ack || "I hope you feel better very soon! 🙏 Your health comes first.",
+          "For a sick day — apply **Sick Leave** on **ADP** → Time Off section and let your manager know.",
+          "No medical certificate needed for up to 2 days. Just rest and take care. 💙"
+        ],
+        followUps: ["How do I login to ADP?", "What if I need more than 2 days?"]
+      };
+    }
+
+    case 'resignation': {
+      const t = text.toLowerCase();
+      const isEmotional = /done|fed up|nobody values|not valued|frustrated|mentally exhaust|planning|feel like|thinking of|had enough|seriously/.test(t);
+      if (isEmotional && !conversationState.flow) {
+        setFlow("resign", "ask_manager");
+        return {
+          lines: [
+            ack || "I'm sorry you're feeling this way — that heaviness is real, and I don't want to brush over it. 💙",
+            "Before we talk about process — can I ask what's brought you to this point? Sometimes the right conversation at the right time changes everything.",
+            "Have you had a chance to speak with your manager or HR about what's been troubling you?"
+          ],
+          quickReplies: [
+            {label: "Yes, I have spoken to them", type: "yes", reply: "yes spoke to manager"},
+            {label: "No, not yet", type: "no", reply: "no not yet"}
+          ]
+        };
+      }
+      // Direct process question
+      const result = findKB("resignation notice period process");
+      return result || null;
+    }
+
+    case 'leave': {
+      // Route to ADP / leave KB
+      const result = findKB("how do i apply leave adp");
+      return result || null;
+    }
+
+    case 'attendance': {
+      const result = findKB("office timing attendance working hours");
+      return result || null;
+    }
+
+    case 'payroll': {
+      const t = text.toLowerCase();
+      if (/not credited|not received|late|delay/.test(t)) {
+        return {
+          section: "Section 9 – Compensation & Payroll",
+          lines: [
+            "I understand how stressful a delayed salary can be — let's get this sorted. 😊",
+            "Salary is credited between the **last working day** and the **3rd of the following month**.",
+            "If it's past the 3rd and still not credited, contact the **Finance Department** directly. For payslip access, log into **ADP** → Pay section.",
+            "🔐 **ADP login issues?** Chennai: Abirami R (abirami.r@finzly.com) | Pune: Vishwata Mayekar (vishwata.mayekar@finzly.com)"
+          ],
+          followUps: ["How do I login to ADP?", "Who do I contact for payroll issues?"]
+        };
+      }
+      const result = findKB("salary payslip adp");
+      return result || null;
+    }
+
+    case 'insurance': {
+      const result = findKB("mediclaim health insurance coverage");
+      return result || null;
+    }
+
+    case 'performance': {
+      setFlow("performance", "ask_type");
+      return {
+        lines: [
+          ack || "I can hear this is stressful — and I want to help you navigate it properly. 💙",
+          "Performance concerns can mean different things. What's the situation right now?"
+        ],
+        quickReplies: [
+          {label: "I've been put on a PIP", type: "neutral", reply: "pip performance improvement plan"},
+          {label: "Unfair appraisal / rating", type: "neutral", reply: "appraisal increment annual review"},
+          {label: "Manager bias or pressure", type: "no", reply: "unfair treatment bias manager pressure"},
+          {label: "Worried about getting fired", type: "no", reply: "pip am i getting fired termination"}
+        ]
+      };
+    }
+
+    case 'travel': {
+      const result = findKB("travel policy domestic per diem hotel");
+      return result || null;
+    }
+
+    case 'wfh': {
+      return {
+        section: "Section 5 – Work Timings",
+        lines: [
+          "Great question about WFH! 😊",
+          "At Finzly, **Work From Home** is available subject to **manager and Practice Lead approval**. There's no fixed number of WFH days — it depends on your role, project, and team requirements.",
+          "To request WFH:\n- Inform your manager in advance\n- Log in/out via **ADP** for attendance compliance\n- Ensure you're reachable and productive during office hours (9:30 AM onwards)",
+          "For any WFH-related queries or if you need a formal arrangement, email **hr-india@finzly.com**. 😊"
+        ],
+        followUps: ["What are office timings?", "How do I log attendance on ADP?"]
+      };
+    }
+
+    case 'referral': {
+      const result = findKB("referral bonus employee refer");
+      return result || null;
+    }
+  }
+
+  return null;
+}
+
+
 function emotionAck() {
   const e = CTX.emotion;
   if (!e) return null;
@@ -1688,12 +1994,16 @@ function handleSend(overrideText){
     if(fq){streamResponse(fq,text);return;}
   }
 
-  // 4. Smart conversational engine — emotional + contextual intelligence
+  // 4a. Fuzzy intent detection layer — catches spelling variants, Tamil-English, slang
+  const intentResult=intentRouter(normalizeText(text), text);
+  if(intentResult){streamResponse(intentResult,text);return;}
+
+  // 4b. Smart conversational engine — emotional + contextual intelligence
   const smart=smartConversationalResponse(text);
   if(smart){streamResponse(smart,text);return;}
 
-  // 5. KB lookup
-  const result=findKB(text);
+  // 5. KB lookup (with normalized text for better matching)
+  const result=findKB(text)||findKB(normalizeText(text));
   if(result){
     if(result.isRoleAwareWhy){setFlow("why_role","pick_dept");}
     streamResponse(result,text);return;
