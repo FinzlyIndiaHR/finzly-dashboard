@@ -1348,13 +1348,18 @@ function detectIntent(raw) {
   }
 
   // TRAVEL
-  if (/\b(travel policy|hotel allowance|food allowance|per diem|perdiem|per km|driving allowance|vehicle reimbursement|outstation|going to|business trip|trip allowance|domestic travel|international travel|visa process|flight booking|train booking|travel approval)\b/.test(t) || (/\b(pune|chennai|charlotte|bangalore|mumbai|hyderabad|delhi)\b/.test(t) && /\b(money|reimburs|allowance|claim|perdiem|per diem|hotel|food|travel|how much)\b/.test(t))) {
+  if (/\b(travel policy|hotel allowance|per diem|perdiem|per km|driving allowance|vehicle reimbursement|outstation|going to|business trip|trip allowance|domestic travel|international travel|visa process|flight booking|train booking|travel approval)\b/.test(t) || (/\b(pune|chennai|charlotte|bangalore|mumbai|hyderabad|delhi)\b/.test(t) && /\b(money|reimburs|allowance|claim|perdiem|hotel|travel|how much)\b/.test(t))) {
     return 'travel';
   }
 
   // WFH
   if (/\b(work from home|wfh policy|can i wfh|wfh eligibility|wfh days|remote work|work remotely|wfh approval|who approves wfh|wfh request|hybrid|home office|can i work from home)\b/.test(t)) {
     return 'wfh';
+  }
+
+  // LATE NIGHT — working late food/cab benefit
+  if (/\b(working (till|until|upto|beyond|after)\s*[89]|working late|late night|beyond 8|after 8|after 9|9 pm|10 pm|11 pm|late (dinner|food|meal|cab|drop)|night (cab|drop|food|dinner|meal)|overtime food|overtime cab|food allowance|dinner allowance|cab allowance|late working benefit|stayed late|i worked late)\b/i.test(t)) {
+    return 'late_night';
   }
 
   // REFERRAL
@@ -1548,6 +1553,19 @@ function intentRouter(text, raw) {
     case 'referral': {
       const result = findKB("referral bonus employee refer");
       return result || null;
+    }
+
+    case 'late_night': {
+      return {
+        section: "Section 17.2 – Late Night Dinner & Cab",
+        lines: [
+          "Yes! If you're working beyond 8 hours on a weekday, you're entitled to a dinner and cab benefit. 😊",
+"- 🍽️ **Dinner allowance:** Up to **Rs. 250** for meals\n- 🚗 **Cab:** At actuals for drop home\n- 📅 **Weekdays only** (working beyond your standard hours)\n- 🏖️ **Weekends/holidays:** Lunch OR Dinner up to Rs. 250 per meal if you're working",
+          "⚠️ **Important:** You need **prior email approval** from your Practice Head / Lead / Manager **before** claiming. Without approval, the claim may not be processed.",
+          "**Next step:** Get email approval from your manager before ordering/travelling, then submit the claim. 😊"
+        ],
+        followUps: ["What is the referral bonus?", "What is the travel policy?", "What is the work timing policy?"]
+      };
     }
   }
 
@@ -1765,7 +1783,7 @@ function smartConversationalResponse(text) {
   }
 
   // TRAVEL — city-specific domestic or international
-  if (CTX.topic === "travel" || /\b(per diem|perdiem|per-diem|hotel allowance|food allowance|outstation|business trip)\b/i.test(t) || (/\b(pune|chennai|bangalore|mumbai|hyderabad|delhi|charlotte)\b/i.test(t) && /\b(money|reimburs|allowance|claim|perdiem|hotel|food|how much|\d+\s*day)\b/i.test(t))) {
+  if (CTX.topic === "travel" || /\b(per diem|perdiem|per-diem|hotel allowance|outstation|business trip)\b/i.test(t) || (/\b(pune|chennai|bangalore|mumbai|hyderabad|delhi|charlotte)\b/i.test(t) && /\b(money|reimburs|allowance|claim|perdiem|hotel|food|how much|\d+\s*day)\b/i.test(t))) {
     const isPune      = /pune/i.test(t);
     const isChennai   = /chennai/i.test(t);
     const isBangalore = /bangalore|bengaluru/i.test(t);
