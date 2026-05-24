@@ -1549,12 +1549,15 @@ function render(){
       <div class="ins-txt">${indiaPct>75?`<strong>${indiaPct}%</strong> of headcount is India-based — strong delivery muscle but a concentration risk. Ensure US team has context on critical systems.`:`Healthy split between India and USA delivery.`} ${conPct>CONTRACTOR_THRESHOLD?`⚠ <strong>${conPct}%</strong> contractors — review conversion to FTE for business-critical roles.`:''}</div>
     </div>`;
 
-  // ── Period-aware Joiners & Exits ─────────────────────────
+  // ── Period-aware Joiners & Exits — respecting ALL active filters ─
   const qFilter=document.getElementById('f-quarter')?.value||'all';
   const qMonthsMap={Q1:[1,2,3],Q2:[4,5,6],Q3:[7,8,9],Q4:[10,11,12]};
   const activeQM=qFilter!=='all'?qMonthsMap[qFilter]:null;
+  const fCountryNow=document.getElementById('f-country')?.value||'all';
+  const fSquadNow=document.getElementById('f-squad')?.value||'all';
+  const fCityNow=document.getElementById('f-city')?.value||'all';
 
-  // Joiners in selected year/quarter (from ALL data)
+  // Joiners: joined in the selected year/quarter, respecting country/squad/city filters
   const joiners=EMP_DATA.filter(d=>{
     const sy=d['Start Year']?parseInt(d['Start Year']):null; if(!sy)return false;
     if(snapYrInt){if(sy!==snapYrInt)return false;}
@@ -1563,12 +1566,23 @@ function render(){
       const sm=d['Start Date']?new Date((d['Start Date']-25569)*86400000).getUTCMonth()+1:null;
       if(!sm||!activeQM.includes(sm))return false;
     }
+    if(fCountryNow!=='all'&&d.Country!==fCountryNow)return false;
+    if(fSquadNow!=='all'&&d.Squad!==fSquadNow)return false;
+    if(fCityNow!=='all'&&d.City!==fCityNow)return false;
     return true;
-  }).filter(d=>snapYear==='all'||(d.Country===undefined||true)); // respect squad/country filter
-  const joinerInd=joiners.filter(d=>d.Country==='India').length;
-  const joinerUSA=joiners.filter(d=>d.Country==='USA').length;
+  });
 
-  // Exits in selected year/quarter
+  // Joiner sub-label — only split India/USA if showing all countries
+  let joinerSub='';
+  if(fCountryNow==='all'){
+    const jInd=joiners.filter(d=>d.Country==='India').length;
+    const jUSA=joiners.filter(d=>d.Country==='USA').length;
+    joinerSub=`${jInd} India · ${jUSA} USA`;
+  } else {
+    joinerSub=`in ${fCountryNow}`;
+  }
+
+  // Exits: same filter scope
   const exitsPool2=EMP_DATA.filter(d=>{
     if(d.Status==='Active'||d.ActiveFlag===1)return false;
     const ts=d['Termination Date Str']||dateStr(d['Termination Date']); if(!ts)return false;
@@ -1576,16 +1590,31 @@ function render(){
     if(snapYrInt){if(ty!==snapYrInt)return false;}
     else{if(ty!==CURR_YEAR)return false;}
     if(activeQM&&!activeQM.includes(tm))return false;
+    if(fCountryNow!=='all'&&d.Country!==fCountryNow)return false;
+    if(fSquadNow!=='all'&&d.Squad!==fSquadNow)return false;
+    if(fCityNow!=='all'&&d.City!==fCityNow)return false;
     return true;
   });
   const exitVolPct=exitsPool2.length?Math.round(exitsPool2.filter(d=>d['Termination Type']==='Voluntary').length/exitsPool2.length*100):0;
+
+  // Exit sub-label
+  let exitSub='no exits';
+  if(exitsPool2.length>0){
+    if(fCountryNow==='all'){
+      const eInd=exitsPool2.filter(d=>d.Country==='India').length;
+      const eUSA=exitsPool2.filter(d=>d.Country==='USA').length;
+      exitSub=`${eInd} India · ${eUSA} USA · ${exitVolPct}% vol`;
+    } else {
+      exitSub=`${exitVolPct}% voluntary`;
+    }
+  }
 
   const periodTag=snapYrInt?(qFilter!=='all'?`${qFilter} ${snapYear}`:snapYear):(qFilter!=='all'?`${qFilter} ${CURR_YEAR}`:CURR_YEAR);
 
   document.getElementById('k1').innerHTML=`
     <div class="kc g"><div class="k-lbl">Active HC · ${snapYrLabel}</div><div class="k-val g">${active.length}</div><div class="k-sub">${snapYrInt?`as of ${snapYear}`:'currently active'}</div></div>
-    <div class="kc" style="border-top:3px solid #16a34a"><div class="k-lbl">New Joiners · ${periodTag}</div><div class="k-val" style="color:#15803d;font-size:1.8rem;font-weight:800">${joiners.length}</div><div class="k-sub">${joinerInd} India · ${joinerUSA} USA</div></div>
-    <div class="kc r"><div class="k-lbl">Exits · ${periodTag}</div><div class="k-val r">${exitsPool2.length}</div><div class="k-sub">${exitsPool2.length>0?exitVolPct+'% voluntary':'no exits'}</div></div>
+    <div class="kc" style="border-top:3px solid #16a34a"><div class="k-lbl">New Joiners · ${periodTag}</div><div class="k-val" style="color:#15803d;font-size:1.8rem;font-weight:800">${joiners.length}</div><div class="k-sub">${joinerSub}</div></div>
+    <div class="kc r"><div class="k-lbl">Exits · ${periodTag}</div><div class="k-val r">${exitsPool2.length}</div><div class="k-sub">${exitSub}</div></div>
     <div class="kc ch"><div class="k-lbl">India</div><div class="k-val ch">${india.length}</div><div class="k-sub">${indiaPct}% of HC</div></div>
     <div class="kc pu"><div class="k-lbl">USA</div><div class="k-val pu">${usa.length}</div><div class="k-sub">${active.length?Math.round(usa.length/active.length*100):0}% of HC</div></div>
     <div class="kc a"><div class="k-lbl">Male</div><div class="k-val a">${male.length}</div><div class="k-sub">${active.length?Math.round(male.length/active.length*100):0}%</div></div>
