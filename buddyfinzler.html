@@ -809,7 +809,7 @@ const KB = [
   {keys:["job abandonment","absconding","absent without","5 days absent","abscond"],section:"Section 18.4 – Job Abandonment",lines:["**5 consecutive absent days** without informing → treated as **absconded**. 2 reminders via Registered Post. No response → job abandoned → not re-inducted.","Always inform manager or HR if you need to be away unexpectedly! 😊"],followUps:["What is the notice period?","What is leave without pay?"]},
   {keys:["referral","refer","referral bonus","refer a friend","candidate referral","employee referral"],section:"Section 17.1 – Referral Bonus",lines:["Love that you're thinking about referring! 🎁","**Dev (Java/Angular/Spring Boot):** 3–5 yrs: Rs.20K | 5–10 yrs: Rs.30K | 10+: Rs.35K\n**QA/DevOps/Support:** 3–5 yrs: Rs.15K | 5–10 yrs: Rs.20K | 10+: Rs.30K\n**Immediate joiners (5–10 days): Rs.50,000** 🎉","Not for freshers · Paid after FTE joining · Centre Head approval required · Not paid if you were part of hiring decision. Submit referral and inform HR! 😊"],followUps:["When is the referral bonus paid?","What is the late night benefit?"]},
   {keys:["late night","dinner","cab","working late","beyond 8","food allowance","dinner allowance"],section:"Section 17.2 – Late Night Dinner & Cab",lines:["Thank you for putting in the extra hours! 😊","**Beyond 8 hrs weekdays:** Dinner up to **Rs.250** + cab at actuals | **Weekends/holidays:** Lunch OR Dinner up to **Rs.250** per meal","⚠️ Prior **email approval** from Practice Head/Lead/Manager required before claiming. 😊"],followUps:["What is the referral bonus?","What is the travel policy?"]},
-  {keys:["travel","business travel","domestic travel","international travel","trip","outstation","travel policy","per diem","perdiem","per-diem","hotel rate","travel to","traveling to","travelling to","business trip","flight allowance","going to pune","going to chennai"],section:"Section 16 – Travel Policy",lines:["Happy to help! 😊 **Travel Policy summary:**","**International:** Company pays visa, flights, insurance, lodging | **USA per diem: USD 80/day** (no bills needed)","**Domestic:** 3 days notice | Air: Economy | Train: AC 2/3 Tier | Hotel Type 1: Rs.5K | Type 2: Rs.4K | Others: Rs.3K | Food: Rs.600/500/400","**Non-reimbursable:** Alcohol, cigarettes, clothing, personal entertainment. 😊"],followUps:["What is the USA per diem rate?","Which cities are Type 1?"]},
+  {keys:["travel policy","business travel","domestic travel","travel allowance","outstation","travel reimbursement","travel policy summary"],section:"Section 16 – Travel Policy",lines:["Happy to help with the travel policy! 😊","**Domestic travel:**\n- 🕒 Give **3 days notice** before travel\n- ✈️ Air: Economy | 🚆 Train: AC 2 or 3 Tier\n- 🏨 Hotel: Type 1 cities Rs.5K | Type 2 cities Rs.4K | Others Rs.3K\n- 🍽️ Food: Rs.600 / Rs.500 / Rs.400 per day (based on city type)","**Non-reimbursable:** Alcohol, cigarettes, clothing, personal entertainment.","For international travel (USA etc.), ask me separately — the rules are different! 😊"],followUps:["What is my per diem for Pune?","What is the USA per diem?","What counts as Type 1 city?"]},
   {keys:["performance review","appraisal","increment","salary hike","annual review","how does appraisal work"],section:"Section 10 – Performance Management",lines:["**Performance management at Finzly:**","Quarterly reviews + Annual review **Nov–Dec** | Salary revision effective **January** | Joined after **31st Oct** → not eligible for that cycle.","**PIP:** Max 1 month | Manager + HR initiated | Objectives agreed mutually. Stay connected through regular 1:1s! 😊"],followUps:["What is a PIP?","What is the feedback process?"]},
   {keys:["clean desk","desk policy","workstation","clear desk","clean desk policy"],section:"Section 14 – Clean Desk Policy",lines:["**Clean Desk Policy:** Clear desk at **end of each workday** | Confidential docs in **locked cabinets** | **Lock laptop** when stepping away | Print-outs collected immediately | USB drives stored securely.","Quick desk sweep before you leave = big protection for everyone! 😊"],followUps:["What is the laptop policy?"]},
   {keys:["eeo","equal opportunity","discrimination","diversity","inclusion","equal employment"],section:"Section 2 – EEO",lines:["Finzly is committed to **Equal Employment Opportunity**. 💙","No discrimination on basis of race, colour, gender, age, religion, disability, marital status, or sexual orientation. Report to manager or HR — **no retaliation** guaranteed.","Email hr-india@finzly.com for full confidential support. 💙"],followUps:["What is the open door policy?","What is POSH?"]},
@@ -1348,7 +1348,7 @@ function detectIntent(raw) {
   }
 
   // TRAVEL
-  if (/\b(travel policy|hotel allowance|food allowance|per diem|perdiem|per km|driving allowance|vehicle reimbursement|outstation|going to pune|going to chennai|going to charlotte|business trip|trip allowance|domestic travel|international travel|visa process|flight booking|train booking|travel approval)\b/.test(t)) {
+  if (/\b(travel policy|hotel allowance|food allowance|per diem|perdiem|per km|driving allowance|vehicle reimbursement|outstation|going to|business trip|trip allowance|domestic travel|international travel|visa process|flight booking|train booking|travel approval)\b/.test(t) || (/\b(pune|chennai|charlotte|bangalore|mumbai|hyderabad|delhi)\b/.test(t) && /\b(money|reimburs|allowance|claim|perdiem|per diem|hotel|food|travel|how much)\b/.test(t))) {
     return 'travel';
   }
 
@@ -1525,6 +1525,9 @@ function intentRouter(text, raw) {
     }
 
     case 'travel': {
+      // Route to smart travel handler which gives Pune/Chennai specific answers
+      const travelResponse = smartConversationalResponse(text);
+      if (travelResponse) return travelResponse;
       const result = findKB("travel policy domestic per diem hotel");
       return result || null;
     }
@@ -1760,6 +1763,48 @@ function smartConversationalResponse(text) {
       ]
     };
   }
+
+  // TRAVEL — city-specific domestic or international
+  if (CTX.topic === "travel" || /\b(per diem|perdiem|per-diem|hotel allowance|food allowance|outstation|business trip)\b/i.test(t) || (/\b(pune|chennai|bangalore|mumbai|hyderabad|delhi|charlotte)\b/i.test(t) && /\b(money|reimburs|allowance|claim|perdiem|hotel|food|how much|\d+\s*day)\b/i.test(t))) {
+    const isPune      = /pune/i.test(t);
+    const isChennai   = /chennai/i.test(t);
+    const isBangalore = /bangalore|bengaluru/i.test(t);
+    const isIntl      = /\b(usa|united states|international|abroad|onsite|charlotte)\b/i.test(t) && !isPune && !isChennai && !isBangalore;
+    const isDriving   = /\b(driving|drive|per km|\bkm\b|own vehicle|bike|car|two wheeler)\b/i.test(t);
+    const daysMatch   = t.match(/(\d+)\s*day/);
+    const numDays     = daysMatch ? parseInt(daysMatch[1]) : null;
+    const city        = isPune ? "Pune" : isChennai ? "Chennai" : isBangalore ? "Bangalore" : null;
+
+    if (isDriving) {
+      return {section:"Section 16 – Travel Policy",
+        lines:["For travel by personal vehicle, Finzly reimburses at a **per-km rate**. 😊","The exact rate depends on your designation. Reach out to **HR** at hr-india@finzly.com for your specific amount.\n\nAlternatives: Company cab at actuals | Train: AC 2/3 Tier | Air: Economy — all reimbursable."],
+        needsHR:true,routingReason:"Per-km vehicle rate — designation specific",
+        followUps:["What is the hotel allowance?","What is the food per diem?"]};
+    }
+
+    if (isIntl) {
+      return {section:"Section 16 – Travel Policy",
+        lines:["For **international travel**, Finzly covers all major expenses. 😊","- ✈️ Flights, visa, travel insurance, lodging — all company-paid\n- 🍽️ **USA Per Diem: USD 80/day** — covers food + incidentals, no bills needed\n- Additional official expenses: claim at actuals with PM approval","**Next step:** Submit request to HR with Practice Head approval 3 days in advance. 😊"],
+        followUps:["What is the domestic travel allowance?","What is the hotel rate for Pune?"]};
+    }
+
+    const hotelNum = isPune||isBangalore ? 4000 : isChennai ? 5000 : 4000;
+    const foodNum  = isPune||isBangalore ? 500  : isChennai ? 600  : 500;
+    const cityLabel = city ? "**" + city + "**" : "your destination";
+    const domLines = [
+      "Here's your **domestic travel entitlement** for " + cityLabel + ". 😊",
+      "- 🏨 **Hotel:** Rs." + hotelNum.toLocaleString() + "/night\n- 🍽️ **Food:** Rs." + foodNum + "/day\n- ✈️ Air: Economy | 🚆 Train: AC 2 or 3 Tier\n- 🕒 Give **3 days notice** before travel"
+    ];
+    if (numDays && numDays > 0 && numDays <= 30) {
+      const grand = (hotelNum * numDays) + (foodNum * numDays);
+      domLines.push("💰 **Your " + numDays + "-day estimate:**\n- Hotel: Rs." + (hotelNum*numDays).toLocaleString() + "\n- Food: Rs." + (foodNum*numDays).toLocaleString() + "\n- **Total claimable: ~Rs." + grand.toLocaleString() + "**");
+    }
+    domLines.push("❌ **Not claimable:** Alcohol, cigarettes, clothing, personal entertainment.");
+    domLines.push("**Next step:** Submit your travel request to HR with Practice Head approval. 😊");
+    return {section:"Section 16 – Travel Policy", lines:domLines,
+      followUps:["What is the international per diem?","What is the vehicle reimbursement?","What counts as Type 1 city?"]};
+  }
+
 
   return null;
 }
