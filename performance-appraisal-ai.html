@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Finzly AI Performance Appraisal</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f4f6f8;color:#17202a}
+    .app{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+    .side{background:#102a43;color:white;padding:24px;display:flex;flex-direction:column;gap:20px}
+    .brand{display:flex;gap:12px;align-items:center}.logo{background:#2f9e8f;width:44px;height:44px;border-radius:8px;display:grid;place-items:center;font-weight:800;font-size:24px}
+    .muted{color:#b8c7d9}.emp{border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.06);color:white;border-radius:8px;padding:12px;text-align:left;cursor:pointer}
+    .emp.active{background:white;color:#102a43}.emp small{display:block;color:#8ea4bd}.emp.active small{color:#52616f}
+    .main{padding:28px;display:grid;gap:20px}.top{display:flex;justify-content:space-between;gap:16px;align-items:center}
+    h1,h2,h3,p{margin:0}.eyebrow{color:#0f766e;font-weight:800;font-size:12px;text-transform:uppercase}
+    h1{font-size:42px}.btn{border:0;background:#0f766e;color:white;border-radius:8px;padding:12px 16px;font-weight:800;cursor:pointer}
+    .metrics,.grid{display:grid;gap:16px}.metrics{grid-template-columns:repeat(4,1fr)}.grid{grid-template-columns:1fr 1fr}
+    .card,.metric{background:white;border:1px solid #d8dee6;border-radius:8px;padding:18px}.metric{display:grid;gap:8px;min-height:110px}
+    .metric span,.meta{color:#64748b}.metric strong{font-size:22px}.row{display:grid;grid-template-columns:150px 1fr 32px;gap:12px;align-items:center;margin:14px 0}
+    input[type=range]{width:100%;accent-color:#0f766e}.chips{display:flex;flex-wrap:wrap;gap:10px}.chip{background:#eef2f7;border-radius:999px;padding:8px 12px;font-weight:700}
+    textarea{width:100%;min-height:82px;border:1px solid #cbd5e1;border-radius:8px;padding:10px;margin-top:8px}label{font-weight:700}.field{display:block;margin-bottom:14px}
+    .summary{background:#f8fafc;border-radius:8px;padding:14px;line-height:1.6}.note{border-left:4px solid #0f766e;background:#f8fafc;padding:14px;line-height:1.5}
+    li{margin-bottom:8px;line-height:1.45}@media(max-width:850px){.app{grid-template-columns:1fr}.metrics,.grid{grid-template-columns:1fr}h1{font-size:30px}.top{display:block}.btn{margin-top:14px;width:100%}}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="side">
+      <div class="brand">
+        <div class="logo">F</div>
+        <div><strong>Finzly HR</strong><br><span class="muted">AI Performance Appraisal</span></div>
+      </div>
+      <div id="employees"></div>
+      <div style="margin-top:auto">
+        <strong>Departments</strong>
+        <p class="muted">Engineering · QA · BA · Operations</p>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="top">
+        <div>
+          <div class="eyebrow">Annual Cycle 2026</div>
+          <h1 id="name"></h1>
+          <p class="meta" id="meta"></p>
+        </div>
+        <button class="btn" onclick="copySummary()" id="copyBtn">Copy HR Summary</button>
+      </header>
+
+      <section class="metrics">
+        <div class="metric"><span>Calibrated Score</span><strong id="score"></strong></div>
+        <div class="metric"><span>Rating Band</span><strong id="band"></strong></div>
+        <div class="metric"><span>Population</span><strong>4 Functions</strong></div>
+        <div class="metric"><span>Status</span><strong>Draft</strong></div>
+      </section>
+
+      <section class="grid">
+        <div class="card">
+          <h2>Competency Scoring</h2>
+          <div id="sliders"></div>
+        </div>
+        <div class="card">
+          <h2 id="model"></h2>
+          <div class="chips" id="chips"></div>
+          <br>
+          <div class="note" id="focus"></div>
+        </div>
+      </section>
+
+      <section class="grid">
+        <div class="card">
+          <h2>Manager Inputs</h2>
+          <label class="field">Business impact
+            <textarea id="impact" oninput="render()" placeholder="Example: Led release stabilization for payment operations."></textarea>
+          </label>
+          <label class="field">Development action
+            <textarea id="devnote" oninput="render()" placeholder="Example: Improve estimation discipline through sprint review."></textarea>
+          </label>
+          <label class="field">Finzly values evidence
+            <textarea id="values" oninput="render()" placeholder="Example: Demonstrated client-first ownership during escalation."></textarea>
+          </label>
+        </div>
+        <div class="card">
+          <h2>AI Appraisal Draft</h2>
+          <p class="summary" id="summary"></p>
+          <h3>Strength Signals</h3><ul id="strengths"></ul>
+          <h3>Development Plan</h3><ul id="development"></ul>
+          <h3>Risk & Calibration Flags</h3><ul id="risks"></ul>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const departments={
+      Engineering:{competencies:["System design","Code quality","Delivery ownership","Technical mentorship"],focus:"secure, scalable product engineering and reliable delivery"},
+      QA:{competencies:["Test strategy","Automation coverage","Defect prevention","Release confidence"],focus:"release quality, automation depth, and defect prevention"},
+      BA:{competencies:["Requirement clarity","Stakeholder alignment","Process understanding","Product thinking"],focus:"clear requirements, stakeholder outcomes, and business process translation"},
+      Operations:{competencies:["SLA discipline","Client responsiveness","Process compliance","Operational improvement"],focus:"client reliability, SLA adherence, and continuous operational improvement"}
+    };
+
+    const employees=[
+      {id:"FIN-101",name:"Aarav Menon",role:"Senior Software Engineer",department:"Engineering",manager:"Priya Nair"},
+      {id:"FIN-118",name:"Meera Shah",role:"QA Lead",department:"QA",manager:"Rohan Iyer"},
+      {id:"FIN-132",name:"Nikhil Rao",role:"Business Analyst",department:"BA",manager:"Anita Joseph"},
+      {id:"FIN-146",name:"Sara Thomas",role:"Operations Specialist",department:"Operations",manager:"Vikram Das"}
+    ];
+
+    const weights={performance:.28,ownership:.18,quality:.2,collaboration:.14,innovation:.1,growth:.1};
+    const labels={1:"Needs Attention",2:"Partially Meets",3:"Meets Expectations",4:"Exceeds Expectations",5:"Outstanding"};
+    let selected=employees[0].id;
+    let scores={performance:4,ownership:4,quality:4,collaboration:3,innovation:3,growth:4};
+
+    function employee(){return employees.find(e=>e.id===selected)}
+    function title(s){return s.charAt(0).toUpperCase()+s.slice(1)}
+    function rating(){
+      const score=Object.keys(scores).reduce((sum,k)=>sum+scores[k]*weights[k],0);
+      let band="Needs Improvement";
+      if(score>=4.6)band="Exceptional"; else if(score>=3.8)band="High Performer"; else if(score>=3.1)band="Solid Performer"; else if(score>=2.4)band="Developing";
+      return {score,band};
+    }
+
+    function appraisal(){
+      const e=employee(), d=departments[e.department], r=rating();
+      const ordered=Object.entries(scores).sort((a,b)=>b[1]-a[1]);
+      const strengths=ordered.slice(0,2).map(x=>title(x[0]));
+      const watch=ordered.slice(-2).map(x=>title(x[0]));
+      const impact=document.getElementById("impact").value.trim();
+      const devnote=document.getElementById("devnote").value.trim();
+      const low=Object.entries(scores).filter(x=>x[1]<=2).map(x=>x[0]);
+      const risks=[];
+      if(low.length)risks.push("Immediate coaching needed on "+low.join(", ")+".");
+      if(scores.collaboration<=2)risks.push("Manager should validate cross-functional feedback before final calibration.");
+      if(scores.quality<=2)risks.push("Quality score may affect promotion readiness until improvement is visible.");
+      if(!risks.length)risks.push("No critical risk flags detected from the current appraisal inputs.");
+      return {
+        r,
+        summary:`${e.name} is tracking as a ${r.band.toLowerCase()} with a calibrated score of ${r.score.toFixed(2)}/5. In ${e.department}, the role expectation is centered on ${d.focus}. The strongest signals are ${strengths.join(" and ")}, while the next development emphasis should be ${watch.join(" and ")}.`,
+        strengths:[
+          `${strengths[0]} is consistently visible in the appraisal pattern.`,
+          `${e.name} shows meaningful contribution against ${d.competencies[0].toLowerCase()} and ${d.competencies[1].toLowerCase()}.`,
+          impact?`Manager impact note: ${impact}`:"Impact notes can be added to sharpen the final HR narrative."
+        ],
+        development:[
+          `Create a 60-day development goal for ${watch[0].toLowerCase()} with measurable evidence.`,
+          `Align manager and employee on one department-specific outcome: ${d.competencies[2].toLowerCase()}.`,
+          devnote||"Add one learning action, one project action, and one manager support action."
+        ],
+        risks
+      };
+    }
+
+    function list(id,items){document.getElementById(id).innerHTML=items.map(i=>`<li>${i}</li>`).join("")}
+
+    function renderEmployees(){
+      document.getElementById("employees").innerHTML=employees.map(e=>`
+        <button class="emp ${e.id===selected?"active":""}" onclick="selectEmp('${e.id}')">
+          <strong>${e.name}</strong><small>${e.department}</small>
+        </button>`).join("");
+    }
+
+    function selectEmp(id){
+      selected=id;
+      scores={performance:4,ownership:4,quality:4,collaboration:3,innovation:employee().department==="Operations"?3:4,growth:4};
+      document.getElementById("impact").value="";
+      document.getElementById("devnote").value="";
+      document.getElementById("values").value="";
+      render();
+    }
+
+    function renderSliders(){
+      document.getElementById("sliders").innerHTML=Object.keys(scores).map(k=>`
+        <div class="row">
+          <div><strong>${title(k)}</strong><br><small>${labels[scores[k]]}</small></div>
+          <input type="range" min="1" max="5" value="${scores[k]}" oninput="scores['${k}']=Number(this.value);render()">
+          <strong>${scores[k]}</strong>
+        </div>`).join("");
+    }
+
+    function render(){
+      const e=employee(), d=departments[e.department], a=appraisal();
+      renderEmployees(); renderSliders();
+      document.getElementById("name").textContent=e.name;
+      document.getElementById("meta").textContent=`${e.role} · ${e.department} · Manager: ${e.manager}`;
+      document.getElementById("score").textContent=a.r.score.toFixed(2)+"/5";
+      document.getElementById("band").textContent=a.r.band;
+      document.getElementById("model").textContent=e.department+" Model";
+      document.getElementById("chips").innerHTML=d.competencies.map(c=>`<span class="chip">${c}</span>`).join("");
+      document.getElementById("focus").textContent=d.focus;
+      document.getElementById("summary").textContent=a.summary;
+      list("strengths",a.strengths); list("development",a.development); list("risks",a.risks);
+    }
+
+    function copySummary(){
+      const e=employee(), a=appraisal();
+      const text=[
+        `Employee: ${e.name} (${e.id})`,
+        `Department: ${e.department}`,
+        `Role: ${e.role}`,
+        `Manager: ${e.manager}`,
+        `Rating: ${a.r.band} (${a.r.score.toFixed(2)}/5)`,
+        "",
+        a.summary,
+        "",
+        "Strengths:",
+        ...a.strengths.map(x=>"- "+x),
+        "",
+        "Development Plan:",
+        ...a.development.map(x=>"- "+x),
+        "",
+        "Risk Flags:",
+        ...a.risks.map(x=>"- "+x)
+      ].join("\n");
+      navigator.clipboard.writeText(text);
+      document.getElementById("copyBtn").textContent="Copied";
+      setTimeout(()=>document.getElementById("copyBtn").textContent="Copy HR Summary",1500);
+    }
+
+    render();
+  </script>
+</body>
+</html>
