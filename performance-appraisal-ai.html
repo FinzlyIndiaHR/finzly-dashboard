@@ -1,222 +1,1575 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Finzly AI Performance Appraisal</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Finzly | Performance Appraisal</title>
+  <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
   <style>
-    *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f4f6f8;color:#17202a}
-    .app{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
-    .side{background:#102a43;color:white;padding:24px;display:flex;flex-direction:column;gap:20px}
-    .brand{display:flex;gap:12px;align-items:center}.logo{background:#2f9e8f;width:44px;height:44px;border-radius:8px;display:grid;place-items:center;font-weight:800;font-size:24px}
-    .muted{color:#b8c7d9}.emp{border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.06);color:white;border-radius:8px;padding:12px;text-align:left;cursor:pointer}
-    .emp.active{background:white;color:#102a43}.emp small{display:block;color:#8ea4bd}.emp.active small{color:#52616f}
-    .main{padding:28px;display:grid;gap:20px}.top{display:flex;justify-content:space-between;gap:16px;align-items:center}
-    h1,h2,h3,p{margin:0}.eyebrow{color:#0f766e;font-weight:800;font-size:12px;text-transform:uppercase}
-    h1{font-size:42px}.btn{border:0;background:#0f766e;color:white;border-radius:8px;padding:12px 16px;font-weight:800;cursor:pointer}
-    .metrics,.grid{display:grid;gap:16px}.metrics{grid-template-columns:repeat(4,1fr)}.grid{grid-template-columns:1fr 1fr}
-    .card,.metric{background:white;border:1px solid #d8dee6;border-radius:8px;padding:18px}.metric{display:grid;gap:8px;min-height:110px}
-    .metric span,.meta{color:#64748b}.metric strong{font-size:22px}.row{display:grid;grid-template-columns:150px 1fr 32px;gap:12px;align-items:center;margin:14px 0}
-    input[type=range]{width:100%;accent-color:#0f766e}.chips{display:flex;flex-wrap:wrap;gap:10px}.chip{background:#eef2f7;border-radius:999px;padding:8px 12px;font-weight:700}
-    textarea{width:100%;min-height:82px;border:1px solid #cbd5e1;border-radius:8px;padding:10px;margin-top:8px}label{font-weight:700}.field{display:block;margin-bottom:14px}
-    .summary{background:#f8fafc;border-radius:8px;padding:14px;line-height:1.6}.note{border-left:4px solid #0f766e;background:#f8fafc;padding:14px;line-height:1.5}
-    li{margin-bottom:8px;line-height:1.45}@media(max-width:850px){.app{grid-template-columns:1fr}.metrics,.grid{grid-template-columns:1fr}h1{font-size:30px}.top{display:block}.btn{margin-top:14px;width:100%}}
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:#0f1117; --bg2:#0c0f1a; --card:#161b2e; --border:#1e2a45; --border2:#2a3550;
+      --accent:#f59e0b; --accent2:#d97706; --text:#e2e8f0; --text2:#94a3b8; --text3:#64748b;
+      --success:#10b981; --error:#ef4444; --info:#6366f1;
+    }
+    body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+    ::-webkit-scrollbar { width:4px; height:4px; }
+    ::-webkit-scrollbar-track { background:var(--bg2); }
+    ::-webkit-scrollbar-thumb { background:var(--border2); border-radius:2px; }
+
+    /* ── LOGIN ── */
+    #loginScreen { display:flex; align-items:center; justify-content:center; min-height:100vh;
+      background:radial-gradient(ellipse at 40% 40%, #1a2040 0%, #0f1117 65%); }
+    .login-card { background:var(--card); border:1px solid var(--border); border-radius:22px;
+      padding:48px 44px; text-align:center; max-width:380px; width:90%; }
+    .login-logo { display:flex; align-items:center; justify-content:center; gap:11px; margin-bottom:28px; }
+    .login-icon { width:46px; height:46px; background:linear-gradient(135deg,var(--accent),var(--accent2));
+      border-radius:13px; display:flex; align-items:center; justify-content:center; font-size:22px; }
+    .login-brand { text-align:left; }
+    .login-brand .name { font-family:'Syne',sans-serif; font-weight:800; font-size:20px; letter-spacing:-.4px; }
+    .login-brand .sub { font-size:9px; color:var(--text3); letter-spacing:1.8px; }
+    .login-card h1 { font-family:'Syne',sans-serif; font-weight:800; font-size:22px; margin-bottom:6px; }
+    .login-sub { color:var(--text3); font-size:13px; margin-bottom:14px; }
+    .cycle-badge { display:inline-block; background:var(--accent)18; border:1px solid var(--accent)44;
+      color:var(--accent); padding:4px 14px; border-radius:20px; font-size:11px; font-weight:700; margin-bottom:28px; }
+    .btn-ms { width:100%; padding:13px; background:linear-gradient(135deg,var(--accent),var(--accent2));
+      color:#0f1117; border:none; border-radius:11px; font-family:'DM Sans',sans-serif; font-size:14px;
+      font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center;
+      gap:9px; transition:all .2s; }
+    .btn-ms:hover { opacity:.9; transform:translateY(-1px); }
+    .login-footer { font-size:11px; color:var(--text3); margin-top:16px; }
+
+    /* ── HEADER ── */
+    #appHeader { background:var(--bg2); border-bottom:1px solid var(--border); height:60px;
+      padding:0 28px; display:flex; align-items:center; justify-content:space-between;
+      position:sticky; top:0; z-index:100; }
+    .h-left { display:flex; align-items:center; gap:14px; }
+    .h-logo { display:flex; align-items:center; gap:9px; }
+    .h-icon { width:34px; height:34px; background:linear-gradient(135deg,var(--accent),var(--accent2));
+      border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:16px; }
+    .h-brand .name { font-family:'Syne',sans-serif; font-weight:800; font-size:14px; }
+    .h-brand .sub { font-size:9px; color:var(--text3); letter-spacing:1.4px; margin-top:-2px; }
+    .vd { width:1px; height:28px; background:var(--border); }
+    .h-meta { font-size:12px; color:var(--text3); }
+    .h-meta b { color:var(--accent); font-weight:600; }
+    .h-right { display:flex; align-items:center; gap:12px; }
+    .h-user-name { font-size:13px; font-weight:600; }
+    .h-user-role { font-size:11px; color:var(--text3); }
+    .avatar { width:34px; height:34px; background:linear-gradient(135deg,#1e2a45,#2a3550);
+      border-radius:50%; display:flex; align-items:center; justify-content:center;
+      font-weight:700; font-size:14px; color:var(--accent); border:1px solid var(--border2); }
+    .btn-out { padding:6px 12px; border:1px solid var(--border2); background:none; color:var(--text3);
+      border-radius:7px; font-size:12px; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all .2s; }
+    .btn-out:hover { color:var(--text); border-color:var(--text3); }
+
+    /* ── NAV ── */
+    #mainNav { background:var(--bg2); border-bottom:1px solid var(--border); padding:0 24px;
+      display:flex; gap:2px; overflow-x:auto; }
+    .nav-tab { padding:0 16px; height:44px; display:flex; align-items:center; border:none; background:none;
+      color:var(--text3); font-family:'DM Sans',sans-serif; font-size:13px; font-weight:500;
+      cursor:pointer; border-bottom:2px solid transparent; transition:all .2s; white-space:nowrap; }
+    .nav-tab:hover { color:var(--text); }
+    .nav-tab.active { color:var(--accent); border-bottom-color:var(--accent); font-weight:600; }
+
+    /* ── LAYOUT ── */
+    #mainContent { padding:28px; max-width:1180px; margin:0 auto; }
+    .fade-in { animation:fadeIn .3s ease; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+    .g2 { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+    .g3 { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+    .g4 { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+    .mb4 { margin-bottom:16px; }
+    .mb6 { margin-bottom:24px; }
+
+    /* ── CARDS ── */
+    .card { background:var(--card); border:1px solid var(--border); border-radius:14px; }
+    .cb { padding:22px; }
+    .ch { padding:16px 22px; border-bottom:1px solid var(--border);
+      display:flex; align-items:center; justify-content:space-between; }
+    .ct { font-weight:700; font-size:11px; color:var(--text3); text-transform:uppercase; letter-spacing:.8px; }
+    .section-title { font-family:'Syne',sans-serif; font-weight:800; font-size:24px; margin-bottom:5px; }
+    .section-sub { color:var(--text3); font-size:13px; margin-bottom:24px; }
+
+    /* ── BUTTONS ── */
+    .btn { padding:9px 18px; border-radius:9px; font-family:'DM Sans',sans-serif; font-size:13px;
+      font-weight:600; cursor:pointer; transition:all .2s; border:none;
+      display:inline-flex; align-items:center; gap:6px; }
+    .btn-primary { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#0f1117; }
+    .btn-primary:hover { opacity:.9; transform:translateY(-1px); }
+    .btn-secondary { background:var(--border); color:var(--text2); }
+    .btn-secondary:hover { background:var(--border2); color:var(--text); }
+    .btn-ghost { background:var(--accent)15; border:1px solid var(--accent)44; color:var(--accent); }
+    .btn-ghost:hover { background:var(--accent)25; }
+    .btn-info { background:var(--info)15; border:1px solid var(--info)44; color:#818cf8; }
+    .btn-sm { padding:6px 12px; font-size:12px; border-radius:7px; }
+    .btn:disabled { opacity:.45; cursor:not-allowed; transform:none !important; }
+
+    /* ── FORMS ── */
+    .form-group { margin-bottom:20px; }
+    .form-label { display:block; font-size:11px; font-weight:700; color:var(--text2);
+      margin-bottom:8px; text-transform:uppercase; letter-spacing:.6px; }
+    textarea, input[type=text] { background:var(--bg); border:1px solid var(--border);
+      border-radius:10px; color:var(--text); padding:12px 14px; font-family:'DM Sans',sans-serif;
+      font-size:13px; width:100%; outline:none; transition:border .2s; line-height:1.6; }
+    textarea { resize:vertical; min-height:90px; }
+    textarea:focus, input[type=text]:focus { border-color:var(--accent)66; }
+    .readonly-field { background:var(--bg); border:1px solid var(--border); border-radius:10px;
+      padding:12px 14px; font-size:13px; color:var(--text2); min-height:60px; line-height:1.7; }
+
+    /* ── STAR RATINGS ── */
+    .rating-row { display:flex; align-items:center; gap:16px; padding:14px 0; border-bottom:1px solid var(--border); }
+    .rating-row:last-child { border-bottom:none; }
+    .rating-info { flex:1; }
+    .rating-name { font-weight:600; font-size:14px; color:var(--text); }
+    .rating-desc { font-size:11px; color:var(--text3); margin-top:2px; }
+    .stars { display:flex; gap:5px; }
+    .star { width:32px; height:32px; border-radius:8px; border:1px solid var(--border);
+      background:var(--bg); display:flex; align-items:center; justify-content:center;
+      cursor:pointer; font-size:16px; transition:all .12s; color:var(--text3); user-select:none; }
+    .star.on { background:var(--accent)20; border-color:var(--accent)55; color:var(--accent); }
+    .star:hover { border-color:var(--accent)44; color:var(--accent); }
+    .r-val { font-family:'Syne',sans-serif; font-weight:800; font-size:18px; color:var(--accent); width:26px; text-align:right; }
+    .r-lbl { font-size:11px; color:var(--text3); width:150px; }
+    /* read-only stars */
+    .ro-star { width:26px; height:26px; border-radius:6px; background:var(--accent)20;
+      border:1px solid var(--accent)44; color:var(--accent); display:flex;
+      align-items:center; justify-content:center; font-size:13px; }
+    .ro-star.off { background:var(--border); border-color:var(--border2); color:var(--text3); }
+
+    /* ── BADGES ── */
+    .badge { display:inline-flex; align-items:center; padding:3px 10px; border-radius:6px;
+      font-size:11px; font-weight:700; }
+    .b-draft    { background:var(--border);        color:var(--text3); }
+    .b-sub      { background:var(--info)20; border:1px solid var(--info)44; color:#818cf8; }
+    .b-review   { background:var(--accent)15; border:1px solid var(--accent)44; color:var(--accent); }
+    .b-done     { background:var(--success)15; border:1px solid var(--success)44; color:var(--success); }
+    .b-risk     { background:var(--error)15; border:1px solid var(--error)44; color:var(--error); }
+    .b-none     { background:var(--border); color:var(--text3); }
+
+    /* ── STATS ── */
+    .stat-card { padding:20px; }
+    .s-lbl { font-size:11px; font-weight:700; color:var(--text3); text-transform:uppercase; letter-spacing:.8px; margin-bottom:10px; }
+    .s-val { font-family:'Syne',sans-serif; font-weight:800; font-size:32px; line-height:1; }
+    .s-sub { font-size:12px; color:var(--text3); margin-top:6px; }
+
+    /* ── TABLE ── */
+    .dtable { width:100%; border-collapse:collapse; }
+    .dtable th { padding:11px 16px; text-align:left; font-size:11px; font-weight:700;
+      color:var(--text3); text-transform:uppercase; letter-spacing:.8px;
+      background:var(--bg); border-bottom:1px solid var(--border); }
+    .dtable td { padding:13px 16px; font-size:13px; border-bottom:1px solid var(--border); vertical-align:middle; }
+    .dtable tr:last-child td { border-bottom:none; }
+    .dtable tbody tr:hover td { background:#ffffff05; }
+
+    /* ── PROGRESS ── */
+    .pbar { height:5px; background:var(--border); border-radius:3px; overflow:hidden; }
+    .pfill { height:100%; background:linear-gradient(90deg,var(--accent),var(--accent2));
+      border-radius:3px; transition:width .6s ease; }
+
+    /* ── EMPLOYEE SELECTOR ── */
+    .emp-list { display:flex; flex-direction:column; gap:7px; }
+    .emp-item { display:flex; align-items:center; gap:12px; padding:12px 14px;
+      background:var(--bg); border:1px solid var(--border); border-radius:11px;
+      cursor:pointer; transition:all .15s; }
+    .emp-item:hover { border-color:var(--border2); }
+    .emp-item.sel { border-color:var(--accent)55; background:var(--accent)07; }
+    .emp-av { width:38px; height:38px; background:linear-gradient(135deg,#1e2a45,#2a3550);
+      border-radius:10px; display:flex; align-items:center; justify-content:center;
+      font-weight:700; font-size:15px; color:var(--accent); flex-shrink:0;
+      border:1px solid var(--border2); }
+
+    /* ── AI PANEL ── */
+    .ai-panel { background:linear-gradient(135deg,#161b2e,#1a2040);
+      border:1px solid #2a3a6a; border-radius:14px; padding:20px; }
+    .ai-ph { display:flex; align-items:center; gap:8px; margin-bottom:14px; }
+    .ai-ic { width:28px; height:28px; background:var(--accent)20; border-radius:7px;
+      display:flex; align-items:center; justify-content:center; color:var(--accent); font-size:14px; }
+    .ai-body { font-size:13px; color:var(--text2); line-height:1.8; white-space:pre-wrap; min-height:60px; }
+    .ai-acts { display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }
+    .pulse { animation:pulse 1.8s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.4} }
+
+    /* ── TOAST ── */
+    #toast { position:fixed; bottom:26px; right:26px; z-index:9999;
+      display:flex; flex-direction:column; gap:8px; }
+    .toast { padding:11px 20px; border-radius:10px; font-size:13px; font-weight:600;
+      animation:slideIn .3s ease; max-width:320px; }
+    .t-success { background:var(--success); color:#fff; }
+    .t-error   { background:var(--error);   color:#fff; }
+    .t-info    { background:var(--info);    color:#fff; }
+    @keyframes slideIn { from{transform:translateX(110%);opacity:0} to{transform:translateX(0);opacity:1} }
+
+    /* ── LOADING ── */
+    #loadingOverlay { position:fixed; inset:0; background:var(--bg)ee;
+      display:flex; align-items:center; justify-content:center; z-index:9998; }
+    .spinner { width:38px; height:38px; border:3px solid var(--border);
+      border-top-color:var(--accent); border-radius:50%; animation:spin .7s linear infinite; }
+    @keyframes spin { to{transform:rotate(360deg)} }
+
+    /* ── RESPONSIVE ── */
+    @media(max-width:768px) {
+      .g2,.g3,.g4 { grid-template-columns:1fr; }
+      #mainContent { padding:16px; }
+      .two-col { grid-template-columns:1fr !important; }
+    }
   </style>
 </head>
 <body>
-  <div class="app">
-    <aside class="side">
-      <div class="brand">
-        <div class="logo">F</div>
-        <div><strong>Finzly HR</strong><br><span class="muted">AI Performance Appraisal</span></div>
+
+<!-- ═══════════════════════════ LOGIN ═══════════════════════════ -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-icon">⚡</div>
+      <div class="login-brand">
+        <div class="name">FINZLY</div>
+        <div class="sub">PERFORMANCE APPRAISAL</div>
       </div>
-      <div id="employees"></div>
-      <div style="margin-top:auto">
-        <strong>Departments</strong>
-        <p class="muted">Engineering · QA · BA · Operations</p>
-      </div>
-    </aside>
-
-    <main class="main">
-      <header class="top">
-        <div>
-          <div class="eyebrow">Annual Cycle 2026</div>
-          <h1 id="name"></h1>
-          <p class="meta" id="meta"></p>
-        </div>
-        <button class="btn" onclick="copySummary()" id="copyBtn">Copy HR Summary</button>
-      </header>
-
-      <section class="metrics">
-        <div class="metric"><span>Calibrated Score</span><strong id="score"></strong></div>
-        <div class="metric"><span>Rating Band</span><strong id="band"></strong></div>
-        <div class="metric"><span>Population</span><strong>4 Functions</strong></div>
-        <div class="metric"><span>Status</span><strong>Draft</strong></div>
-      </section>
-
-      <section class="grid">
-        <div class="card">
-          <h2>Competency Scoring</h2>
-          <div id="sliders"></div>
-        </div>
-        <div class="card">
-          <h2 id="model"></h2>
-          <div class="chips" id="chips"></div>
-          <br>
-          <div class="note" id="focus"></div>
-        </div>
-      </section>
-
-      <section class="grid">
-        <div class="card">
-          <h2>Manager Inputs</h2>
-          <label class="field">Business impact
-            <textarea id="impact" oninput="render()" placeholder="Example: Led release stabilization for payment operations."></textarea>
-          </label>
-          <label class="field">Development action
-            <textarea id="devnote" oninput="render()" placeholder="Example: Improve estimation discipline through sprint review."></textarea>
-          </label>
-          <label class="field">Finzly values evidence
-            <textarea id="values" oninput="render()" placeholder="Example: Demonstrated client-first ownership during escalation."></textarea>
-          </label>
-        </div>
-        <div class="card">
-          <h2>AI Appraisal Draft</h2>
-          <p class="summary" id="summary"></p>
-          <h3>Strength Signals</h3><ul id="strengths"></ul>
-          <h3>Development Plan</h3><ul id="development"></ul>
-          <h3>Risk & Calibration Flags</h3><ul id="risks"></ul>
-        </div>
-      </section>
-    </main>
+    </div>
+    <h1>Performance Review</h1>
+    <p class="login-sub">Bi-annual appraisal system</p>
+    <div class="cycle-badge" id="loginCycleBadge">Loading cycle...</div>
+    <button class="btn-ms" onclick="signIn()">
+      <svg width="18" height="18" viewBox="0 0 21 21"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>
+      Sign in with Microsoft
+    </button>
+    <p class="login-footer">Uses your Finzly Microsoft account · Data stored in SharePoint</p>
   </div>
+</div>
 
-  <script>
-    const departments={
-      Engineering:{competencies:["System design","Code quality","Delivery ownership","Technical mentorship"],focus:"secure, scalable product engineering and reliable delivery"},
-      QA:{competencies:["Test strategy","Automation coverage","Defect prevention","Release confidence"],focus:"release quality, automation depth, and defect prevention"},
-      BA:{competencies:["Requirement clarity","Stakeholder alignment","Process understanding","Product thinking"],focus:"clear requirements, stakeholder outcomes, and business process translation"},
-      Operations:{competencies:["SLA discipline","Client responsiveness","Process compliance","Operational improvement"],focus:"client reliability, SLA adherence, and continuous operational improvement"}
+<!-- ═══════════════════════════ APP ═══════════════════════════ -->
+<div id="appContainer" style="display:none">
+  <div id="appHeader">
+    <div class="h-left">
+      <div class="h-logo">
+        <div class="h-icon">⚡</div>
+        <div class="h-brand">
+          <div class="name">FINZLY</div>
+          <div class="sub">APPRAISALS</div>
+        </div>
+      </div>
+      <div class="vd"></div>
+      <div class="h-meta">Cycle: <b id="hCycle">—</b></div>
+      <div class="vd"></div>
+      <div class="h-meta">Deadline: <b id="hDeadline">—</b></div>
+    </div>
+    <div class="h-right">
+      <div style="text-align:right">
+        <div class="h-user-name" id="hUserName">—</div>
+        <div class="h-user-role" id="hUserRole">—</div>
+      </div>
+      <div class="avatar" id="hAvatar">?</div>
+      <button class="btn-out" onclick="signOut()">Sign out</button>
+    </div>
+  </div>
+  <div id="mainNav"></div>
+  <div id="mainContent"></div>
+</div>
+
+<div id="toast"></div>
+<div id="loadingOverlay" style="display:none">
+  <div style="text-align:center">
+    <div class="spinner" style="margin:0 auto 14px"></div>
+    <div id="loadingText" style="font-size:13px;color:var(--text3)">Loading…</div>
+  </div>
+</div>
+
+<script>
+// ╔══════════════════════════════════════════════════════════════╗
+// ║                      CONFIGURATION                          ║
+// ║  ⚠️  Update the values marked ← EDIT before deploying      ║
+// ╚══════════════════════════════════════════════════════════════╝
+const C = {
+  // Azure AD — same as leadership dashboard
+  clientId:   "d893026d-d1c9-4285-947a-0a672018b8d1",
+  tenantId:   "4d4c58f7-6978-4a93-ba72-f1d987c46c89",
+  redirectUri: window.location.origin + window.location.pathname,
+
+  // SharePoint — ← EDIT these two lines
+  spDomain:   "finzly.sharepoint.com",   // ← your SharePoint domain
+  spSitePath: "/sites/HR",               // ← your HR SharePoint site path
+
+  // The appraisal responses will be saved here (auto-created on first run)
+  listName:   "FinzlyAppraisals",
+
+  // Employee master file (reused from leadership dashboard)
+  fileId:     "788b3929-4077-4e6e-9909-e26c071ffab4",
+
+  // Current appraisal cycle — ← UPDATE each cycle
+  cycle:       "FY2024-25-H2",
+  cycleName:   "FY 2024–25 H2",
+  deadline:    "31 Mar 2025",
+  deadlineISO: "2025-03-31",
+
+  // AI proxy — after setting up Cloudflare Worker, paste URL here ← EDIT
+  aiUrl:      "https://YOUR_WORKER.workers.dev/ai",
+
+  // Jira — set jiraOn:true once IT provides the API token ← UPDATE when ready
+  jiraOn:      false,
+  jiraBase:    "",              // e.g. "https://finzly.atlassian.net"
+  jiraProject: "",              // e.g. "PAY"
+  jiraToken:   "",              // API token from IT
+
+  // HR admin emails — ← EDIT with actual Finzly HR email(s)
+  hrEmails:   ["bharath@finzly.in"],
+
+  // Org-level access (read-only org dashboard) ← EDIT as needed
+  // Detection is automatic by designation title — no email list required.
+  // Add titles exactly as they appear in the employee master file (case-insensitive).
+  orgLevelTitles: ["ceo", "chief executive officer", "chief of staff", "president", "coo", "cto"],
+  // Optional: add specific emails that should get org access regardless of title
+  orgLevelEmails: [],
+};
+
+// Performance competencies (edit labels if needed)
+const COMPS = [
+  { k:"Tech",       l:"Technical Excellence",          d:"Quality, depth and impact of technical work" },
+  { k:"Delivery",   l:"Delivery & Execution",          d:"Consistency, velocity and on-time delivery" },
+  { k:"Collab",     l:"Collaboration",                 d:"Team contribution and cross-functional work" },
+  { k:"Comms",      l:"Communication",                 d:"Clarity, documentation and stakeholder updates" },
+  { k:"Innovation", l:"Innovation & Problem Solving",  d:"Creative solutions and proactive improvements" },
+  { k:"Leadership", l:"Leadership & Initiative",       d:"Ownership, mentoring and driving outcomes" },
+];
+
+const RLBL = { 0:"—", 1:"Below Expectations", 2:"Partially Meets", 3:"Meets Expectations", 4:"Exceeds Expectations", 5:"Outstanding" };
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║                         STATE                               ║
+// ╚══════════════════════════════════════════════════════════════╝
+const S = {
+  account: null, userEmail:"", userName:"", userRole:"employee",
+  employees:[], myRec:null, reportees:[],
+  siteId:null, listId:null,
+  view:"", selectedEmpId:null,
+  selfR:{}, selfComments:"", selfGoals:"",
+  mgrR:{},  mgrComments:"",  mgrDevPlan:"",
+  myAppraisal:null,          // my own SP list item
+  allAppraisals:[],          // HR view
+  aiLoading:false, aiText:"",
+};
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║                       MSAL AUTH                             ║
+// ╚══════════════════════════════════════════════════════════════╝
+const msalCfg = {
+  auth:{ clientId:C.clientId, authority:`https://login.microsoftonline.com/${C.tenantId}`, redirectUri:C.redirectUri },
+  cache:{ cacheLocation:"sessionStorage", storeAuthStateInCookie:false },
+};
+const msal_ = new msal.PublicClientApplication(msalCfg);
+const SCOPES = ["User.Read","Files.Read","Sites.ReadWrite.All","Mail.Send"];
+
+async function signIn() {
+  try {
+    const r = await msal_.loginPopup({ scopes:SCOPES });
+    msal_.setActiveAccount(r.account);
+    await boot(r.account);
+  } catch(e) { toast("Sign-in failed: "+e.message,"error"); }
+}
+function signOut() {
+  msal_.logoutPopup({ account:msal_.getActiveAccount() });
+  el("loginScreen").style.display = "flex";
+  el("appContainer").style.display = "none";
+}
+async function token() {
+  const acc = msal_.getActiveAccount();
+  if (!acc) throw new Error("Not signed in");
+  try { return (await msal_.acquireTokenSilent({ scopes:SCOPES, account:acc })).accessToken; }
+  catch { return (await msal_.acquireTokenPopup({ scopes:SCOPES, account:acc })).accessToken; }
+}
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║                    GRAPH API HELPERS                        ║
+// ╚══════════════════════════════════════════════════════════════╝
+const G = "https://graph.microsoft.com/v1.0";
+
+async function gGet(url) {
+  const t = await token();
+  const r = await fetch(G+url, { headers:{ Authorization:`Bearer ${t}` } });
+  if (!r.ok) throw new Error(`GET ${url}: ${r.status}`);
+  return r.json();
+}
+async function gPost(url, body) {
+  const t = await token();
+  const r = await fetch(G+url, {
+    method:"POST", headers:{ Authorization:`Bearer ${t}`, "Content-Type":"application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) { const txt = await r.text(); throw new Error(`POST ${url}: ${r.status} – ${txt}`); }
+  return r.json();
+}
+async function gPatch(url, body) {
+  const t = await token();
+  const r = await fetch(G+url, {
+    method:"PATCH", headers:{ Authorization:`Bearer ${t}`, "Content-Type":"application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) { const txt = await r.text(); throw new Error(`PATCH ${url}: ${r.status} – ${txt}`); }
+  if (r.status === 204) return {};
+  return r.json();
+}
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║                    EMPLOYEE DATA                            ║
+// ╚══════════════════════════════════════════════════════════════╝
+async function loadEmployees() {
+  try {
+    const sheetsData = await gGet(`/me/drive/items/${C.fileId}/workbook/worksheets`);
+    const sheets = sheetsData.value || [];
+    // Prefer a sheet named "Employees" or "Master"; fall back to first sheet
+    const sheet = sheets.find(s => /employee|master|data/i.test(s.name)) || sheets[0];
+    if (!sheet) throw new Error("No sheets found in file");
+
+    const range = await gGet(`/me/drive/items/${C.fileId}/workbook/worksheets/${encodeURIComponent(sheet.name)}/usedRange`);
+    const rows = range.values || [];
+    if (rows.length < 2) return [];
+
+    const hdrs = rows[0].map(h => String(h||"").trim().toLowerCase());
+    const col = (...keys) => { for (const k of keys) { const i = hdrs.findIndex(h => h.includes(k)); if (i !== -1) return i; } return -1; };
+    const idxs = {
+      id:    col("employee id","emp id","empid"),
+      name:  col("employee name","name","full name"),
+      email: col("email","mail"),
+      role:  col("designation","role","title","position"),
+      dept:  col("department","dept"),
+      squad: col("squad"),
+      sub:   col("sub squad","subsquad"),
+      mgr:   col("manager","reporting manager","reports to"),
+      mgrEmail: col("manager email","manager_email","mgr email"),
+      doj:   col("joining date","date of joining","doj","join"),
+      status:col("status"),
     };
 
-    const employees=[
-      {id:"FIN-101",name:"Aarav Menon",role:"Senior Software Engineer",department:"Engineering",manager:"Priya Nair"},
-      {id:"FIN-118",name:"Meera Shah",role:"QA Lead",department:"QA",manager:"Rohan Iyer"},
-      {id:"FIN-132",name:"Nikhil Rao",role:"Business Analyst",department:"BA",manager:"Anita Joseph"},
-      {id:"FIN-146",name:"Sara Thomas",role:"Operations Specialist",department:"Operations",manager:"Vikram Das"}
-    ];
-
-    const weights={performance:.28,ownership:.18,quality:.2,collaboration:.14,innovation:.1,growth:.1};
-    const labels={1:"Needs Attention",2:"Partially Meets",3:"Meets Expectations",4:"Exceeds Expectations",5:"Outstanding"};
-    let selected=employees[0].id;
-    let scores={performance:4,ownership:4,quality:4,collaboration:3,innovation:3,growth:4};
-
-    function employee(){return employees.find(e=>e.id===selected)}
-    function title(s){return s.charAt(0).toUpperCase()+s.slice(1)}
-    function rating(){
-      const score=Object.keys(scores).reduce((sum,k)=>sum+scores[k]*weights[k],0);
-      let band="Needs Improvement";
-      if(score>=4.6)band="Exceptional"; else if(score>=3.8)band="High Performer"; else if(score>=3.1)band="Solid Performer"; else if(score>=2.4)band="Developing";
-      return {score,band};
-    }
-
-    function appraisal(){
-      const e=employee(), d=departments[e.department], r=rating();
-      const ordered=Object.entries(scores).sort((a,b)=>b[1]-a[1]);
-      const strengths=ordered.slice(0,2).map(x=>title(x[0]));
-      const watch=ordered.slice(-2).map(x=>title(x[0]));
-      const impact=document.getElementById("impact").value.trim();
-      const devnote=document.getElementById("devnote").value.trim();
-      const low=Object.entries(scores).filter(x=>x[1]<=2).map(x=>x[0]);
-      const risks=[];
-      if(low.length)risks.push("Immediate coaching needed on "+low.join(", ")+".");
-      if(scores.collaboration<=2)risks.push("Manager should validate cross-functional feedback before final calibration.");
-      if(scores.quality<=2)risks.push("Quality score may affect promotion readiness until improvement is visible.");
-      if(!risks.length)risks.push("No critical risk flags detected from the current appraisal inputs.");
+    return rows.slice(1).filter(r => {
+      const s = idxs.status >= 0 ? String(r[idxs.status]||"").trim().toLowerCase() : "active";
+      return s === "active";
+    }).map(r => {
+      const v = i => i >= 0 ? String(r[i]||"").trim() : "";
       return {
-        r,
-        summary:`${e.name} is tracking as a ${r.band.toLowerCase()} with a calibrated score of ${r.score.toFixed(2)}/5. In ${e.department}, the role expectation is centered on ${d.focus}. The strongest signals are ${strengths.join(" and ")}, while the next development emphasis should be ${watch.join(" and ")}.`,
-        strengths:[
-          `${strengths[0]} is consistently visible in the appraisal pattern.`,
-          `${e.name} shows meaningful contribution against ${d.competencies[0].toLowerCase()} and ${d.competencies[1].toLowerCase()}.`,
-          impact?`Manager impact note: ${impact}`:"Impact notes can be added to sharpen the final HR narrative."
-        ],
-        development:[
-          `Create a 60-day development goal for ${watch[0].toLowerCase()} with measurable evidence.`,
-          `Align manager and employee on one department-specific outcome: ${d.competencies[2].toLowerCase()}.`,
-          devnote||"Add one learning action, one project action, and one manager support action."
-        ],
-        risks
+        id: v(idxs.id), name: v(idxs.name), email: v(idxs.email).toLowerCase(),
+        role: v(idxs.role), dept: v(idxs.dept), squad: v(idxs.squad),
+        subSquad: v(idxs.sub), manager: v(idxs.mgr), managerEmail: v(idxs.mgrEmail).toLowerCase(),
+        joiningDate: v(idxs.doj), status: "Active",
       };
+    }).filter(e => e.name);
+  } catch(err) {
+    console.warn("SharePoint load failed, using demo data:", err.message);
+    toast("Using demo data (SharePoint not configured)", "info");
+    return demoEmps();
+  }
+}
+
+function demoEmps() {
+  return [
+    { id:"FZ001", name:"Arjun Krishnamurthy",  email:"arjun.k@finzly.in",   role:"Senior Software Engineer", dept:"Engineering", squad:"Payments",  manager:"Booshan Rengachari", managerEmail:"booshan@finzly.in",  joiningDate:"2022-08-15" },
+    { id:"FZ002", name:"Priya Venkatesh",       email:"priya.v@finzly.in",   role:"Product Manager",          dept:"Product",     squad:"FX & Wires", manager:"Ravi Shankar",       managerEmail:"ravi.s@finzly.in",   joiningDate:"2021-11-01" },
+    { id:"FZ003", name:"Rahul Sharma",          email:"rahul.s@finzly.in",   role:"QA Engineer",              dept:"Engineering", squad:"Core Banking",manager:"Meena Krishnan",    managerEmail:"meena.k@finzly.in",  joiningDate:"2024-01-10" },
+    { id:"FZ004", name:"Meera Nair",            email:"meera.n@finzly.in",   role:"UI/UX Designer",           dept:"Design",      squad:"Platform",   manager:"Ravi Shankar",       managerEmail:"ravi.s@finzly.in",   joiningDate:"2021-03-20" },
+    { id:"FZ005", name:"Karthik Subramanian",   email:"karthik.s@finzly.in", role:"Backend Engineer",         dept:"Engineering", squad:"API",        manager:"Booshan Rengachari", managerEmail:"booshan@finzly.in",  joiningDate:"2024-07-05" },
+    { id:"FZ006", name:"Divya Ramesh",          email:"divya.r@finzly.in",   role:"Data Analyst",             dept:"Analytics",   squad:"Analytics",  manager:"Meena Krishnan",     managerEmail:"meena.k@finzly.in",  joiningDate:"2022-04-18" },
+  ];
+}
+
+function detectRole(email) {
+  const e = email.toLowerCase();
+  // HR admin (explicit email list)
+  if (C.hrEmails.map(h => h.toLowerCase()).includes(e)) return "hr";
+  // Org-level access: CEO, Chief of Staff, etc. — detected by designation title
+  const myRec = S.employees.find(emp => emp.email === e);
+  const title = (myRec?.role || "").toLowerCase();
+  if (
+    C.orgLevelEmails.map(x => x.toLowerCase()).includes(e) ||
+    C.orgLevelTitles.some(t => title.includes(t))
+  ) return "leadership";
+  // Manager: has at least one direct report
+  if (S.employees.some(emp => emp.managerEmail === e)) return "manager";
+  return "employee";
+}
+
+function myReportees() { return S.employees.filter(e => e.managerEmail === S.userEmail); }
+
+function tenure(doj) {
+  if (!doj) return "—";
+  const d = new Date(doj.includes("-") ? doj : doj.replace(/(\d{2})\/(\d{2})\/(\d{4})/,"$3-$2-$1"));
+  if (isNaN(d)) return "—";
+  const m = Math.floor((Date.now() - d) / (1000*60*60*24*30.44));
+  return m < 12 ? `${m}mo` : `${(m/12).toFixed(1)}yr`;
+}
+
+function avg(ratings) {
+  const v = Object.values(ratings).map(Number).filter(n => n > 0);
+  return v.length ? (v.reduce((a,b)=>a+b,0)/v.length).toFixed(1) : null;
+}
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║                   SHAREPOINT LIST                           ║
+// ╚══════════════════════════════════════════════════════════════╝
+async function getSiteId() {
+  if (S.siteId) return S.siteId;
+  const d = await gGet(`/sites/${C.spDomain}:${C.spSitePath}`);
+  S.siteId = d.id;
+  return S.siteId;
+}
+
+async function getOrCreateList() {
+  if (S.listId) return S.listId;
+  const sid = await getSiteId();
+
+  // Try fetching existing list
+  try {
+    const res = await gGet(`/sites/${sid}/lists?$filter=displayName eq '${C.listName}'`);
+    if (res.value?.length) { S.listId = res.value[0].id; return S.listId; }
+  } catch {}
+
+  // Create list with all required columns
+  const created = await gPost(`/sites/${sid}/lists`, {
+    displayName: C.listName,
+    list: { template:"genericList" },
+    columns: [
+      { name:"EmployeeID",          text:{} },
+      { name:"EmployeeName",        text:{} },
+      { name:"EmployeeEmail",       text:{} },
+      { name:"ManagerEmail",        text:{} },
+      { name:"CycleID",             text:{} },
+      // Status: Draft | SelfSubmitted | ManagerReviewing | Completed
+      { name:"Status",              text:{} },
+      // Self ratings (1–5)
+      { name:"SelfRatingTech",      number:{} },
+      { name:"SelfRatingDelivery",  number:{} },
+      { name:"SelfRatingCollab",    number:{} },
+      { name:"SelfRatingComms",     number:{} },
+      { name:"SelfRatingInnovation",number:{} },
+      { name:"SelfRatingLeadership",number:{} },
+      { name:"SelfComments",        text:{ allowMultipleLines:true } },
+      { name:"SelfGoals",           text:{ allowMultipleLines:true } },
+      { name:"SelfSubmittedDate",   dateTime:{} },
+      // Manager ratings
+      { name:"MgrRatingTech",       number:{} },
+      { name:"MgrRatingDelivery",   number:{} },
+      { name:"MgrRatingCollab",     number:{} },
+      { name:"MgrRatingComms",      number:{} },
+      { name:"MgrRatingInnovation", number:{} },
+      { name:"MgrRatingLeadership", number:{} },
+      { name:"MgrComments",         text:{ allowMultipleLines:true } },
+      { name:"MgrDevPlan",          text:{ allowMultipleLines:true } },
+      { name:"MgrReviewedDate",     dateTime:{} },
+      { name:"AIGeneratedSummary",  text:{ allowMultipleLines:true } },
+    ],
+  });
+  S.listId = created.id;
+  return S.listId;
+}
+
+async function getAppraisal(empId) {
+  const sid = await getSiteId();
+  const lid = await getOrCreateList();
+  const flt = encodeURIComponent(`fields/EmployeeID eq '${empId}' and fields/CycleID eq '${C.cycle}'`);
+  const res = await gGet(`/sites/${sid}/lists/${lid}/items?$expand=fields&$filter=${flt}`);
+  return res.value?.[0] || null;
+}
+
+async function getAllAppraisals() {
+  const sid = await getSiteId();
+  const lid = await getOrCreateList();
+  const flt = encodeURIComponent(`fields/CycleID eq '${C.cycle}'`);
+  const res = await gGet(`/sites/${sid}/lists/${lid}/items?$expand=fields&$filter=${flt}`);
+  return res.value || [];
+}
+
+async function saveAppraisal(fields, itemId) {
+  const sid = await getSiteId();
+  const lid = await getOrCreateList();
+  if (itemId) return gPatch(`/sites/${sid}/lists/${lid}/items/${itemId}/fields`, fields);
+  return gPost(`/sites/${sid}/lists/${lid}/items`, { fields });
+}
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║                  EMAIL NOTIFICATIONS                        ║
+// ╚══════════════════════════════════════════════════════════════╝
+function emailHtml(title, body) {
+  return `<div style="font-family:Segoe UI,sans-serif;max-width:520px;margin:0 auto;background:#0f1117;
+  color:#e2e8f0;border-radius:16px;overflow:hidden;border:1px solid #1e2a45">
+  <div style="background:linear-gradient(135deg,#161b2e,#1a2040);padding:26px 30px;border-bottom:1px solid #1e2a45">
+    <div style="font-size:10px;letter-spacing:2px;color:#f59e0b;font-weight:700;margin-bottom:6px">FINZLY PERFORMANCE APPRAISAL</div>
+    <h1 style="margin:0;font-size:19px;font-weight:800;color:#f1f5f9">${title}</h1>
+  </div>
+  <div style="padding:26px 30px">${body}</div>
+  <div style="padding:18px 30px;border-top:1px solid #1e2a45;font-size:11px;color:#475569">
+    Finzly India HR · ${C.cycleName} · Deadline: ${C.deadline}
+  </div></div>`;
+}
+
+async function sendMail(toEmail, toName, subject, htmlBody) {
+  try {
+    await gPost("/me/sendMail", {
+      message:{
+        subject,
+        body:{ contentType:"HTML", content: emailHtml(subject, htmlBody) },
+        toRecipients:[{ emailAddress:{ address:toEmail, name:toName } }],
+      },
+      saveToSentItems:false,
+    });
+  } catch(e) { console.warn("Email send failed:", e.message); }
+}
+
+async function notifySelfSubmit(emp) {
+  // To employee
+  await sendMail(emp.email, emp.name,
+    `✅ Self-Appraisal Submitted — ${C.cycleName}`,
+    `<p>Hi ${emp.name.split(" ")[0]},</p>
+     <p style="margin:12px 0;color:#94a3b8">Your self-appraisal for <strong style="color:#f59e0b">${C.cycleName}</strong> has been submitted successfully.</p>
+     <p style="color:#94a3b8">Your manager will complete their review before <strong style="color:#e2e8f0">${C.deadline}</strong>.</p>`
+  );
+  // To manager
+  if (emp.managerEmail) {
+    const mgr = S.employees.find(e => e.email === emp.managerEmail);
+    const fn = mgr ? mgr.name.split(" ")[0] : "Manager";
+    await sendMail(emp.managerEmail, fn,
+      `📋 Action Required: ${emp.name} submitted their appraisal`,
+      `<p>Hi ${fn},</p>
+       <p style="margin:12px 0;color:#94a3b8"><strong style="color:#f59e0b">${emp.name}</strong> has submitted their self-appraisal for ${C.cycleName}. Please complete your manager review.</p>
+       <p style="color:#94a3b8">Deadline: <strong style="color:#e2e8f0">${C.deadline}</strong></p>
+       <a href="${location.href}" style="display:inline-block;margin-top:16px;padding:10px 22px;background:#f59e0b;color:#0f1117;border-radius:8px;font-weight:700;text-decoration:none">Open Appraisal Tool →</a>`
+    );
+  }
+}
+
+async function notifyMgrDone(emp) {
+  await sendMail(emp.email, emp.name,
+    `🎉 Your Appraisal is Complete — ${C.cycleName}`,
+    `<p>Hi ${emp.name.split(" ")[0]},</p>
+     <p style="margin:12px 0;color:#94a3b8">Your manager has completed your performance review for <strong style="color:#f59e0b">${C.cycleName}</strong>.</p>
+     <p style="color:#94a3b8">Log in to view your results and next-cycle development goals.</p>
+     <a href="${location.href}" style="display:inline-block;margin-top:16px;padding:10px 22px;background:#f59e0b;color:#0f1117;border-radius:8px;font-weight:700;text-decoration:none">View My Appraisal →</a>`
+  );
+}
+
+async function sendBulkReminders() {
+  const pending = S.employees.filter(e => {
+    const a = S.allAppraisals.find(x => x.fields?.EmployeeID === e.id);
+    return !a || !a.fields?.Status || a.fields.Status === "Draft";
+  });
+  for (const emp of pending) {
+    await sendMail(emp.email, emp.name,
+      `⏰ Reminder: Self-Appraisal Due ${C.deadline}`,
+      `<p>Hi ${emp.name.split(" ")[0]},</p>
+       <p style="margin:12px 0;color:#94a3b8">Your self-appraisal for <strong style="color:#f59e0b">${C.cycleName}</strong> is still pending. Deadline: <strong style="color:#e2e8f0">${C.deadline}</strong>.</p>
+       <a href="${location.href}" style="display:inline-block;margin-top:16px;padding:10px 22px;background:#f59e0b;color:#0f1117;border-radius:8px;font-weight:700;text-decoration:none">Complete Now →</a>`
+    );
+  }
+  return pending.length;
+}
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║                      AI (CLAUDE)                           ║
+// ╚══════════════════════════════════════════════════════════════╝
+async function callAI(prompt) {
+  S.aiLoading = true;
+  S.aiText = "";
+  try {
+    // Proxy (Cloudflare Worker) — recommended
+    if (C.aiUrl && !C.aiUrl.includes("YOUR_WORKER")) {
+      const r = await fetch(C.aiUrl, {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ prompt,
+          system:`You are an expert HR performance coach at Finzly, an Indian fintech company. Write concise, fair, specific, actionable appraisal content. No bullet lists unless asked. Under 200 words per response.`,
+        }),
+      });
+      const d = await r.json();
+      S.aiText = d.text || d.content || "No response.";
+    } else {
+      // Direct call — for local testing only; NOT recommended in production
+      const r = await fetch("https://api.anthropic.com/v1/messages", {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({
+          model:"claude-sonnet-4-20250514", max_tokens:800,
+          system:"You are an expert HR performance coach at Finzly, an Indian fintech company. Write concise, specific, growth-focused appraisal content. Under 200 words.",
+          messages:[{ role:"user", content:prompt }],
+        }),
+      });
+      const d = await r.json();
+      S.aiText = d.content?.[0]?.text || "AI unavailable — set up Cloudflare Worker (see CONFIG.aiUrl).";
     }
+  } catch(e) {
+    S.aiText = "AI unavailable. Configure CONFIG.aiUrl with your Cloudflare Worker URL.";
+  }
+  S.aiLoading = false;
+  return S.aiText;
+}
 
-    function list(id,items){document.getElementById(id).innerHTML=items.map(i=>`<li>${i}</li>`).join("")}
+// ╔══════════════════════════════════════════════════════════════╗
+// ║                   JIRA (FEATURE FLAGGED)                   ║
+// ╚══════════════════════════════════════════════════════════════╝
+async function fetchJira(email) {
+  if (!C.jiraOn || !C.jiraBase || !C.jiraToken) return [];
+  try {
+    const jql = `assignee="${email}" AND sprint in openSprints() AND project="${C.jiraProject}"`;
+    const r = await fetch(`${C.jiraBase}/rest/api/3/search?jql=${encodeURIComponent(jql)}&fields=summary,status,priority,customfield_10016`, {
+      headers:{ Authorization:`Basic ${btoa(S.userEmail+":"+C.jiraToken)}`, Accept:"application/json" },
+    });
+    const d = await r.json();
+    return (d.issues||[]).map(i => ({ id:i.key, title:i.fields.summary, status:i.fields.status.name, pts:i.fields.customfield_10016||0 }));
+  } catch { return []; }
+}
 
-    function renderEmployees(){
-      document.getElementById("employees").innerHTML=employees.map(e=>`
-        <button class="emp ${e.id===selected?"active":""}" onclick="selectEmp('${e.id}')">
-          <strong>${e.name}</strong><small>${e.department}</small>
-        </button>`).join("");
+// ╔══════════════════════════════════════════════════════════════╗
+// ║                     UI UTILITIES                           ║
+// ╚══════════════════════════════════════════════════════════════╝
+const el = id => document.getElementById(id);
+function setContent(html) { el("mainContent").innerHTML = `<div class="fade-in">${html}</div>`; }
+function loading(txt="Loading…") { el("loadingOverlay").style.display="flex"; el("loadingText").textContent=txt; }
+function doneLoading() { el("loadingOverlay").style.display="none"; }
+
+function toast(msg, type="info") {
+  const t = el("toast");
+  const d = document.createElement("div");
+  d.className = `toast t-${type}`;
+  d.textContent = msg;
+  t.appendChild(d);
+  setTimeout(() => { d.style.cssText += "opacity:0;transition:opacity .3s"; setTimeout(()=>d.remove(),400); }, 3500);
+}
+
+function badge(status) {
+  const m = { Draft:["b-draft","Draft"], SelfSubmitted:["b-sub","Self Submitted"],
+    ManagerReviewing:["b-review","In Review"], Completed:["b-done","Complete"], NotStarted:["b-none","Not Started"] };
+  const [cls,lbl] = m[status] || ["b-none","Not Started"];
+  return `<span class="badge ${cls}">${lbl}</span>`;
+}
+
+// Star rating widget (interactive)
+function starsWidget(k, val, prefix) {
+  let h = `<div class="stars" id="stars-${prefix}-${k}">`;
+  for (let i=1; i<=5; i++)
+    h += `<div class="star ${val>=i?"on":""}" onclick="setR('${prefix}','${k}',${i})" onmouseover="hR('${prefix}','${k}',${i})" onmouseout="uR('${prefix}','${k}')">★</div>`;
+  return h + `</div>`;
+}
+
+// Star rating (read-only)
+function starsRO(val) {
+  return [1,2,3,4,5].map(n => `<div class="ro-star ${n<=val?"":"off"}">★</div>`).join("");
+}
+
+function setR(prefix, k, val) {
+  if (prefix==="self") S.selfR[k]=val; else S.mgrR[k]=val;
+  renderStars(prefix, k, val);
+  const lv = el(`r-lbl-${prefix}-${k}`); if (lv) lv.textContent = RLBL[val];
+  const vv = el(`r-val-${prefix}-${k}`); if (vv) vv.textContent = val;
+  refreshAvg(prefix);
+}
+function hR(prefix, k, val) {
+  document.querySelectorAll(`#stars-${prefix}-${k} .star`).forEach((s,i)=>s.classList.toggle("on",i<val));
+}
+function uR(prefix, k) {
+  const cur = prefix==="self" ? (S.selfR[k]||0) : (S.mgrR[k]||0);
+  renderStars(prefix, k, cur);
+}
+function renderStars(prefix, k, val) {
+  document.querySelectorAll(`#stars-${prefix}-${k} .star`).forEach((s,i)=>s.classList.toggle("on",i<val));
+}
+function refreshAvg(prefix) {
+  const ratings = prefix==="self" ? S.selfR : S.mgrR;
+  const a = avg(ratings);
+  const vEl = el(`overall-${prefix}`);
+  if (vEl) vEl.textContent = a || "—";
+}
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║                  SELF-APPRAISAL VIEW                       ║
+// ╚══════════════════════════════════════════════════════════════╝
+async function viewSelf() {
+  S.view = "self";
+  renderNav();
+
+  const me = S.employees.find(e => e.email === S.userEmail);
+  if (!me) {
+    setContent(`<div class="card cb" style="text-align:center;padding:56px">
+      <div style="font-size:46px;margin-bottom:14px">😕</div>
+      <div style="font-weight:700;font-size:15px">Your account isn't found in employee data.</div>
+      <div style="color:var(--text3);font-size:13px;margin-top:8px">Contact HR if this is unexpected.</div>
+    </div>`); return;
+  }
+
+  loading("Loading your appraisal…");
+  try {
+    const existing = await getAppraisal(me.id);
+    if (existing) {
+      const f = existing.fields;
+      S.selfR = { Tech:f.SelfRatingTech||0, Delivery:f.SelfRatingDelivery||0, Collab:f.SelfRatingCollab||0,
+        Comms:f.SelfRatingComms||0, Innovation:f.SelfRatingInnovation||0, Leadership:f.SelfRatingLeadership||0 };
+      S.selfComments = f.SelfComments||""; S.selfGoals = f.SelfGoals||"";
+      S.myAppraisal = existing;
+    } else {
+      S.selfR={}; S.selfComments=""; S.selfGoals=""; S.myAppraisal=null;
     }
+  } catch(e) { console.error(e); }
+  doneLoading();
 
-    function selectEmp(id){
-      selected=id;
-      scores={performance:4,ownership:4,quality:4,collaboration:3,innovation:employee().department==="Operations"?3:4,growth:4};
-      document.getElementById("impact").value="";
-      document.getElementById("devnote").value="";
-      document.getElementById("values").value="";
-      render();
+  const submitted = S.myAppraisal?.fields?.Status && S.myAppraisal.fields.Status !== "Draft";
+  const status    = S.myAppraisal?.fields?.Status || "Draft";
+  const tn        = tenure(me.joiningDate);
+
+  // Competency rows
+  const rows = COMPS.map(c => {
+    const rv = S.selfR[c.k]||0;
+    return `<div class="rating-row">
+      <div class="rating-info">
+        <div class="rating-name">${c.l}</div>
+        <div class="rating-desc">${c.d}</div>
+      </div>
+      ${submitted
+        ? `<div style="display:flex;gap:4px">${starsRO(rv)}</div>
+           <div class="r-val">${rv||"—"}</div>
+           <div class="r-lbl" style="color:var(--accent)">${RLBL[rv]||""}</div>`
+        : `${starsWidget(c.k,rv,"self")}
+           <div class="r-val" id="r-val-self-${c.k}">${rv||"—"}</div>
+           <div class="r-lbl" id="r-lbl-self-${c.k}">${rv?RLBL[rv]:"Click to rate"}</div>`
+      }
+    </div>`;
+  }).join("");
+
+  // Manager feedback section (only if completed)
+  let mgrSection = "";
+  if (S.myAppraisal?.fields?.Status === "Completed") {
+    const f = S.myAppraisal.fields;
+    const mgrRatings = { Tech:f.MgrRatingTech||0, Delivery:f.MgrRatingDelivery||0, Collab:f.MgrRatingCollab||0,
+      Comms:f.MgrRatingComms||0, Innovation:f.MgrRatingInnovation||0, Leadership:f.MgrRatingLeadership||0 };
+    mgrSection = `
+    <div class="card mb6" style="border-top:3px solid var(--success)">
+      <div class="ch">
+        <span class="ct">✅ Manager Review</span>
+        <span style="font-weight:700;font-size:12px;color:var(--success)">Completed · Overall: ${avg(mgrRatings)||"—"}/5</span>
+      </div>
+      <div class="cb">
+        <div class="g2 mb4">
+          ${COMPS.map(c => {
+            const r = f[`MgrRating${c.k}`]||0;
+            return `<div style="padding:12px;background:var(--bg);border-radius:10px;border:1px solid var(--border)">
+              <div style="font-size:11px;color:var(--text3);margin-bottom:7px">${c.l}</div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <div style="display:flex;gap:3px">${[1,2,3,4,5].map(n=>`<span style="color:${n<=r?"var(--accent)":"var(--border2)"};font-size:16px">★</span>`).join("")}</div>
+                <span style="font-family:'Syne',sans-serif;font-weight:800;color:var(--accent)">${r}</span>
+              </div>
+            </div>`;
+          }).join("")}
+        </div>
+        <div class="form-group">
+          <div class="form-label">Manager Comments</div>
+          <div class="readonly-field">${f.MgrComments||"—"}</div>
+        </div>
+        <div class="form-group">
+          <div class="form-label">Development Plan for Next Cycle</div>
+          <div class="readonly-field">${f.MgrDevPlan||"—"}</div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  setContent(`
+  <div class="section-title">My Self-Appraisal</div>
+  <div class="section-sub">${C.cycleName} · ${me.role} · ${me.squad} · Tenure: ${tn}</div>
+
+  <!-- Profile strip -->
+  <div class="card mb6" style="padding:16px 22px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+    <div style="display:flex;gap:12px;align-items:center">
+      <div class="emp-av" style="width:46px;height:46px;font-size:19px;border-radius:13px">${me.name.charAt(0)}</div>
+      <div>
+        <div style="font-weight:700;font-size:15px">${me.name}</div>
+        <div style="font-size:12px;color:var(--text3)">${me.role} · ${me.dept} · ${me.squad}</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      ${badge(status)}
+      ${!submitted ? `<button class="btn btn-ghost btn-sm" onclick="openAI('self',null)">✦ AI Assist</button>` : ""}
+    </div>
+  </div>
+
+  ${mgrSection}
+
+  <!-- Ratings card -->
+  <div class="card mb6">
+    <div class="ch">
+      <span class="ct">Competency Self-Ratings</span>
+      ${!submitted
+        ? `<span style="font-size:12px;color:var(--text3)">Overall: <strong id="overall-self" style="color:var(--accent)">${avg(S.selfR)||"—"}</strong>/5</span>`
+        : `<span style="color:var(--accent);font-weight:700;font-size:12px">Overall: ${avg(S.selfR)||"—"}/5</span>`}
+    </div>
+    <div class="cb">${rows}</div>
+  </div>
+
+  <!-- Comments & Goals -->
+  <div class="g2 mb6">
+    <div class="card">
+      <div class="ch"><span class="ct">Overall Comments</span></div>
+      <div class="cb">
+        ${submitted
+          ? `<div class="readonly-field">${S.selfComments||"—"}</div>`
+          : `<textarea id="selfComments" rows="6" placeholder="Describe your key contributions, achievements, and impact this cycle…">${S.selfComments}</textarea>`}
+      </div>
+    </div>
+    <div class="card">
+      <div class="ch"><span class="ct">Goals for Next Cycle</span></div>
+      <div class="cb">
+        ${submitted
+          ? `<div class="readonly-field">${S.selfGoals||"—"}</div>`
+          : `<textarea id="selfGoals" rows="6" placeholder="List 3–5 specific goals for the next 6 months…">${S.selfGoals}</textarea>`}
+      </div>
+    </div>
+  </div>
+
+  ${!submitted ? `
+  <!-- AI Panel (hidden by default) -->
+  <div id="aiPanel" class="ai-panel mb6" style="display:none">
+    <div class="ai-ph">
+      <div class="ai-ic">✦</div>
+      <div style="font-weight:700;font-size:13px;color:var(--accent)">AI Assist</div>
+      <button onclick="el('aiPanel').style.display='none'" style="margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px">✕</button>
+    </div>
+    <div id="aiBody" class="ai-body">Click an action below to get AI assistance.</div>
+    <div class="ai-acts">
+      <button class="btn btn-ghost btn-sm" onclick="aiSelfDraft()">📝 Draft Comments</button>
+      <button class="btn btn-ghost btn-sm" onclick="aiSelfGoals()">🎯 Suggest Goals</button>
+      <button class="btn btn-ghost btn-sm" onclick="aiSelfBias()">⚖️ Check Bias</button>
+      <button class="btn btn-ghost btn-sm" onclick="aiUseText('selfComments')">← Use as Comments</button>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div style="display:flex;gap:12px;justify-content:flex-end">
+    <button class="btn btn-secondary" onclick="saveDraft()">💾 Save Draft</button>
+    <button class="btn btn-primary" onclick="submitSelf()">Submit Self-Appraisal →</button>
+  </div>` : `
+  <div class="card" style="padding:20px 24px;border-color:var(--success)44;background:var(--success)05;text-align:center">
+    <div style="font-size:34px;margin-bottom:8px">✅</div>
+    <div style="font-weight:700;color:var(--success);font-size:15px">Self-Appraisal Submitted</div>
+    <div style="color:var(--text3);font-size:13px;margin-top:6px">
+      Submitted on ${S.myAppraisal?.fields?.SelfSubmittedDate ? new Date(S.myAppraisal.fields.SelfSubmittedDate).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"}) : "—"}.
+      ${S.myAppraisal?.fields?.Status !== "Completed" ? "Waiting for manager review." : ""}
+    </div>
+  </div>`}
+  `);
+}
+
+// ── AI actions (self) ──────────────────────────────
+function openAI(section, empName) {
+  const panel = el("aiPanel");
+  if (panel) panel.style.display = "block";
+}
+
+async function aiSelfDraft() {
+  const me = S.employees.find(e => e.email === S.userEmail);
+  const tn = tenure(me?.joiningDate);
+  showAiThinking();
+  const text = await callAI(
+    `Write a self-appraisal "Overall Comments" paragraph for ${me?.name||"the employee"}, ${me?.role||"Engineer"} at Finzly (${me?.squad||"Engineering"} squad), with ${tn} tenure. ` +
+    `Current self-ratings: ${COMPS.map(c=>`${c.l}: ${S.selfR[c.k]||"unrated"}/5`).join(", ")}. ` +
+    `Write 3–4 sentences in first person, specific, confident, and growth-oriented.`
+  );
+  el("aiBody").textContent = text;
+}
+
+async function aiSelfGoals() {
+  const me = S.employees.find(e => e.email === S.userEmail);
+  const low = COMPS.filter(c => S.selfR[c.k]).sort((a,b)=>(S.selfR[a.k]||5)-(S.selfR[b.k]||5)).slice(0,2).map(c=>c.l).join(", ");
+  showAiThinking();
+  const text = await callAI(
+    `Suggest 3 SMART goals for ${me?.name||"the employee"} (${me?.role||"Engineer"}, ${me?.squad||"Engineering"} squad at Finzly) for the next 6 months. ` +
+    `Focus on their lowest-rated areas: ${low||"technical and delivery skills"}. ` +
+    `Format as numbered list, one goal per line, each concrete and measurable.`
+  );
+  el("aiBody").textContent = text;
+}
+
+async function aiSelfBias() {
+  const comments = el("selfComments")?.value || S.selfComments;
+  if (!comments.trim()) { toast("Write some comments first","info"); return; }
+  showAiThinking();
+  const text = await callAI(`Review this self-appraisal comment for vague language, over-modesty, or missed impact statements: "${comments}". Give 2–3 specific improvements.`);
+  el("aiBody").textContent = text;
+}
+
+function showAiThinking() {
+  const p = el("aiPanel"); if (p) p.style.display = "block";
+  const b = el("aiBody"); if (b) b.innerHTML = `<span class="pulse">✦ AI is thinking…</span>`;
+}
+
+function aiUseText(targetId) {
+  const target = el(targetId);
+  if (target && S.aiText) {
+    target.value = S.aiText;
+    toast("AI text applied","success");
+  }
+}
+
+// ── Save / Submit (self) ──────────────────────────
+function readSelfForm() {
+  if (el("selfComments")) S.selfComments = el("selfComments").value;
+  if (el("selfGoals"))    S.selfGoals    = el("selfGoals").value;
+}
+
+async function saveDraft() {
+  const me = S.employees.find(e => e.email === S.userEmail);
+  if (!me) return;
+  readSelfForm();
+  loading("Saving draft…");
+  try {
+    const fields = buildSelfFields(me, "Draft");
+    const result = await saveAppraisal(fields, S.myAppraisal?.id);
+    if (!S.myAppraisal) S.myAppraisal = { id: result.id, fields: result.fields };
+    toast("Draft saved ✓","success");
+  } catch(e) { toast("Save failed: "+e.message,"error"); }
+  doneLoading();
+}
+
+async function submitSelf() {
+  const me = S.employees.find(e => e.email === S.userEmail);
+  if (!me) return;
+
+  const unrated = COMPS.filter(c => !S.selfR[c.k]);
+  if (unrated.length) { toast(`Rate all competencies first (missing: ${unrated.map(c=>c.l.split(" ")[0]).join(", ")})`, "error"); return; }
+  readSelfForm();
+  if (!S.selfComments.trim()) { toast("Please add overall comments","error"); return; }
+  if (!confirm(`Submit your self-appraisal for ${C.cycleName}?\n\nYou won't be able to edit after submission.`)) return;
+
+  loading("Submitting…");
+  try {
+    const fields = { ...buildSelfFields(me, "SelfSubmitted"), SelfSubmittedDate: new Date().toISOString() };
+    await saveAppraisal(fields, S.myAppraisal?.id);
+    await notifySelfSubmit(me);
+    toast("Appraisal submitted! Emails sent ✓","success");
+    await viewSelf();
+  } catch(e) { toast("Submission failed: "+e.message,"error"); }
+  doneLoading();
+}
+
+function buildSelfFields(me, status) {
+  return {
+    Title:              `${me.id}_${C.cycle}`,
+    EmployeeID:         me.id, EmployeeName:me.name,
+    EmployeeEmail:      me.email, ManagerEmail:me.managerEmail||"",
+    CycleID:            C.cycle, Status:status,
+    SelfRatingTech:     S.selfR.Tech||0, SelfRatingDelivery:S.selfR.Delivery||0,
+    SelfRatingCollab:   S.selfR.Collab||0, SelfRatingComms:S.selfR.Comms||0,
+    SelfRatingInnovation:S.selfR.Innovation||0, SelfRatingLeadership:S.selfR.Leadership||0,
+    SelfComments:       S.selfComments, SelfGoals:S.selfGoals,
+  };
+}
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║                  MANAGER REVIEW VIEW                       ║
+// ╚══════════════════════════════════════════════════════════════╝
+async function viewManager() {
+  S.view = "manager";
+  renderNav();
+
+  const reportees = myReportees();
+  if (!reportees.length) {
+    setContent(`<div class="section-title">My Team</div>
+    <div class="card cb" style="text-align:center;padding:56px">
+      <div style="font-size:46px;margin-bottom:14px">👥</div>
+      <div style="font-weight:600">No direct reports found for this cycle.</div>
+      <div style="color:var(--text3);font-size:13px;margin-top:8px">If incorrect, contact HR to update the employee data file.</div>
+    </div>`); return;
+  }
+
+  if (!S.selectedEmpId) S.selectedEmpId = reportees[0].id;
+
+  loading("Loading team appraisals…");
+  const apprMap = {};
+  try {
+    for (const emp of reportees) {
+      const a = await getAppraisal(emp.id);
+      if (a) apprMap[emp.id] = a;
     }
+  } catch(e) { console.error(e); }
+  doneLoading();
 
-    function renderSliders(){
-      document.getElementById("sliders").innerHTML=Object.keys(scores).map(k=>`
-        <div class="row">
-          <div><strong>${title(k)}</strong><br><small>${labels[scores[k]]}</small></div>
-          <input type="range" min="1" max="5" value="${scores[k]}" oninput="scores['${k}']=Number(this.value);render()">
-          <strong>${scores[k]}</strong>
-        </div>`).join("");
-    }
+  const selEmp  = reportees.find(e => e.id === S.selectedEmpId);
+  const appr    = apprMap[S.selectedEmpId];
+  const isReady = appr && appr.fields?.Status && appr.fields.Status !== "Draft";
+  const isDone  = appr?.fields?.Status === "Completed";
 
-    function render(){
-      const e=employee(), d=departments[e.department], a=appraisal();
-      renderEmployees(); renderSliders();
-      document.getElementById("name").textContent=e.name;
-      document.getElementById("meta").textContent=`${e.role} · ${e.department} · Manager: ${e.manager}`;
-      document.getElementById("score").textContent=a.r.score.toFixed(2)+"/5";
-      document.getElementById("band").textContent=a.r.band;
-      document.getElementById("model").textContent=e.department+" Model";
-      document.getElementById("chips").innerHTML=d.competencies.map(c=>`<span class="chip">${c}</span>`).join("");
-      document.getElementById("focus").textContent=d.focus;
-      document.getElementById("summary").textContent=a.summary;
-      list("strengths",a.strengths); list("development",a.development); list("risks",a.risks);
-    }
+  // Sidebar team list
+  const sidebar = reportees.map(emp => {
+    const a = apprMap[emp.id];
+    const s = a?.fields?.Status||"NotStarted";
+    return `<div class="emp-item ${emp.id===S.selectedEmpId?"sel":""}" onclick="selectEmp('${emp.id}')">
+      <div class="emp-av">${emp.name.charAt(0)}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${emp.name}</div>
+        <div style="font-size:11px;color:var(--text3)">${emp.squad} · ${tenure(emp.joiningDate)}</div>
+      </div>
+      ${badge(s)}
+    </div>`;
+  }).join("");
 
-    function copySummary(){
-      const e=employee(), a=appraisal();
-      const text=[
-        `Employee: ${e.name} (${e.id})`,
-        `Department: ${e.department}`,
-        `Role: ${e.role}`,
-        `Manager: ${e.manager}`,
-        `Rating: ${a.r.band} (${a.r.score.toFixed(2)}/5)`,
-        "",
-        a.summary,
-        "",
-        "Strengths:",
-        ...a.strengths.map(x=>"- "+x),
-        "",
-        "Development Plan:",
-        ...a.development.map(x=>"- "+x),
-        "",
-        "Risk Flags:",
-        ...a.risks.map(x=>"- "+x)
-      ].join("\n");
-      navigator.clipboard.writeText(text);
-      document.getElementById("copyBtn").textContent="Copied";
-      setTimeout(()=>document.getElementById("copyBtn").textContent="Copy HR Summary",1500);
-    }
+  // Main panel
+  let main = "";
+  if (!isReady) {
+    main = `<div class="card cb" style="text-align:center;padding:56px">
+      <div style="font-size:46px;margin-bottom:14px">⏳</div>
+      <div style="font-weight:600;font-size:15px">Waiting for self-appraisal</div>
+      <div style="color:var(--text3);font-size:13px;margin-top:8px">${selEmp.name.split(" ")[0]} hasn't submitted yet.</div>
+    </div>`;
+  } else {
+    const f = appr.fields;
+    // Load saved manager ratings if any
+    if (f.MgrRatingTech) {
+      S.mgrR = { Tech:f.MgrRatingTech||0, Delivery:f.MgrRatingDelivery||0, Collab:f.MgrRatingCollab||0,
+        Comms:f.MgrRatingComms||0, Innovation:f.MgrRatingInnovation||0, Leadership:f.MgrRatingLeadership||0 };
+      S.mgrComments = f.MgrComments||""; S.mgrDevPlan = f.MgrDevPlan||"";
+    } else { S.mgrR={}; S.mgrComments=""; S.mgrDevPlan=""; }
 
-    render();
-  </script>
+    const selfAvg = avg({ Tech:f.SelfRatingTech, Delivery:f.SelfRatingDelivery, Collab:f.SelfRatingCollab,
+      Comms:f.SelfRatingComms, Innovation:f.SelfRatingInnovation, Leadership:f.SelfRatingLeadership });
+
+    const selfRows = COMPS.map(c => {
+      const r = f[`SelfRating${c.k}`]||0;
+      return `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">
+        <div style="flex:1;font-size:13px;color:var(--text2)">${c.l}</div>
+        <div style="display:flex;gap:3px">${starsRO(r)}</div>
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:14px;color:var(--accent);width:22px;text-align:right">${r||"—"}</div>
+      </div>`;
+    }).join("");
+
+    const mgrRows = COMPS.map(c => {
+      const rv = S.mgrR[c.k]||0;
+      return `<div class="rating-row">
+        <div class="rating-info"><div class="rating-name">${c.l}</div></div>
+        ${isDone
+          ? `<div style="display:flex;gap:4px">${starsRO(rv)}</div>
+             <div class="r-val">${rv||"—"}</div>
+             <div class="r-lbl" style="color:var(--accent)">${RLBL[rv]||""}</div>`
+          : `${starsWidget(c.k,rv,"mgr")}
+             <div class="r-val" id="r-val-mgr-${c.k}">${rv||"—"}</div>
+             <div class="r-lbl" id="r-lbl-mgr-${c.k}">${rv?RLBL[rv]:"Click to rate"}</div>`}
+      </div>`;
+    }).join("");
+
+    const jiraSection = C.jiraOn
+      ? `<div class="card mb4"><div class="ch"><span class="ct">⚡ Jira Tickets</span><span style="font-size:11px;color:var(--text3)">Current sprint</span></div>
+          <div class="cb" id="jiraContent"><div style="color:var(--text3);font-size:13px">Loading…</div></div></div>`
+      : `<div class="card mb4" style="padding:14px 22px;border-style:dashed">
+          <div style="font-size:12px;color:var(--text3)">⚡ <strong>Jira integration pending</strong> — set C.jiraOn=true and add API token once IT provides access.</div>
+        </div>`;
+
+    main = `
+    <!-- Profile strip -->
+    <div class="card mb4" style="padding:15px 22px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <div style="display:flex;gap:12px;align-items:center">
+        <div class="emp-av" style="width:46px;height:46px;font-size:19px;border-radius:13px">${selEmp.name.charAt(0)}</div>
+        <div>
+          <div style="font-weight:700;font-size:15px">${selEmp.name}</div>
+          <div style="font-size:12px;color:var(--text3)">${selEmp.role} · ${selEmp.squad} · ${tenure(selEmp.joiningDate)}</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        ${badge(appr.fields.Status)}
+        ${!isDone ? `<button class="btn btn-ghost btn-sm" onclick="openAI('mgr','${selEmp.name}')">✦ AI Assist</button>` : ""}
+      </div>
+    </div>
+
+    ${jiraSection}
+
+    <!-- Employee self-appraisal (read-only) -->
+    <div class="card mb4">
+      <div class="ch">
+        <span class="ct">Employee Self-Appraisal</span>
+        <span style="font-size:12px;color:var(--text3)">Overall: <strong style="color:var(--accent)">${selfAvg||"—"}/5</strong></span>
+      </div>
+      <div class="cb">
+        ${selfRows}
+        <div class="form-group" style="margin-top:16px">
+          <div class="form-label">Employee Comments</div>
+          <div class="readonly-field">${f.SelfComments||"—"}</div>
+        </div>
+        <div class="form-group">
+          <div class="form-label">Employee Goals</div>
+          <div class="readonly-field">${f.SelfGoals||"—"}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Manager ratings -->
+    <div class="card mb4">
+      <div class="ch">
+        <span class="ct">Your Manager Ratings</span>
+        ${!isDone
+          ? `<span style="font-size:12px;color:var(--text3)">Overall: <strong id="overall-mgr" style="color:var(--accent)">${avg(S.mgrR)||"—"}</strong>/5</span>`
+          : `<span style="color:var(--success);font-weight:700;font-size:12px">✓ Completed · ${avg(S.mgrR)||"—"}/5</span>`}
+      </div>
+      <div class="cb">${mgrRows}</div>
+    </div>
+
+    <div class="g2 mb4">
+      <div class="card">
+        <div class="ch"><span class="ct">Manager Comments</span></div>
+        <div class="cb">
+          ${isDone
+            ? `<div class="readonly-field">${S.mgrComments||"—"}</div>`
+            : `<textarea id="mgrComments" rows="6" placeholder="Provide specific, constructive feedback…">${S.mgrComments}</textarea>`}
+        </div>
+      </div>
+      <div class="card">
+        <div class="ch"><span class="ct">Development Plan</span></div>
+        <div class="cb">
+          ${isDone
+            ? `<div class="readonly-field">${S.mgrDevPlan||"—"}</div>`
+            : `<textarea id="mgrDevPlan" rows="6" placeholder="Growth goals for next cycle…">${S.mgrDevPlan}</textarea>`}
+        </div>
+      </div>
+    </div>
+
+    ${!isDone ? `
+    <!-- AI Panel -->
+    <div id="aiPanel" class="ai-panel mb4" style="display:none">
+      <div class="ai-ph">
+        <div class="ai-ic">✦</div>
+        <div style="font-weight:700;font-size:13px;color:var(--accent)">AI Assist — ${selEmp.name.split(" ")[0]}</div>
+        <button onclick="el('aiPanel').style.display='none'" style="margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px">✕</button>
+      </div>
+      <div id="aiBody" class="ai-body">Click an action below.</div>
+      <div class="ai-acts">
+        <button class="btn btn-ghost btn-sm" onclick="aiMgrDraft()">📝 Draft Comments</button>
+        <button class="btn btn-ghost btn-sm" onclick="aiDevPlan()">🎯 Dev Plan</button>
+        <button class="btn btn-ghost btn-sm" onclick="aiMgrBias()">⚖️ Bias Check</button>
+        <button class="btn btn-ghost btn-sm" onclick="aiFlightRisk()">⚠️ Flight Risk</button>
+        <button class="btn btn-ghost btn-sm" onclick="aiUseText('mgrComments')">← Use as Comments</button>
+        <button class="btn btn-ghost btn-sm" onclick="aiUseText('mgrDevPlan')">← Use as Dev Plan</button>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;justify-content:flex-end">
+      <button class="btn btn-secondary" onclick="saveMgrDraft('${appr.id}')">💾 Save Draft</button>
+      <button class="btn btn-primary" onclick="submitMgr('${appr.id}','${selEmp.id}')">Submit Review →</button>
+    </div>` : ""}`;
+  }
+
+  setContent(`
+  <div class="section-title">Manager Review</div>
+  <div class="section-sub">${C.cycleName} · ${reportees.length} direct report${reportees.length!==1?"s":""}</div>
+  <div style="display:grid;grid-template-columns:270px 1fr;gap:20px" class="two-col">
+    <div>
+      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">My Team</div>
+      <div class="emp-list">${sidebar}</div>
+    </div>
+    <div>${main}</div>
+  </div>`);
+
+  // Load Jira if enabled
+  if (C.jiraOn && isReady) {
+    fetchJira(selEmp.email).then(tickets => {
+      const jc = el("jiraContent");
+      if (!jc) return;
+      if (!tickets.length) { jc.innerHTML = `<div style="color:var(--text3);font-size:13px">No tickets found for ${selEmp.name}.</div>`; return; }
+      jc.innerHTML = tickets.map(t =>
+        `<div style="display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)">
+          <span style="font-size:11px;color:var(--info);font-weight:700">${t.id}</span>
+          <span style="flex:1;font-size:13px">${t.title}</span>
+          <span style="font-size:11px;color:var(--text3)">${t.pts}pts</span>
+          <span style="font-size:11px;color:var(--success)">${t.status}</span>
+        </div>`
+      ).join("");
+    });
+  }
+}
+
+function selectEmp(empId) {
+  S.selectedEmpId = empId;
+  S.mgrR = {}; S.mgrComments = ""; S.mgrDevPlan = ""; S.aiText = "";
+  viewManager();
+}
+
+// ── AI actions (manager) ──────────────────────────
+async function aiMgrDraft() {
+  const emp = S.employees.find(e => e.id === S.selectedEmpId);
+  showAiThinking();
+  const text = await callAI(
+    `Write manager performance feedback for ${emp.name} (${emp.role}, ${emp.squad} squad, ${tenure(emp.joiningDate)} tenure at Finzly). ` +
+    `Manager ratings: ${COMPS.map(c=>`${c.l}: ${S.mgrR[c.k]||"?"}/5`).join(", ")}. ` +
+    `Write 3–4 sentences in third person: specific, constructive, and growth-oriented.`
+  );
+  el("aiBody").textContent = text;
+}
+
+async function aiDevPlan() {
+  const emp = S.employees.find(e => e.id === S.selectedEmpId);
+  const low = COMPS.filter(c=>S.mgrR[c.k]).sort((a,b)=>(S.mgrR[a.k]||5)-(S.mgrR[b.k]||5)).slice(0,2).map(c=>c.l).join(", ");
+  showAiThinking();
+  const text = await callAI(
+    `Create a 3-point development plan for ${emp.name} (${emp.role}) for the next 6 months at Finzly. ` +
+    `Focus on their lowest areas: ${low||"technical and delivery skills"}. ` +
+    `Each point should be actionable, specific, and include a way to measure progress.`
+  );
+  el("aiBody").textContent = text;
+}
+
+async function aiMgrBias() {
+  const c = el("mgrComments")?.value || S.mgrComments;
+  if (!c.trim()) { toast("Write manager comments first","info"); return; }
+  showAiThinking();
+  const text = await callAI(`Review this manager feedback for unconscious bias, vague language, or non-specific statements: "${c}". Flag specific issues and suggest 2–3 improvements.`);
+  el("aiBody").textContent = text;
+}
+
+async function aiFlightRisk() {
+  const emp = S.employees.find(e => e.id === S.selectedEmpId);
+  const tn = tenure(emp.joiningDate);
+  showAiThinking();
+  const text = await callAI(
+    `Assess flight/attrition risk for ${emp.name} (${emp.role}, ${emp.squad}), tenure ${tn}. ` +
+    `Manager rating: ${avg(S.mgrR)||"not yet rated"}/5. ` +
+    `Context: at Finzly, the under-12-month cohort has the highest exit rate. ` +
+    `Give a brief risk assessment (Low/Medium/High) and 2 specific retention actions.`
+  );
+  el("aiBody").textContent = text;
+}
+
+// ── Save / Submit (manager) ─────────────────────
+async function saveMgrDraft(itemId) {
+  if (el("mgrComments")) S.mgrComments = el("mgrComments").value;
+  if (el("mgrDevPlan"))  S.mgrDevPlan  = el("mgrDevPlan").value;
+  loading("Saving…");
+  try {
+    await saveAppraisal(buildMgrFields("ManagerReviewing"), itemId);
+    toast("Draft saved ✓","success");
+  } catch(e) { toast("Save failed: "+e.message,"error"); }
+  doneLoading();
+}
+
+async function submitMgr(itemId, empId) {
+  const unrated = COMPS.filter(c => !S.mgrR[c.k]);
+  if (unrated.length) { toast(`Rate all competencies (missing: ${unrated.map(c=>c.l.split(" ")[0]).join(", ")})`, "error"); return; }
+  if (el("mgrComments")) S.mgrComments = el("mgrComments").value;
+  if (el("mgrDevPlan"))  S.mgrDevPlan  = el("mgrDevPlan").value;
+  if (!S.mgrComments.trim()) { toast("Please add manager comments","error"); return; }
+  if (!confirm("Submit manager review? The employee will be notified by email.")) return;
+
+  loading("Submitting…");
+  try {
+    await saveAppraisal({ ...buildMgrFields("Completed"), MgrReviewedDate:new Date().toISOString() }, itemId);
+    const emp = S.employees.find(e => e.id === empId);
+    if (emp) await notifyMgrDone(emp);
+    toast("Review submitted! Employee notified ✓","success");
+    S.selectedEmpId = null;
+    await viewManager();
+  } catch(e) { toast("Submit failed: "+e.message,"error"); }
+  doneLoading();
+}
+
+function buildMgrFields(status) {
+  return {
+    Status:              status,
+    MgrRatingTech:       S.mgrR.Tech||0, MgrRatingDelivery:S.mgrR.Delivery||0,
+    MgrRatingCollab:     S.mgrR.Collab||0, MgrRatingComms:S.mgrR.Comms||0,
+    MgrRatingInnovation: S.mgrR.Innovation||0, MgrRatingLeadership:S.mgrR.Leadership||0,
+    MgrComments:         S.mgrComments, MgrDevPlan:S.mgrDevPlan,
+  };
+}
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║                    HR DASHBOARD VIEW                       ║
+// ╚══════════════════════════════════════════════════════════════╝
+async function viewHR(readOnly = false) {
+  S.view = "hr";
+  renderNav();
+  loading("Loading appraisal data…");
+  try { S.allAppraisals = await getAllAppraisals(); } catch(e) { S.allAppraisals = []; }
+  doneLoading();
+
+  const total     = S.employees.length;
+  const submitted = S.allAppraisals.filter(a => ["SelfSubmitted","ManagerReviewing","Completed"].includes(a.fields?.Status)).length;
+  const completed = S.allAppraisals.filter(a => a.fields?.Status === "Completed").length;
+  const pending   = total - submitted;
+  const pct       = total ? Math.round(submitted/total*100) : 0;
+
+  const trows = S.employees.map(emp => {
+    const a     = S.allAppraisals.find(x => x.fields?.EmployeeID === emp.id);
+    const s     = a?.fields?.Status || "NotStarted";
+    const sAvg  = a ? avg({ Tech:a.fields?.SelfRatingTech, Delivery:a.fields?.SelfRatingDelivery,
+      Collab:a.fields?.SelfRatingCollab, Comms:a.fields?.SelfRatingComms,
+      Innovation:a.fields?.SelfRatingInnovation, Leadership:a.fields?.SelfRatingLeadership }) : null;
+    const mAvg  = s==="Completed" ? avg({ Tech:a.fields?.MgrRatingTech, Delivery:a.fields?.MgrRatingDelivery,
+      Collab:a.fields?.MgrRatingCollab, Comms:a.fields?.MgrRatingComms,
+      Innovation:a.fields?.MgrRatingInnovation, Leadership:a.fields?.MgrRatingLeadership }) : null;
+    const tn    = tenure(emp.joiningDate);
+    const risk  = tn.includes("mo") || parseFloat(tn) < 1.3;
+
+    return `<tr>
+      <td><div style="display:flex;gap:9px;align-items:center">
+        <div class="emp-av" style="width:32px;height:32px;font-size:12px;border-radius:8px;flex-shrink:0">${emp.name.charAt(0)}</div>
+        <div><div style="font-weight:600;font-size:13px">${emp.name}</div>
+        <div style="font-size:11px;color:var(--text3)">${emp.id}</div></div>
+      </div></td>
+      <td><div style="font-size:12px">${emp.role}</div><div style="font-size:11px;color:var(--text3)">${emp.squad}</div></td>
+      <td style="font-size:12px">${emp.manager||"—"}</td>
+      <td>${tn} ${risk?`<span class="badge b-risk" style="margin-left:4px;font-size:10px">Risk</span>`:""}</td>
+      <td>${badge(s)}</td>
+      <td><span style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:${sAvg?"var(--accent)":"var(--text3)"}">${sAvg||"—"}</span></td>
+      <td><span style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:${mAvg?"var(--success)":"var(--text3)"}">${mAvg||"—"}</span></td>
+    </tr>`;
+  }).join("");
+
+  setContent(`
+  <div class="section-title">${readOnly ? "Org Performance Overview" : "HR Dashboard"}</div>
+  <div class="section-sub">
+    ${C.cycleName} · ${total} employees · Deadline: ${C.deadline}
+    ${readOnly ? `<span class="badge b-sub" style="margin-left:10px;vertical-align:middle">Read Only</span>` : ""}
+  </div>
+
+  <!-- Stats -->
+  <div class="g4 mb6">
+    ${[
+      { l:"Total Employees", v:total,     c:"var(--info)",    s:"Active headcount" },
+      { l:"Self-Submitted",  v:submitted, c:"var(--accent)",  s:`${pct}% of cycle` },
+      { l:"Fully Complete",  v:completed, c:"var(--success)", s:"Both sides done" },
+      { l:"Not Started",     v:pending,   c:"var(--error)",   s:"Need reminder" },
+    ].map(x => `<div class="card stat-card">
+      <div class="s-lbl">${x.l}</div>
+      <div class="s-val" style="color:${x.c}">${x.v}</div>
+      <div class="s-sub">${x.s}</div>
+    </div>`).join("")}
+  </div>
+
+  <!-- Progress + actions -->
+  <div class="card mb6" style="padding:18px 22px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px">
+      <div style="font-weight:700;font-size:13px">Cycle Completion — ${pct}%</div>
+      <div style="display:flex;gap:8px">
+        ${!readOnly ? `<button class="btn btn-ghost btn-sm" onclick="sendAllReminders()">📧 Send Reminders</button>` : ""}
+        <button class="btn btn-secondary btn-sm" onclick="exportCSV()">⬇ Export CSV</button>
+      </div>
+    </div>
+    <div class="pbar" style="height:7px;margin-bottom:8px"><div class="pfill" style="width:${pct}%"></div></div>
+    <div style="font-size:12px;color:var(--text3)">${submitted} of ${total} self-appraisals submitted · ${completed} fully reviewed</div>
+  </div>
+
+  <!-- Table -->
+  <div class="card" style="overflow:hidden">
+    <div class="ch">
+      <span class="ct">All Employees — ${C.cycleName}</span>
+      <span style="font-size:12px;color:var(--text3)">${total} employees</span>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="dtable">
+        <thead><tr>
+          <th>Employee</th><th>Role &amp; Squad</th><th>Manager</th>
+          <th>Tenure</th><th>Status</th><th>Self Avg</th><th>Mgr Avg</th>
+        </tr></thead>
+        <tbody>${trows}</tbody>
+      </table>
+    </div>
+  </div>`);
+}
+
+async function sendAllReminders() {
+  if (!confirm("Send reminder emails to all employees who haven't submitted?")) return;
+  loading("Sending reminders…");
+  const n = await sendBulkReminders();
+  doneLoading();
+  toast(`Reminder emails sent to ${n} employee${n!==1?"s":""}`, "success");
+}
+
+function exportCSV() {
+  const hdrs = ["ID","Name","Role","Squad","Manager","Tenure","Status","Self Avg","Mgr Avg"];
+  const rows = S.employees.map(emp => {
+    const a = S.allAppraisals.find(x => x.fields?.EmployeeID === emp.id);
+    const sA = a ? avg({ Tech:a.fields?.SelfRatingTech, Delivery:a.fields?.SelfRatingDelivery,
+      Collab:a.fields?.SelfRatingCollab, Comms:a.fields?.SelfRatingComms,
+      Innovation:a.fields?.SelfRatingInnovation, Leadership:a.fields?.SelfRatingLeadership }) : "";
+    const mA = a?.fields?.Status==="Completed" ? avg({ Tech:a.fields?.MgrRatingTech, Delivery:a.fields?.MgrRatingDelivery,
+      Collab:a.fields?.MgrRatingCollab, Comms:a.fields?.MgrRatingComms,
+      Innovation:a.fields?.MgrRatingInnovation, Leadership:a.fields?.MgrRatingLeadership }) : "";
+    return [emp.id, emp.name, emp.role, emp.squad, emp.manager, tenure(emp.joiningDate), a?.fields?.Status||"Not Started", sA, mA];
+  });
+  const csv = [hdrs, ...rows].map(r => r.map(v => `"${v||""}"`).join(",")).join("\n");
+  const a = document.createElement("a");
+  a.href = "data:text/csv;charset=utf-8,"+encodeURIComponent(csv);
+  a.download = `Finzly_Appraisals_${C.cycle}.csv`;
+  a.click();
+  toast("CSV exported","success");
+}
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║                      NAVIGATION                            ║
+// ╚══════════════════════════════════════════════════════════════╝
+function renderNav() {
+  const role = S.userRole;
+  const hasTeam = myReportees().length > 0;
+  const tabs = [];
+  if (role === "hr") {
+    tabs.push({ v:"hr",       l:"📊 Dashboard",     fn:"viewHR()" });
+    tabs.push({ v:"self",     l:"📝 My Appraisal",  fn:"viewSelf()" });
+    if (hasTeam) tabs.push({ v:"manager", l:"👥 My Team", fn:"viewManager()" });
+  } else if (role === "leadership") {
+    tabs.push({ v:"hr",       l:"📊 Org Overview",  fn:"viewHR(true)" });
+    tabs.push({ v:"self",     l:"📝 My Appraisal",  fn:"viewSelf()" });
+    if (hasTeam) tabs.push({ v:"manager", l:"👥 My Team", fn:"viewManager()" });
+  } else if (role === "manager") {
+    tabs.push({ v:"manager",  l:"👥 My Team",       fn:"viewManager()" });
+    tabs.push({ v:"self",     l:"📝 My Appraisal",  fn:"viewSelf()" });
+  } else {
+    tabs.push({ v:"self",     l:"📝 My Appraisal",  fn:"viewSelf()" });
+  }
+  el("mainNav").innerHTML = tabs.map(t =>
+    `<button class="nav-tab ${S.view===t.v?"active":""}" onclick="${t.fn}">${t.l}</button>`
+  ).join("");
+}
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║                      BOOT / INIT                           ║
+// ╚══════════════════════════════════════════════════════════════╝
+async function boot(account) {
+  loading("Setting up your workspace…");
+  S.account   = account;
+  S.userName  = account.name || account.username.split("@")[0];
+  S.userEmail = account.username.toLowerCase();
+
+  // Update cycle badge on login screen
+  el("loginCycleBadge").textContent = `${C.cycleName} · Deadline: ${C.deadline}`;
+
+  // Header
+  el("hCycle").textContent    = C.cycleName;
+  el("hDeadline").textContent = C.deadline;
+  el("hUserName").textContent = S.userName;
+  el("hAvatar").textContent   = S.userName.charAt(0).toUpperCase();
+
+  // Load employee data
+  loading("Loading employee data…");
+  S.employees = await loadEmployees();
+
+  // Detect role
+  S.userRole = detectRole(S.userEmail);
+  el("hUserRole").textContent = { hr:"HR Admin", leadership:"Leadership", manager:"Manager", employee:"Employee" }[S.userRole];
+
+  // Show app
+  el("loginScreen").style.display  = "none";
+  el("appContainer").style.display = "block";
+  doneLoading();
+
+  // Route to default view by role
+  if (S.userRole === "hr")            await viewHR();
+  else if (S.userRole === "leadership") await viewHR(true);
+  else if (S.userRole === "manager")  await viewManager();
+  else                                await viewSelf();
+}
+
+// Handle page load + existing sessions
+(async function init() {
+  // Set login screen cycle badge immediately
+  el("loginCycleBadge").textContent = `${C.cycleName} · Deadline: ${C.deadline}`;
+
+  await msal_.initialize();
+  try {
+    const r = await msal_.handleRedirectPromise();
+    if (r) { msal_.setActiveAccount(r.account); await boot(r.account); return; }
+  } catch {}
+  const accs = msal_.getAllAccounts();
+  if (accs.length) { msal_.setActiveAccount(accs[0]); await boot(accs[0]); return; }
+  el("loginScreen").style.display = "flex";
+})();
+</script>
 </body>
 </html>
