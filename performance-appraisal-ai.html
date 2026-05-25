@@ -5,14 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Finzly | Performance Appraisal</title>
   <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
       --bg:#0f1117; --bg2:#0c0f1a; --card:#161b2e; --border:#1e2a45; --border2:#2a3550;
       --accent:#f59e0b; --accent2:#d97706; --text:#e2e8f0; --text2:#94a3b8; --text3:#64748b;
-      --success:#10b981; --error:#ef4444; --info:#6366f1;
+      --success:#10b981; --error:#ef4444; --info:#6366f1; --warn:#eab308;
     }
     body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
     ::-webkit-scrollbar { width:4px; height:4px; }
@@ -27,11 +26,10 @@
     .login-logo { display:flex; align-items:center; justify-content:center; gap:11px; margin-bottom:28px; }
     .login-icon { width:46px; height:46px; background:linear-gradient(135deg,var(--accent),var(--accent2));
       border-radius:13px; display:flex; align-items:center; justify-content:center; font-size:22px; }
-    .login-brand { text-align:left; }
     .login-brand .name { font-family:'Syne',sans-serif; font-weight:800; font-size:20px; letter-spacing:-.4px; }
-    .login-brand .sub { font-size:9px; color:var(--text3); letter-spacing:1.8px; }
+    .login-brand .sub  { font-size:9px; color:var(--text3); letter-spacing:1.8px; }
     .login-card h1 { font-family:'Syne',sans-serif; font-weight:800; font-size:22px; margin-bottom:6px; }
-    .login-sub { color:var(--text3); font-size:13px; margin-bottom:14px; }
+    .login-sub  { color:var(--text3); font-size:13px; margin-bottom:14px; }
     .cycle-badge { display:inline-block; background:var(--accent)18; border:1px solid var(--accent)44;
       color:var(--accent); padding:4px 14px; border-radius:20px; font-size:11px; font-weight:700; margin-bottom:28px; }
     .btn-ms { width:100%; padding:13px; background:linear-gradient(135deg,var(--accent),var(--accent2));
@@ -45,13 +43,13 @@
     #appHeader { background:var(--bg2); border-bottom:1px solid var(--border); height:60px;
       padding:0 28px; display:flex; align-items:center; justify-content:space-between;
       position:sticky; top:0; z-index:100; }
-    .h-left { display:flex; align-items:center; gap:14px; }
-    .h-logo { display:flex; align-items:center; gap:9px; }
-    .h-icon { width:34px; height:34px; background:linear-gradient(135deg,var(--accent),var(--accent2));
+    .h-left  { display:flex; align-items:center; gap:14px; }
+    .h-logo  { display:flex; align-items:center; gap:9px; }
+    .h-icon  { width:34px; height:34px; background:linear-gradient(135deg,var(--accent),var(--accent2));
       border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:16px; }
     .h-brand .name { font-family:'Syne',sans-serif; font-weight:800; font-size:14px; }
-    .h-brand .sub { font-size:9px; color:var(--text3); letter-spacing:1.4px; margin-top:-2px; }
-    .vd { width:1px; height:28px; background:var(--border); }
+    .h-brand .sub  { font-size:9px; color:var(--text3); letter-spacing:1.4px; margin-top:-2px; }
+    .vd   { width:1px; height:28px; background:var(--border); }
     .h-meta { font-size:12px; color:var(--text3); }
     .h-meta b { color:var(--accent); font-weight:600; }
     .h-right { display:flex; align-items:center; gap:12px; }
@@ -70,7 +68,7 @@
     .nav-tab { padding:0 16px; height:44px; display:flex; align-items:center; border:none; background:none;
       color:var(--text3); font-family:'DM Sans',sans-serif; font-size:13px; font-weight:500;
       cursor:pointer; border-bottom:2px solid transparent; transition:all .2s; white-space:nowrap; }
-    .nav-tab:hover { color:var(--text); }
+    .nav-tab:hover  { color:var(--text); }
     .nav-tab.active { color:var(--accent); border-bottom-color:var(--accent); font-weight:600; }
 
     /* ── LAYOUT ── */
@@ -78,37 +76,34 @@
     .fade-in { animation:fadeIn .3s ease; }
     @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
     .g2 { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
-    .g3 { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
     .g4 { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
-    .mb4 { margin-bottom:16px; }
-    .mb6 { margin-bottom:24px; }
+    .mb4 { margin-bottom:16px; } .mb6 { margin-bottom:24px; }
 
     /* ── CARDS ── */
     .card { background:var(--card); border:1px solid var(--border); border-radius:14px; }
-    .cb { padding:22px; }
-    .ch { padding:16px 22px; border-bottom:1px solid var(--border);
-      display:flex; align-items:center; justify-content:space-between; }
-    .ct { font-weight:700; font-size:11px; color:var(--text3); text-transform:uppercase; letter-spacing:.8px; }
+    .cb   { padding:22px; }
+    .ch   { padding:14px 22px; border-bottom:1px solid var(--border);
+      display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+    .ct   { font-weight:700; font-size:11px; color:var(--text3); text-transform:uppercase; letter-spacing:.8px; }
     .section-title { font-family:'Syne',sans-serif; font-weight:800; font-size:24px; margin-bottom:5px; }
-    .section-sub { color:var(--text3); font-size:13px; margin-bottom:24px; }
+    .section-sub   { color:var(--text3); font-size:13px; margin-bottom:24px; }
 
     /* ── BUTTONS ── */
     .btn { padding:9px 18px; border-radius:9px; font-family:'DM Sans',sans-serif; font-size:13px;
       font-weight:600; cursor:pointer; transition:all .2s; border:none;
       display:inline-flex; align-items:center; gap:6px; }
-    .btn-primary { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#0f1117; }
-    .btn-primary:hover { opacity:.9; transform:translateY(-1px); }
+    .btn-primary   { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#0f1117; }
+    .btn-primary:hover  { opacity:.9; transform:translateY(-1px); }
     .btn-secondary { background:var(--border); color:var(--text2); }
     .btn-secondary:hover { background:var(--border2); color:var(--text); }
-    .btn-ghost { background:var(--accent)15; border:1px solid var(--accent)44; color:var(--accent); }
+    .btn-ghost     { background:var(--accent)15; border:1px solid var(--accent)44; color:var(--accent); }
     .btn-ghost:hover { background:var(--accent)25; }
-    .btn-info { background:var(--info)15; border:1px solid var(--info)44; color:#818cf8; }
-    .btn-sm { padding:6px 12px; font-size:12px; border-radius:7px; }
-    .btn:disabled { opacity:.45; cursor:not-allowed; transform:none !important; }
+    .btn-sm        { padding:6px 12px; font-size:12px; border-radius:7px; }
+    .btn:disabled  { opacity:.45; cursor:not-allowed; transform:none !important; }
 
     /* ── FORMS ── */
-    .form-group { margin-bottom:20px; }
-    .form-label { display:block; font-size:11px; font-weight:700; color:var(--text2);
+    .form-group  { margin-bottom:20px; }
+    .form-label  { display:block; font-size:11px; font-weight:700; color:var(--text2);
       margin-bottom:8px; text-transform:uppercase; letter-spacing:.6px; }
     textarea, input[type=text] { background:var(--bg); border:1px solid var(--border);
       border-radius:10px; color:var(--text); padding:12px 14px; font-family:'DM Sans',sans-serif;
@@ -116,57 +111,107 @@
     textarea { resize:vertical; min-height:90px; }
     textarea:focus, input[type=text]:focus { border-color:var(--accent)66; }
     .readonly-field { background:var(--bg); border:1px solid var(--border); border-radius:10px;
-      padding:12px 14px; font-size:13px; color:var(--text2); min-height:60px; line-height:1.7; }
+      padding:12px 14px; font-size:13px; color:var(--text2); min-height:46px; line-height:1.7; }
 
-    /* ── STAR RATINGS ── */
-    .rating-row { display:flex; align-items:center; gap:16px; padding:14px 0; border-bottom:1px solid var(--border); }
-    .rating-row:last-child { border-bottom:none; }
-    .rating-info { flex:1; }
-    .rating-name { font-weight:600; font-size:14px; color:var(--text); }
-    .rating-desc { font-size:11px; color:var(--text3); margin-top:2px; }
-    .stars { display:flex; gap:5px; }
+    /* ── QUESTION ITEM ── */
+    .q-section-hdr { display:flex; align-items:center; gap:12px; padding:20px 0 8px; }
+    .q-sec-line    { flex:1; height:1px; background:var(--border); }
+    .q-sec-name    { font-size:10px; font-weight:800; color:var(--accent); text-transform:uppercase;
+      letter-spacing:1.4px; white-space:nowrap; }
+    .q-item   { padding:16px 0; border-bottom:1px solid var(--border)88; }
+    .q-item:last-child { border-bottom:none; }
+    .q-label  { font-size:13px; font-weight:600; color:var(--text); margin-bottom:3px; line-height:1.5; }
+    .q-desc   { font-size:11px; color:var(--text3); margin-bottom:10px; }
+    .q-req    { color:var(--accent); margin-left:2px; font-size:14px; line-height:1; }
+
+    /* ── STARS ── */
+    .stars-row { display:flex; align-items:center; gap:14px; }
+    .stars     { display:flex; gap:5px; }
     .star { width:32px; height:32px; border-radius:8px; border:1px solid var(--border);
       background:var(--bg); display:flex; align-items:center; justify-content:center;
       cursor:pointer; font-size:16px; transition:all .12s; color:var(--text3); user-select:none; }
-    .star.on { background:var(--accent)20; border-color:var(--accent)55; color:var(--accent); }
+    .star.on    { background:var(--accent)20; border-color:var(--accent)55; color:var(--accent); }
     .star:hover { border-color:var(--accent)44; color:var(--accent); }
-    .r-val { font-family:'Syne',sans-serif; font-weight:800; font-size:18px; color:var(--accent); width:26px; text-align:right; }
-    .r-lbl { font-size:11px; color:var(--text3); width:150px; }
+    .s-val  { font-family:'Syne',sans-serif; font-weight:800; font-size:18px; color:var(--accent); min-width:24px; text-align:right; }
+    .s-lbl2 { font-size:11px; color:var(--text3); min-width:150px; }
     /* read-only stars */
-    .ro-star { width:26px; height:26px; border-radius:6px; background:var(--accent)20;
-      border:1px solid var(--accent)44; color:var(--accent); display:flex;
+    .ro-star { width:26px; height:26px; border-radius:6px; display:flex;
       align-items:center; justify-content:center; font-size:13px; }
-    .ro-star.off { background:var(--border); border-color:var(--border2); color:var(--text3); }
+    .ro-star.on  { background:var(--accent)20; border:1px solid var(--accent)44; color:var(--accent); }
+    .ro-star.off { background:var(--border); border:1px solid var(--border2); color:var(--text3); }
 
-    /* ── BADGES ── */
-    .badge { display:inline-flex; align-items:center; padding:3px 10px; border-radius:6px;
-      font-size:11px; font-weight:700; }
-    .b-draft    { background:var(--border);        color:var(--text3); }
-    .b-sub      { background:var(--info)20; border:1px solid var(--info)44; color:#818cf8; }
-    .b-review   { background:var(--accent)15; border:1px solid var(--accent)44; color:var(--accent); }
-    .b-done     { background:var(--success)15; border:1px solid var(--success)44; color:var(--success); }
-    .b-risk     { background:var(--error)15; border:1px solid var(--error)44; color:var(--error); }
-    .b-none     { background:var(--border); color:var(--text3); }
+    /* ── OPTION CHIPS (Likert / Frequency / MCQ / YesNo) ── */
+    .opt-group { display:flex; flex-wrap:wrap; gap:7px; margin-top:4px; }
+    .opt-chip  { padding:7px 15px; border:1px solid var(--border2); border-radius:8px;
+      background:var(--bg); color:var(--text3); font-size:12px; font-weight:500;
+      cursor:pointer; transition:all .15s; user-select:none; }
+    .opt-chip:hover   { border-color:var(--accent)55; color:var(--text); }
+    .opt-chip.sel     { background:var(--accent)18; border-color:var(--accent); color:var(--accent); font-weight:700; }
+    .opt-chip.ro      { cursor:default; }
+    .opt-chip.ro:hover { border-color:var(--border2); color:var(--text3); }
+    .opt-chip.ro.sel  { cursor:default; }
+    /* Frequency color hints */
+    .opt-chip[data-v="Never"].sel    { background:#ef444418; border-color:#ef4444; color:#ef4444; }
+    .opt-chip[data-v="Rarely"].sel   { background:#f9731618; border-color:#f97316; color:#f97316; }
+    .opt-chip[data-v="Sometimes"].sel{ background:var(--warn)18; border-color:var(--warn); color:var(--warn); }
+    .opt-chip[data-v="Often"].sel    { background:var(--accent)18; border-color:var(--accent); color:var(--accent); }
+    .opt-chip[data-v="Always"].sel   { background:var(--success)18; border-color:var(--success); color:var(--success); }
+    /* Likert color hints */
+    .opt-chip[data-v="Strongly Disagree"].sel { background:#ef444418; border-color:#ef4444; color:#ef4444; }
+    .opt-chip[data-v="Disagree"].sel          { background:#f9731618; border-color:#f97316; color:#f97316; }
+    .opt-chip[data-v="Neutral"].sel           { background:var(--warn)18; border-color:var(--warn); color:var(--warn); }
+    .opt-chip[data-v="Agree"].sel             { background:var(--accent)18; border-color:var(--accent); color:var(--accent); }
+    .opt-chip[data-v="Strongly Agree"].sel    { background:var(--success)18; border-color:var(--success); color:var(--success); }
+    /* YesNo */
+    .opt-chip[data-v="Yes"].sel        { background:var(--success)18; border-color:var(--success); color:var(--success); }
+    .opt-chip[data-v="Partially"].sel  { background:var(--warn)18;    border-color:var(--warn);    color:var(--warn); }
+    .opt-chip[data-v="No"].sel         { background:#ef444418; border-color:#ef4444; color:#ef4444; }
+    .opt-chip[data-v="Not Yet"].sel    { background:var(--warn)18; border-color:var(--warn); color:var(--warn); }
+
+    /* ── NPS ── */
+    .nps-row  { display:flex; gap:5px; flex-wrap:wrap; margin-top:6px; }
+    .nps-btn  { width:40px; height:36px; border-radius:8px; border:1px solid var(--border2);
+      background:var(--bg); color:var(--text3); font-size:12px; font-weight:700;
+      cursor:pointer; transition:all .15s; display:flex; align-items:center; justify-content:center;
+      user-select:none; }
+    .nps-btn:hover { border-color:var(--accent)44; color:var(--text); }
+    .nps-btn.sel { font-weight:800; }
+    .nps-btn.sel.c0  { background:#ef444420; border-color:#ef4444; color:#ef4444; }
+    .nps-btn.sel.c1  { background:#f9731620; border-color:#f97316; color:#f97316; }
+    .nps-btn.sel.c2  { background:var(--warn)20; border-color:var(--warn); color:var(--warn); }
+    .nps-btn.sel.c3  { background:var(--accent)20; border-color:var(--accent); color:var(--accent); }
+    .nps-btn.sel.c4  { background:var(--success)20; border-color:var(--success); color:var(--success); }
+    .nps-labels { display:flex; justify-content:space-between; margin-top:5px;
+      font-size:10px; color:var(--text3); }
+
+    /* ── PROGRESS BAR ── */
+    .pbar  { height:5px; background:var(--border); border-radius:3px; overflow:hidden; }
+    .pfill { height:100%; background:linear-gradient(90deg,var(--accent),var(--accent2));
+      border-radius:3px; transition:width .6s ease; }
+
+    /* ── BADGE ── */
+    .badge     { display:inline-flex; align-items:center; padding:3px 10px; border-radius:6px; font-size:11px; font-weight:700; }
+    .b-draft   { background:var(--border); color:var(--text3); }
+    .b-sub     { background:var(--info)20;    border:1px solid var(--info)44;    color:#818cf8; }
+    .b-review  { background:var(--accent)15;  border:1px solid var(--accent)44;  color:var(--accent); }
+    .b-done    { background:var(--success)15; border:1px solid var(--success)44; color:var(--success); }
+    .b-risk    { background:var(--error)15;   border:1px solid var(--error)44;   color:var(--error); }
+    .b-none    { background:var(--border); color:var(--text3); }
 
     /* ── STATS ── */
     .stat-card { padding:20px; }
-    .s-lbl { font-size:11px; font-weight:700; color:var(--text3); text-transform:uppercase; letter-spacing:.8px; margin-bottom:10px; }
-    .s-val { font-family:'Syne',sans-serif; font-weight:800; font-size:32px; line-height:1; }
-    .s-sub { font-size:12px; color:var(--text3); margin-top:6px; }
+    .s-lbl3    { font-size:11px; font-weight:700; color:var(--text3); text-transform:uppercase;
+      letter-spacing:.8px; margin-bottom:10px; }
+    .s-val3    { font-family:'Syne',sans-serif; font-weight:800; font-size:32px; line-height:1; }
+    .s-sub3    { font-size:12px; color:var(--text3); margin-top:6px; }
 
     /* ── TABLE ── */
-    .dtable { width:100%; border-collapse:collapse; }
-    .dtable th { padding:11px 16px; text-align:left; font-size:11px; font-weight:700;
-      color:var(--text3); text-transform:uppercase; letter-spacing:.8px;
-      background:var(--bg); border-bottom:1px solid var(--border); }
+    .dtable    { width:100%; border-collapse:collapse; }
+    .dtable th { padding:11px 16px; text-align:left; font-size:11px; font-weight:700; color:var(--text3);
+      text-transform:uppercase; letter-spacing:.8px; background:var(--bg); border-bottom:1px solid var(--border); }
     .dtable td { padding:13px 16px; font-size:13px; border-bottom:1px solid var(--border); vertical-align:middle; }
     .dtable tr:last-child td { border-bottom:none; }
     .dtable tbody tr:hover td { background:#ffffff05; }
-
-    /* ── PROGRESS ── */
-    .pbar { height:5px; background:var(--border); border-radius:3px; overflow:hidden; }
-    .pfill { height:100%; background:linear-gradient(90deg,var(--accent),var(--accent2));
-      border-radius:3px; transition:width .6s ease; }
 
     /* ── EMPLOYEE SELECTOR ── */
     .emp-list { display:flex; flex-direction:column; gap:7px; }
@@ -174,21 +219,20 @@
       background:var(--bg); border:1px solid var(--border); border-radius:11px;
       cursor:pointer; transition:all .15s; }
     .emp-item:hover { border-color:var(--border2); }
-    .emp-item.sel { border-color:var(--accent)55; background:var(--accent)07; }
+    .emp-item.sel   { border-color:var(--accent)55; background:var(--accent)07; }
     .emp-av { width:38px; height:38px; background:linear-gradient(135deg,#1e2a45,#2a3550);
       border-radius:10px; display:flex; align-items:center; justify-content:center;
-      font-weight:700; font-size:15px; color:var(--accent); flex-shrink:0;
-      border:1px solid var(--border2); }
+      font-weight:700; font-size:15px; color:var(--accent); flex-shrink:0; border:1px solid var(--border2); }
 
     /* ── AI PANEL ── */
     .ai-panel { background:linear-gradient(135deg,#161b2e,#1a2040);
       border:1px solid #2a3a6a; border-radius:14px; padding:20px; }
-    .ai-ph { display:flex; align-items:center; gap:8px; margin-bottom:14px; }
-    .ai-ic { width:28px; height:28px; background:var(--accent)20; border-radius:7px;
+    .ai-ph  { display:flex; align-items:center; gap:8px; margin-bottom:14px; }
+    .ai-ic  { width:28px; height:28px; background:var(--accent)20; border-radius:7px;
       display:flex; align-items:center; justify-content:center; color:var(--accent); font-size:14px; }
     .ai-body { font-size:13px; color:var(--text2); line-height:1.8; white-space:pre-wrap; min-height:60px; }
     .ai-acts { display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }
-    .pulse { animation:pulse 1.8s infinite; }
+    .pulse  { animation:pulse 1.8s infinite; }
     @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.4} }
 
     /* ── TOAST ── */
@@ -208,11 +252,11 @@
       border-top-color:var(--accent); border-radius:50%; animation:spin .7s linear infinite; }
     @keyframes spin { to{transform:rotate(360deg)} }
 
-    /* ── RESPONSIVE ── */
     @media(max-width:768px) {
-      .g2,.g3,.g4 { grid-template-columns:1fr; }
+      .g2,.g4 { grid-template-columns:1fr; }
       #mainContent { padding:16px; }
       .two-col { grid-template-columns:1fr !important; }
+      .opt-chip { font-size:11px; padding:6px 10px; }
     }
   </style>
 </head>
@@ -230,7 +274,7 @@
     </div>
     <h1>Performance Review</h1>
     <p class="login-sub">Bi-annual appraisal system</p>
-    <div class="cycle-badge" id="loginCycleBadge">Loading cycle...</div>
+    <div class="cycle-badge" id="loginCycleBadge">Loading cycle…</div>
     <button class="btn-ms" onclick="signIn()">
       <svg width="18" height="18" viewBox="0 0 21 21"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>
       Sign in with Microsoft
@@ -245,10 +289,7 @@
     <div class="h-left">
       <div class="h-logo">
         <div class="h-icon">⚡</div>
-        <div class="h-brand">
-          <div class="name">FINZLY</div>
-          <div class="sub">APPRAISALS</div>
-        </div>
+        <div class="h-brand"><div class="name">FINZLY</div><div class="sub">APPRAISALS</div></div>
       </div>
       <div class="vd"></div>
       <div class="h-meta">Cycle: <b id="hCycle">—</b></div>
@@ -279,76 +320,334 @@
 <script>
 // ╔══════════════════════════════════════════════════════════════╗
 // ║                      CONFIGURATION                          ║
-// ║  ⚠️  Update the values marked ← EDIT before deploying      ║
 // ╚══════════════════════════════════════════════════════════════╝
 const C = {
-  // Azure AD — same as leadership dashboard
   clientId:   "d893026d-d1c9-4285-947a-0a672018b8d1",
   tenantId:   "4d4c58f7-6978-4a93-ba72-f1d987c46c89",
   redirectUri: window.location.origin + window.location.pathname,
-
-  // SharePoint — ← EDIT these two lines
-  spDomain:   "finzly.sharepoint.com",   // ← your SharePoint domain
-  spSitePath: "/sites/HR",               // ← your HR SharePoint site path
-
-  // The appraisal responses will be saved here (auto-created on first run)
+  spDomain:   "finzly.sharepoint.com",   // ← EDIT
+  spSitePath: "/sites/HR",               // ← EDIT
   listName:   "FinzlyAppraisals",
-
-  // Employee master file (reused from leadership dashboard)
   fileId:     "788b3929-4077-4e6e-9909-e26c071ffab4",
-
-  // Current appraisal cycle — ← UPDATE each cycle
   cycle:       "FY2024-25-H2",
   cycleName:   "FY 2024–25 H2",
   deadline:    "31 Mar 2025",
   deadlineISO: "2025-03-31",
-
-  // AI proxy — after setting up Cloudflare Worker, paste URL here ← EDIT
-  aiUrl:      "https://YOUR_WORKER.workers.dev/ai",
-
-  // Jira — set jiraOn:true once IT provides the API token ← UPDATE when ready
+  aiUrl:      "https://YOUR_WORKER.workers.dev/ai", // ← EDIT
   jiraOn:      false,
-  jiraBase:    "",              // e.g. "https://finzly.atlassian.net"
-  jiraProject: "",              // e.g. "PAY"
-  jiraToken:   "",              // API token from IT
-
-  // HR admin emails — ← EDIT with actual Finzly HR email(s)
-  hrEmails:   ["bharath@finzly.in"],
-
-  // Org-level access (read-only org dashboard) ← EDIT as needed
-  // Detection is automatic by designation title — no email list required.
-  // Add titles exactly as they appear in the employee master file (case-insensitive).
-  orgLevelTitles: ["ceo", "chief executive officer", "chief of staff", "president", "coo", "cto"],
-  // Optional: add specific emails that should get org access regardless of title
-  orgLevelEmails: [],
+  jiraBase:    "",
+  jiraProject: "",
+  jiraToken:   "",
+  hrEmails:   ["bharath@finzly.in"],     // ← EDIT
+  // Org-level access: auto-detected by designation title (case-insensitive)
+  orgLevelTitles: ["ceo","chief executive officer","chief of staff","president","coo","cto","md","managing director"],
+  orgLevelEmails: [],                    // ← add explicit emails if needed
 };
 
-// Performance competencies (edit labels if needed)
-const COMPS = [
-  { k:"Tech",       l:"Technical Excellence",          d:"Quality, depth and impact of technical work" },
-  { k:"Delivery",   l:"Delivery & Execution",          d:"Consistency, velocity and on-time delivery" },
-  { k:"Collab",     l:"Collaboration",                 d:"Team contribution and cross-functional work" },
-  { k:"Comms",      l:"Communication",                 d:"Clarity, documentation and stakeholder updates" },
-  { k:"Innovation", l:"Innovation & Problem Solving",  d:"Creative solutions and proactive improvements" },
-  { k:"Leadership", l:"Leadership & Initiative",       d:"Ownership, mentoring and driving outcomes" },
+// ╔══════════════════════════════════════════════════════════════╗
+// ║                    QUESTION BANK                            ║
+// ║  Types: stars | likert5 | frequency | mcq | yesno | nps    ║
+// ║         textarea | text                                     ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+// Rating labels
+const RLBL = { 0:"—", 1:"Below Expectations", 2:"Partially Meets",
+  3:"Meets Expectations", 4:"Exceeds Expectations", 5:"Outstanding" };
+
+const SELF_QUESTIONS = [
+  // ── Section 1: Competency Ratings ──────────────────────────
+  { id:"Tech",       section:"Competency Ratings", type:"stars",
+    label:"Technical Excellence",          desc:"Quality, depth and impact of technical work", req:true },
+  { id:"Delivery",   section:"Competency Ratings", type:"stars",
+    label:"Delivery & Execution",          desc:"Consistency, velocity and on-time delivery", req:true },
+  { id:"Collab",     section:"Competency Ratings", type:"stars",
+    label:"Collaboration",                 desc:"Team contribution and cross-functional work", req:true },
+  { id:"Comms",      section:"Competency Ratings", type:"stars",
+    label:"Communication",                 desc:"Clarity, documentation and stakeholder updates", req:true },
+  { id:"Innovation", section:"Competency Ratings", type:"stars",
+    label:"Innovation & Problem Solving",  desc:"Creative solutions and proactive improvements", req:true },
+  { id:"Leadership", section:"Competency Ratings", type:"stars",
+    label:"Leadership & Initiative",       desc:"Ownership, mentoring and driving outcomes", req:true },
+
+  // ── Section 2: Work Behaviors ───────────────────────────────
+  { id:"MetDeadlines",        section:"Work Behaviors", type:"frequency", req:true,
+    label:"I consistently delivered on my commitments this cycle" },
+  { id:"CommBlockers",        section:"Work Behaviors", type:"frequency", req:false,
+    label:"I proactively communicated blockers or delays to my team" },
+  { id:"TookInitiative",      section:"Work Behaviors", type:"frequency", req:false,
+    label:"I took initiative beyond my assigned responsibilities" },
+  { id:"CollabEffective",     section:"Work Behaviors", type:"likert5",   req:false,
+    label:"I collaborated effectively with cross-functional teams" },
+  { id:"GrowthArea",          section:"Work Behaviors", type:"mcq",        req:false,
+    label:"Which area did you grow the most in this cycle?",
+    options:["Technical Skills","Domain / Product Knowledge","Communication & Soft Skills","Leadership & Ownership","Process & Quality"] },
+
+  // ── Section 3: Engagement & Wellbeing ───────────────────────
+  { id:"CareerAligned",   section:"Engagement & Wellbeing", type:"yesno",  req:false,
+    label:"My work this cycle was aligned with my career goals",
+    options:["Yes","Partially","No"] },
+  { id:"HadSupport",      section:"Engagement & Wellbeing", type:"yesno",  req:false,
+    label:"I had the tools, resources and support needed to do my best work",
+    options:["Yes","Partially","No"] },
+  { id:"WouldRecommend",  section:"Engagement & Wellbeing", type:"yesno",  req:false,
+    label:"I feel proud to work at Finzly and would recommend it to others",
+    options:["Yes","Partially","No"] },
+  { id:"NPS",             section:"Engagement & Wellbeing", type:"nps",    req:false,
+    label:"How likely are you to recommend Finzly as a great place to work? (0 = Not at all, 10 = Definitely)" },
+
+  // ── Section 4: Open-ended Reflections ───────────────────────
+  { id:"Achievements",    section:"Open-ended Reflections", type:"textarea", req:true,
+    label:"Describe your top 2–3 achievements this cycle",
+    placeholder:"Be specific — what did you deliver, and what was the measurable impact?" },
+  { id:"Challenges",      section:"Open-ended Reflections", type:"textarea", req:false,
+    label:"What challenges did you face, and how did you handle them?",
+    placeholder:"Focus on what you learned and how you adapted…" },
+  { id:"NeedsFromMgr",    section:"Open-ended Reflections", type:"textarea", req:false,
+    label:"What support or resources do you need from your manager next cycle?",
+    placeholder:"Be specific — mentoring, stretch assignments, clearer direction, tools…" },
+  { id:"NextGoals",       section:"Open-ended Reflections", type:"textarea", req:true,
+    label:"Goals for next cycle",
+    placeholder:"List 3–5 specific, measurable goals for the next 6 months…" },
 ];
 
-const RLBL = { 0:"—", 1:"Below Expectations", 2:"Partially Meets", 3:"Meets Expectations", 4:"Exceeds Expectations", 5:"Outstanding" };
+const MGR_QUESTIONS = [
+  // ── Section 1: Competency Ratings ──────────────────────────
+  { id:"Tech",       section:"Competency Ratings", type:"stars",
+    label:"Technical Excellence",         desc:"Quality and depth of technical contributions", req:true },
+  { id:"Delivery",   section:"Competency Ratings", type:"stars",
+    label:"Delivery & Execution",         desc:"Reliability, speed and quality of delivery", req:true },
+  { id:"Collab",     section:"Competency Ratings", type:"stars",
+    label:"Collaboration",                desc:"Teamwork and cross-functional effectiveness", req:true },
+  { id:"Comms",      section:"Competency Ratings", type:"stars",
+    label:"Communication",                desc:"Clarity and effectiveness of communication", req:true },
+  { id:"Innovation", section:"Competency Ratings", type:"stars",
+    label:"Innovation & Problem Solving", desc:"Creativity and problem-solving ability", req:true },
+  { id:"Leadership", section:"Competency Ratings", type:"stars",
+    label:"Leadership & Initiative",      desc:"Ownership, initiative and team influence", req:true },
+
+  // ── Section 2: Manager Assessment ───────────────────────────
+  { id:"OwnsWork",        section:"Manager Assessment", type:"likert5", req:true,
+    label:"This employee demonstrates strong ownership and accountability" },
+  { id:"PositiveForce",   section:"Manager Assessment", type:"likert5", req:false,
+    label:"This employee is a positive force in the team" },
+  { id:"StakeholderComms",section:"Manager Assessment", type:"frequency", req:false,
+    label:"This employee communicates proactively with stakeholders" },
+  { id:"QualityOfWork",   section:"Manager Assessment", type:"likert5", req:false,
+    label:"This employee consistently delivers high-quality work" },
+  { id:"ReadyForMore",    section:"Manager Assessment", type:"mcq",     req:true,
+    label:"Is this employee ready for increased responsibilities?",
+    options:["Yes, immediately","Yes, within 6 months","Needs development first","No"] },
+  { id:"PromoReady",      section:"Manager Assessment", type:"yesno",   req:false,
+    label:"Would you recommend this employee for a promotion this cycle?",
+    options:["Yes","Not Yet","No"] },
+  { id:"RetentionRisk",   section:"Manager Assessment", type:"mcq",     req:true,
+    label:"Retention / flight risk assessment",
+    options:["Low — Highly engaged","Medium — Some concerns","High — Likely to leave"] },
+
+  // ── Section 3: Open-ended Manager Feedback ──────────────────
+  { id:"MgrComments",     section:"Manager Feedback", type:"textarea", req:true,
+    label:"Overall manager feedback",
+    placeholder:"Specific, constructive feedback on performance this cycle…" },
+  { id:"Strengths",       section:"Manager Feedback", type:"textarea", req:false,
+    label:"Key strengths to acknowledge",
+    placeholder:"What did this employee do exceptionally well?" },
+  { id:"ImprovAreas",     section:"Manager Feedback", type:"textarea", req:false,
+    label:"Areas for improvement with actionable suggestions",
+    placeholder:"Specific behaviors to develop — not generic statements…" },
+  { id:"MgrDevPlan",      section:"Manager Feedback", type:"textarea", req:true,
+    label:"Development plan for next cycle",
+    placeholder:"3 concrete growth goals with ways to measure progress…" },
+  { id:"HRContext",       section:"Manager Feedback", type:"textarea", req:false,
+    label:"Additional context for HR (confidential)",
+    placeholder:"Anything HR should know about this employee's situation…" },
+];
 
 // ╔══════════════════════════════════════════════════════════════╗
 // ║                         STATE                               ║
 // ╚══════════════════════════════════════════════════════════════╝
 const S = {
-  account: null, userEmail:"", userName:"", userRole:"employee",
-  employees:[], myRec:null, reportees:[],
-  siteId:null, listId:null,
+  account:null, userEmail:"", userName:"", userRole:"employee",
+  employees:[], siteId:null, listId:null,
   view:"", selectedEmpId:null,
-  selfR:{}, selfComments:"", selfGoals:"",
-  mgrR:{},  mgrComments:"",  mgrDevPlan:"",
-  myAppraisal:null,          // my own SP list item
-  allAppraisals:[],          // HR view
-  aiLoading:false, aiText:"",
+  selfAnswers:{},   // all self-appraisal answers keyed by question id
+  mgrAnswers:{},    // all manager review answers keyed by question id
+  myAppraisal:null, allAppraisals:[],
+  aiLoading:false,  aiText:"",
 };
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║                   QUESTION RENDERING                        ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+function groupBySections(questions) {
+  const m = {};
+  for (const q of questions) {
+    if (!m[q.section]) m[q.section] = [];
+    m[q.section].push(q);
+  }
+  return m;
+}
+
+function renderQuestionSection(sectionName, questions, answers, prefix, readOnly) {
+  const items = questions.map(q => renderOneQuestion(q, answers[q.id], prefix, readOnly)).join("");
+  return `
+    <div class="q-section-hdr">
+      <div class="q-sec-line"></div>
+      <div class="q-sec-name">${sectionName}</div>
+      <div class="q-sec-line"></div>
+    </div>
+    ${items}`;
+}
+
+function renderOneQuestion(q, val, prefix, readOnly) {
+  const req = q.req ? `<span class="q-req">*</span>` : "";
+  let widget = "";
+
+  if (q.type === "stars") {
+    widget = renderStarsWidget(q, val||0, prefix, readOnly);
+  } else if (q.type === "likert5") {
+    const opts = ["Strongly Disagree","Disagree","Neutral","Agree","Strongly Agree"];
+    widget = renderChipGroup(q, val||"", prefix, readOnly, opts);
+  } else if (q.type === "frequency") {
+    const opts = ["Never","Rarely","Sometimes","Often","Always"];
+    widget = renderChipGroup(q, val||"", prefix, readOnly, opts);
+  } else if (q.type === "mcq" || q.type === "yesno") {
+    widget = renderChipGroup(q, val||"", prefix, readOnly, q.options);
+  } else if (q.type === "nps") {
+    widget = renderNPS(q, val, prefix, readOnly);
+  } else if (q.type === "textarea") {
+    widget = renderTextarea(q, val||"", prefix, readOnly);
+  } else if (q.type === "text") {
+    widget = readOnly
+      ? `<div class="readonly-field">${val||"—"}</div>`
+      : `<input type="text" id="q-${prefix}-${q.id}" value="${(val||"").replace(/"/g,"&quot;")}" placeholder="${q.placeholder||""}" oninput="setAnswer('${prefix}','${q.id}',this.value)">`;
+  }
+
+  return `<div class="q-item" id="qi-${prefix}-${q.id}">
+    <div class="q-label">${q.label}${req}</div>
+    ${q.desc ? `<div class="q-desc">${q.desc}</div>` : ""}
+    ${widget}
+  </div>`;
+}
+
+function renderStarsWidget(q, val, prefix, readOnly) {
+  const stars = [1,2,3,4,5].map(n => {
+    if (readOnly) {
+      return `<div class="ro-star ${n<=val?"on":"off"}">★</div>`;
+    }
+    return `<div class="star ${n<=val?"on":""}" id="star-${prefix}-${q.id}-${n}"
+      onclick="setStarAnswer('${prefix}','${q.id}',${n})"
+      onmouseover="hoverStars('${prefix}','${q.id}',${n})"
+      onmouseout="unhoverStars('${prefix}','${q.id}')">★</div>`;
+  }).join("");
+  const lbl = RLBL[val] || (readOnly ? "—" : "Click to rate");
+  return `<div class="stars-row">
+    <div class="stars" id="stars-${prefix}-${q.id}">${stars}</div>
+    <div class="s-val" id="sv-${prefix}-${q.id}">${val||"—"}</div>
+    <div class="s-lbl2" id="sl-${prefix}-${q.id}">${lbl}</div>
+  </div>`;
+}
+
+function renderChipGroup(q, val, prefix, readOnly, opts) {
+  const chips = opts.map(o => {
+    const sel = val === o ? "sel" : "";
+    const ro  = readOnly ? "ro" : "";
+    const onclick = readOnly ? "" : `onclick="setAnswer('${prefix}','${q.id}','${o}')"`;
+    return `<div class="opt-chip ${sel} ${ro}" data-qid="${q.id}" data-prefix="${prefix}" data-v="${o}" ${onclick}>${o}</div>`;
+  }).join("");
+  return `<div class="opt-group" id="og-${prefix}-${q.id}">${chips}</div>`;
+}
+
+function renderNPS(q, val, prefix, readOnly) {
+  const npsClass = n => n<=3?"c0":n<=5?"c1":n<=7?"c2":n<=8?"c3":"c4";
+  const btns = [0,1,2,3,4,5,6,7,8,9,10].map(n => {
+    const sel = val===n||val===String(n) ? "sel" : "";
+    const onclick = readOnly ? "" : `onclick="setAnswer('${prefix}','${q.id}',${n})"`;
+    return `<div class="nps-btn ${sel} ${npsClass(n)}" id="nps-${prefix}-${q.id}-${n}" ${onclick}>${n}</div>`;
+  }).join("");
+  return `<div class="nps-row" id="npsrow-${prefix}-${q.id}">${btns}</div>
+    <div class="nps-labels"><span>Not at all</span><span>Neutral</span><span>Definitely</span></div>`;
+}
+
+function renderTextarea(q, val, prefix, readOnly) {
+  if (readOnly) return `<div class="readonly-field">${val||"—"}</div>`;
+  const safeVal = (val||"").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  return `<textarea id="q-${prefix}-${q.id}" rows="4"
+    placeholder="${q.placeholder||""}"
+    oninput="setAnswer('${prefix}','${q.id}',this.value)">${safeVal}</textarea>`;
+}
+
+// Render all sections for a question list
+function renderAllQuestions(questions, answers, prefix, readOnly) {
+  const sections = groupBySections(questions);
+  return Object.entries(sections).map(([sec, qs]) =>
+    renderQuestionSection(sec, qs, answers, prefix, readOnly)
+  ).join("");
+}
+
+// ── Answer setters ────────────────────────────────────────────
+function setAnswer(prefix, qId, val) {
+  if (prefix === "self") S.selfAnswers[qId] = val;
+  else S.mgrAnswers[qId] = val;
+  // Update chip group UI
+  const grp = document.getElementById(`og-${prefix}-${qId}`);
+  if (grp) grp.querySelectorAll(".opt-chip").forEach(c => c.classList.toggle("sel", c.dataset.v === String(val)));
+  // Update NPS UI
+  const npsRow = document.getElementById(`npsrow-${prefix}-${qId}`);
+  if (npsRow) npsRow.querySelectorAll(".nps-btn").forEach((b,i) => b.classList.toggle("sel", i===Number(val)));
+  // Refresh overall star avg
+  refreshStarAvg(prefix);
+}
+
+function setStarAnswer(prefix, qId, val) {
+  if (prefix === "self") S.selfAnswers[qId] = val;
+  else S.mgrAnswers[qId] = val;
+  const sv = document.getElementById(`sv-${prefix}-${qId}`);
+  const sl = document.getElementById(`sl-${prefix}-${qId}`);
+  if (sv) sv.textContent = val;
+  if (sl) sl.textContent = RLBL[val]||"";
+  renderStarDom(prefix, qId, val);
+  refreshStarAvg(prefix);
+}
+
+function hoverStars(prefix, qId, n) {
+  renderStarDom(prefix, qId, n);
+}
+function unhoverStars(prefix, qId) {
+  const cur = (prefix==="self"?S.selfAnswers:S.mgrAnswers)[qId]||0;
+  renderStarDom(prefix, qId, cur);
+}
+function renderStarDom(prefix, qId, val) {
+  document.querySelectorAll(`#stars-${prefix}-${qId} .star`).forEach((s,i) => s.classList.toggle("on",i<val));
+}
+
+function refreshStarAvg(prefix) {
+  const answers = prefix==="self" ? S.selfAnswers : S.mgrAnswers;
+  const starQs  = (prefix==="self" ? SELF_QUESTIONS : MGR_QUESTIONS).filter(q => q.type==="stars");
+  const vals    = starQs.map(q => Number(answers[q.id]||0)).filter(v=>v>0);
+  const a       = vals.length ? (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1) : "—";
+  const el2 = document.getElementById(`overall-${prefix}`);
+  if (el2) el2.textContent = a;
+}
+
+// ── Helper: read textarea values into answers before save ──────
+function syncTextAnswers(prefix) {
+  const qs = prefix==="self" ? SELF_QUESTIONS : MGR_QUESTIONS;
+  const ans = prefix==="self" ? S.selfAnswers : S.mgrAnswers;
+  for (const q of qs) {
+    if (q.type==="textarea"||q.type==="text") {
+      const el2 = document.getElementById(`q-${prefix}-${q.id}`);
+      if (el2) ans[q.id] = el2.value;
+    }
+  }
+}
+
+// ── Avg of 6 competency stars ───────────────────────────────
+function compAvg(answers) {
+  const ids = ["Tech","Delivery","Collab","Comms","Innovation","Leadership"];
+  const v   = ids.map(k=>Number(answers[k]||0)).filter(n=>n>0);
+  return v.length ? (v.reduce((a,b)=>a+b,0)/v.length).toFixed(1) : null;
+}
 
 // ╔══════════════════════════════════════════════════════════════╗
 // ║                       MSAL AUTH                             ║
@@ -361,16 +660,12 @@ const msal_ = new msal.PublicClientApplication(msalCfg);
 const SCOPES = ["User.Read","Files.Read","Sites.ReadWrite.All","Mail.Send"];
 
 async function signIn() {
-  try {
-    const r = await msal_.loginPopup({ scopes:SCOPES });
-    msal_.setActiveAccount(r.account);
-    await boot(r.account);
-  } catch(e) { toast("Sign-in failed: "+e.message,"error"); }
+  try { const r = await msal_.loginPopup({ scopes:SCOPES }); msal_.setActiveAccount(r.account); await boot(r.account); }
+  catch(e) { toast("Sign-in failed: "+e.message,"error"); }
 }
 function signOut() {
   msal_.logoutPopup({ account:msal_.getActiveAccount() });
-  el("loginScreen").style.display = "flex";
-  el("appContainer").style.display = "none";
+  el("loginScreen").style.display="flex"; el("appContainer").style.display="none";
 }
 async function token() {
   const acc = msal_.getActiveAccount();
@@ -383,31 +678,21 @@ async function token() {
 // ║                    GRAPH API HELPERS                        ║
 // ╚══════════════════════════════════════════════════════════════╝
 const G = "https://graph.microsoft.com/v1.0";
-
 async function gGet(url) {
-  const t = await token();
-  const r = await fetch(G+url, { headers:{ Authorization:`Bearer ${t}` } });
-  if (!r.ok) throw new Error(`GET ${url}: ${r.status}`);
+  const t=await token(); const r=await fetch(G+url,{headers:{Authorization:`Bearer ${t}`}});
+  if(!r.ok) throw new Error(`GET ${url}: ${r.status}`); return r.json();
+}
+async function gPost(url,body) {
+  const t=await token();
+  const r=await fetch(G+url,{method:"POST",headers:{Authorization:`Bearer ${t}`,"Content-Type":"application/json"},body:JSON.stringify(body)});
+  if(!r.ok){const x=await r.text();throw new Error(`POST ${url}: ${r.status} – ${x}`);}
   return r.json();
 }
-async function gPost(url, body) {
-  const t = await token();
-  const r = await fetch(G+url, {
-    method:"POST", headers:{ Authorization:`Bearer ${t}`, "Content-Type":"application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!r.ok) { const txt = await r.text(); throw new Error(`POST ${url}: ${r.status} – ${txt}`); }
-  return r.json();
-}
-async function gPatch(url, body) {
-  const t = await token();
-  const r = await fetch(G+url, {
-    method:"PATCH", headers:{ Authorization:`Bearer ${t}`, "Content-Type":"application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!r.ok) { const txt = await r.text(); throw new Error(`PATCH ${url}: ${r.status} – ${txt}`); }
-  if (r.status === 204) return {};
-  return r.json();
+async function gPatch(url,body) {
+  const t=await token();
+  const r=await fetch(G+url,{method:"PATCH",headers:{Authorization:`Bearer ${t}`,"Content-Type":"application/json"},body:JSON.stringify(body)});
+  if(!r.ok){const x=await r.text();throw new Error(`PATCH ${url}: ${r.status} – ${x}`);}
+  if(r.status===204) return {};  return r.json();
 }
 
 // ╔══════════════════════════════════════════════════════════════╗
@@ -415,91 +700,65 @@ async function gPatch(url, body) {
 // ╚══════════════════════════════════════════════════════════════╝
 async function loadEmployees() {
   try {
-    const sheetsData = await gGet(`/me/drive/items/${C.fileId}/workbook/worksheets`);
-    const sheets = sheetsData.value || [];
-    // Prefer a sheet named "Employees" or "Master"; fall back to first sheet
-    const sheet = sheets.find(s => /employee|master|data/i.test(s.name)) || sheets[0];
-    if (!sheet) throw new Error("No sheets found in file");
-
+    const sd = await gGet(`/me/drive/items/${C.fileId}/workbook/worksheets`);
+    const sheet = (sd.value||[]).find(s=>/employee|master|data/i.test(s.name)) || (sd.value||[])[0];
+    if (!sheet) throw new Error("No sheet");
     const range = await gGet(`/me/drive/items/${C.fileId}/workbook/worksheets/${encodeURIComponent(sheet.name)}/usedRange`);
-    const rows = range.values || [];
-    if (rows.length < 2) return [];
-
-    const hdrs = rows[0].map(h => String(h||"").trim().toLowerCase());
-    const col = (...keys) => { for (const k of keys) { const i = hdrs.findIndex(h => h.includes(k)); if (i !== -1) return i; } return -1; };
-    const idxs = {
-      id:    col("employee id","emp id","empid"),
-      name:  col("employee name","name","full name"),
-      email: col("email","mail"),
-      role:  col("designation","role","title","position"),
-      dept:  col("department","dept"),
-      squad: col("squad"),
-      sub:   col("sub squad","subsquad"),
-      mgr:   col("manager","reporting manager","reports to"),
-      mgrEmail: col("manager email","manager_email","mgr email"),
-      doj:   col("joining date","date of joining","doj","join"),
-      status:col("status"),
-    };
-
-    return rows.slice(1).filter(r => {
-      const s = idxs.status >= 0 ? String(r[idxs.status]||"").trim().toLowerCase() : "active";
-      return s === "active";
-    }).map(r => {
-      const v = i => i >= 0 ? String(r[i]||"").trim() : "";
-      return {
-        id: v(idxs.id), name: v(idxs.name), email: v(idxs.email).toLowerCase(),
-        role: v(idxs.role), dept: v(idxs.dept), squad: v(idxs.squad),
-        subSquad: v(idxs.sub), manager: v(idxs.mgr), managerEmail: v(idxs.mgrEmail).toLowerCase(),
-        joiningDate: v(idxs.doj), status: "Active",
-      };
-    }).filter(e => e.name);
+    const rows  = range.values||[];
+    if (rows.length<2) return [];
+    const hdrs  = rows[0].map(h=>String(h||"").trim().toLowerCase());
+    const col   = (...keys) => { for(const k of keys){const i=hdrs.findIndex(h=>h.includes(k));if(i!==-1)return i;} return -1; };
+    const ix    = { id:col("employee id","emp id","empid"), name:col("employee name","name","full name"),
+      email:col("email","mail"), role:col("designation","role","title","position"),
+      dept:col("department","dept"), squad:col("squad"), mgr:col("manager","reporting manager"),
+      mgrEmail:col("manager email","manager_email","mgr email"),
+      doj:col("joining date","date of joining","doj","join"), status:col("status") };
+    const v = (r,i) => i>=0?String(r[i]||"").trim():"";
+    return rows.slice(1).filter(r=>{
+      const s=ix.status>=0?String(r[ix.status]||"").toLowerCase():"active";
+      return s==="active";
+    }).map(r=>({
+      id:v(r,ix.id), name:v(r,ix.name), email:v(r,ix.email).toLowerCase(),
+      role:v(r,ix.role), dept:v(r,ix.dept), squad:v(r,ix.squad),
+      manager:v(r,ix.mgr), managerEmail:v(r,ix.mgrEmail).toLowerCase(),
+      joiningDate:v(r,ix.doj), status:"Active",
+    })).filter(e=>e.name);
   } catch(err) {
     console.warn("SharePoint load failed, using demo data:", err.message);
-    toast("Using demo data (SharePoint not configured)", "info");
+    toast("Using demo data (SharePoint not configured)","info");
     return demoEmps();
   }
 }
 
 function demoEmps() {
   return [
-    { id:"FZ001", name:"Arjun Krishnamurthy",  email:"arjun.k@finzly.in",   role:"Senior Software Engineer", dept:"Engineering", squad:"Payments",  manager:"Booshan Rengachari", managerEmail:"booshan@finzly.in",  joiningDate:"2022-08-15" },
-    { id:"FZ002", name:"Priya Venkatesh",       email:"priya.v@finzly.in",   role:"Product Manager",          dept:"Product",     squad:"FX & Wires", manager:"Ravi Shankar",       managerEmail:"ravi.s@finzly.in",   joiningDate:"2021-11-01" },
-    { id:"FZ003", name:"Rahul Sharma",          email:"rahul.s@finzly.in",   role:"QA Engineer",              dept:"Engineering", squad:"Core Banking",manager:"Meena Krishnan",    managerEmail:"meena.k@finzly.in",  joiningDate:"2024-01-10" },
-    { id:"FZ004", name:"Meera Nair",            email:"meera.n@finzly.in",   role:"UI/UX Designer",           dept:"Design",      squad:"Platform",   manager:"Ravi Shankar",       managerEmail:"ravi.s@finzly.in",   joiningDate:"2021-03-20" },
-    { id:"FZ005", name:"Karthik Subramanian",   email:"karthik.s@finzly.in", role:"Backend Engineer",         dept:"Engineering", squad:"API",        manager:"Booshan Rengachari", managerEmail:"booshan@finzly.in",  joiningDate:"2024-07-05" },
-    { id:"FZ006", name:"Divya Ramesh",          email:"divya.r@finzly.in",   role:"Data Analyst",             dept:"Analytics",   squad:"Analytics",  manager:"Meena Krishnan",     managerEmail:"meena.k@finzly.in",  joiningDate:"2022-04-18" },
+    {id:"FZ001",name:"Arjun Krishnamurthy",  email:"arjun.k@finzly.in",   role:"Senior Software Engineer",dept:"Engineering",squad:"Payments",   manager:"Booshan Rengachari",managerEmail:"booshan@finzly.in", joiningDate:"2022-08-15"},
+    {id:"FZ002",name:"Priya Venkatesh",       email:"priya.v@finzly.in",   role:"Product Manager",         dept:"Product",    squad:"FX & Wires", manager:"Ravi Shankar",      managerEmail:"ravi.s@finzly.in",  joiningDate:"2021-11-01"},
+    {id:"FZ003",name:"Rahul Sharma",          email:"rahul.s@finzly.in",   role:"QA Engineer",             dept:"Engineering",squad:"Core Banking",manager:"Meena Krishnan",   managerEmail:"meena.k@finzly.in", joiningDate:"2024-01-10"},
+    {id:"FZ004",name:"Meera Nair",            email:"meera.n@finzly.in",   role:"UI/UX Designer",          dept:"Design",     squad:"Platform",   manager:"Ravi Shankar",      managerEmail:"ravi.s@finzly.in",  joiningDate:"2021-03-20"},
+    {id:"FZ005",name:"Karthik Subramanian",   email:"karthik.s@finzly.in", role:"Backend Engineer",        dept:"Engineering",squad:"API",        manager:"Booshan Rengachari",managerEmail:"booshan@finzly.in", joiningDate:"2024-07-05"},
+    {id:"FZ006",name:"Divya Ramesh",          email:"divya.r@finzly.in",   role:"Data Analyst",            dept:"Analytics",  squad:"Analytics",  manager:"Meena Krishnan",    managerEmail:"meena.k@finzly.in", joiningDate:"2022-04-18"},
   ];
 }
 
 function detectRole(email) {
   const e = email.toLowerCase();
-  // HR admin (explicit email list)
-  if (C.hrEmails.map(h => h.toLowerCase()).includes(e)) return "hr";
-  // Org-level access: CEO, Chief of Staff, etc. — detected by designation title
-  const myRec = S.employees.find(emp => emp.email === e);
-  const title = (myRec?.role || "").toLowerCase();
-  if (
-    C.orgLevelEmails.map(x => x.toLowerCase()).includes(e) ||
-    C.orgLevelTitles.some(t => title.includes(t))
-  ) return "leadership";
-  // Manager: has at least one direct report
-  if (S.employees.some(emp => emp.managerEmail === e)) return "manager";
+  if (C.hrEmails.map(h=>h.toLowerCase()).includes(e)) return "hr";
+  const myRec = S.employees.find(emp=>emp.email===e);
+  const title = (myRec?.role||"").toLowerCase();
+  if (C.orgLevelEmails.map(x=>x.toLowerCase()).includes(e) || C.orgLevelTitles.some(t=>title.includes(t))) return "leadership";
+  if (S.employees.some(emp=>emp.managerEmail===e)) return "manager";
   return "employee";
 }
 
-function myReportees() { return S.employees.filter(e => e.managerEmail === S.userEmail); }
+function myReportees() { return S.employees.filter(e=>e.managerEmail===S.userEmail); }
 
 function tenure(doj) {
   if (!doj) return "—";
-  const d = new Date(doj.includes("-") ? doj : doj.replace(/(\d{2})\/(\d{2})\/(\d{4})/,"$3-$2-$1"));
+  const d = new Date(doj.includes("-")?doj:doj.replace(/(\d{2})\/(\d{2})\/(\d{4})/,"$3-$2-$1"));
   if (isNaN(d)) return "—";
-  const m = Math.floor((Date.now() - d) / (1000*60*60*24*30.44));
-  return m < 12 ? `${m}mo` : `${(m/12).toFixed(1)}yr`;
-}
-
-function avg(ratings) {
-  const v = Object.values(ratings).map(Number).filter(n => n > 0);
-  return v.length ? (v.reduce((a,b)=>a+b,0)/v.length).toFixed(1) : null;
+  const m = Math.floor((Date.now()-d)/(1000*60*60*24*30.44));
+  return m<12?`${m}mo`:`${(m/12).toFixed(1)}yr`;
 }
 
 // ╔══════════════════════════════════════════════════════════════╗
@@ -508,88 +767,122 @@ function avg(ratings) {
 async function getSiteId() {
   if (S.siteId) return S.siteId;
   const d = await gGet(`/sites/${C.spDomain}:${C.spSitePath}`);
-  S.siteId = d.id;
-  return S.siteId;
+  S.siteId=d.id; return S.siteId;
 }
 
 async function getOrCreateList() {
   if (S.listId) return S.listId;
   const sid = await getSiteId();
-
-  // Try fetching existing list
   try {
     const res = await gGet(`/sites/${sid}/lists?$filter=displayName eq '${C.listName}'`);
-    if (res.value?.length) { S.listId = res.value[0].id; return S.listId; }
+    if (res.value?.length) { S.listId=res.value[0].id; return S.listId; }
   } catch {}
-
-  // Create list with all required columns
   const created = await gPost(`/sites/${sid}/lists`, {
-    displayName: C.listName,
-    list: { template:"genericList" },
+    displayName: C.listName, list:{template:"genericList"},
     columns: [
-      { name:"EmployeeID",          text:{} },
-      { name:"EmployeeName",        text:{} },
-      { name:"EmployeeEmail",       text:{} },
-      { name:"ManagerEmail",        text:{} },
-      { name:"CycleID",             text:{} },
-      // Status: Draft | SelfSubmitted | ManagerReviewing | Completed
-      { name:"Status",              text:{} },
-      // Self ratings (1–5)
-      { name:"SelfRatingTech",      number:{} },
-      { name:"SelfRatingDelivery",  number:{} },
-      { name:"SelfRatingCollab",    number:{} },
-      { name:"SelfRatingComms",     number:{} },
-      { name:"SelfRatingInnovation",number:{} },
-      { name:"SelfRatingLeadership",number:{} },
-      { name:"SelfComments",        text:{ allowMultipleLines:true } },
-      { name:"SelfGoals",           text:{ allowMultipleLines:true } },
-      { name:"SelfSubmittedDate",   dateTime:{} },
-      // Manager ratings
-      { name:"MgrRatingTech",       number:{} },
-      { name:"MgrRatingDelivery",   number:{} },
-      { name:"MgrRatingCollab",     number:{} },
-      { name:"MgrRatingComms",      number:{} },
-      { name:"MgrRatingInnovation", number:{} },
-      { name:"MgrRatingLeadership", number:{} },
-      { name:"MgrComments",         text:{ allowMultipleLines:true } },
-      { name:"MgrDevPlan",          text:{ allowMultipleLines:true } },
-      { name:"MgrReviewedDate",     dateTime:{} },
-      { name:"AIGeneratedSummary",  text:{ allowMultipleLines:true } },
+      {name:"EmployeeID",text:{}},{name:"EmployeeName",text:{}},
+      {name:"EmployeeEmail",text:{}},{name:"ManagerEmail",text:{}},
+      {name:"CycleID",text:{}},{name:"Status",text:{}},
+      // 6 numeric competency columns (kept for analytics / HR dashboard avg)
+      {name:"SelfRatingTech",number:{}},{name:"SelfRatingDelivery",number:{}},
+      {name:"SelfRatingCollab",number:{}},{name:"SelfRatingComms",number:{}},
+      {name:"SelfRatingInnovation",number:{}},{name:"SelfRatingLeadership",number:{}},
+      // Full form JSON (all question types stored here)
+      {name:"SelfFormData",text:{allowMultipleLines:true}},
+      {name:"SelfSubmittedDate",dateTime:{}},
+      // Manager numeric competency columns
+      {name:"MgrRatingTech",number:{}},{name:"MgrRatingDelivery",number:{}},
+      {name:"MgrRatingCollab",number:{}},{name:"MgrRatingComms",number:{}},
+      {name:"MgrRatingInnovation",number:{}},{name:"MgrRatingLeadership",number:{}},
+      // Full manager form JSON
+      {name:"MgrFormData",text:{allowMultipleLines:true}},
+      {name:"MgrReviewedDate",dateTime:{}},
+      {name:"AIGeneratedSummary",text:{allowMultipleLines:true}},
     ],
   });
-  S.listId = created.id;
-  return S.listId;
+  S.listId=created.id; return S.listId;
 }
 
 async function getAppraisal(empId) {
-  const sid = await getSiteId();
-  const lid = await getOrCreateList();
-  const flt = encodeURIComponent(`fields/EmployeeID eq '${empId}' and fields/CycleID eq '${C.cycle}'`);
-  const res = await gGet(`/sites/${sid}/lists/${lid}/items?$expand=fields&$filter=${flt}`);
-  return res.value?.[0] || null;
+  const sid=await getSiteId(), lid=await getOrCreateList();
+  const flt=encodeURIComponent(`fields/EmployeeID eq '${empId}' and fields/CycleID eq '${C.cycle}'`);
+  const res=await gGet(`/sites/${sid}/lists/${lid}/items?$expand=fields&$filter=${flt}`);
+  return res.value?.[0]||null;
 }
-
 async function getAllAppraisals() {
-  const sid = await getSiteId();
-  const lid = await getOrCreateList();
-  const flt = encodeURIComponent(`fields/CycleID eq '${C.cycle}'`);
-  const res = await gGet(`/sites/${sid}/lists/${lid}/items?$expand=fields&$filter=${flt}`);
-  return res.value || [];
+  const sid=await getSiteId(), lid=await getOrCreateList();
+  const flt=encodeURIComponent(`fields/CycleID eq '${C.cycle}'`);
+  const res=await gGet(`/sites/${sid}/lists/${lid}/items?$expand=fields&$filter=${flt}`);
+  return res.value||[];
+}
+async function saveAppraisal(fields,itemId) {
+  const sid=await getSiteId(), lid=await getOrCreateList();
+  if (itemId) return gPatch(`/sites/${sid}/lists/${lid}/items/${itemId}/fields`,fields);
+  return gPost(`/sites/${sid}/lists/${lid}/items`,{fields});
 }
 
-async function saveAppraisal(fields, itemId) {
-  const sid = await getSiteId();
-  const lid = await getOrCreateList();
-  if (itemId) return gPatch(`/sites/${sid}/lists/${lid}/items/${itemId}/fields`, fields);
-  return gPost(`/sites/${sid}/lists/${lid}/items`, { fields });
+// Load answers from SP record into S.selfAnswers or S.mgrAnswers
+function loadAnswersFromSP(f, prefix) {
+  const key = prefix==="self" ? "SelfFormData" : "MgrFormData";
+  if (f[key]) {
+    try {
+      const parsed = JSON.parse(f[key]);
+      if (prefix==="self") S.selfAnswers = parsed;
+      else S.mgrAnswers = parsed;
+      return;
+    } catch {}
+  }
+  // Fallback: migrate old numeric columns
+  if (prefix==="self") {
+    S.selfAnswers = {
+      Tech:f.SelfRatingTech||0, Delivery:f.SelfRatingDelivery||0,
+      Collab:f.SelfRatingCollab||0, Comms:f.SelfRatingComms||0,
+      Innovation:f.SelfRatingInnovation||0, Leadership:f.SelfRatingLeadership||0,
+      Achievements:f.SelfComments||"", NextGoals:f.SelfGoals||""
+    };
+  } else {
+    S.mgrAnswers = {
+      Tech:f.MgrRatingTech||0, Delivery:f.MgrRatingDelivery||0,
+      Collab:f.MgrRatingCollab||0, Comms:f.MgrRatingComms||0,
+      Innovation:f.MgrRatingInnovation||0, Leadership:f.MgrRatingLeadership||0,
+      MgrComments:f.MgrComments||"", MgrDevPlan:f.MgrDevPlan||""
+    };
+  }
+}
+
+// Build SP fields from answers (keeps numeric columns for analytics)
+function buildSPFields(prefix, status, extraFields) {
+  const ans = prefix==="self" ? S.selfAnswers : S.mgrAnswers;
+  const base = {
+    Title: `${(S.employees.find(e=>e.email===S.userEmail)||{}).id||"?"}_${C.cycle}`,
+    Status: status,
+    [`${prefix==="self"?"Self":"Mgr"}FormData`]: JSON.stringify(ans),
+  };
+  if (prefix==="self") {
+    const me = S.employees.find(e=>e.email===S.userEmail);
+    Object.assign(base, {
+      EmployeeID:me?.id||"", EmployeeName:me?.name||"",
+      EmployeeEmail:me?.email||"", ManagerEmail:me?.managerEmail||"",
+      CycleID:C.cycle,
+      SelfRatingTech:Number(ans.Tech||0), SelfRatingDelivery:Number(ans.Delivery||0),
+      SelfRatingCollab:Number(ans.Collab||0), SelfRatingComms:Number(ans.Comms||0),
+      SelfRatingInnovation:Number(ans.Innovation||0), SelfRatingLeadership:Number(ans.Leadership||0),
+    });
+  } else {
+    Object.assign(base, {
+      MgrRatingTech:Number(ans.Tech||0), MgrRatingDelivery:Number(ans.Delivery||0),
+      MgrRatingCollab:Number(ans.Collab||0), MgrRatingComms:Number(ans.Comms||0),
+      MgrRatingInnovation:Number(ans.Innovation||0), MgrRatingLeadership:Number(ans.Leadership||0),
+    });
+  }
+  return Object.assign(base, extraFields||{});
 }
 
 // ╔══════════════════════════════════════════════════════════════╗
 // ║                  EMAIL NOTIFICATIONS                        ║
 // ╚══════════════════════════════════════════════════════════════╝
-function emailHtml(title, body) {
-  return `<div style="font-family:Segoe UI,sans-serif;max-width:520px;margin:0 auto;background:#0f1117;
-  color:#e2e8f0;border-radius:16px;overflow:hidden;border:1px solid #1e2a45">
+function emailHtml(title,body) {
+  return `<div style="font-family:Segoe UI,sans-serif;max-width:520px;margin:0 auto;background:#0f1117;color:#e2e8f0;border-radius:16px;overflow:hidden;border:1px solid #1e2a45">
   <div style="background:linear-gradient(135deg,#161b2e,#1a2040);padding:26px 30px;border-bottom:1px solid #1e2a45">
     <div style="font-size:10px;letter-spacing:2px;color:#f59e0b;font-weight:700;margin-bottom:6px">FINZLY PERFORMANCE APPRAISAL</div>
     <h1 style="margin:0;font-size:19px;font-weight:800;color:#f1f5f9">${title}</h1>
@@ -599,64 +892,44 @@ function emailHtml(title, body) {
     Finzly India HR · ${C.cycleName} · Deadline: ${C.deadline}
   </div></div>`;
 }
-
-async function sendMail(toEmail, toName, subject, htmlBody) {
+async function sendMail(toEmail,toName,subject,htmlBody) {
   try {
-    await gPost("/me/sendMail", {
-      message:{
-        subject,
-        body:{ contentType:"HTML", content: emailHtml(subject, htmlBody) },
-        toRecipients:[{ emailAddress:{ address:toEmail, name:toName } }],
-      },
+    await gPost("/me/sendMail",{
+      message:{subject,body:{contentType:"HTML",content:emailHtml(subject,htmlBody)},
+        toRecipients:[{emailAddress:{address:toEmail,name:toName}}]},
       saveToSentItems:false,
     });
-  } catch(e) { console.warn("Email send failed:", e.message); }
+  } catch(e) { console.warn("Email send failed:",e.message); }
 }
-
 async function notifySelfSubmit(emp) {
-  // To employee
-  await sendMail(emp.email, emp.name,
-    `✅ Self-Appraisal Submitted — ${C.cycleName}`,
+  await sendMail(emp.email,emp.name,`✅ Self-Appraisal Submitted — ${C.cycleName}`,
     `<p>Hi ${emp.name.split(" ")[0]},</p>
-     <p style="margin:12px 0;color:#94a3b8">Your self-appraisal for <strong style="color:#f59e0b">${C.cycleName}</strong> has been submitted successfully.</p>
-     <p style="color:#94a3b8">Your manager will complete their review before <strong style="color:#e2e8f0">${C.deadline}</strong>.</p>`
-  );
-  // To manager
+     <p style="margin:12px 0;color:#94a3b8">Your self-appraisal for <strong style="color:#f59e0b">${C.cycleName}</strong> has been submitted. Your manager will complete their review before <strong style="color:#e2e8f0">${C.deadline}</strong>.</p>`);
   if (emp.managerEmail) {
-    const mgr = S.employees.find(e => e.email === emp.managerEmail);
-    const fn = mgr ? mgr.name.split(" ")[0] : "Manager";
-    await sendMail(emp.managerEmail, fn,
-      `📋 Action Required: ${emp.name} submitted their appraisal`,
-      `<p>Hi ${fn},</p>
-       <p style="margin:12px 0;color:#94a3b8"><strong style="color:#f59e0b">${emp.name}</strong> has submitted their self-appraisal for ${C.cycleName}. Please complete your manager review.</p>
+    const mgr=S.employees.find(e=>e.email===emp.managerEmail);
+    const fn=mgr?mgr.name.split(" ")[0]:"Manager";
+    await sendMail(emp.managerEmail,fn,`📋 Action Required: ${emp.name} submitted their appraisal`,
+      `<p>Hi ${fn},</p><p style="margin:12px 0;color:#94a3b8"><strong style="color:#f59e0b">${emp.name}</strong> has submitted their self-appraisal for ${C.cycleName}. Please complete your review.</p>
        <p style="color:#94a3b8">Deadline: <strong style="color:#e2e8f0">${C.deadline}</strong></p>
-       <a href="${location.href}" style="display:inline-block;margin-top:16px;padding:10px 22px;background:#f59e0b;color:#0f1117;border-radius:8px;font-weight:700;text-decoration:none">Open Appraisal Tool →</a>`
-    );
+       <a href="${location.href}" style="display:inline-block;margin-top:16px;padding:10px 22px;background:#f59e0b;color:#0f1117;border-radius:8px;font-weight:700;text-decoration:none">Open Appraisal Tool →</a>`);
   }
 }
-
 async function notifyMgrDone(emp) {
-  await sendMail(emp.email, emp.name,
-    `🎉 Your Appraisal is Complete — ${C.cycleName}`,
+  await sendMail(emp.email,emp.name,`🎉 Your Appraisal is Complete — ${C.cycleName}`,
     `<p>Hi ${emp.name.split(" ")[0]},</p>
-     <p style="margin:12px 0;color:#94a3b8">Your manager has completed your performance review for <strong style="color:#f59e0b">${C.cycleName}</strong>.</p>
-     <p style="color:#94a3b8">Log in to view your results and next-cycle development goals.</p>
-     <a href="${location.href}" style="display:inline-block;margin-top:16px;padding:10px 22px;background:#f59e0b;color:#0f1117;border-radius:8px;font-weight:700;text-decoration:none">View My Appraisal →</a>`
-  );
+     <p style="margin:12px 0;color:#94a3b8">Your manager has completed your performance review for <strong style="color:#f59e0b">${C.cycleName}</strong>. Log in to view your results.</p>
+     <a href="${location.href}" style="display:inline-block;margin-top:16px;padding:10px 22px;background:#f59e0b;color:#0f1117;border-radius:8px;font-weight:700;text-decoration:none">View My Appraisal →</a>`);
 }
-
 async function sendBulkReminders() {
-  const pending = S.employees.filter(e => {
-    const a = S.allAppraisals.find(x => x.fields?.EmployeeID === e.id);
-    return !a || !a.fields?.Status || a.fields.Status === "Draft";
+  const pending = S.employees.filter(e=>{
+    const a=S.allAppraisals.find(x=>x.fields?.EmployeeEmail===e.email);
+    return !a||!a.fields?.Status||a.fields.Status==="Draft";
   });
   for (const emp of pending) {
-    await sendMail(emp.email, emp.name,
-      `⏰ Reminder: Self-Appraisal Due ${C.deadline}`,
+    await sendMail(emp.email,emp.name,`⏰ Reminder: Self-Appraisal Due ${C.deadline}`,
       `<p>Hi ${emp.name.split(" ")[0]},</p>
        <p style="margin:12px 0;color:#94a3b8">Your self-appraisal for <strong style="color:#f59e0b">${C.cycleName}</strong> is still pending. Deadline: <strong style="color:#e2e8f0">${C.deadline}</strong>.</p>
-       <a href="${location.href}" style="display:inline-block;margin-top:16px;padding:10px 22px;background:#f59e0b;color:#0f1117;border-radius:8px;font-weight:700;text-decoration:none">Complete Now →</a>`
-    );
+       <a href="${location.href}" style="display:inline-block;margin-top:16px;padding:10px 22px;background:#f59e0b;color:#0f1117;border-radius:8px;font-weight:700;text-decoration:none">Complete Now →</a>`);
   }
   return pending.length;
 }
@@ -665,203 +938,130 @@ async function sendBulkReminders() {
 // ║                      AI (CLAUDE)                           ║
 // ╚══════════════════════════════════════════════════════════════╝
 async function callAI(prompt) {
-  S.aiLoading = true;
-  S.aiText = "";
+  S.aiLoading=true; S.aiText="";
   try {
-    // Proxy (Cloudflare Worker) — recommended
     if (C.aiUrl && !C.aiUrl.includes("YOUR_WORKER")) {
-      const r = await fetch(C.aiUrl, {
-        method:"POST",
-        headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({ prompt,
-          system:`You are an expert HR performance coach at Finzly, an Indian fintech company. Write concise, fair, specific, actionable appraisal content. No bullet lists unless asked. Under 200 words per response.`,
-        }),
-      });
-      const d = await r.json();
-      S.aiText = d.text || d.content || "No response.";
+      const r=await fetch(C.aiUrl,{method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({prompt,system:"You are an expert HR performance coach at Finzly, an Indian fintech. Write concise, specific, growth-focused appraisal content. Under 200 words."})});
+      const d=await r.json(); S.aiText=d.text||d.content||"No response.";
     } else {
-      // Direct call — for local testing only; NOT recommended in production
-      const r = await fetch("https://api.anthropic.com/v1/messages", {
-        method:"POST",
-        headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({
-          model:"claude-sonnet-4-20250514", max_tokens:800,
-          system:"You are an expert HR performance coach at Finzly, an Indian fintech company. Write concise, specific, growth-focused appraisal content. Under 200 words.",
-          messages:[{ role:"user", content:prompt }],
-        }),
-      });
-      const d = await r.json();
-      S.aiText = d.content?.[0]?.text || "AI unavailable — set up Cloudflare Worker (see CONFIG.aiUrl).";
+      const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:800,
+          system:"You are an expert HR coach at Finzly, an Indian fintech. Write specific, growth-focused appraisal content. Under 200 words.",
+          messages:[{role:"user",content:prompt}]})});
+      const d=await r.json(); S.aiText=d.content?.[0]?.text||"Configure CONFIG.aiUrl with your Cloudflare Worker URL.";
     }
-  } catch(e) {
-    S.aiText = "AI unavailable. Configure CONFIG.aiUrl with your Cloudflare Worker URL.";
-  }
-  S.aiLoading = false;
-  return S.aiText;
+  } catch(e) { S.aiText="AI unavailable. Configure CONFIG.aiUrl."; }
+  S.aiLoading=false; return S.aiText;
 }
 
-// ╔══════════════════════════════════════════════════════════════╗
-// ║                   JIRA (FEATURE FLAGGED)                   ║
-// ╚══════════════════════════════════════════════════════════════╝
 async function fetchJira(email) {
-  if (!C.jiraOn || !C.jiraBase || !C.jiraToken) return [];
+  if(!C.jiraOn||!C.jiraBase||!C.jiraToken) return [];
   try {
-    const jql = `assignee="${email}" AND sprint in openSprints() AND project="${C.jiraProject}"`;
-    const r = await fetch(`${C.jiraBase}/rest/api/3/search?jql=${encodeURIComponent(jql)}&fields=summary,status,priority,customfield_10016`, {
-      headers:{ Authorization:`Basic ${btoa(S.userEmail+":"+C.jiraToken)}`, Accept:"application/json" },
-    });
-    const d = await r.json();
-    return (d.issues||[]).map(i => ({ id:i.key, title:i.fields.summary, status:i.fields.status.name, pts:i.fields.customfield_10016||0 }));
+    const jql=`assignee="${email}" AND sprint in openSprints() AND project="${C.jiraProject}"`;
+    const r=await fetch(`${C.jiraBase}/rest/api/3/search?jql=${encodeURIComponent(jql)}&fields=summary,status,customfield_10016`,
+      {headers:{Authorization:`Basic ${btoa(S.userEmail+":"+C.jiraToken)}`,Accept:"application/json"}});
+    const d=await r.json();
+    return (d.issues||[]).map(i=>({id:i.key,title:i.fields.summary,status:i.fields.status.name,pts:i.fields.customfield_10016||0}));
   } catch { return []; }
 }
 
 // ╔══════════════════════════════════════════════════════════════╗
-// ║                     UI UTILITIES                           ║
+// ║                   UI UTILITIES                             ║
 // ╚══════════════════════════════════════════════════════════════╝
 const el = id => document.getElementById(id);
-function setContent(html) { el("mainContent").innerHTML = `<div class="fade-in">${html}</div>`; }
+function setContent(html) { el("mainContent").innerHTML=`<div class="fade-in">${html}</div>`; }
 function loading(txt="Loading…") { el("loadingOverlay").style.display="flex"; el("loadingText").textContent=txt; }
 function doneLoading() { el("loadingOverlay").style.display="none"; }
-
-function toast(msg, type="info") {
-  const t = el("toast");
-  const d = document.createElement("div");
-  d.className = `toast t-${type}`;
-  d.textContent = msg;
-  t.appendChild(d);
-  setTimeout(() => { d.style.cssText += "opacity:0;transition:opacity .3s"; setTimeout(()=>d.remove(),400); }, 3500);
+function toast(msg,type="info") {
+  const t=el("toast"), d=document.createElement("div");
+  d.className=`toast t-${type}`; d.textContent=msg; t.appendChild(d);
+  setTimeout(()=>{d.style.cssText+="opacity:0;transition:opacity .3s";setTimeout(()=>d.remove(),400);},3500);
 }
-
 function badge(status) {
-  const m = { Draft:["b-draft","Draft"], SelfSubmitted:["b-sub","Self Submitted"],
-    ManagerReviewing:["b-review","In Review"], Completed:["b-done","Complete"], NotStarted:["b-none","Not Started"] };
-  const [cls,lbl] = m[status] || ["b-none","Not Started"];
+  const m={Draft:["b-draft","Draft"],SelfSubmitted:["b-sub","Self Submitted"],
+    ManagerReviewing:["b-review","In Review"],Completed:["b-done","Complete"],NotStarted:["b-none","Not Started"]};
+  const [cls,lbl]=m[status]||["b-none","Not Started"];
   return `<span class="badge ${cls}">${lbl}</span>`;
-}
-
-// Star rating widget (interactive)
-function starsWidget(k, val, prefix) {
-  let h = `<div class="stars" id="stars-${prefix}-${k}">`;
-  for (let i=1; i<=5; i++)
-    h += `<div class="star ${val>=i?"on":""}" onclick="setR('${prefix}','${k}',${i})" onmouseover="hR('${prefix}','${k}',${i})" onmouseout="uR('${prefix}','${k}')">★</div>`;
-  return h + `</div>`;
-}
-
-// Star rating (read-only)
-function starsRO(val) {
-  return [1,2,3,4,5].map(n => `<div class="ro-star ${n<=val?"":"off"}">★</div>`).join("");
-}
-
-function setR(prefix, k, val) {
-  if (prefix==="self") S.selfR[k]=val; else S.mgrR[k]=val;
-  renderStars(prefix, k, val);
-  const lv = el(`r-lbl-${prefix}-${k}`); if (lv) lv.textContent = RLBL[val];
-  const vv = el(`r-val-${prefix}-${k}`); if (vv) vv.textContent = val;
-  refreshAvg(prefix);
-}
-function hR(prefix, k, val) {
-  document.querySelectorAll(`#stars-${prefix}-${k} .star`).forEach((s,i)=>s.classList.toggle("on",i<val));
-}
-function uR(prefix, k) {
-  const cur = prefix==="self" ? (S.selfR[k]||0) : (S.mgrR[k]||0);
-  renderStars(prefix, k, cur);
-}
-function renderStars(prefix, k, val) {
-  document.querySelectorAll(`#stars-${prefix}-${k} .star`).forEach((s,i)=>s.classList.toggle("on",i<val));
-}
-function refreshAvg(prefix) {
-  const ratings = prefix==="self" ? S.selfR : S.mgrR;
-  const a = avg(ratings);
-  const vEl = el(`overall-${prefix}`);
-  if (vEl) vEl.textContent = a || "—";
 }
 
 // ╔══════════════════════════════════════════════════════════════╗
 // ║                  SELF-APPRAISAL VIEW                       ║
 // ╚══════════════════════════════════════════════════════════════╝
 async function viewSelf() {
-  S.view = "self";
-  renderNav();
-
-  const me = S.employees.find(e => e.email === S.userEmail);
+  S.view="self"; renderNav();
+  const me = S.employees.find(e=>e.email===S.userEmail);
   if (!me) {
     setContent(`<div class="card cb" style="text-align:center;padding:56px">
       <div style="font-size:46px;margin-bottom:14px">😕</div>
-      <div style="font-weight:700;font-size:15px">Your account isn't found in employee data.</div>
-      <div style="color:var(--text3);font-size:13px;margin-top:8px">Contact HR if this is unexpected.</div>
+      <div style="font-weight:700">Your account isn't found in employee data. Contact HR.</div>
     </div>`); return;
   }
-
   loading("Loading your appraisal…");
   try {
     const existing = await getAppraisal(me.id);
-    if (existing) {
-      const f = existing.fields;
-      S.selfR = { Tech:f.SelfRatingTech||0, Delivery:f.SelfRatingDelivery||0, Collab:f.SelfRatingCollab||0,
-        Comms:f.SelfRatingComms||0, Innovation:f.SelfRatingInnovation||0, Leadership:f.SelfRatingLeadership||0 };
-      S.selfComments = f.SelfComments||""; S.selfGoals = f.SelfGoals||"";
-      S.myAppraisal = existing;
-    } else {
-      S.selfR={}; S.selfComments=""; S.selfGoals=""; S.myAppraisal=null;
-    }
+    if (existing) { loadAnswersFromSP(existing.fields,"self"); S.myAppraisal=existing; }
+    else { S.selfAnswers={}; S.myAppraisal=null; }
   } catch(e) { console.error(e); }
   doneLoading();
 
-  const submitted = S.myAppraisal?.fields?.Status && S.myAppraisal.fields.Status !== "Draft";
-  const status    = S.myAppraisal?.fields?.Status || "Draft";
-  const tn        = tenure(me.joiningDate);
+  const submitted = S.myAppraisal?.fields?.Status && S.myAppraisal.fields.Status!=="Draft";
+  const status    = S.myAppraisal?.fields?.Status||"Draft";
+  const readOnly  = submitted;
+  const sAvg      = compAvg(S.selfAnswers);
 
-  // Competency rows
-  const rows = COMPS.map(c => {
-    const rv = S.selfR[c.k]||0;
-    return `<div class="rating-row">
-      <div class="rating-info">
-        <div class="rating-name">${c.l}</div>
-        <div class="rating-desc">${c.d}</div>
-      </div>
-      ${submitted
-        ? `<div style="display:flex;gap:4px">${starsRO(rv)}</div>
-           <div class="r-val">${rv||"—"}</div>
-           <div class="r-lbl" style="color:var(--accent)">${RLBL[rv]||""}</div>`
-        : `${starsWidget(c.k,rv,"self")}
-           <div class="r-val" id="r-val-self-${c.k}">${rv||"—"}</div>
-           <div class="r-lbl" id="r-lbl-self-${c.k}">${rv?RLBL[rv]:"Click to rate"}</div>`
-      }
-    </div>`;
-  }).join("");
+  // Build all questions HTML
+  const qHtml = renderAllQuestions(SELF_QUESTIONS, S.selfAnswers, "self", readOnly);
 
-  // Manager feedback section (only if completed)
+  // Manager feedback section (if completed)
   let mgrSection = "";
-  if (S.myAppraisal?.fields?.Status === "Completed") {
+  if (S.myAppraisal?.fields?.Status==="Completed") {
     const f = S.myAppraisal.fields;
-    const mgrRatings = { Tech:f.MgrRatingTech||0, Delivery:f.MgrRatingDelivery||0, Collab:f.MgrRatingCollab||0,
-      Comms:f.MgrRatingComms||0, Innovation:f.MgrRatingInnovation||0, Leadership:f.MgrRatingLeadership||0 };
+    loadAnswersFromSP(f,"mgr");
+    const mAvg = compAvg(S.mgrAnswers);
+    // Show manager's star ratings + key open-ended answers
+    const starRows = ["Tech","Delivery","Collab","Comms","Innovation","Leadership"].map(k => {
+      const r=Number(S.mgrAnswers[k]||0);
+      const mgrQ = MGR_QUESTIONS.find(q=>q.id===k);
+      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)88">
+        <div style="flex:1;font-size:13px;color:var(--text2)">${mgrQ?.label||k}</div>
+        <div style="display:flex;gap:3px">${[1,2,3,4,5].map(n=>`<div class="ro-star ${n<=r?"on":"off"}">★</div>`).join("")}</div>
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:14px;color:var(--accent);min-width:22px;text-align:right">${r||"—"}</div>
+      </div>`;
+    }).join("");
+    // Manager assessment answers
+    const assessRows = MGR_QUESTIONS.filter(q=>q.section==="Manager Assessment"&&q.type!=="stars").map(q=>{
+      const v = S.mgrAnswers[q.id];
+      if (!v) return "";
+      return `<div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)88">
+        <div style="flex:1;font-size:12px;color:var(--text3)">${q.label}</div>
+        <div style="font-size:12px;font-weight:700;color:var(--accent);white-space:nowrap">${v}</div>
+      </div>`;
+    }).join("");
+    const feedback  = S.mgrAnswers["MgrComments"]||"";
+    const devPlan   = S.mgrAnswers["MgrDevPlan"]||"";
+    const strengths = S.mgrAnswers["Strengths"]||"";
+    const imprv     = S.mgrAnswers["ImprovAreas"]||"";
+
     mgrSection = `
     <div class="card mb6" style="border-top:3px solid var(--success)">
       <div class="ch">
-        <span class="ct">✅ Manager Review</span>
-        <span style="font-weight:700;font-size:12px;color:var(--success)">Completed · Overall: ${avg(mgrRatings)||"—"}/5</span>
+        <span class="ct">✅ Manager Review Complete</span>
+        <span style="font-weight:700;font-size:12px;color:var(--success)">Competency avg: ${mAvg||"—"}/5</span>
       </div>
       <div class="cb">
-        <div class="g2 mb4">
-          ${COMPS.map(c => {
-            const r = f[`MgrRating${c.k}`]||0;
-            return `<div style="padding:12px;background:var(--bg);border-radius:10px;border:1px solid var(--border)">
-              <div style="font-size:11px;color:var(--text3);margin-bottom:7px">${c.l}</div>
-              <div style="display:flex;align-items:center;gap:8px">
-                <div style="display:flex;gap:3px">${[1,2,3,4,5].map(n=>`<span style="color:${n<=r?"var(--accent)":"var(--border2)"};font-size:16px">★</span>`).join("")}</div>
-                <span style="font-family:'Syne',sans-serif;font-weight:800;color:var(--accent)">${r}</span>
-              </div>
-            </div>`;
-          }).join("")}
-        </div>
-        <div class="form-group">
-          <div class="form-label">Manager Comments</div>
-          <div class="readonly-field">${f.MgrComments||"—"}</div>
-        </div>
-        <div class="form-group">
-          <div class="form-label">Development Plan for Next Cycle</div>
-          <div class="readonly-field">${f.MgrDevPlan||"—"}</div>
+        ${starRows}
+        ${assessRows}
+        <div style="margin-top:16px">
+          <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">Manager Feedback</div>
+          <div class="readonly-field" style="margin-bottom:12px">${feedback||"—"}</div>
+          ${strengths?`<div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">Strengths</div>
+          <div class="readonly-field" style="margin-bottom:12px">${strengths}</div>`:""}
+          ${imprv?`<div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">Areas to Develop</div>
+          <div class="readonly-field" style="margin-bottom:12px">${imprv}</div>`:""}
+          <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">Development Plan</div>
+          <div class="readonly-field">${devPlan||"—"}</div>
         </div>
       </div>
     </div>`;
@@ -869,174 +1069,140 @@ async function viewSelf() {
 
   setContent(`
   <div class="section-title">My Self-Appraisal</div>
-  <div class="section-sub">${C.cycleName} · ${me.role} · ${me.squad} · Tenure: ${tn}</div>
+  <div class="section-sub">${C.cycleName} · ${me.role} · ${me.squad} · Tenure: ${tenure(me.joiningDate)}</div>
 
   <!-- Profile strip -->
   <div class="card mb6" style="padding:16px 22px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
     <div style="display:flex;gap:12px;align-items:center">
-      <div class="emp-av" style="width:46px;height:46px;font-size:19px;border-radius:13px">${me.name.charAt(0)}</div>
+      <div class="emp-av" style="width:46px;height:46px;font-size:19px;border-radius:13px;flex-shrink:0">${me.name.charAt(0)}</div>
       <div>
         <div style="font-weight:700;font-size:15px">${me.name}</div>
         <div style="font-size:12px;color:var(--text3)">${me.role} · ${me.dept} · ${me.squad}</div>
       </div>
     </div>
-    <div style="display:flex;align-items:center;gap:10px">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
       ${badge(status)}
-      ${!submitted ? `<button class="btn btn-ghost btn-sm" onclick="openAI('self',null)">✦ AI Assist</button>` : ""}
+      ${!readOnly?`<span style="font-size:12px;color:var(--text3)">Comp avg: <strong id="overall-self" style="color:var(--accent)">${sAvg||"—"}</strong>/5</span>`
+        :`<span style="color:var(--accent);font-weight:700;font-size:12px">Comp avg: ${sAvg||"—"}/5</span>`}
+      ${!readOnly?`<button class="btn btn-ghost btn-sm" onclick="showSelfAI()">✦ AI Assist</button>`:""}
     </div>
   </div>
 
   ${mgrSection}
 
-  <!-- Ratings card -->
-  <div class="card mb6">
-    <div class="ch">
-      <span class="ct">Competency Self-Ratings</span>
-      ${!submitted
-        ? `<span style="font-size:12px;color:var(--text3)">Overall: <strong id="overall-self" style="color:var(--accent)">${avg(S.selfR)||"—"}</strong>/5</span>`
-        : `<span style="color:var(--accent);font-weight:700;font-size:12px">Overall: ${avg(S.selfR)||"—"}/5</span>`}
-    </div>
-    <div class="cb">${rows}</div>
-  </div>
-
-  <!-- Comments & Goals -->
-  <div class="g2 mb6">
-    <div class="card">
-      <div class="ch"><span class="ct">Overall Comments</span></div>
-      <div class="cb">
-        ${submitted
-          ? `<div class="readonly-field">${S.selfComments||"—"}</div>`
-          : `<textarea id="selfComments" rows="6" placeholder="Describe your key contributions, achievements, and impact this cycle…">${S.selfComments}</textarea>`}
-      </div>
-    </div>
-    <div class="card">
-      <div class="ch"><span class="ct">Goals for Next Cycle</span></div>
-      <div class="cb">
-        ${submitted
-          ? `<div class="readonly-field">${S.selfGoals||"—"}</div>`
-          : `<textarea id="selfGoals" rows="6" placeholder="List 3–5 specific goals for the next 6 months…">${S.selfGoals}</textarea>`}
-      </div>
-    </div>
-  </div>
-
-  ${!submitted ? `
   <!-- AI Panel (hidden by default) -->
+  ${!readOnly?`
   <div id="aiPanel" class="ai-panel mb6" style="display:none">
     <div class="ai-ph">
       <div class="ai-ic">✦</div>
       <div style="font-weight:700;font-size:13px;color:var(--accent)">AI Assist</div>
       <button onclick="el('aiPanel').style.display='none'" style="margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px">✕</button>
     </div>
-    <div id="aiBody" class="ai-body">Click an action below to get AI assistance.</div>
+    <div id="aiBody" class="ai-body">Click an action below to get AI help with your appraisal.</div>
     <div class="ai-acts">
-      <button class="btn btn-ghost btn-sm" onclick="aiSelfDraft()">📝 Draft Comments</button>
+      <button class="btn btn-ghost btn-sm" onclick="aiSelfDraft()">📝 Draft Summary</button>
       <button class="btn btn-ghost btn-sm" onclick="aiSelfGoals()">🎯 Suggest Goals</button>
       <button class="btn btn-ghost btn-sm" onclick="aiSelfBias()">⚖️ Check Bias</button>
-      <button class="btn btn-ghost btn-sm" onclick="aiUseText('selfComments')">← Use as Comments</button>
+      <button class="btn btn-ghost btn-sm" onclick="aiUseText('Achievements')">← Use as Achievements</button>
+      <button class="btn btn-ghost btn-sm" onclick="aiUseText('NextGoals')">← Use as Goals</button>
     </div>
+  </div>`:""}
+
+  <!-- Questions form -->
+  <div class="card mb6">
+    <div class="ch">
+      <span class="ct">Appraisal Form</span>
+      <span style="font-size:12px;color:var(--text3)">${SELF_QUESTIONS.length} questions · ${SELF_QUESTIONS.filter(q=>q.req).length} required</span>
+    </div>
+    <div class="cb">${qHtml}</div>
   </div>
 
   <!-- Actions -->
-  <div style="display:flex;gap:12px;justify-content:flex-end">
+  ${!readOnly?`
+  <div style="display:flex;gap:12px;justify-content:flex-end;flex-wrap:wrap">
     <button class="btn btn-secondary" onclick="saveDraft()">💾 Save Draft</button>
-    <button class="btn btn-primary" onclick="submitSelf()">Submit Self-Appraisal →</button>
-  </div>` : `
-  <div class="card" style="padding:20px 24px;border-color:var(--success)44;background:var(--success)05;text-align:center">
+    <button class="btn btn-primary"   onclick="submitSelf()">Submit Self-Appraisal →</button>
+  </div>`:
+  `<div class="card" style="padding:20px 24px;border-color:var(--success)44;background:var(--success)05;text-align:center">
     <div style="font-size:34px;margin-bottom:8px">✅</div>
     <div style="font-weight:700;color:var(--success);font-size:15px">Self-Appraisal Submitted</div>
     <div style="color:var(--text3);font-size:13px;margin-top:6px">
-      Submitted on ${S.myAppraisal?.fields?.SelfSubmittedDate ? new Date(S.myAppraisal.fields.SelfSubmittedDate).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"}) : "—"}.
-      ${S.myAppraisal?.fields?.Status !== "Completed" ? "Waiting for manager review." : ""}
+      Submitted on ${S.myAppraisal?.fields?.SelfSubmittedDate?new Date(S.myAppraisal.fields.SelfSubmittedDate).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"}):"—"}.
+      ${S.myAppraisal?.fields?.Status!=="Completed"?"Waiting for manager review.":""}
     </div>
   </div>`}
   `);
 }
 
-// ── AI actions (self) ──────────────────────────────
-function openAI(section, empName) {
-  const panel = el("aiPanel");
-  if (panel) panel.style.display = "block";
-}
+// ── AI (self) ─────────────────────────────────────────────────
+function showSelfAI() { const p=el("aiPanel"); if(p) p.style.display="block"; }
+function showAiThinking() { const p=el("aiPanel"),b=el("aiBody"); if(p) p.style.display="block"; if(b) b.innerHTML=`<span class="pulse">✦ AI is thinking…</span>`; }
 
 async function aiSelfDraft() {
-  const me = S.employees.find(e => e.email === S.userEmail);
-  const tn = tenure(me?.joiningDate);
+  const me=S.employees.find(e=>e.email===S.userEmail);
+  syncTextAnswers("self");
   showAiThinking();
-  const text = await callAI(
-    `Write a self-appraisal "Overall Comments" paragraph for ${me?.name||"the employee"}, ${me?.role||"Engineer"} at Finzly (${me?.squad||"Engineering"} squad), with ${tn} tenure. ` +
-    `Current self-ratings: ${COMPS.map(c=>`${c.l}: ${S.selfR[c.k]||"unrated"}/5`).join(", ")}. ` +
-    `Write 3–4 sentences in first person, specific, confident, and growth-oriented.`
+  const text=await callAI(
+    `Write a self-appraisal summary paragraph for ${me?.name||"the employee"}, ${me?.role||"Engineer"} at Finzly (${me?.squad||"Engineering"} squad), tenure ${tenure(me?.joiningDate)}. `+
+    `Star ratings: ${["Tech","Delivery","Collab","Comms","Innovation","Leadership"].map(k=>`${k}:${S.selfAnswers[k]||"?"}`)
+.join(", ")}. `+
+    `Write 3-4 first-person sentences — specific, confident, growth-oriented.`
   );
-  el("aiBody").textContent = text;
+  el("aiBody").textContent=text;
 }
 
 async function aiSelfGoals() {
-  const me = S.employees.find(e => e.email === S.userEmail);
-  const low = COMPS.filter(c => S.selfR[c.k]).sort((a,b)=>(S.selfR[a.k]||5)-(S.selfR[b.k]||5)).slice(0,2).map(c=>c.l).join(", ");
+  const me=S.employees.find(e=>e.email===S.userEmail);
+  const lowest=["Tech","Delivery","Collab","Comms","Innovation","Leadership"]
+    .filter(k=>S.selfAnswers[k]).sort((a,b)=>(S.selfAnswers[a]||5)-(S.selfAnswers[b]||5))
+    .slice(0,2).join(", ");
   showAiThinking();
-  const text = await callAI(
-    `Suggest 3 SMART goals for ${me?.name||"the employee"} (${me?.role||"Engineer"}, ${me?.squad||"Engineering"} squad at Finzly) for the next 6 months. ` +
-    `Focus on their lowest-rated areas: ${low||"technical and delivery skills"}. ` +
-    `Format as numbered list, one goal per line, each concrete and measurable.`
+  const text=await callAI(
+    `Suggest 3 SMART goals for ${me?.role||"Engineer"} at Finzly (${me?.squad||"Engineering"}) for the next 6 months.`+
+    `${lowest?` Focus on lowest-rated areas: ${lowest}.`:""} Numbered list, each goal specific and measurable.`
   );
-  el("aiBody").textContent = text;
+  el("aiBody").textContent=text;
 }
 
 async function aiSelfBias() {
-  const comments = el("selfComments")?.value || S.selfComments;
-  if (!comments.trim()) { toast("Write some comments first","info"); return; }
+  syncTextAnswers("self");
+  const c=S.selfAnswers["Achievements"]||"";
+  if (!c.trim()) { toast("Fill in Achievements first","info"); return; }
   showAiThinking();
-  const text = await callAI(`Review this self-appraisal comment for vague language, over-modesty, or missed impact statements: "${comments}". Give 2–3 specific improvements.`);
-  el("aiBody").textContent = text;
+  const text=await callAI(`Review this self-appraisal text for vague language or missed impact: "${c}". Give 2-3 specific improvements.`);
+  el("aiBody").textContent=text;
 }
 
-function showAiThinking() {
-  const p = el("aiPanel"); if (p) p.style.display = "block";
-  const b = el("aiBody"); if (b) b.innerHTML = `<span class="pulse">✦ AI is thinking…</span>`;
+function aiUseText(qId) {
+  const ta=document.getElementById(`q-self-${qId}`);
+  if (ta && S.aiText) { ta.value=S.aiText; S.selfAnswers[qId]=S.aiText; toast("AI text applied","success"); }
 }
 
-function aiUseText(targetId) {
-  const target = el(targetId);
-  if (target && S.aiText) {
-    target.value = S.aiText;
-    toast("AI text applied","success");
-  }
-}
-
-// ── Save / Submit (self) ──────────────────────────
-function readSelfForm() {
-  if (el("selfComments")) S.selfComments = el("selfComments").value;
-  if (el("selfGoals"))    S.selfGoals    = el("selfGoals").value;
-}
-
+// ── Save / Submit (self) ──────────────────────────────────────
 async function saveDraft() {
-  const me = S.employees.find(e => e.email === S.userEmail);
+  const me=S.employees.find(e=>e.email===S.userEmail);
   if (!me) return;
-  readSelfForm();
+  syncTextAnswers("self");
   loading("Saving draft…");
   try {
-    const fields = buildSelfFields(me, "Draft");
-    const result = await saveAppraisal(fields, S.myAppraisal?.id);
-    if (!S.myAppraisal) S.myAppraisal = { id: result.id, fields: result.fields };
+    const r=await saveAppraisal(buildSPFields("self","Draft"),S.myAppraisal?.id);
+    if (!S.myAppraisal) S.myAppraisal={id:r.id,fields:r.fields};
     toast("Draft saved ✓","success");
   } catch(e) { toast("Save failed: "+e.message,"error"); }
   doneLoading();
 }
 
 async function submitSelf() {
-  const me = S.employees.find(e => e.email === S.userEmail);
+  const me=S.employees.find(e=>e.email===S.userEmail);
   if (!me) return;
-
-  const unrated = COMPS.filter(c => !S.selfR[c.k]);
-  if (unrated.length) { toast(`Rate all competencies first (missing: ${unrated.map(c=>c.l.split(" ")[0]).join(", ")})`, "error"); return; }
-  readSelfForm();
-  if (!S.selfComments.trim()) { toast("Please add overall comments","error"); return; }
+  syncTextAnswers("self");
+  const missing=SELF_QUESTIONS.filter(q=>q.req&&!S.selfAnswers[q.id]);
+  if (missing.length) { toast(`Complete required fields: ${missing.map(q=>q.label.split(" ").slice(0,3).join(" ")+"…").join(", ")}`, "error"); return; }
   if (!confirm(`Submit your self-appraisal for ${C.cycleName}?\n\nYou won't be able to edit after submission.`)) return;
-
   loading("Submitting…");
   try {
-    const fields = { ...buildSelfFields(me, "SelfSubmitted"), SelfSubmittedDate: new Date().toISOString() };
-    await saveAppraisal(fields, S.myAppraisal?.id);
+    const fields=buildSPFields("self","SelfSubmitted",{SelfSubmittedDate:new Date().toISOString()});
+    await saveAppraisal(fields,S.myAppraisal?.id);
     await notifySelfSubmit(me);
     toast("Appraisal submitted! Emails sent ✓","success");
     await viewSelf();
@@ -1044,185 +1210,138 @@ async function submitSelf() {
   doneLoading();
 }
 
-function buildSelfFields(me, status) {
-  return {
-    Title:              `${me.id}_${C.cycle}`,
-    EmployeeID:         me.id, EmployeeName:me.name,
-    EmployeeEmail:      me.email, ManagerEmail:me.managerEmail||"",
-    CycleID:            C.cycle, Status:status,
-    SelfRatingTech:     S.selfR.Tech||0, SelfRatingDelivery:S.selfR.Delivery||0,
-    SelfRatingCollab:   S.selfR.Collab||0, SelfRatingComms:S.selfR.Comms||0,
-    SelfRatingInnovation:S.selfR.Innovation||0, SelfRatingLeadership:S.selfR.Leadership||0,
-    SelfComments:       S.selfComments, SelfGoals:S.selfGoals,
-  };
-}
-
 // ╔══════════════════════════════════════════════════════════════╗
 // ║                  MANAGER REVIEW VIEW                       ║
 // ╚══════════════════════════════════════════════════════════════╝
 async function viewManager() {
-  S.view = "manager";
-  renderNav();
-
-  const reportees = myReportees();
+  S.view="manager"; renderNav();
+  const reportees=myReportees();
   if (!reportees.length) {
     setContent(`<div class="section-title">My Team</div>
     <div class="card cb" style="text-align:center;padding:56px">
       <div style="font-size:46px;margin-bottom:14px">👥</div>
       <div style="font-weight:600">No direct reports found for this cycle.</div>
-      <div style="color:var(--text3);font-size:13px;margin-top:8px">If incorrect, contact HR to update the employee data file.</div>
     </div>`); return;
   }
-
-  if (!S.selectedEmpId) S.selectedEmpId = reportees[0].id;
-
+  if (!S.selectedEmpId) S.selectedEmpId=reportees[0].id;
   loading("Loading team appraisals…");
-  const apprMap = {};
-  try {
-    for (const emp of reportees) {
-      const a = await getAppraisal(emp.id);
-      if (a) apprMap[emp.id] = a;
-    }
-  } catch(e) { console.error(e); }
+  const apprMap={};
+  try { for (const emp of reportees) { const a=await getAppraisal(emp.id); if(a) apprMap[emp.id]=a; } }
+  catch(e) { console.error(e); }
   doneLoading();
 
-  const selEmp  = reportees.find(e => e.id === S.selectedEmpId);
-  const appr    = apprMap[S.selectedEmpId];
-  const isReady = appr && appr.fields?.Status && appr.fields.Status !== "Draft";
-  const isDone  = appr?.fields?.Status === "Completed";
+  const selEmp = reportees.find(e=>e.id===S.selectedEmpId);
+  const appr   = apprMap[S.selectedEmpId];
+  const isReady= appr && appr.fields?.Status && appr.fields.Status!=="Draft";
+  const isDone = appr?.fields?.Status==="Completed";
 
-  // Sidebar team list
-  const sidebar = reportees.map(emp => {
-    const a = apprMap[emp.id];
-    const s = a?.fields?.Status||"NotStarted";
+  // Sidebar
+  const sidebar=reportees.map(emp=>{
+    const s=apprMap[emp.id]?.fields?.Status||"NotStarted";
     return `<div class="emp-item ${emp.id===S.selectedEmpId?"sel":""}" onclick="selectEmp('${emp.id}')">
       <div class="emp-av">${emp.name.charAt(0)}</div>
       <div style="flex:1;min-width:0">
         <div style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${emp.name}</div>
-        <div style="font-size:11px;color:var(--text3)">${emp.squad} · ${tenure(emp.joiningDate)}</div>
+        <div style="font-size:11px;color:var(--text3)">${emp.squad||emp.dept} · ${tenure(emp.joiningDate)}</div>
       </div>
       ${badge(s)}
     </div>`;
   }).join("");
 
-  // Main panel
-  let main = "";
+  let main="";
   if (!isReady) {
-    main = `<div class="card cb" style="text-align:center;padding:56px">
+    main=`<div class="card cb" style="text-align:center;padding:56px">
       <div style="font-size:46px;margin-bottom:14px">⏳</div>
       <div style="font-weight:600;font-size:15px">Waiting for self-appraisal</div>
       <div style="color:var(--text3);font-size:13px;margin-top:8px">${selEmp.name.split(" ")[0]} hasn't submitted yet.</div>
     </div>`;
   } else {
-    const f = appr.fields;
-    // Load saved manager ratings if any
-    if (f.MgrRatingTech) {
-      S.mgrR = { Tech:f.MgrRatingTech||0, Delivery:f.MgrRatingDelivery||0, Collab:f.MgrRatingCollab||0,
-        Comms:f.MgrRatingComms||0, Innovation:f.MgrRatingInnovation||0, Leadership:f.MgrRatingLeadership||0 };
-      S.mgrComments = f.MgrComments||""; S.mgrDevPlan = f.MgrDevPlan||"";
-    } else { S.mgrR={}; S.mgrComments=""; S.mgrDevPlan=""; }
+    const f=appr.fields;
+    // Load employee self answers
+    const empSelf={};
+    if (f.SelfFormData) { try { Object.assign(empSelf,JSON.parse(f.SelfFormData)); } catch {} }
+    else { Object.assign(empSelf,{Tech:f.SelfRatingTech||0,Delivery:f.SelfRatingDelivery||0,Collab:f.SelfRatingCollab||0,Comms:f.SelfRatingComms||0,Innovation:f.SelfRatingInnovation||0,Leadership:f.SelfRatingLeadership||0}); }
 
-    const selfAvg = avg({ Tech:f.SelfRatingTech, Delivery:f.SelfRatingDelivery, Collab:f.SelfRatingCollab,
-      Comms:f.SelfRatingComms, Innovation:f.SelfRatingInnovation, Leadership:f.SelfRatingLeadership });
+    // Load manager answers if any
+    if (f.MgrFormData) { try { S.mgrAnswers=JSON.parse(f.MgrFormData); } catch { S.mgrAnswers={}; } }
+    else { S.mgrAnswers={}; }
 
-    const selfRows = COMPS.map(c => {
-      const r = f[`SelfRating${c.k}`]||0;
-      return `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">
-        <div style="flex:1;font-size:13px;color:var(--text2)">${c.l}</div>
-        <div style="display:flex;gap:3px">${starsRO(r)}</div>
-        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:14px;color:var(--accent);width:22px;text-align:right">${r||"—"}</div>
+    const selfAvg=compAvg(empSelf);
+    const mgrAvg =compAvg(S.mgrAnswers);
+
+    // Employee self-appraisal read-only display (compact)
+    const empStarRows=["Tech","Delivery","Collab","Comms","Innovation","Leadership"].map(k=>{
+      const r=Number(empSelf[k]||0);
+      const qLabel=SELF_QUESTIONS.find(q=>q.id===k)?.label||k;
+      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)88">
+        <div style="flex:1;font-size:13px;color:var(--text2)">${qLabel}</div>
+        <div style="display:flex;gap:3px">${[1,2,3,4,5].map(n=>`<div class="ro-star ${n<=r?"on":"off"}">★</div>`).join("")}</div>
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:14px;color:var(--accent);min-width:22px;text-align:right">${r||"—"}</div>
+      </div>`;
+    }).join("");
+    const selfBehaviors=SELF_QUESTIONS.filter(q=>q.type!=="stars"&&q.type!=="textarea"&&q.type!=="text"&&empSelf[q.id]).map(q=>{
+      return `<div style="display:flex;align-items:flex-start;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)88">
+        <div style="flex:1;font-size:12px;color:var(--text3)">${q.label}</div>
+        <div style="font-size:12px;font-weight:700;color:var(--info)">${empSelf[q.id]}</div>
+      </div>`;
+    }).join("");
+    const selfOpen=SELF_QUESTIONS.filter(q=>(q.type==="textarea"||q.type==="text")&&empSelf[q.id]).map(q=>{
+      return `<div class="form-group">
+        <div class="form-label">${q.label}</div>
+        <div class="readonly-field">${empSelf[q.id]||"—"}</div>
       </div>`;
     }).join("");
 
-    const mgrRows = COMPS.map(c => {
-      const rv = S.mgrR[c.k]||0;
-      return `<div class="rating-row">
-        <div class="rating-info"><div class="rating-name">${c.l}</div></div>
-        ${isDone
-          ? `<div style="display:flex;gap:4px">${starsRO(rv)}</div>
-             <div class="r-val">${rv||"—"}</div>
-             <div class="r-lbl" style="color:var(--accent)">${RLBL[rv]||""}</div>`
-          : `${starsWidget(c.k,rv,"mgr")}
-             <div class="r-val" id="r-val-mgr-${c.k}">${rv||"—"}</div>
-             <div class="r-lbl" id="r-lbl-mgr-${c.k}">${rv?RLBL[rv]:"Click to rate"}</div>`}
-      </div>`;
-    }).join("");
+    // Manager form (interactive or read-only)
+    const mgrQHtml=renderAllQuestions(MGR_QUESTIONS,S.mgrAnswers,"mgr",isDone);
 
-    const jiraSection = C.jiraOn
-      ? `<div class="card mb4"><div class="ch"><span class="ct">⚡ Jira Tickets</span><span style="font-size:11px;color:var(--text3)">Current sprint</span></div>
-          <div class="cb" id="jiraContent"><div style="color:var(--text3);font-size:13px">Loading…</div></div></div>`
-      : `<div class="card mb4" style="padding:14px 22px;border-style:dashed">
-          <div style="font-size:12px;color:var(--text3)">⚡ <strong>Jira integration pending</strong> — set C.jiraOn=true and add API token once IT provides access.</div>
-        </div>`;
+    const jiraSection=C.jiraOn
+      ?`<div class="card mb4"><div class="ch"><span class="ct">⚡ Jira — Current Sprint</span></div><div class="cb" id="jiraContent"><div style="color:var(--text3);font-size:13px">Loading…</div></div></div>`
+      :`<div class="card mb4" style="padding:14px 22px;border-style:dashed"><div style="font-size:12px;color:var(--text3)">⚡ <strong>Jira integration pending</strong> — set C.jiraOn=true once IT provides the API token.</div></div>`;
 
-    main = `
+    main=`
     <!-- Profile strip -->
     <div class="card mb4" style="padding:15px 22px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
       <div style="display:flex;gap:12px;align-items:center">
         <div class="emp-av" style="width:46px;height:46px;font-size:19px;border-radius:13px">${selEmp.name.charAt(0)}</div>
         <div>
           <div style="font-weight:700;font-size:15px">${selEmp.name}</div>
-          <div style="font-size:12px;color:var(--text3)">${selEmp.role} · ${selEmp.squad} · ${tenure(selEmp.joiningDate)}</div>
+          <div style="font-size:12px;color:var(--text3)">${selEmp.role} · ${selEmp.squad||selEmp.dept} · ${tenure(selEmp.joiningDate)}</div>
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:10px">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         ${badge(appr.fields.Status)}
-        ${!isDone ? `<button class="btn btn-ghost btn-sm" onclick="openAI('mgr','${selEmp.name}')">✦ AI Assist</button>` : ""}
+        ${!isDone?`<button class="btn btn-ghost btn-sm" onclick="showMgrAI('${selEmp.name}')">✦ AI Assist</button>`:""}
       </div>
     </div>
 
     ${jiraSection}
 
-    <!-- Employee self-appraisal (read-only) -->
+    <!-- Employee Self-Appraisal (read-only) -->
     <div class="card mb4">
       <div class="ch">
         <span class="ct">Employee Self-Appraisal</span>
-        <span style="font-size:12px;color:var(--text3)">Overall: <strong style="color:var(--accent)">${selfAvg||"—"}/5</strong></span>
+        <span style="font-size:12px;color:var(--text3)">Competency avg: <strong style="color:var(--accent)">${selfAvg||"—"}/5</strong></span>
       </div>
       <div class="cb">
-        ${selfRows}
-        <div class="form-group" style="margin-top:16px">
-          <div class="form-label">Employee Comments</div>
-          <div class="readonly-field">${f.SelfComments||"—"}</div>
-        </div>
-        <div class="form-group">
-          <div class="form-label">Employee Goals</div>
-          <div class="readonly-field">${f.SelfGoals||"—"}</div>
-        </div>
+        ${empStarRows}
+        ${selfBehaviors}
+        <div style="margin-top:4px">${selfOpen}</div>
       </div>
     </div>
 
-    <!-- Manager ratings -->
+    <!-- Manager Review Form -->
     <div class="card mb4">
       <div class="ch">
-        <span class="ct">Your Manager Ratings</span>
+        <span class="ct">Your Manager Review</span>
         ${!isDone
-          ? `<span style="font-size:12px;color:var(--text3)">Overall: <strong id="overall-mgr" style="color:var(--accent)">${avg(S.mgrR)||"—"}</strong>/5</span>`
-          : `<span style="color:var(--success);font-weight:700;font-size:12px">✓ Completed · ${avg(S.mgrR)||"—"}/5</span>`}
+          ?`<span style="font-size:12px;color:var(--text3)">Comp avg: <strong id="overall-mgr" style="color:var(--accent)">${mgrAvg||"—"}</strong>/5</span>`
+          :`<span style="color:var(--success);font-weight:700;font-size:12px">✓ Complete · ${mgrAvg||"—"}/5</span>`}
       </div>
-      <div class="cb">${mgrRows}</div>
+      <div class="cb">${mgrQHtml}</div>
     </div>
 
-    <div class="g2 mb4">
-      <div class="card">
-        <div class="ch"><span class="ct">Manager Comments</span></div>
-        <div class="cb">
-          ${isDone
-            ? `<div class="readonly-field">${S.mgrComments||"—"}</div>`
-            : `<textarea id="mgrComments" rows="6" placeholder="Provide specific, constructive feedback…">${S.mgrComments}</textarea>`}
-        </div>
-      </div>
-      <div class="card">
-        <div class="ch"><span class="ct">Development Plan</span></div>
-        <div class="cb">
-          ${isDone
-            ? `<div class="readonly-field">${S.mgrDevPlan||"—"}</div>`
-            : `<textarea id="mgrDevPlan" rows="6" placeholder="Growth goals for next cycle…">${S.mgrDevPlan}</textarea>`}
-        </div>
-      </div>
-    </div>
-
-    ${!isDone ? `
+    ${!isDone?`
     <!-- AI Panel -->
     <div id="aiPanel" class="ai-panel mb4" style="display:none">
       <div class="ai-ph">
@@ -1232,19 +1351,18 @@ async function viewManager() {
       </div>
       <div id="aiBody" class="ai-body">Click an action below.</div>
       <div class="ai-acts">
-        <button class="btn btn-ghost btn-sm" onclick="aiMgrDraft()">📝 Draft Comments</button>
+        <button class="btn btn-ghost btn-sm" onclick="aiMgrDraft()">📝 Draft Feedback</button>
         <button class="btn btn-ghost btn-sm" onclick="aiDevPlan()">🎯 Dev Plan</button>
         <button class="btn btn-ghost btn-sm" onclick="aiMgrBias()">⚖️ Bias Check</button>
         <button class="btn btn-ghost btn-sm" onclick="aiFlightRisk()">⚠️ Flight Risk</button>
-        <button class="btn btn-ghost btn-sm" onclick="aiUseText('mgrComments')">← Use as Comments</button>
-        <button class="btn btn-ghost btn-sm" onclick="aiUseText('mgrDevPlan')">← Use as Dev Plan</button>
+        <button class="btn btn-ghost btn-sm" onclick="aiUseForMgr('MgrComments')">← Use as Feedback</button>
+        <button class="btn btn-ghost btn-sm" onclick="aiUseForMgr('MgrDevPlan')">← Use as Dev Plan</button>
       </div>
     </div>
-
-    <div style="display:flex;gap:12px;justify-content:flex-end">
+    <div style="display:flex;gap:12px;justify-content:flex-end;flex-wrap:wrap">
       <button class="btn btn-secondary" onclick="saveMgrDraft('${appr.id}')">💾 Save Draft</button>
-      <button class="btn btn-primary" onclick="submitMgr('${appr.id}','${selEmp.id}')">Submit Review →</button>
-    </div>` : ""}`;
+      <button class="btn btn-primary"   onclick="submitMgr('${appr.id}','${selEmp.id}','${selEmp.email}')">Submit Review →</button>
+    </div>`:""}`;
   }
 
   setContent(`
@@ -1258,152 +1376,127 @@ async function viewManager() {
     <div>${main}</div>
   </div>`);
 
-  // Load Jira if enabled
   if (C.jiraOn && isReady) {
-    fetchJira(selEmp.email).then(tickets => {
-      const jc = el("jiraContent");
-      if (!jc) return;
-      if (!tickets.length) { jc.innerHTML = `<div style="color:var(--text3);font-size:13px">No tickets found for ${selEmp.name}.</div>`; return; }
-      jc.innerHTML = tickets.map(t =>
-        `<div style="display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)">
-          <span style="font-size:11px;color:var(--info);font-weight:700">${t.id}</span>
-          <span style="flex:1;font-size:13px">${t.title}</span>
-          <span style="font-size:11px;color:var(--text3)">${t.pts}pts</span>
-          <span style="font-size:11px;color:var(--success)">${t.status}</span>
-        </div>`
-      ).join("");
+    fetchJira(selEmp.email).then(tickets=>{
+      const jc=el("jiraContent"); if(!jc) return;
+      if(!tickets.length){jc.innerHTML=`<div style="color:var(--text3);font-size:13px">No open tickets.</div>`;return;}
+      jc.innerHTML=tickets.map(t=>`<div style="display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)">
+        <span style="font-size:11px;color:var(--info);font-weight:700">${t.id}</span>
+        <span style="flex:1;font-size:13px">${t.title}</span>
+        <span style="font-size:11px;color:var(--text3)">${t.pts}pts</span>
+        <span style="font-size:11px;color:var(--success)">${t.status}</span>
+      </div>`).join("");
     });
   }
 }
 
-function selectEmp(empId) {
-  S.selectedEmpId = empId;
-  S.mgrR = {}; S.mgrComments = ""; S.mgrDevPlan = ""; S.aiText = "";
-  viewManager();
-}
+function selectEmp(empId) { S.selectedEmpId=empId; S.mgrAnswers={}; S.aiText=""; viewManager(); }
 
-// ── AI actions (manager) ──────────────────────────
+// ── AI (manager) ──────────────────────────────────────────────
+function showMgrAI(name) { const p=el("aiPanel"); if(p) p.style.display="block"; }
+
 async function aiMgrDraft() {
-  const emp = S.employees.find(e => e.id === S.selectedEmpId);
+  const emp=S.employees.find(e=>e.id===S.selectedEmpId);
+  syncTextAnswers("mgr");
   showAiThinking();
-  const text = await callAI(
-    `Write manager performance feedback for ${emp.name} (${emp.role}, ${emp.squad} squad, ${tenure(emp.joiningDate)} tenure at Finzly). ` +
-    `Manager ratings: ${COMPS.map(c=>`${c.l}: ${S.mgrR[c.k]||"?"}/5`).join(", ")}. ` +
-    `Write 3–4 sentences in third person: specific, constructive, and growth-oriented.`
+  const text=await callAI(
+    `Write manager performance feedback for ${emp.name} (${emp.role}, ${emp.squad||emp.dept} squad, ${tenure(emp.joiningDate)} at Finzly). `+
+    `Manager star ratings: ${["Tech","Delivery","Collab","Comms","Innovation","Leadership"].map(k=>`${k}:${S.mgrAnswers[k]||"?"}`)
+.join(", ")}. `+
+    `Ownership: ${S.mgrAnswers["OwnsWork"]||"not rated"}. Write 3-4 specific, constructive third-person sentences.`
   );
-  el("aiBody").textContent = text;
+  el("aiBody").textContent=text;
 }
 
 async function aiDevPlan() {
-  const emp = S.employees.find(e => e.id === S.selectedEmpId);
-  const low = COMPS.filter(c=>S.mgrR[c.k]).sort((a,b)=>(S.mgrR[a.k]||5)-(S.mgrR[b.k]||5)).slice(0,2).map(c=>c.l).join(", ");
+  const emp=S.employees.find(e=>e.id===S.selectedEmpId);
+  const lowest=["Tech","Delivery","Collab","Comms","Innovation","Leadership"]
+    .filter(k=>S.mgrAnswers[k]).sort((a,b)=>(S.mgrAnswers[a]||5)-(S.mgrAnswers[b]||5))
+    .slice(0,2).join(" & ");
   showAiThinking();
-  const text = await callAI(
-    `Create a 3-point development plan for ${emp.name} (${emp.role}) for the next 6 months at Finzly. ` +
-    `Focus on their lowest areas: ${low||"technical and delivery skills"}. ` +
-    `Each point should be actionable, specific, and include a way to measure progress.`
-  );
-  el("aiBody").textContent = text;
+  const text=await callAI(`Create a 3-point development plan for ${emp.name} (${emp.role}) at Finzly for the next 6 months.${lowest?` Focus on: ${lowest}.`:""} Each point: specific, actionable, measurable.`);
+  el("aiBody").textContent=text;
 }
 
 async function aiMgrBias() {
-  const c = el("mgrComments")?.value || S.mgrComments;
-  if (!c.trim()) { toast("Write manager comments first","info"); return; }
+  syncTextAnswers("mgr");
+  const c=S.mgrAnswers["MgrComments"]||"";
+  if (!c.trim()) { toast("Write manager feedback first","info"); return; }
   showAiThinking();
-  const text = await callAI(`Review this manager feedback for unconscious bias, vague language, or non-specific statements: "${c}". Flag specific issues and suggest 2–3 improvements.`);
-  el("aiBody").textContent = text;
+  const text=await callAI(`Review this manager feedback for unconscious bias or vague language: "${c}". Flag specific issues, suggest 2-3 improvements.`);
+  el("aiBody").textContent=text;
 }
 
 async function aiFlightRisk() {
-  const emp = S.employees.find(e => e.id === S.selectedEmpId);
-  const tn = tenure(emp.joiningDate);
+  const emp=S.employees.find(e=>e.id===S.selectedEmpId);
   showAiThinking();
-  const text = await callAI(
-    `Assess flight/attrition risk for ${emp.name} (${emp.role}, ${emp.squad}), tenure ${tn}. ` +
-    `Manager rating: ${avg(S.mgrR)||"not yet rated"}/5. ` +
-    `Context: at Finzly, the under-12-month cohort has the highest exit rate. ` +
-    `Give a brief risk assessment (Low/Medium/High) and 2 specific retention actions.`
+  const text=await callAI(
+    `Assess flight/attrition risk for ${emp.name} (${emp.role}, ${emp.squad||emp.dept}), tenure ${tenure(emp.joiningDate)} at Finzly. `+
+    `Manager comp avg: ${compAvg(S.mgrAnswers)||"not yet rated"}/5. `+
+    `Engagement: ${S.mgrAnswers["PositiveForce"]||"not assessed"}. Ownership: ${S.mgrAnswers["OwnsWork"]||"not assessed"}. `+
+    `At Finzly, under-12-month cohort has the highest exit rate. Rate risk Low/Medium/High with 2 specific retention actions.`
   );
-  el("aiBody").textContent = text;
+  el("aiBody").textContent=text;
 }
 
-// ── Save / Submit (manager) ─────────────────────
+function aiUseForMgr(qId) {
+  const ta=document.getElementById(`q-mgr-${qId}`);
+  if (ta && S.aiText) { ta.value=S.aiText; S.mgrAnswers[qId]=S.aiText; toast("AI text applied","success"); }
+}
+
+// ── Save / Submit (manager) ───────────────────────────────────
 async function saveMgrDraft(itemId) {
-  if (el("mgrComments")) S.mgrComments = el("mgrComments").value;
-  if (el("mgrDevPlan"))  S.mgrDevPlan  = el("mgrDevPlan").value;
+  syncTextAnswers("mgr");
   loading("Saving…");
-  try {
-    await saveAppraisal(buildMgrFields("ManagerReviewing"), itemId);
-    toast("Draft saved ✓","success");
-  } catch(e) { toast("Save failed: "+e.message,"error"); }
+  try { await saveAppraisal(buildSPFields("mgr","ManagerReviewing"),itemId); toast("Draft saved ✓","success"); }
+  catch(e) { toast("Save failed: "+e.message,"error"); }
   doneLoading();
 }
 
-async function submitMgr(itemId, empId) {
-  const unrated = COMPS.filter(c => !S.mgrR[c.k]);
-  if (unrated.length) { toast(`Rate all competencies (missing: ${unrated.map(c=>c.l.split(" ")[0]).join(", ")})`, "error"); return; }
-  if (el("mgrComments")) S.mgrComments = el("mgrComments").value;
-  if (el("mgrDevPlan"))  S.mgrDevPlan  = el("mgrDevPlan").value;
-  if (!S.mgrComments.trim()) { toast("Please add manager comments","error"); return; }
+async function submitMgr(itemId,empId,empEmail) {
+  syncTextAnswers("mgr");
+  const missing=MGR_QUESTIONS.filter(q=>q.req&&!S.mgrAnswers[q.id]);
+  if (missing.length) { toast(`Complete required fields: ${missing.map(q=>q.label.split(" ").slice(0,3).join(" ")+"…").join(", ")}`, "error"); return; }
   if (!confirm("Submit manager review? The employee will be notified by email.")) return;
-
   loading("Submitting…");
   try {
-    await saveAppraisal({ ...buildMgrFields("Completed"), MgrReviewedDate:new Date().toISOString() }, itemId);
-    const emp = S.employees.find(e => e.id === empId);
+    await saveAppraisal(buildSPFields("mgr","Completed",{MgrReviewedDate:new Date().toISOString()}),itemId);
+    const emp=S.employees.find(e=>e.id===empId||e.email===empEmail);
     if (emp) await notifyMgrDone(emp);
     toast("Review submitted! Employee notified ✓","success");
-    S.selectedEmpId = null;
-    await viewManager();
+    S.selectedEmpId=null; await viewManager();
   } catch(e) { toast("Submit failed: "+e.message,"error"); }
   doneLoading();
 }
 
-function buildMgrFields(status) {
-  return {
-    Status:              status,
-    MgrRatingTech:       S.mgrR.Tech||0, MgrRatingDelivery:S.mgrR.Delivery||0,
-    MgrRatingCollab:     S.mgrR.Collab||0, MgrRatingComms:S.mgrR.Comms||0,
-    MgrRatingInnovation: S.mgrR.Innovation||0, MgrRatingLeadership:S.mgrR.Leadership||0,
-    MgrComments:         S.mgrComments, MgrDevPlan:S.mgrDevPlan,
-  };
-}
-
 // ╔══════════════════════════════════════════════════════════════╗
-// ║                    HR DASHBOARD VIEW                       ║
+// ║                    HR / LEADERSHIP DASHBOARD               ║
 // ╚══════════════════════════════════════════════════════════════╝
-async function viewHR(readOnly = false) {
-  S.view = "hr";
-  renderNav();
+async function viewHR(readOnly=false) {
+  S.view="hr"; renderNav();
   loading("Loading appraisal data…");
-  try { S.allAppraisals = await getAllAppraisals(); } catch(e) { S.allAppraisals = []; }
+  try { S.allAppraisals=await getAllAppraisals(); } catch(e) { S.allAppraisals=[]; }
   doneLoading();
 
   const total     = S.employees.length;
-  const submitted = S.allAppraisals.filter(a => ["SelfSubmitted","ManagerReviewing","Completed"].includes(a.fields?.Status)).length;
-  const completed = S.allAppraisals.filter(a => a.fields?.Status === "Completed").length;
-  const pending   = total - submitted;
-  const pct       = total ? Math.round(submitted/total*100) : 0;
+  const submitted = S.allAppraisals.filter(a=>["SelfSubmitted","ManagerReviewing","Completed"].includes(a.fields?.Status)).length;
+  const completed = S.allAppraisals.filter(a=>a.fields?.Status==="Completed").length;
+  const pending   = total-submitted;
+  const pct       = total?Math.round(submitted/total*100):0;
 
-  const trows = S.employees.map(emp => {
-    const a     = S.allAppraisals.find(x => x.fields?.EmployeeID === emp.id);
-    const s     = a?.fields?.Status || "NotStarted";
-    const sAvg  = a ? avg({ Tech:a.fields?.SelfRatingTech, Delivery:a.fields?.SelfRatingDelivery,
-      Collab:a.fields?.SelfRatingCollab, Comms:a.fields?.SelfRatingComms,
-      Innovation:a.fields?.SelfRatingInnovation, Leadership:a.fields?.SelfRatingLeadership }) : null;
-    const mAvg  = s==="Completed" ? avg({ Tech:a.fields?.MgrRatingTech, Delivery:a.fields?.MgrRatingDelivery,
-      Collab:a.fields?.MgrRatingCollab, Comms:a.fields?.MgrRatingComms,
-      Innovation:a.fields?.MgrRatingInnovation, Leadership:a.fields?.MgrRatingLeadership }) : null;
-    const tn    = tenure(emp.joiningDate);
-    const risk  = tn.includes("mo") || parseFloat(tn) < 1.3;
-
+  const trows=S.employees.map(emp=>{
+    const a    = S.allAppraisals.find(x=>x.fields?.EmployeeID===emp.id||x.fields?.EmployeeEmail===emp.email);
+    const s    = a?.fields?.Status||"NotStarted";
+    const sAvg = a?.fields?.SelfRatingTech ? compAvg({Tech:a.fields.SelfRatingTech,Delivery:a.fields.SelfRatingDelivery,Collab:a.fields.SelfRatingCollab,Comms:a.fields.SelfRatingComms,Innovation:a.fields.SelfRatingInnovation,Leadership:a.fields.SelfRatingLeadership}) : null;
+    const mAvg = s==="Completed"&&a?.fields?.MgrRatingTech ? compAvg({Tech:a.fields.MgrRatingTech,Delivery:a.fields.MgrRatingDelivery,Collab:a.fields.MgrRatingCollab,Comms:a.fields.MgrRatingComms,Innovation:a.fields.MgrRatingInnovation,Leadership:a.fields.MgrRatingLeadership}) : null;
+    const tn   = tenure(emp.joiningDate);
+    const risk = tn.includes("mo")||parseFloat(tn)<1.3;
     return `<tr>
       <td><div style="display:flex;gap:9px;align-items:center">
         <div class="emp-av" style="width:32px;height:32px;font-size:12px;border-radius:8px;flex-shrink:0">${emp.name.charAt(0)}</div>
         <div><div style="font-weight:600;font-size:13px">${emp.name}</div>
-        <div style="font-size:11px;color:var(--text3)">${emp.id}</div></div>
-      </div></td>
-      <td><div style="font-size:12px">${emp.role}</div><div style="font-size:11px;color:var(--text3)">${emp.squad}</div></td>
+        <div style="font-size:11px;color:var(--text3)">${emp.id||"—"}</div></div></div></td>
+      <td><div style="font-size:12px">${emp.role}</div><div style="font-size:11px;color:var(--text3)">${emp.squad||emp.dept}</div></td>
       <td style="font-size:12px">${emp.manager||"—"}</td>
       <td>${tn} ${risk?`<span class="badge b-risk" style="margin-left:4px;font-size:10px">Risk</span>`:""}</td>
       <td>${badge(s)}</td>
@@ -1413,32 +1506,30 @@ async function viewHR(readOnly = false) {
   }).join("");
 
   setContent(`
-  <div class="section-title">${readOnly ? "Org Performance Overview" : "HR Dashboard"}</div>
+  <div class="section-title">${readOnly?"Org Performance Overview":"HR Dashboard"}</div>
   <div class="section-sub">
     ${C.cycleName} · ${total} employees · Deadline: ${C.deadline}
-    ${readOnly ? `<span class="badge b-sub" style="margin-left:10px;vertical-align:middle">Read Only</span>` : ""}
+    ${readOnly?`<span class="badge b-sub" style="margin-left:10px;vertical-align:middle">Read Only</span>`:""}
   </div>
 
-  <!-- Stats -->
-  <div class="g4 mb6">
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px">
     ${[
-      { l:"Total Employees", v:total,     c:"var(--info)",    s:"Active headcount" },
-      { l:"Self-Submitted",  v:submitted, c:"var(--accent)",  s:`${pct}% of cycle` },
-      { l:"Fully Complete",  v:completed, c:"var(--success)", s:"Both sides done" },
-      { l:"Not Started",     v:pending,   c:"var(--error)",   s:"Need reminder" },
-    ].map(x => `<div class="card stat-card">
-      <div class="s-lbl">${x.l}</div>
-      <div class="s-val" style="color:${x.c}">${x.v}</div>
-      <div class="s-sub">${x.s}</div>
+      {l:"Total Employees",v:total,    c:"var(--info)",   s:"Active headcount"},
+      {l:"Self-Submitted", v:submitted,c:"var(--accent)", s:`${pct}% of cycle`},
+      {l:"Fully Complete", v:completed,c:"var(--success)",s:"Both sides done"},
+      {l:"Not Started",    v:pending,  c:"var(--error)",  s:"Need reminder"},
+    ].map(x=>`<div class="card stat-card">
+      <div class="s-lbl3">${x.l}</div>
+      <div class="s-val3" style="color:${x.c}">${x.v}</div>
+      <div class="s-sub3">${x.s}</div>
     </div>`).join("")}
   </div>
 
-  <!-- Progress + actions -->
   <div class="card mb6" style="padding:18px 22px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px">
       <div style="font-weight:700;font-size:13px">Cycle Completion — ${pct}%</div>
       <div style="display:flex;gap:8px">
-        ${!readOnly ? `<button class="btn btn-ghost btn-sm" onclick="sendAllReminders()">📧 Send Reminders</button>` : ""}
+        ${!readOnly?`<button class="btn btn-ghost btn-sm" onclick="sendAllReminders()">📧 Send Reminders</button>`:""}
         <button class="btn btn-secondary btn-sm" onclick="exportCSV()">⬇ Export CSV</button>
       </div>
     </div>
@@ -1446,7 +1537,6 @@ async function viewHR(readOnly = false) {
     <div style="font-size:12px;color:var(--text3)">${submitted} of ${total} self-appraisals submitted · ${completed} fully reviewed</div>
   </div>
 
-  <!-- Table -->
   <div class="card" style="overflow:hidden">
     <div class="ch">
       <span class="ct">All Employees — ${C.cycleName}</span>
@@ -1467,53 +1557,46 @@ async function viewHR(readOnly = false) {
 async function sendAllReminders() {
   if (!confirm("Send reminder emails to all employees who haven't submitted?")) return;
   loading("Sending reminders…");
-  const n = await sendBulkReminders();
-  doneLoading();
+  const n=await sendBulkReminders(); doneLoading();
   toast(`Reminder emails sent to ${n} employee${n!==1?"s":""}`, "success");
 }
 
 function exportCSV() {
-  const hdrs = ["ID","Name","Role","Squad","Manager","Tenure","Status","Self Avg","Mgr Avg"];
-  const rows = S.employees.map(emp => {
-    const a = S.allAppraisals.find(x => x.fields?.EmployeeID === emp.id);
-    const sA = a ? avg({ Tech:a.fields?.SelfRatingTech, Delivery:a.fields?.SelfRatingDelivery,
-      Collab:a.fields?.SelfRatingCollab, Comms:a.fields?.SelfRatingComms,
-      Innovation:a.fields?.SelfRatingInnovation, Leadership:a.fields?.SelfRatingLeadership }) : "";
-    const mA = a?.fields?.Status==="Completed" ? avg({ Tech:a.fields?.MgrRatingTech, Delivery:a.fields?.MgrRatingDelivery,
-      Collab:a.fields?.MgrRatingCollab, Comms:a.fields?.MgrRatingComms,
-      Innovation:a.fields?.MgrRatingInnovation, Leadership:a.fields?.MgrRatingLeadership }) : "";
-    return [emp.id, emp.name, emp.role, emp.squad, emp.manager, tenure(emp.joiningDate), a?.fields?.Status||"Not Started", sA, mA];
+  const hdrs=["ID","Name","Role","Squad","Manager","Tenure","Status","Self Avg","Mgr Avg"];
+  const rows=S.employees.map(emp=>{
+    const a=S.allAppraisals.find(x=>x.fields?.EmployeeID===emp.id||x.fields?.EmployeeEmail===emp.email);
+    const sA=a?.fields?.SelfRatingTech?compAvg({Tech:a.fields.SelfRatingTech,Delivery:a.fields.SelfRatingDelivery,Collab:a.fields.SelfRatingCollab,Comms:a.fields.SelfRatingComms,Innovation:a.fields.SelfRatingInnovation,Leadership:a.fields.SelfRatingLeadership}):"";
+    const mA=a?.fields?.Status==="Completed"&&a.fields?.MgrRatingTech?compAvg({Tech:a.fields.MgrRatingTech,Delivery:a.fields.MgrRatingDelivery,Collab:a.fields.MgrRatingCollab,Comms:a.fields.MgrRatingComms,Innovation:a.fields.MgrRatingInnovation,Leadership:a.fields.MgrRatingLeadership}):"";
+    return [emp.id,emp.name,emp.role,emp.squad||emp.dept,emp.manager,tenure(emp.joiningDate),a?.fields?.Status||"Not Started",sA,mA];
   });
-  const csv = [hdrs, ...rows].map(r => r.map(v => `"${v||""}"`).join(",")).join("\n");
-  const a = document.createElement("a");
-  a.href = "data:text/csv;charset=utf-8,"+encodeURIComponent(csv);
-  a.download = `Finzly_Appraisals_${C.cycle}.csv`;
-  a.click();
-  toast("CSV exported","success");
+  const csv=[hdrs,...rows].map(r=>r.map(v=>`"${v||""}"`).join(",")).join("\n");
+  const link=document.createElement("a");
+  link.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);
+  link.download=`Finzly_Appraisals_${C.cycle}.csv`;
+  link.click(); toast("CSV exported","success");
 }
 
 // ╔══════════════════════════════════════════════════════════════╗
 // ║                      NAVIGATION                            ║
 // ╚══════════════════════════════════════════════════════════════╝
 function renderNav() {
-  const role = S.userRole;
-  const hasTeam = myReportees().length > 0;
-  const tabs = [];
-  if (role === "hr") {
-    tabs.push({ v:"hr",       l:"📊 Dashboard",     fn:"viewHR()" });
-    tabs.push({ v:"self",     l:"📝 My Appraisal",  fn:"viewSelf()" });
-    if (hasTeam) tabs.push({ v:"manager", l:"👥 My Team", fn:"viewManager()" });
-  } else if (role === "leadership") {
-    tabs.push({ v:"hr",       l:"📊 Org Overview",  fn:"viewHR(true)" });
-    tabs.push({ v:"self",     l:"📝 My Appraisal",  fn:"viewSelf()" });
-    if (hasTeam) tabs.push({ v:"manager", l:"👥 My Team", fn:"viewManager()" });
-  } else if (role === "manager") {
-    tabs.push({ v:"manager",  l:"👥 My Team",       fn:"viewManager()" });
-    tabs.push({ v:"self",     l:"📝 My Appraisal",  fn:"viewSelf()" });
+  const role=S.userRole, hasTeam=myReportees().length>0;
+  const tabs=[];
+  if (role==="hr") {
+    tabs.push({v:"hr",    l:"📊 Dashboard",   fn:"viewHR()"});
+    tabs.push({v:"self",  l:"📝 My Appraisal",fn:"viewSelf()"});
+    if (hasTeam) tabs.push({v:"manager",l:"👥 My Team",fn:"viewManager()"});
+  } else if (role==="leadership") {
+    tabs.push({v:"hr",    l:"📊 Org Overview", fn:"viewHR(true)"});
+    tabs.push({v:"self",  l:"📝 My Appraisal", fn:"viewSelf()"});
+    if (hasTeam) tabs.push({v:"manager",l:"👥 My Team",fn:"viewManager()"});
+  } else if (role==="manager") {
+    tabs.push({v:"manager",l:"👥 My Team",    fn:"viewManager()"});
+    tabs.push({v:"self",   l:"📝 My Appraisal",fn:"viewSelf()"});
   } else {
-    tabs.push({ v:"self",     l:"📝 My Appraisal",  fn:"viewSelf()" });
+    tabs.push({v:"self",l:"📝 My Appraisal",fn:"viewSelf()"});
   }
-  el("mainNav").innerHTML = tabs.map(t =>
+  el("mainNav").innerHTML=tabs.map(t=>
     `<button class="nav-tab ${S.view===t.v?"active":""}" onclick="${t.fn}">${t.l}</button>`
   ).join("");
 }
@@ -1523,52 +1606,33 @@ function renderNav() {
 // ╚══════════════════════════════════════════════════════════════╝
 async function boot(account) {
   loading("Setting up your workspace…");
-  S.account   = account;
-  S.userName  = account.name || account.username.split("@")[0];
-  S.userEmail = account.username.toLowerCase();
-
-  // Update cycle badge on login screen
-  el("loginCycleBadge").textContent = `${C.cycleName} · Deadline: ${C.deadline}`;
-
-  // Header
-  el("hCycle").textContent    = C.cycleName;
-  el("hDeadline").textContent = C.deadline;
-  el("hUserName").textContent = S.userName;
-  el("hAvatar").textContent   = S.userName.charAt(0).toUpperCase();
-
-  // Load employee data
+  S.account=account; S.userName=account.name||account.username.split("@")[0];
+  S.userEmail=account.username.toLowerCase();
+  el("loginCycleBadge").textContent=`${C.cycleName} · Deadline: ${C.deadline}`;
+  el("hCycle").textContent=C.cycleName; el("hDeadline").textContent=C.deadline;
+  el("hUserName").textContent=S.userName; el("hAvatar").textContent=S.userName.charAt(0).toUpperCase();
   loading("Loading employee data…");
-  S.employees = await loadEmployees();
-
-  // Detect role
-  S.userRole = detectRole(S.userEmail);
-  el("hUserRole").textContent = { hr:"HR Admin", leadership:"Leadership", manager:"Manager", employee:"Employee" }[S.userRole];
-
-  // Show app
-  el("loginScreen").style.display  = "none";
-  el("appContainer").style.display = "block";
+  S.employees=await loadEmployees();
+  S.userRole=detectRole(S.userEmail);
+  el("hUserRole").textContent={hr:"HR Admin",leadership:"Leadership",manager:"Manager",employee:"Employee"}[S.userRole];
+  el("loginScreen").style.display="none"; el("appContainer").style.display="block";
   doneLoading();
-
-  // Route to default view by role
-  if (S.userRole === "hr")            await viewHR();
-  else if (S.userRole === "leadership") await viewHR(true);
-  else if (S.userRole === "manager")  await viewManager();
+  if      (S.userRole==="hr")         await viewHR();
+  else if (S.userRole==="leadership") await viewHR(true);
+  else if (S.userRole==="manager")    await viewManager();
   else                                await viewSelf();
 }
 
-// Handle page load + existing sessions
 (async function init() {
-  // Set login screen cycle badge immediately
-  el("loginCycleBadge").textContent = `${C.cycleName} · Deadline: ${C.deadline}`;
-
+  el("loginCycleBadge").textContent=`${C.cycleName} · Deadline: ${C.deadline}`;
   await msal_.initialize();
   try {
-    const r = await msal_.handleRedirectPromise();
-    if (r) { msal_.setActiveAccount(r.account); await boot(r.account); return; }
+    const r=await msal_.handleRedirectPromise();
+    if(r){msal_.setActiveAccount(r.account);await boot(r.account);return;}
   } catch {}
-  const accs = msal_.getAllAccounts();
-  if (accs.length) { msal_.setActiveAccount(accs[0]); await boot(accs[0]); return; }
-  el("loginScreen").style.display = "flex";
+  const accs=msal_.getAllAccounts();
+  if(accs.length){msal_.setActiveAccount(accs[0]);await boot(accs[0]);return;}
+  el("loginScreen").style.display="flex";
 })();
 </script>
 </body>
