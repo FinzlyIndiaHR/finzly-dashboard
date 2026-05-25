@@ -325,23 +325,22 @@ const C = {
   clientId:   "d893026d-d1c9-4285-947a-0a672018b8d1",
   tenantId:   "4d4c58f7-6978-4a93-ba72-f1d987c46c89",
   redirectUri: window.location.origin + window.location.pathname,
-  spDomain:   "finzly.sharepoint.com",   // ← EDIT
-  spSitePath: "/sites/HR",               // ← EDIT
+  spDomain:   "swapstechinc.sharepoint.com",
+  spSitePath: "/sites/HR",               // ← EDIT if your HR site path differs
   listName:   "FinzlyAppraisals",
   fileId:     "788b3929-4077-4e6e-9909-e26c071ffab4",
-  cycle:       "FY2024-25-H2",
-  cycleName:   "FY 2024–25 H2",
-  deadline:    "31 Mar 2025",
-  deadlineISO: "2025-03-31",
+  cycle:       "FY2025-26-H1",
+  cycleName:   "FY 2025–26 H1",
+  deadline:    "30 Jun 2026",
+  deadlineISO: "2026-06-30",
   aiUrl:      "https://YOUR_WORKER.workers.dev/ai", // ← EDIT
   jiraOn:      false,
   jiraBase:    "",
   jiraProject: "",
   jiraToken:   "",
-  hrEmails:   ["bharath@finzly.in"],     // ← EDIT
-  // Org-level access: auto-detected by designation title (case-insensitive)
-  orgLevelTitles: ["ceo","chief executive officer","chief of staff","president","coo","cto","md","managing director"],
-  orgLevelEmails: [],                    // ← add explicit emails if needed
+  hrEmails:   ["bharathkumar.m@finzly.com"],
+  orgLevelTitles: ["ceo","chief executive officer","chief of staff","president","coo","cto","md","managing director","vp","vice president"],
+  orgLevelEmails: [],
 };
 
 // ╔══════════════════════════════════════════════════════════════╗
@@ -706,26 +705,77 @@ async function loadEmployees() {
     const range = await gGet(`/me/drive/items/${C.fileId}/workbook/worksheets/${encodeURIComponent(sheet.name)}/usedRange`);
     const rows  = range.values||[];
     if (rows.length<2) return [];
-    const hdrs  = rows[0].map(h=>String(h||"").trim().toLowerCase());
-    const col   = (...keys) => { for(const k of keys){const i=hdrs.findIndex(h=>h.includes(k));if(i!==-1)return i;} return -1; };
-    const ix    = { id:col("employee id","emp id","empid"), name:col("employee name","name","full name"),
-      email:col("email","mail"), role:col("designation","role","title","position"),
-      dept:col("department","dept"), squad:col("squad"), mgr:col("manager","reporting manager"),
-      mgrEmail:col("manager email","manager_email","mgr email"),
-      doj:col("joining date","date of joining","doj","join"), status:col("status") };
-    const v = (r,i) => i>=0?String(r[i]||"").trim():"";
-    return rows.slice(1).filter(r=>{
-      const s=ix.status>=0?String(r[ix.status]||"").toLowerCase():"active";
-      return s==="active";
-    }).map(r=>({
-      id:v(r,ix.id), name:v(r,ix.name), email:v(r,ix.email).toLowerCase(),
-      role:v(r,ix.role), dept:v(r,ix.dept), squad:v(r,ix.squad),
-      manager:v(r,ix.mgr), managerEmail:v(r,ix.mgrEmail).toLowerCase(),
-      joiningDate:v(r,ix.doj), status:"Active",
-    })).filter(e=>e.name);
+
+    // Map actual column names from the Finzly master file
+    const hdrs = rows[0].map(h=>String(h||"").trim().toLowerCase());
+    const col  = (...keys) => { for(const k of keys){const i=hdrs.findIndex(h=>h.includes(k));if(i!==-1)return i;} return -1; };
+    const ix = {
+      id:        col("emp id","employee id","empid"),
+      firstName: col("first name","firstname"),
+      lastName:  col("last name","lastname"),
+      status:    col("status"),
+      activeFlag:col("activeflag","active flag"),
+      practice:  col("practice"),
+      squad:     col("squads","squad"),
+      subSquad:  col("sub squads","sub squad","subsquad"),
+      email:     col("email address","email","mail"),
+      l1EmpId:   col("l1 employee id","l1 emp id","l1empid"),
+      l1Manager: col("l1 manager","l1manager"),
+      l2Manager: col("l2 manager","l2manager"),
+      corpTitle: col("corporate title","designation","title","role","position"),
+      gender:    col("gender"),
+      startDate: col("start date","joining date","date of joining","doj"),
+      level:     col("level"),
+      ragStatus: col("rag status","rag"),
+      perfRating:col("performance rating 2025","performance rating","perf rating"),
+    };
+
+    const v = (r,i) => i>=0 ? String(r[i]||"").trim() : "";
+
+    // Helper: is employee active?
+    function isActive(r) {
+      const flag   = v(r, ix.activeFlag).toLowerCase();
+      const status = v(r, ix.status).toLowerCase();
+      if (flag) return ["y","yes","1","true","active"].includes(flag);
+      if (status) return !["inactive","terminated","exited","no","0","false"].includes(status);
+      return true;
+    }
+
+    // Build emp-id → email map for resolving manager emails
+    const idToEmail = {};
+    for (const r of rows.slice(1)) {
+      const empId = v(r, ix.id);
+      const email = v(r, ix.email).toLowerCase();
+      if (empId && email) idToEmail[empId] = email;
+    }
+
+    return rows.slice(1)
+      .filter(r => isActive(r) && (v(r,ix.firstName)||v(r,ix.id)))
+      .map(r => {
+        const l1EmpId = v(r, ix.l1EmpId);
+        return {
+          id:           v(r, ix.id),
+          name:         [v(r,ix.firstName), v(r,ix.lastName)].filter(Boolean).join(" "),
+          email:        v(r, ix.email).toLowerCase(),
+          role:         v(r, ix.corpTitle),
+          dept:         v(r, ix.practice),
+          squad:        v(r, ix.squad),
+          subSquad:     v(r, ix.subSquad),
+          manager:      v(r, ix.l1Manager),
+          l1EmpId:      l1EmpId,
+          managerEmail: idToEmail[l1EmpId] || "",   // resolved from L1 Employee ID
+          l2Manager:    v(r, ix.l2Manager),
+          joiningDate:  v(r, ix.startDate),
+          level:        v(r, ix.level),
+          ragStatus:    v(r, ix.ragStatus),
+          perfRating:   v(r, ix.perfRating),
+          gender:       v(r, ix.gender),
+        };
+      })
+      .filter(e => e.name || e.id);
   } catch(err) {
-    console.warn("SharePoint load failed, using demo data:", err.message);
-    toast("Using demo data (SharePoint not configured)","info");
+    console.warn("Employee data load failed, using demo data:", err.message);
+    toast("Using demo data — SharePoint connection failed","info");
     return demoEmps();
   }
 }
@@ -743,10 +793,16 @@ function demoEmps() {
 
 function detectRole(email) {
   const e = email.toLowerCase();
+  // 1. Explicit HR email list
   if (C.hrEmails.map(h=>h.toLowerCase()).includes(e)) return "hr";
   const myRec = S.employees.find(emp=>emp.email===e);
+  // 2. Practice = "HR" or "Human Resources" → HR Admin
+  const practice = (myRec?.dept||"").toLowerCase();
+  if (practice==="hr"||practice==="human resources"||practice==="people"||practice==="human resource") return "hr";
+  // 3. Org-level: CEO, Chief of Staff, President, etc. (by Corporate Title)
   const title = (myRec?.role||"").toLowerCase();
   if (C.orgLevelEmails.map(x=>x.toLowerCase()).includes(e) || C.orgLevelTitles.some(t=>title.includes(t))) return "leadership";
+  // 4. Manager: has at least one direct report (resolved via L1 Employee ID)
   if (S.employees.some(emp=>emp.managerEmail===e)) return "manager";
   return "employee";
 }
