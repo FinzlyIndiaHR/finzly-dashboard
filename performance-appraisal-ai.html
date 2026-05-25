@@ -733,12 +733,11 @@ async function loadEmployees() {
     const v = (r,i) => i>=0 ? String(r[i]||"").trim() : "";
 
     // Helper: is employee active?
+    // Uses Status column only — "Active" = include, "Inactive" = exclude
     function isActive(r) {
-      const flag   = v(r, ix.activeFlag).toLowerCase();
-      const status = v(r, ix.status).toLowerCase();
-      if (flag) return ["y","yes","1","true","active"].includes(flag);
-      if (status) return !["inactive","terminated","exited","no","0","false"].includes(status);
-      return true;
+      const status = v(r, ix.status).toLowerCase().trim();
+      if (status === "") return true; // blank = include
+      return status === "active";
     }
 
     // Build emp-id → email map for resolving manager emails
