@@ -660,18 +660,18 @@ const msal_ = new msal.PublicClientApplication(msalCfg);
 const SCOPES = ["User.Read","Files.Read","Sites.ReadWrite.All","Mail.Send"];
 
 async function signIn() {
-  try { const r = await msal_.loginPopup({ scopes:SCOPES }); msal_.setActiveAccount(r.account); await boot(r.account); }
+  try { await msal_.loginRedirect({ scopes:SCOPES }); }
   catch(e) { toast("Sign-in failed: "+e.message,"error"); }
 }
 function signOut() {
-  msal_.logoutPopup({ account:msal_.getActiveAccount() });
+  msal_.logoutRedirect({ account:msal_.getActiveAccount() });
   el("loginScreen").style.display="flex"; el("appContainer").style.display="none";
 }
 async function token() {
   const acc = msal_.getActiveAccount();
   if (!acc) throw new Error("Not signed in");
   try { return (await msal_.acquireTokenSilent({ scopes:SCOPES, account:acc })).accessToken; }
-  catch { return (await msal_.acquireTokenPopup({ scopes:SCOPES, account:acc })).accessToken; }
+  catch { await msal_.acquireTokenRedirect({ scopes:SCOPES, account:acc }); }
 }
 
 // ╔══════════════════════════════════════════════════════════════╗
