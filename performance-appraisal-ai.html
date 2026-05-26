@@ -656,10 +656,10 @@ const msalCfg = {
   cache:{ cacheLocation:"sessionStorage", storeAuthStateInCookie:false },
 };
 const msal_ = new msal.PublicClientApplication(msalCfg);
-const SCOPES = ["User.Read","Files.ReadWrite","Sites.ReadWrite.All","Mail.Send"];
+const SCOPES = ["User.Read","Files.ReadWrite.All","Mail.Send"];
 
 async function signIn() {
-  try { await msal_.loginRedirect({ scopes:SCOPES }); }
+  try { await msal_.loginRedirect({ scopes:SCOPES, prompt:"select_account" }); }
   catch(e) { toast("Sign-in failed: "+e.message,"error"); }
 }
 function signOut() {
@@ -699,12 +699,15 @@ async function gPatch(url,body) {
 // ╚══════════════════════════════════════════════════════════════╝
 async function loadEmployees() {
   try {
-    // File is in SharePoint site, not personal OneDrive — use sites/{id}/drive
-    const siteDriveUrl = `/sites/${C.spDomain}:${C.spSitePath}:/drive/items/${C.fileId}/workbook`;
-    const sd = await gGet(`${siteDriveUrl}/worksheets`);
-    const sheet = (sd.value||[]).find(s=>/appraisal|employee|master|data|emp/i.test(s.name)) || (sd.value||[])[0];
-    if (!sheet) throw new Error("No sheet");
-    const range = await gGet(`${siteDriveUrl}/worksheets/${encodeURIComponent(sheet.name)}/usedRange`);
+    // Use getSiteAndDrive() to reuse cached site ID
+    const {fileBase} = await getSiteAndDrive();
+    const sd = await gGet(`${fileBase}/worksheets`);
+    // Find the employee sheet (not the appraisals sheet)
+    const sheet = (sd.value||[]).find(s=>!/appraisal/i.test(s.name) && /appraisal|employee|master|data|emp/i.test(s.name))
+      || (sd.value||[]).find(s=>!/appraisal/i.test(s.name))
+      || (sd.value||[])[0];
+    if (!sheet) throw new Error("No sheet found");
+    const range = await gGet(`${fileBase}/worksheets/${encodeURIComponent(sheet.name)}/usedRange`);
     const rows  = range.values||[];
     if (rows.length<2) return [];
 
@@ -831,62 +834,86 @@ function tenure(doj) {
 // ╔══════════════════════════════════════════════════════════════╗
 // ║                   SHAREPOINT LIST                           ║
 // ╚══════════════════════════════════════════════════════════════╝
-async function getSiteId() {
-  if (S.siteId) return S.siteId;
-  // Graph API format: /sites/{hostname}:{path}
+// ── Excel-based appraisal storage (no SharePoint List needed) ──
+// Appraisal data stored as a sheet "Appraisals_FY2025-26-H1" in the same Excel file.
+// Each row = one appraisal record. Col A = key (EmpID_CycleID).
+
+async function getSiteAndDrive() {
+  if (S.siteId) return { siteId:S.siteId, fileBase:S.fileBase };
   const d = await gGet(`/sites/${C.spDomain}:${C.spSitePath}:`);
-  S.siteId=d.id; return S.siteId;
+  S.siteId = d.id;
+  S.fileBase = `/sites/${S.siteId}/drive/items/${C.fileId}/workbook`;
+  return { siteId:S.siteId, fileBase:S.fileBase };
 }
 
-async function getOrCreateList() {
-  if (S.listId) return S.listId;
-  const sid = await getSiteId();
+// Column order for appraisal sheet
+const AP_COLS = ["Key","EmployeeID","EmployeeName","EmployeeEmail","ManagerEmail","CycleID",
+  "Status","SelfRatingTech","SelfRatingDelivery","SelfRatingCollab","SelfRatingComms",
+  "SelfRatingInnovation","SelfRatingLeadership","SelfFormData","SelfSubmittedDate",
+  "MgrRatingTech","MgrRatingDelivery","MgrRatingCollab","MgrRatingComms",
+  "MgrRatingInnovation","MgrRatingLeadership","MgrFormData","MgrReviewedDate"];
+
+async function getAppraisalSheet() {
+  const {fileBase} = await getSiteAndDrive();
+  const sheetName = `Appraisals_${C.cycle}`;
+  // Check if sheet exists
+  const sheets = await gGet(`${fileBase}/worksheets`);
+  let sheet = (sheets.value||[]).find(s=>s.name===sheetName);
+  if (!sheet) {
+    // Create sheet with headers
+    const created = await gPost(`${fileBase}/worksheets`, {name:sheetName});
+    sheet = created;
+    // Write headers to A1
+    await gPatch(`${fileBase}/worksheets/${encodeURIComponent(sheetName)}/range(address='A1:W1')`,
+      {values:[AP_COLS]});
+  }
+  return {fileBase, sheetName};
+}
+
+async function getAllAppraisals() {
   try {
-    const res = await gGet(`/sites/${sid}/lists?$filter=displayName eq '${C.listName}'`);
-    if (res.value?.length) { S.listId=res.value[0].id; return S.listId; }
-  } catch {}
-  const created = await gPost(`/sites/${sid}/lists`, {
-    displayName: C.listName, list:{template:"genericList"},
-    columns: [
-      {name:"EmployeeID",text:{}},{name:"EmployeeName",text:{}},
-      {name:"EmployeeEmail",text:{}},{name:"ManagerEmail",text:{}},
-      {name:"CycleID",text:{}},{name:"Status",text:{}},
-      // 6 numeric competency columns (kept for analytics / HR dashboard avg)
-      {name:"SelfRatingTech",number:{}},{name:"SelfRatingDelivery",number:{}},
-      {name:"SelfRatingCollab",number:{}},{name:"SelfRatingComms",number:{}},
-      {name:"SelfRatingInnovation",number:{}},{name:"SelfRatingLeadership",number:{}},
-      // Full form JSON (all question types stored here)
-      {name:"SelfFormData",text:{allowMultipleLines:true}},
-      {name:"SelfSubmittedDate",dateTime:{}},
-      // Manager numeric competency columns
-      {name:"MgrRatingTech",number:{}},{name:"MgrRatingDelivery",number:{}},
-      {name:"MgrRatingCollab",number:{}},{name:"MgrRatingComms",number:{}},
-      {name:"MgrRatingInnovation",number:{}},{name:"MgrRatingLeadership",number:{}},
-      // Full manager form JSON
-      {name:"MgrFormData",text:{allowMultipleLines:true}},
-      {name:"MgrReviewedDate",dateTime:{}},
-      {name:"AIGeneratedSummary",text:{allowMultipleLines:true}},
-    ],
-  });
-  S.listId=created.id; return S.listId;
+    const {fileBase, sheetName} = await getAppraisalSheet();
+    const range = await gGet(`${fileBase}/worksheets/${encodeURIComponent(sheetName)}/usedRange`);
+    const rows = range.values||[];
+    if (rows.length < 2) return [];
+    const hdrs = rows[0];
+    return rows.slice(1).filter(r=>r[0]).map(r=>{
+      const fields = {};
+      hdrs.forEach((h,i) => fields[h] = r[i]||"");
+      return {id:r[0], rowIndex:rows.indexOf(r)+1, fields};
+    });
+  } catch(e) { console.warn("getAllAppraisals failed:", e.message); return []; }
 }
 
 async function getAppraisal(empId) {
-  const sid=await getSiteId(), lid=await getOrCreateList();
-  const flt=encodeURIComponent(`fields/EmployeeID eq '${empId}' and fields/CycleID eq '${C.cycle}'`);
-  const res=await gGet(`/sites/${sid}/lists/${lid}/items?$expand=fields&$filter=${flt}`);
-  return res.value?.[0]||null;
+  const all = await getAllAppraisals();
+  return all.find(a=>a.fields.EmployeeID===empId && a.fields.CycleID===C.cycle)||null;
 }
-async function getAllAppraisals() {
-  const sid=await getSiteId(), lid=await getOrCreateList();
-  const flt=encodeURIComponent(`fields/CycleID eq '${C.cycle}'`);
-  const res=await gGet(`/sites/${sid}/lists/${lid}/items?$expand=fields&$filter=${flt}`);
-  return res.value||[];
-}
-async function saveAppraisal(fields,itemId) {
-  const sid=await getSiteId(), lid=await getOrCreateList();
-  if (itemId) return gPatch(`/sites/${sid}/lists/${lid}/items/${itemId}/fields`,fields);
-  return gPost(`/sites/${sid}/lists/${lid}/items`,{fields});
+
+async function saveAppraisal(fields, existingId) {
+  const {fileBase, sheetName} = await getAppraisalSheet();
+  const all = await getAllAppraisals();
+  const key = fields.Title || `${fields.EmployeeID}_${C.cycle}`;
+  fields.Key = key; fields.CycleID = C.cycle;
+
+  // Build row array in AP_COLS order
+  const row = AP_COLS.map(c => fields[c]!==undefined ? fields[c] : "");
+
+  const existing = all.find(a=>a.fields.Key===key);
+  if (existing) {
+    // Update existing row
+    const addr = `A${existing.rowIndex}:W${existing.rowIndex}`;
+    await gPatch(`${fileBase}/worksheets/${encodeURIComponent(sheetName)}/range(address='${addr}')`,
+      {values:[row]});
+    return {id:key, fields};
+  } else {
+    // Append new row
+    const nextRow = all.length + 2; // +1 for header, +1 for next
+    const addr = `A${nextRow}:W${nextRow}`;
+    await gPatch(`${fileBase}/worksheets/${encodeURIComponent(sheetName)}/range(address='${addr}')`,
+      {values:[row]});
+    return {id:key, fields};
+  }
 }
 
 // Load answers from SP record into S.selfAnswers or S.mgrAnswers
@@ -921,9 +948,15 @@ function loadAnswersFromSP(f, prefix) {
 // Build SP fields from answers (keeps numeric columns for analytics)
 function buildSPFields(prefix, status, extraFields) {
   const ans = prefix==="self" ? S.selfAnswers : S.mgrAnswers;
+  const me  = S.employees.find(e=>e.email===S.userEmail);
   const base = {
-    Title: `${(S.employees.find(e=>e.email===S.userEmail)||{}).id||"?"}_${C.cycle}`,
-    Status: status,
+    Title:      `${me?.id||"?"}_${C.cycle}`,
+    EmployeeID: me?.id||"",
+    EmployeeName: me?.name||"",
+    EmployeeEmail: me?.email||"",
+    ManagerEmail:  me?.managerEmail||"",
+    CycleID:    C.cycle,
+    Status:     status,
     [`${prefix==="self"?"Self":"Mgr"}FormData`]: JSON.stringify(ans),
   };
   if (prefix==="self") {
