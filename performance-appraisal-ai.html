@@ -326,9 +326,9 @@ const C = {
   tenantId:   "4d4c58f7-6978-4a93-ba72-f1d987c46c89",
   redirectUri: window.location.origin + window.location.pathname,
   spDomain:   "swapstechinc.sharepoint.com",
-  spSitePath: "/sites/HR",               // ← EDIT if your HR site path differs
+  spSitePath: "/sites/hrteam",
   listName:   "FinzlyAppraisals",
-  fileId:     "788b3929-4077-4e6e-9909-e26c071ffab4",
+  fileId:     "e843d419-dcd6-438c-b7eb-9b3858a70e9b",  // Finzly_Appraisal_Employees.xlsx
   cycle:       "FY2025-26-H1",
   cycleName:   "FY 2025–26 H1",
   deadline:    "30 Jun 2026",
@@ -706,8 +706,16 @@ async function loadEmployees() {
     const rows  = range.values||[];
     if (rows.length<2) return [];
 
+    // Debug: log headers and first 2 rows to console
+    console.log("📋 Sheet:", sheet.name);
+    console.log("📋 Headers:", rows[0]);
+    console.log("📋 Row 1:", rows[1]);
+    console.log("📋 Row 2:", rows[2]);
+    console.log("📋 Total rows:", rows.length);
+
     // Map actual column names from the Finzly master file
     const hdrs = rows[0].map(h=>String(h||"").trim().toLowerCase());
+    console.log("📋 Lowercase headers:", hdrs);
     const col  = (...keys) => { for(const k of keys){const i=hdrs.findIndex(h=>h.includes(k));if(i!==-1)return i;} return -1; };
     const ix = {
       id:        col("emp id","employee id","empid"),
@@ -752,6 +760,7 @@ async function loadEmployees() {
       .filter(r => isActive(r) && (v(r,ix.firstName)||v(r,ix.id)))
       .map(r => {
         const l1EmpId = v(r, ix.l1EmpId);
+        const l2EmpId = v(r, ix.l2EmpId);
         return {
           id:           v(r, ix.id),
           name:         [v(r,ix.firstName), v(r,ix.lastName)].filter(Boolean).join(" "),
@@ -762,13 +771,14 @@ async function loadEmployees() {
           subSquad:     v(r, ix.subSquad),
           manager:      v(r, ix.l1Manager),
           l1EmpId:      l1EmpId,
-          managerEmail: idToEmail[l1EmpId] || "",   // resolved from L1 Employee ID
+          managerEmail: idToEmail[l1EmpId] || "",
+          l2EmpId:      l2EmpId,
           l2Manager:    v(r, ix.l2Manager),
           joiningDate:  v(r, ix.startDate),
-          level:        v(r, ix.level),
-          ragStatus:    v(r, ix.ragStatus),
-          perfRating:   v(r, ix.perfRating),
-          gender:       v(r, ix.gender),
+          level:        "",
+          ragStatus:    "",
+          perfRating:   "",
+          gender:       "",
         };
       })
       .filter(e => e.name || e.id);
