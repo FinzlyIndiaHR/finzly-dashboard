@@ -951,8 +951,8 @@ function processEmpMaster(values){
       'Finzly Experience':  gn(I.finzlyExp),
       Level:         g(I.level),
       'Rag Status':  cleanRag(String(g(I.rag)||'').trim()),
-      PERF_COL_PREV: gn(I.perf24),
-      PERF_COL_CURR: gn(I.perf25),
+      [PERF_COL_PREV]: gn(I.perf24),
+      [PERF_COL_CURR]: gn(I.perf25),
     });
   }
   const activeCount =data.filter(d=>d.Status==='Active').length;
