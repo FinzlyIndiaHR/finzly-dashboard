@@ -760,15 +760,17 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
 const CLIENT_ID  = 'd893026d-d1c9-4285-947a-0a672018b8d1';
 const TENANT_ID  = '4d4c58f7-6978-4a93-ba72-f1d987c46c89';
 const OWNER_UPN  = 'bharathkumar.m@finzly.com';
-const FILE_ID    = '788b3929-4077-4e6e-9909-e26c071ffab4';  // Master Employee Data - without Compensation (3)
+const FILE_ID    = '788b3929-4077-4e6e-9909-e26c071ffab4';  // Master Employee Data - without Compensation- Bharath
 const REDIRECT   = 'https://finzlyindiahr.github.io/finzly-dashboard/leadership.html';
 const SCOPES     = ['Files.Read.All','User.Read'];
 
 // ── AUTO-UPDATING CONFIG — no manual changes needed year to year ──
 const CURR_YEAR       = new Date().getFullYear();           // auto: 2026→2027→2028
 const PREV_YEAR       = CURR_YEAR - 1;
-const PERF_COL_CURR   = `Performance Rating ${CURR_YEAR}`; // auto: column name in Excel
-const PERF_COL_PREV   = `Performance Rating ${PREV_YEAR}`;
+// Performance rating columns — update these when new appraisal cycle completes in Excel
+// Current Excel has: "Performance Rating 2025" and "Performance Rating 2024"
+const PERF_COL_CURR   = 'Performance Rating 2025';         // most recent appraisal in Excel
+const PERF_COL_PREV   = 'Performance Rating 2024';         // prior appraisal in Excel
 const COPY_YEAR       = CURR_YEAR;                          // © footer year
 const REPORT_AUTHOR   = 'Bharathkumar Mayakrishnan';  // change here if needed
 // HR benchmark thresholds — change here if policy updates
