@@ -558,7 +558,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
       <div class="card"><div class="c-title"><div class="c-title-l" id="perf-card-title">Performance Rating</div></div><div id="perf-2025"></div></div>
     </div>
     <div class="g2">
-      <div class="ch-box"><div class="ch-title">Rating 2024 vs 2025</div><div class="ch-inf" id="inf-perf2"></div><div class="ch-wrap tall"><canvas id="ch-perf"></canvas></div></div>
+      <div class="ch-box"><div class="ch-title" id="perf-chart-title">Rating 2024 vs 2025</div><div class="ch-inf" id="inf-perf2"></div><div class="ch-wrap tall"><canvas id="ch-perf"></canvas></div></div>
       <div class="ch-box"><div class="ch-title">Level Distribution by Squad</div><div class="ch-inf" id="inf-lvl-sq"></div><div class="ch-wrap tall"><canvas id="ch-lvl-sq"></canvas></div></div>
     </div>
     <div class="card"><div class="c-title"><div class="c-title-l">Avg Finzly Tenure by Squad (years)</div></div><div id="tenure-bars"></div></div>
@@ -2340,12 +2340,38 @@ function render(){
         <div class="ins-txt"><strong>${highPerf}</strong> high (★4–5) · <strong>${lowPerf}</strong> low (★1–2). ${lowPerf>10?'⚠ Review PIP coverage for low performers.':'Ensure high performers have retention plans.'}</div>
       </div>
     </div>`;
+  // Extract perf year numbers from column names for display
+  const perfYrCurr=PERF_COL_CURR.replace('Performance Rating ','');
+  const perfYrPrev=PERF_COL_PREV.replace('Performance Rating ','');
+
   const pm={1:0,2:0,3:0,4:0,5:0};r25.forEach(v=>{pm[v]++;});
   const maxP=Math.max(...Object.values(pm),1);
-  document.getElementById('perf-card-title').textContent=`Performance Rating ${CURR_YEAR}`;
+  document.getElementById('perf-card-title').textContent=`Performance Rating ${perfYrCurr}`;
+  document.getElementById('perf-chart-title').textContent=`Rating ${perfYrPrev} vs ${perfYrCurr}`;
   document.getElementById('perf-2025').innerHTML=[5,4,3,2,1].map(r=>`<div class="perf-row"><div class="star-lbl">★${r}</div><div class="star-track"><div class="star-fill" style="width:${Math.round(pm[r]/maxP*100)}%"></div></div><div class="star-count">${pm[r]}</div></div>`).join('');
-  document.getElementById('inf-perf2').innerHTML=`<strong>YoY:</strong> 2024 avg ${avg24} → 2025 avg ${avg25}.`;
-  mkChart('ch-perf','bar',{labels:['★1','★2','★3','★4','★5'],datasets:[{label:String(PREV_YEAR),data:[1,2,3,4,5].map(r=>active.filter(d=>d[PERF_COL_PREV]===r).length),backgroundColor:'rgba(14,165,233,.7)',borderRadius:5},{label:String(CURR_YEAR),data:[1,2,3,4,5].map(r=>active.filter(d=>d[PERF_COL_CURR]===r).length),backgroundColor:'rgba(232,84,26,.8)',borderRadius:5}]},{_datalabels:true});
+  document.getElementById('inf-perf2').innerHTML=`<strong>YoY:</strong> ${perfYrPrev} avg ${avg24} → ${perfYrCurr} avg ${avg25}.`;
+  document.getElementById('inf-perf').innerHTML=`
+    <div class="insight-strip cols3" style="margin-bottom:0">
+      <div class="ins ${+avg25>=+avg24?'good':'risk'}">
+        <div class="ins-head">⭐ Rating Trend</div>
+        <div class="ins-val ${+avg25>=+avg24?'green':'red'}">${avg25}/5</div>
+        <div class="ins-txt">${perfYrCurr} avg <strong>${avg25}</strong> vs ${perfYrPrev} <strong>${avg24}</strong> — ${+avg25>+avg24?`⬆ +${(+avg25-+avg24).toFixed(2)} pts. Positive signal.`:+avg25<+avg24?`⬇ Decline. Review manager quality.`:'Stable.'}</div>
+      </div>
+      <div class="ins ${ratedPct<80?'risk':'good'}">
+        <div class="ins-head">📊 Coverage</div>
+        <div class="ins-val ${ratedPct<80?'amber':'green'}">${ratedPct}% Rated</div>
+        <div class="ins-txt"><strong>${r25.length}/${active.length}</strong> rated for ${perfYrCurr}. ${ratedPct<80?`⚠ ${active.length-r25.length} missing — complete before pay reviews.`:'✅ Good appraisal discipline.'}</div>
+      </div>
+      <div class="ins signal">
+        <div class="ins-head">🏆 Distribution</div>
+        <div class="ins-val amber">${highPct}% ★4-5</div>
+        <div class="ins-txt"><strong>${highPerf}</strong> high (★4–5) · <strong>${lowPerf}</strong> low (★1–2). ${lowPerf>10?'⚠ Review PIP coverage for low performers.':'Ensure high performers have retention plans.'}</div>
+      </div>
+    </div>`;
+  mkChart('ch-perf','bar',{labels:['★1','★2','★3','★4','★5'],datasets:[
+    {label:perfYrPrev,data:[1,2,3,4,5].map(r=>active.filter(d=>d[PERF_COL_PREV]===r).length),backgroundColor:'rgba(14,165,233,.7)',borderRadius:5},
+    {label:perfYrCurr,data:[1,2,3,4,5].map(r=>active.filter(d=>d[PERF_COL_CURR]===r).length),backgroundColor:'rgba(232,84,26,.8)',borderRadius:5}
+  ]},{_datalabels:true});
   const topSqs=squads.slice(0,8);
   document.getElementById('inf-lvl-sq').innerHTML=`<strong>Level by squad:</strong> Top ${topSqs.length} squads. Use filters to drill into a specific squad.`;
   mkChart('ch-lvl-sq','bar',{labels:topSqs,datasets:LEVELS.map((l,i)=>({label:l.replace(' Level',''),data:topSqs.map(sq=>active.filter(d=>d.Squad===sq&&d.Level===l).length),backgroundColor:LCOLS[i],borderRadius:3}))},{scales:{y:{stacked:true,ticks:{font:{family:'Fira Code',size:10}}},x:{stacked:true,ticks:{font:{family:'Outfit',size:10}}}},_datalabels:true});
