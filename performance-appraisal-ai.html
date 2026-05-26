@@ -361,6 +361,9 @@ const BOOSHAN_ID = "6KY000052";
 // textarea   → open-ended multiline
 // ──────────────────────────────────────────────────────────────
 
+// Star rating labels
+const RLBL = { 0:"—", 1:"Below Expectations", 2:"Partially Meets", 3:"Meets Expectations", 4:"Exceeds Expectations", 5:"Outstanding" };
+
 // ── 1. UNIVERSAL SOFT SKILLS (all employees) ──────────────────
 const Q_UNIVERSAL = [
   { id:"CommEffective",  section:"Soft Skills", type:"stars", req:true,
@@ -1296,7 +1299,7 @@ async function loadEmployees() {
           l2EmpId:      l2EmpId,
           l2Manager:    v(r, ix.l2Manager),
           joiningDate:  v(r, ix.startDate),
-          level:        "",
+          level:        v(r, ix.level),
           ragStatus:    "",
           perfRating:   "",
           gender:       "",
