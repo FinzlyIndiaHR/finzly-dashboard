@@ -1648,7 +1648,17 @@ async function viewSelf() {
   const sAvg      = compAvg(S.selfAnswers);
 
   // Build questions dynamically based on employee practice + level
-  const qHtml = renderAllQuestions(SELF_QUESTIONS_LOCAL, S.selfAnswers, "self", readOnly);
+  let qHtml = "";
+  try {
+    qHtml = renderAllQuestions(SELF_QUESTIONS_LOCAL, S.selfAnswers, "self", readOnly);
+  } catch(e) {
+    console.error("renderAllQuestions error:", e);
+    setContent(`<div class="card cb" style="padding:32px">
+      <div style="color:var(--error);font-weight:700;margin-bottom:8px">Render error: ${e.message}</div>
+      <div style="font-size:12px;color:var(--text3)">Practice: ${me.dept} · Level: ${me.level} · Questions: ${SELF_QUESTIONS_LOCAL.length}</div>
+    </div>`);
+    doneLoading(); return;
+  }
 
   // Manager feedback section (if completed)
   let mgrSection = "";
@@ -1703,7 +1713,7 @@ async function viewSelf() {
     </div>`;
   }
 
-  setContent(`
+  try { setContent(`
   <div class="section-title">My Self-Appraisal</div>
   <div class="section-sub">${C.cycleName} · ${me.role} · ${me.squad} · Tenure: ${tenure(me.joiningDate)}</div>
 
@@ -1768,6 +1778,16 @@ async function viewSelf() {
     </div>
   </div>`}
   `);
+  } catch(e) {
+    console.error("viewSelf render error:", e);
+    doneLoading();
+    setContent(`<div class="card cb" style="padding:32px;text-align:center">
+      <div style="color:var(--error);font-size:32px;margin-bottom:12px">⚠</div>
+      <div style="color:var(--error);font-weight:700;font-size:15px;margin-bottom:8px">Appraisal form error</div>
+      <div style="font-size:12px;color:var(--text3);font-family:monospace;background:var(--bg);padding:10px;border-radius:8px;text-align:left;word-break:break-all">${e.message}</div>
+      <div style="font-size:12px;color:var(--text3);margin-top:10px">Practice: ${me?.dept||"?"} · Level: ${me?.level||"?"}</div>
+    </div>`);
+  }
 }
 
 // ── AI (self) ─────────────────────────────────────────────────
