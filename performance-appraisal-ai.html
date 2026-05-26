@@ -656,7 +656,7 @@ const msalCfg = {
   cache:{ cacheLocation:"sessionStorage", storeAuthStateInCookie:false },
 };
 const msal_ = new msal.PublicClientApplication(msalCfg);
-const SCOPES = ["User.Read","Files.Read","Sites.ReadWrite.All","Mail.Send"];
+const SCOPES = ["User.Read","Files.ReadWrite","Sites.ReadWrite.All","Mail.Send"];
 
 async function signIn() {
   try { await msal_.loginRedirect({ scopes:SCOPES }); }
@@ -699,10 +699,12 @@ async function gPatch(url,body) {
 // ╚══════════════════════════════════════════════════════════════╝
 async function loadEmployees() {
   try {
-    const sd = await gGet(`/me/drive/items/${C.fileId}/workbook/worksheets`);
-    const sheet = (sd.value||[]).find(s=>/employee|master|data/i.test(s.name)) || (sd.value||[])[0];
+    // File is in SharePoint site, not personal OneDrive — use sites/{id}/drive
+    const siteDriveUrl = `/sites/${C.spDomain}:${C.spSitePath}:/drive/items/${C.fileId}/workbook`;
+    const sd = await gGet(`${siteDriveUrl}/worksheets`);
+    const sheet = (sd.value||[]).find(s=>/appraisal|employee|master|data|emp/i.test(s.name)) || (sd.value||[])[0];
     if (!sheet) throw new Error("No sheet");
-    const range = await gGet(`/me/drive/items/${C.fileId}/workbook/worksheets/${encodeURIComponent(sheet.name)}/usedRange`);
+    const range = await gGet(`${siteDriveUrl}/worksheets/${encodeURIComponent(sheet.name)}/usedRange`);
     const rows  = range.values||[];
     if (rows.length<2) return [];
 
@@ -831,7 +833,8 @@ function tenure(doj) {
 // ╚══════════════════════════════════════════════════════════════╝
 async function getSiteId() {
   if (S.siteId) return S.siteId;
-  const d = await gGet(`/sites/${C.spDomain}:${C.spSitePath}`);
+  // Graph API format: /sites/{hostname}:{path}
+  const d = await gGet(`/sites/${C.spDomain}:${C.spSitePath}:`);
   S.siteId=d.id; return S.siteId;
 }
 
