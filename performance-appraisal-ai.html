@@ -1612,7 +1612,10 @@ async function viewSelf() {
   if (!me) {
     setContent(`<div class="card cb" style="text-align:center;padding:56px">
       <div style="font-size:46px;margin-bottom:14px">😕</div>
-      <div style="font-weight:700">Your account isn't found in employee data. Contact HR.</div>
+      <div style="font-weight:700">Your account isn't found in employee data.</div>
+      <div style="color:var(--text3);font-size:13px;margin-top:8px">Signed in as: <strong>${S.userEmail}</strong></div>
+      <div style="color:var(--text3);font-size:12px;margin-top:6px">Employees loaded: ${S.employees.length}</div>
+      <div style="color:var(--text3);font-size:12px;margin-top:4px">Sample emails in data: ${S.employees.slice(0,3).map(e=>e.email).join(", ")}</div>
     </div>`); return;
   }
   loading("Loading your appraisal…");
@@ -1620,8 +1623,24 @@ async function viewSelf() {
     const existing = await getAppraisal(me.id);
     if (existing) { loadAnswersFromSP(existing.fields,"self"); S.myAppraisal=existing; }
     else { S.selfAnswers={}; S.myAppraisal=null; }
-  } catch(e) { console.error(e); }
+  } catch(e) {
+    console.error("getAppraisal error:", e);
+    // Continue — just means no existing record yet
+    S.selfAnswers={}; S.myAppraisal=null;
+  }
   doneLoading();
+  
+  // Guard: make sure buildSelfQuestions works
+  let SELF_QUESTIONS_LOCAL = [];
+  try { SELF_QUESTIONS_LOCAL = buildSelfQuestions(me); }
+  catch(e) {
+    console.error("buildSelfQuestions error:", e);
+    setContent(`<div class="card cb" style="padding:32px">
+      <div style="color:var(--error);font-weight:700;margin-bottom:8px">Question build error</div>
+      <div style="font-size:12px;color:var(--text3);font-family:monospace">${e.message}</div>
+      <div style="font-size:12px;color:var(--text3);margin-top:8px">Practice: ${me.dept} · Level: ${me.level}</div>
+    </div>`); doneLoading(); return;
+  }
 
   const submitted = S.myAppraisal?.fields?.Status && S.myAppraisal.fields.Status!=="Draft";
   const status    = S.myAppraisal?.fields?.Status||"Draft";
@@ -1629,8 +1648,7 @@ async function viewSelf() {
   const sAvg      = compAvg(S.selfAnswers);
 
   // Build questions dynamically based on employee practice + level
-  const SELF_QUESTIONS = buildSelfQuestions(me);
-  const qHtml = renderAllQuestions(SELF_QUESTIONS, S.selfAnswers, "self", readOnly);
+  const qHtml = renderAllQuestions(SELF_QUESTIONS_LOCAL, S.selfAnswers, "self", readOnly);
 
   // Manager feedback section (if completed)
   let mgrSection = "";
@@ -1730,7 +1748,7 @@ async function viewSelf() {
   <div class="card mb6">
     <div class="ch">
       <span class="ct">Appraisal Form</span>
-      <span style="font-size:12px;color:var(--text3)">Practice: ${me.dept||"General"} · Level: ${me.level||"—"} · ${SELF_QUESTIONS.filter(q=>q.req).length} required fields</span>
+      <span style="font-size:12px;color:var(--text3)">Practice: ${me.dept||"General"} · Level: ${me.level||"—"} · ${SELF_QUESTIONS_LOCAL.filter(q=>q.req).length} required fields</span>
     </div>
     <div class="cb">${qHtml}</div>
   </div>
