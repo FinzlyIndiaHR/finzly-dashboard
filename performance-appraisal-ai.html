@@ -1138,24 +1138,23 @@ function renderStarDom(prefix, qId, val) {
 }
 
 function refreshStarAvg(prefix) {
+  // Use compAvg on the 6 core competency keys (always present)
   const answers = prefix==="self" ? S.selfAnswers : S.mgrAnswers;
-  const starQs  = (prefix==="self" ? SELF_QUESTIONS : MGR_QUESTIONS).filter(q => q.type==="stars");
-  const vals    = starQs.map(q => Number(answers[q.id]||0)).filter(v=>v>0);
-  const a       = vals.length ? (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1) : "—";
+  const a = compAvg(answers) || "—";
   const el2 = document.getElementById(`overall-${prefix}`);
   if (el2) el2.textContent = a;
 }
 
 // ── Helper: read textarea values into answers before save ──────
 function syncTextAnswers(prefix) {
-  const qs = prefix==="self" ? SELF_QUESTIONS : MGR_QUESTIONS;
+  // Sync ALL textarea/text inputs currently in the DOM for this prefix
   const ans = prefix==="self" ? S.selfAnswers : S.mgrAnswers;
-  for (const q of qs) {
-    if (q.type==="textarea"||q.type==="text") {
-      const el2 = document.getElementById(`q-${prefix}-${q.id}`);
-      if (el2) ans[q.id] = el2.value;
+  document.querySelectorAll(`[id^="q-${prefix}-"]`).forEach(el2 => {
+    if (el2.tagName === "TEXTAREA" || el2.type === "text") {
+      const qId = el2.id.replace(`q-${prefix}-`, "");
+      ans[qId] = el2.value;
     }
-  }
+  });
 }
 
 // ── Avg of 6 competency stars ───────────────────────────────
@@ -1642,7 +1641,7 @@ async function viewSelf() {
     // Show manager's star ratings + key open-ended answers
     const starRows = ["Tech","Delivery","Collab","Comms","Innovation","Leadership"].map(k => {
       const r=Number(S.mgrAnswers[k]||0);
-      const mgrQ = MGR_QUESTIONS.find(q=>q.id===k);
+        const mgrQ = buildMgrQuestions(me).find(q=>q.id===k);
       return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)88">
         <div style="flex:1;font-size:13px;color:var(--text2)">${mgrQ?.label||k}</div>
         <div style="display:flex;gap:3px">${[1,2,3,4,5].map(n=>`<div class="ro-star ${n<=r?"on":"off"}">★</div>`).join("")}</div>
@@ -1650,7 +1649,7 @@ async function viewSelf() {
       </div>`;
     }).join("");
     // Manager assessment answers
-    const assessRows = MGR_QUESTIONS.filter(q=>q.section==="Manager Assessment"&&q.type!=="stars").map(q=>{
+    const assessRows = buildMgrQuestions(me).filter(q=>q.section==="Manager Assessment"&&q.type!=="stars").map(q=>{
       const v = S.mgrAnswers[q.id];
       if (!v) return "";
       return `<div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)88">
@@ -1893,20 +1892,21 @@ async function viewManager() {
     // Employee self-appraisal read-only display (compact)
     const empStarRows=["Tech","Delivery","Collab","Comms","Innovation","Leadership"].map(k=>{
       const r=Number(empSelf[k]||0);
-      const qLabel=SELF_QUESTIONS.find(q=>q.id===k)?.label||k;
+        const empQs2=buildSelfQuestions(selEmp); const qLabel=empQs2.find(q=>q.id===k)?.label||k;
       return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)88">
         <div style="flex:1;font-size:13px;color:var(--text2)">${qLabel}</div>
         <div style="display:flex;gap:3px">${[1,2,3,4,5].map(n=>`<div class="ro-star ${n<=r?"on":"off"}">★</div>`).join("")}</div>
         <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:14px;color:var(--accent);min-width:22px;text-align:right">${r||"—"}</div>
       </div>`;
     }).join("");
-    const selfBehaviors=SELF_QUESTIONS.filter(q=>q.type!=="stars"&&q.type!=="textarea"&&q.type!=="text"&&empSelf[q.id]).map(q=>{
+    const empQsAll=buildSelfQuestions(selEmp);
+    const selfBehaviors=empQsAll.filter(q=>q.type!=="stars"&&q.type!=="textarea"&&q.type!=="text"&&empSelf[q.id]).map(q=>{
       return `<div style="display:flex;align-items:flex-start;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)88">
         <div style="flex:1;font-size:12px;color:var(--text3)">${q.label}</div>
         <div style="font-size:12px;font-weight:700;color:var(--info)">${empSelf[q.id]}</div>
       </div>`;
     }).join("");
-    const selfOpen=SELF_QUESTIONS.filter(q=>(q.type==="textarea"||q.type==="text")&&empSelf[q.id]).map(q=>{
+    const selfOpen=empQsAll.filter(q=>(q.type==="textarea"||q.type==="text")&&empSelf[q.id]).map(q=>{
       return `<div class="form-group">
         <div class="form-label">${q.label}</div>
         <div class="readonly-field">${empSelf[q.id]||"—"}</div>
