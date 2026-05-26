@@ -656,7 +656,7 @@ const msalCfg = {
   cache:{ cacheLocation:"sessionStorage", storeAuthStateInCookie:false },
 };
 const msal_ = new msal.PublicClientApplication(msalCfg);
-const SCOPES = ["User.Read","Files.ReadWrite.All","Mail.Send"];
+const SCOPES = ["User.Read", "Files.ReadWrite", "Mail.Send"];
 
 async function signIn() {
   try { await msal_.loginRedirect({ scopes:SCOPES, prompt:"select_account" }); }
