@@ -344,122 +344,628 @@ const C = {
 };
 
 // ╔══════════════════════════════════════════════════════════════╗
-// ║                    QUESTION BANK                            ║
-// ║  Types: stars | likert5 | frequency | mcq | yesno | nps    ║
-// ║         textarea | text                                     ║
+// ║              DYNAMIC QUESTION BANK                          ║
+// ║  Questions assembled based on Practice + Level + Role       ║
 // ╚══════════════════════════════════════════════════════════════╝
 
-// Rating labels
-const RLBL = { 0:"—", 1:"Below Expectations", 2:"Partially Meets",
-  3:"Meets Expectations", 4:"Exceeds Expectations", 5:"Outstanding" };
+// Booshan's emp ID — his direct reports get management-level goals
+const BOOSHAN_ID = "6KY000052";
 
-const SELF_QUESTIONS = [
-  // ── Section 1: Competency Ratings ──────────────────────────
-  { id:"Tech",       section:"Competency Ratings", type:"stars",
-    label:"Technical Excellence",          desc:"Quality, depth and impact of technical work", req:true },
-  { id:"Delivery",   section:"Competency Ratings", type:"stars",
-    label:"Delivery & Execution",          desc:"Consistency, velocity and on-time delivery", req:true },
-  { id:"Collab",     section:"Competency Ratings", type:"stars",
-    label:"Collaboration",                 desc:"Team contribution and cross-functional work", req:true },
-  { id:"Comms",      section:"Competency Ratings", type:"stars",
-    label:"Communication",                 desc:"Clarity, documentation and stakeholder updates", req:true },
-  { id:"Innovation", section:"Competency Ratings", type:"stars",
-    label:"Innovation & Problem Solving",  desc:"Creative solutions and proactive improvements", req:true },
-  { id:"Leadership", section:"Competency Ratings", type:"stars",
-    label:"Leadership & Initiative",       desc:"Ownership, mentoring and driving outcomes", req:true },
+// ── Question type reference ────────────────────────────────────
+// stars      → 1–5 star rating + optional explain textarea
+// likert5    → Strongly Disagree → Strongly Agree chips
+// frequency  → Never → Always chips
+// mcq        → custom option chips
+// yesno      → Yes / Partially / No chips
+// nps        → 0–10 score
+// textarea   → open-ended multiline
+// ──────────────────────────────────────────────────────────────
 
-  // ── Section 2: Work Behaviors ───────────────────────────────
-  { id:"MetDeadlines",        section:"Work Behaviors", type:"frequency", req:true,
-    label:"I consistently delivered on my commitments this cycle" },
-  { id:"CommBlockers",        section:"Work Behaviors", type:"frequency", req:false,
-    label:"I proactively communicated blockers or delays to my team" },
-  { id:"TookInitiative",      section:"Work Behaviors", type:"frequency", req:false,
-    label:"I took initiative beyond my assigned responsibilities" },
-  { id:"CollabEffective",     section:"Work Behaviors", type:"likert5",   req:false,
-    label:"I collaborated effectively with cross-functional teams" },
-  { id:"GrowthArea",          section:"Work Behaviors", type:"mcq",        req:false,
-    label:"Which area did you grow the most in this cycle?",
-    options:["Technical Skills","Domain / Product Knowledge","Communication & Soft Skills","Leadership & Ownership","Process & Quality"] },
-
-  // ── Section 3: Engagement & Wellbeing ───────────────────────
-  { id:"CareerAligned",   section:"Engagement & Wellbeing", type:"yesno",  req:false,
-    label:"My work this cycle was aligned with my career goals",
-    options:["Yes","Partially","No"] },
-  { id:"HadSupport",      section:"Engagement & Wellbeing", type:"yesno",  req:false,
-    label:"I had the tools, resources and support needed to do my best work",
-    options:["Yes","Partially","No"] },
-  { id:"WouldRecommend",  section:"Engagement & Wellbeing", type:"yesno",  req:false,
-    label:"I feel proud to work at Finzly and would recommend it to others",
-    options:["Yes","Partially","No"] },
-  { id:"NPS",             section:"Engagement & Wellbeing", type:"nps",    req:false,
-    label:"How likely are you to recommend Finzly as a great place to work? (0 = Not at all, 10 = Definitely)" },
-
-  // ── Section 4: Open-ended Reflections ───────────────────────
-  { id:"Achievements",    section:"Open-ended Reflections", type:"textarea", req:true,
-    label:"Describe your top 2–3 achievements this cycle",
-    placeholder:"Be specific — what did you deliver, and what was the measurable impact?" },
-  { id:"Challenges",      section:"Open-ended Reflections", type:"textarea", req:false,
-    label:"What challenges did you face, and how did you handle them?",
-    placeholder:"Focus on what you learned and how you adapted…" },
-  { id:"NeedsFromMgr",    section:"Open-ended Reflections", type:"textarea", req:false,
-    label:"What support or resources do you need from your manager next cycle?",
-    placeholder:"Be specific — mentoring, stretch assignments, clearer direction, tools…" },
-  { id:"NextGoals",       section:"Open-ended Reflections", type:"textarea", req:true,
-    label:"Goals for next cycle",
-    placeholder:"List 3–5 specific, measurable goals for the next 6 months…" },
+// ── 1. UNIVERSAL SOFT SKILLS (all employees) ──────────────────
+const Q_UNIVERSAL = [
+  { id:"CommEffective",  section:"Soft Skills", type:"stars", req:true,
+    label:"Communication — written, verbal and in meetings",
+    desc:"Clarity, conciseness and effectiveness across all channels", explain:true },
+  { id:"InterTeam",      section:"Soft Skills", type:"frequency", req:true,
+    label:"I proactively collaborated with other teams to deliver shared outcomes" },
+  { id:"Adaptability",   section:"Soft Skills", type:"likert5", req:false,
+    label:"I adapted quickly when priorities, processes or requirements changed" },
+  { id:"Training",       section:"Soft Skills", type:"mcq", req:false,
+    label:"Training & learning activity this cycle",
+    options:["Completed a course/certification","Attended internal workshops","Self-study / reading","Peer learning / mentoring","None this cycle"] },
+  { id:"TrainingDetail", section:"Soft Skills", type:"textarea", req:false,
+    label:"Courses, certifications or training completed",
+    placeholder:"List any courses, certifications, workshops or books you completed this cycle…" },
+  { id:"InterpersonalRel",section:"Soft Skills", type:"likert5", req:false,
+    label:"I maintained positive working relationships across teams and levels" },
+  { id:"ConflictHandling",section:"Soft Skills", type:"frequency", req:false,
+    label:"I resolved disagreements or conflicts constructively without escalating" },
 ];
 
-const MGR_QUESTIONS = [
-  // ── Section 1: Competency Ratings ──────────────────────────
-  { id:"Tech",       section:"Competency Ratings", type:"stars",
-    label:"Technical Excellence",         desc:"Quality and depth of technical contributions", req:true },
-  { id:"Delivery",   section:"Competency Ratings", type:"stars",
-    label:"Delivery & Execution",         desc:"Reliability, speed and quality of delivery", req:true },
-  { id:"Collab",     section:"Competency Ratings", type:"stars",
-    label:"Collaboration",                desc:"Teamwork and cross-functional effectiveness", req:true },
-  { id:"Comms",      section:"Competency Ratings", type:"stars",
-    label:"Communication",                desc:"Clarity and effectiveness of communication", req:true },
-  { id:"Innovation", section:"Competency Ratings", type:"stars",
-    label:"Innovation & Problem Solving", desc:"Creativity and problem-solving ability", req:true },
-  { id:"Leadership", section:"Competency Ratings", type:"stars",
-    label:"Leadership & Initiative",      desc:"Ownership, initiative and team influence", req:true },
+// ── 2. PRACTICE-SPECIFIC QUESTIONS ────────────────────────────
+const Q_BY_PRACTICE = {
 
-  // ── Section 2: Manager Assessment ───────────────────────────
-  { id:"OwnsWork",        section:"Manager Assessment", type:"likert5", req:true,
-    label:"This employee demonstrates strong ownership and accountability" },
-  { id:"PositiveForce",   section:"Manager Assessment", type:"likert5", req:false,
-    label:"This employee is a positive force in the team" },
-  { id:"StakeholderComms",section:"Manager Assessment", type:"frequency", req:false,
-    label:"This employee communicates proactively with stakeholders" },
-  { id:"QualityOfWork",   section:"Manager Assessment", type:"likert5", req:false,
-    label:"This employee consistently delivers high-quality work" },
-  { id:"ReadyForMore",    section:"Manager Assessment", type:"mcq",     req:true,
-    label:"Is this employee ready for increased responsibilities?",
-    options:["Yes, immediately","Yes, within 6 months","Needs development first","No"] },
-  { id:"PromoReady",      section:"Manager Assessment", type:"yesno",   req:false,
-    label:"Would you recommend this employee for a promotion this cycle?",
-    options:["Yes","Not Yet","No"] },
-  { id:"RetentionRisk",   section:"Manager Assessment", type:"mcq",     req:true,
-    label:"Retention / flight risk assessment",
-    options:["Low — Highly engaged","Medium — Some concerns","High — Likely to leave"] },
+  Engineering: [
+    { id:"CodeQuality",    section:"Engineering", type:"stars", req:true,
+      label:"Code quality — correctness, readability and standards adherence",
+      desc:"PRs merged, review feedback, coding standards compliance", explain:true },
+    { id:"PRReviews",      section:"Engineering", type:"frequency", req:true,
+      label:"I gave thorough, constructive code reviews to teammates" },
+    { id:"TechDebt",       section:"Engineering", type:"likert5", req:false,
+      label:"I proactively identified and addressed technical debt in my area" },
+    { id:"Documentation",  section:"Engineering", type:"likert5", req:false,
+      label:"I kept technical documentation (design docs, READMEs, wikis) up to date" },
+    { id:"TestCoverage",   section:"Engineering", type:"frequency", req:false,
+      label:"I wrote unit/integration tests alongside feature code" },
+    { id:"SystemDesign",   section:"Engineering", type:"mcq", req:false,
+      label:"Participation in system design this cycle",
+      options:["Led a design","Contributed significantly","Participated in reviews","Not applicable"] },
+    { id:"EnggImpact",     section:"Engineering", type:"textarea", req:true,
+      label:"Describe your most impactful technical contribution this cycle",
+      placeholder:"What did you build or improve? What was the outcome or measurable impact?" },
+    { id:"TechChallenges", section:"Engineering", type:"textarea", req:false,
+      label:"What technical challenges did you face and how did you solve them?",
+      placeholder:"Specific problems, your approach, and what you learned…" },
+  ],
 
-  // ── Section 3: Open-ended Manager Feedback ──────────────────
-  { id:"MgrComments",     section:"Manager Feedback", type:"textarea", req:true,
-    label:"Overall manager feedback",
-    placeholder:"Specific, constructive feedback on performance this cycle…" },
-  { id:"Strengths",       section:"Manager Feedback", type:"textarea", req:false,
-    label:"Key strengths to acknowledge",
-    placeholder:"What did this employee do exceptionally well?" },
-  { id:"ImprovAreas",     section:"Manager Feedback", type:"textarea", req:false,
-    label:"Areas for improvement with actionable suggestions",
-    placeholder:"Specific behaviors to develop — not generic statements…" },
-  { id:"MgrDevPlan",      section:"Manager Feedback", type:"textarea", req:true,
-    label:"Development plan for next cycle",
-    placeholder:"3 concrete growth goals with ways to measure progress…" },
-  { id:"HRContext",       section:"Manager Feedback", type:"textarea", req:false,
-    label:"Additional context for HR (confidential)",
-    placeholder:"Anything HR should know about this employee's situation…" },
+  QA: [
+    { id:"TestCoverage",   section:"Quality Assurance", type:"stars", req:true,
+      label:"Test coverage — completeness and relevance of test cases",
+      desc:"Coverage across functional, regression, edge cases", explain:true },
+    { id:"DefectDetection",section:"Quality Assurance", type:"likert5", req:true,
+      label:"I caught critical defects before features reached production" },
+    { id:"AutomationWork", section:"Quality Assurance", type:"frequency", req:false,
+      label:"I contributed to or improved automation test scripts" },
+    { id:"BugEscapeRate",  section:"Quality Assurance", type:"mcq", req:false,
+      label:"Bug escape rate to production in your area this cycle",
+      options:["Zero escapes","1–2 minor","3–5 minor","1+ major","Multiple major"] },
+    { id:"DevCollab",      section:"Quality Assurance", type:"frequency", req:false,
+      label:"I collaborated early with developers to clarify requirements and prevent defects" },
+    { id:"RCAQuality",     section:"Quality Assurance", type:"likert5", req:false,
+      label:"My root cause analyses were thorough and led to actionable fixes" },
+    { id:"QAImpact",       section:"Quality Assurance", type:"textarea", req:true,
+      label:"Describe your most impactful quality contribution this cycle",
+      placeholder:"A test suite, process improvement, defect catch, or automation you're proud of…" },
+    { id:"AutomationGoal", section:"Quality Assurance", type:"textarea", req:false,
+      label:"What automation or process improvements did you make or plan to make?",
+      placeholder:"Specific scripts, frameworks, or process changes…" },
+  ],
+
+  "Production Support": [
+    { id:"SLAAdherence",   section:"Production Support", type:"stars", req:true,
+      label:"SLA adherence — response and resolution within committed timelines",
+      desc:"Measured against P1/P2/P3 SLA targets", explain:true },
+    { id:"CustomerComms",  section:"Production Support", type:"frequency", req:true,
+      label:"I communicated proactively with customers during incidents — even without a fix" },
+    { id:"IncidentRCA",    section:"Production Support", type:"likert5", req:false,
+      label:"My root cause analyses were thorough, documented, and prevented recurrence" },
+    { id:"MTTRSelf",       section:"Production Support", type:"mcq", req:false,
+      label:"Your average time to resolve P1/P2 incidents this cycle",
+      options:["Under 2 hours","2–4 hours","4–8 hours","8–24 hours","Over 24 hours"] },
+    { id:"KBContrib",      section:"Production Support", type:"frequency", req:false,
+      label:"I updated knowledge base articles and runbooks based on incidents handled" },
+    { id:"EscalationMgmt", section:"Production Support", type:"likert5", req:false,
+      label:"I escalated issues appropriately — neither too early nor too late" },
+    { id:"PSImpact",       section:"Production Support", type:"textarea", req:true,
+      label:"Describe a complex incident you resolved this cycle",
+      placeholder:"What happened, how you diagnosed it, what you fixed, and what you learned…" },
+  ],
+
+  Product: [
+    { id:"ReqClarity",     section:"Product Management", type:"stars", req:true,
+      label:"Requirements quality — clarity, completeness and testability",
+      desc:"User stories, acceptance criteria, edge case coverage", explain:true },
+    { id:"RoadmapDelivery",section:"Product Management", type:"likert5", req:true,
+      label:"Features I owned were delivered on time and to spec this cycle" },
+    { id:"StakeholderAlign",section:"Product Management", type:"frequency", req:true,
+      label:"I aligned stakeholders (engineering, sales, leadership) before committing to delivery" },
+    { id:"MetricsOwnership",section:"Product Management", type:"likert5", req:false,
+      label:"I tracked product metrics and made data-driven decisions" },
+    { id:"UserFocus",      section:"Product Management", type:"likert5", req:false,
+      label:"My product decisions were grounded in user research or customer feedback" },
+    { id:"ProductImpact",  section:"Product Management", type:"textarea", req:true,
+      label:"What was your biggest product impact this cycle?",
+      placeholder:"Feature shipped, problem solved, or outcome improved — with measurable results…" },
+    { id:"MetricsDetail",  section:"Product Management", type:"textarea", req:false,
+      label:"What metrics did you own? How did they move?",
+      placeholder:"Specific KPIs, baseline vs current, and what drove the change…" },
+  ],
+
+  "Business Analyst": [
+    { id:"ReqDocQuality",  section:"Business Analysis", type:"stars", req:true,
+      label:"Requirements documentation quality — clarity, completeness and accuracy",
+      explain:true },
+    { id:"StakeholderComms",section:"Business Analysis", type:"frequency", req:true,
+      label:"I proactively clarified ambiguities with stakeholders before development began" },
+    { id:"GapAnalysis",    section:"Business Analysis", type:"likert5", req:false,
+      label:"My gap analyses identified all critical business requirements" },
+    { id:"UATSupport",     section:"Business Analysis", type:"likert5", req:false,
+      label:"I effectively supported UAT — clear test scenarios, timely defect triage" },
+    { id:"ProcessImprov",  section:"Business Analysis", type:"mcq", req:false,
+      label:"Process improvement contributions this cycle",
+      options:["Led a process change","Contributed to a process change","Suggested improvement (not yet implemented)","No process work this cycle"] },
+    { id:"BAImpact",       section:"Business Analysis", type:"textarea", req:true,
+      label:"Describe a complex requirement you clarified or a process you improved",
+      placeholder:"The problem, your approach, and the outcome…" },
+  ],
+
+  DevOps: [
+    { id:"InfraUptime",    section:"DevOps & Infrastructure", type:"stars", req:true,
+      label:"Infrastructure reliability — uptime, stability, incident prevention",
+      desc:"SLAs met, outages avoided, proactive monitoring", explain:true },
+    { id:"PipelineImprov", section:"DevOps & Infrastructure", type:"frequency", req:true,
+      label:"I improved CI/CD pipelines — speed, reliability or test coverage" },
+    { id:"SecurityCompl",  section:"DevOps & Infrastructure", type:"likert5", req:false,
+      label:"I ensured infrastructure and deployments followed security and compliance standards" },
+    { id:"DeployFreq",     section:"DevOps & Infrastructure", type:"mcq", req:false,
+      label:"Deployment frequency improvement this cycle",
+      options:["Significantly improved","Slightly improved","Maintained","Declined"] },
+    { id:"IncidentResp",   section:"DevOps & Infrastructure", type:"frequency", req:false,
+      label:"I responded to infrastructure incidents within SLA and documented resolutions" },
+    { id:"DevOpsImpact",   section:"DevOps & Infrastructure", type:"textarea", req:true,
+      label:"Describe your most impactful infrastructure or DevOps improvement this cycle",
+      placeholder:"What you built, automated, or improved — and measurable outcomes…" },
+  ],
+
+  Sales: [
+    { id:"PipelineTarget", section:"Sales Performance", type:"stars", req:true,
+      label:"Pipeline and revenue target achievement",
+      desc:"Actual vs target — deals closed, revenue generated", explain:true },
+    { id:"DemoQuality",    section:"Sales Performance", type:"likert5", req:true,
+      label:"My demos and presentations effectively addressed customer needs and objections" },
+    { id:"RelMgmt",        section:"Sales Performance", type:"frequency", req:true,
+      label:"I maintained consistent and meaningful contact with prospects and customers" },
+    { id:"ProposalQuality",section:"Sales Performance", type:"likert5", req:false,
+      label:"My proposals were tailored, competitive and addressed customer pain points" },
+    { id:"DealClosure",    section:"Sales Performance", type:"mcq", req:false,
+      label:"Deal closure rate vs target this cycle",
+      options:["Above target (>110%)","On target (90–110%)","Below target (70–90%)","Significantly below (<70%)"] },
+    { id:"SalesImpact",    section:"Sales Performance", type:"textarea", req:true,
+      label:"Describe your biggest win or deal this cycle",
+      placeholder:"Customer, deal size (if shareable), how you won it, and what you learned…" },
+    { id:"SalesChallenges",section:"Sales Performance", type:"textarea", req:false,
+      label:"What pipeline or market challenges did you face? How did you respond?",
+      placeholder:"Competitive losses, market conditions, objections — and how you adapted…" },
+  ],
+
+  "Pre-Sales": [
+    { id:"DemoQuality",    section:"Pre-Sales", type:"stars", req:true,
+      label:"Demo and solution presentation quality",
+      desc:"Relevance to customer needs, technical accuracy, win contribution", explain:true },
+    { id:"RFPQuality",     section:"Pre-Sales", type:"likert5", req:true,
+      label:"My RFP/RFI responses were complete, accurate and competitively differentiated" },
+    { id:"SalesCollab",    section:"Pre-Sales", type:"frequency", req:true,
+      label:"I collaborated effectively with the sales team from discovery to close" },
+    { id:"TechDepth",      section:"Pre-Sales", type:"likert5", req:false,
+      label:"I demonstrated strong technical depth in customer conversations" },
+    { id:"PreSalesImpact", section:"Pre-Sales", type:"textarea", req:true,
+      label:"Describe a deal you influenced through your pre-sales contribution",
+      placeholder:"Customer challenge, your solution demo or RFP response, and the outcome…" },
+  ],
+
+  HR: [
+    { id:"HiringSupport",  section:"Human Resources", type:"stars", req:true,
+      label:"Hiring effectiveness — quality of hires and time-to-fill",
+      desc:"Positions filled, quality of candidates, hiring manager satisfaction", explain:true },
+    { id:"EmpSatisfaction",section:"Human Resources", type:"likert5", req:true,
+      label:"My HR initiatives positively impacted employee satisfaction and engagement" },
+    { id:"ProcessAdherence",section:"Human Resources", type:"frequency", req:true,
+      label:"I followed HR processes and ensured compliance with policies" },
+    { id:"OnboardingQuality",section:"Human Resources", type:"likert5", req:false,
+      label:"New hires I managed were effectively onboarded and productive within 30 days" },
+    { id:"HRImpact",       section:"Human Resources", type:"textarea", req:true,
+      label:"Describe your most impactful HR initiative this cycle",
+      placeholder:"Hiring drive, policy change, engagement program, training initiative…" },
+    { id:"EmpChallenges",  section:"Human Resources", type:"textarea", req:false,
+      label:"What employee challenges did you handle and how?",
+      placeholder:"Attrition risks, performance issues, team conflicts — your approach and outcome…" },
+  ],
+
+  Marketing: [
+    { id:"CampaignDelivery",section:"Marketing", type:"stars", req:true,
+      label:"Campaign delivery — quality, on-time execution and results",
+      explain:true },
+    { id:"ContentQuality",  section:"Marketing", type:"likert5", req:true,
+      label:"The content I produced was on-brand, high quality and resonated with the audience" },
+    { id:"LeadGen",         section:"Marketing", type:"likert5", req:false,
+      label:"My marketing activities contributed to measurable lead generation" },
+    { id:"BrandConsistency",section:"Marketing", type:"frequency", req:false,
+      label:"I ensured brand consistency across all channels and deliverables" },
+    { id:"MarketingImpact", section:"Marketing", type:"textarea", req:true,
+      label:"Describe your most impactful campaign or marketing initiative this cycle",
+      placeholder:"What you launched, the metrics you tracked, and the outcome…" },
+  ],
+
+  Finance: [
+    { id:"Accuracy",        section:"Finance", type:"stars", req:true,
+      label:"Accuracy and completeness of financial reporting and analysis",
+      explain:true },
+    { id:"Compliance",      section:"Finance", type:"likert5", req:true,
+      label:"I ensured all financial activities complied with regulatory and internal standards" },
+    { id:"Timeliness",      section:"Finance", type:"frequency", req:true,
+      label:"I delivered financial reports and analyses on time" },
+    { id:"FinanceImpact",   section:"Finance", type:"textarea", req:true,
+      label:"Describe a financial analysis or project you're proud of this cycle",
+      placeholder:"The problem, your analysis, and the business decision it enabled…" },
+  ],
+
+  Infosec: [
+    { id:"SecurityPosture", section:"Information Security", type:"stars", req:true,
+      label:"Security posture improvement — vulnerabilities found and addressed",
+      explain:true },
+    { id:"ComplianceAdh",   section:"Information Security", type:"likert5", req:true,
+      label:"I ensured systems and processes met security and compliance standards" },
+    { id:"ThreatDetection", section:"Information Security", type:"frequency", req:false,
+      label:"I proactively identified and escalated security risks before they became incidents" },
+    { id:"InfosecImpact",   section:"Information Security", type:"textarea", req:true,
+      label:"Describe your most impactful security contribution this cycle",
+      placeholder:"Vulnerability found, policy enforced, audit completed, or incident prevented…" },
+  ],
+
+  Management: [
+    { id:"TeamPerf",        section:"People Management", type:"stars", req:true,
+      label:"Team performance — overall delivery and quality outcomes of your team",
+      desc:"How well did your team deliver against commitments this cycle?", explain:true },
+    { id:"PerfConversations",section:"People Management", type:"frequency", req:true,
+      label:"I held regular 1:1s and performance conversations with my direct reports" },
+    { id:"TeamEngagement",  section:"People Management", type:"likert5", req:true,
+      label:"My team was engaged, motivated and had the support they needed to do their best work" },
+    { id:"HiringDecisions", section:"People Management", type:"likert5", req:false,
+      label:"My hiring decisions brought the right talent into the team" },
+    { id:"TeamRetention",   section:"People Management", type:"likert5", req:false,
+      label:"I proactively managed retention risks in my team" },
+    { id:"DelegationEff",   section:"People Management", type:"frequency", req:false,
+      label:"I delegated effectively — giving team members appropriate ownership and accountability" },
+    { id:"TeamGrowth",      section:"People Management", type:"textarea", req:true,
+      label:"Describe a team member you developed significantly this cycle",
+      placeholder:"Their starting point, what you did to develop them, and where they are now…" },
+    { id:"MgmtReflection",  section:"People Management", type:"textarea", req:false,
+      label:"What would you do differently in managing your team next cycle?",
+      placeholder:"Honest reflection — process, communication, delegation, or team structure…" },
+  ],
+
+  "Scrum Master": [
+    { id:"SprintVelocity",  section:"Scrum & Delivery", type:"stars", req:true,
+      label:"Sprint consistency — velocity stability and commitment reliability",
+      explain:true },
+    { id:"ImpedimentRes",   section:"Scrum & Delivery", type:"frequency", req:true,
+      label:"I identified and removed team blockers before they impacted delivery" },
+    { id:"CeremonyQuality", section:"Scrum & Delivery", type:"likert5", req:false,
+      label:"Sprint ceremonies I facilitated were effective, focused and time-boxed" },
+    { id:"SMImpact",        section:"Scrum & Delivery", type:"textarea", req:true,
+      label:"What was your biggest delivery or team improvement this cycle?",
+      placeholder:"Process change, team dynamic improvement, or delivery milestone…" },
+  ],
+
+  "Project Management": [
+    { id:"ProjectDelivery", section:"Project Management", type:"stars", req:true,
+      label:"Project delivery — on time, on scope, on budget",
+      explain:true },
+    { id:"StakeholderMgmt", section:"Project Management", type:"frequency", req:true,
+      label:"I kept stakeholders informed with timely, accurate project status updates" },
+    { id:"RiskMgmt",        section:"Project Management", type:"likert5", req:false,
+      label:"I identified project risks early and put mitigation plans in place" },
+    { id:"PMImpact",        section:"Project Management", type:"textarea", req:true,
+      label:"Describe your most complex project delivery this cycle",
+      placeholder:"Scope, challenges, how you kept it on track, and what you learned…" },
+  ],
+};
+
+// Fallback for practices not listed above
+const Q_PRACTICE_DEFAULT = [
+  { id:"WorkQuality",    section:"Role Performance", type:"stars", req:true,
+    label:"Quality of work delivered this cycle",
+    explain:true },
+  { id:"WorkOwnership",  section:"Role Performance", type:"likert5", req:true,
+    label:"I took ownership of my responsibilities without needing to be followed up" },
+  { id:"WorkImpact",     section:"Role Performance", type:"textarea", req:true,
+    label:"Describe your biggest contribution this cycle",
+    placeholder:"What you delivered, how you did it, and its impact on the team or business…" },
 ];
+
+// ── 3. LEVEL-SPECIFIC QUESTIONS ────────────────────────────────
+const Q_BY_LEVEL = {
+
+  "Trainee Level": [
+    { id:"LearningPace",   section:"Trainee Growth", type:"stars", req:true,
+      label:"Learning pace — how quickly you picked up new skills and tools",
+      explain:true },
+    { id:"TaskCompletion", section:"Trainee Growth", type:"likert5", req:true,
+      label:"I completed assigned tasks on time and to the expected quality" },
+    { id:"FeedbackRecep",  section:"Trainee Growth", type:"frequency", req:true,
+      label:"I acted on feedback from my mentor or manager promptly" },
+    { id:"AskForHelp",     section:"Trainee Growth", type:"frequency", req:false,
+      label:"I asked for help when I was stuck rather than spending too long alone" },
+    { id:"TraineeGrowth",  section:"Trainee Growth", type:"textarea", req:true,
+      label:"What skill or area did you grow the most in this cycle?",
+      placeholder:"Specific skill, tool or domain — what you knew before vs now…" },
+    { id:"TraineeSupport", section:"Trainee Growth", type:"textarea", req:false,
+      label:"What support do you need to grow faster next cycle?",
+      placeholder:"Mentoring, training, tools, or different kinds of tasks…" },
+  ],
+
+  "Junior Level": [
+    { id:"WorkIndependence",section:"Junior Growth", type:"likert5", req:true,
+      label:"I completed tasks independently without constant guidance" },
+    { id:"ReviewReceptive", section:"Junior Growth", type:"frequency", req:true,
+      label:"I incorporated feedback from reviews into my work promptly" },
+    { id:"SkillProgress",   section:"Junior Growth", type:"stars", req:true,
+      label:"Skill development — measurable growth in your core technical area",
+      explain:true },
+    { id:"JuniorGrowth",    section:"Junior Growth", type:"textarea", req:true,
+      label:"What's one area you significantly improved in this cycle?",
+      placeholder:"Before and after — what you could do then vs now…" },
+  ],
+
+  "Mid Level": [
+    { id:"AreaOwnership",   section:"Mid-Level Ownership", type:"stars", req:true,
+      label:"Ownership — you fully owned your module or area without needing handholding",
+      explain:true },
+    { id:"ProblemSolving",  section:"Mid-Level Ownership", type:"frequency", req:true,
+      label:"I resolved issues independently before escalating" },
+    { id:"JuniorMentoring", section:"Mid-Level Ownership", type:"frequency", req:false,
+      label:"I helped junior team members with guidance, reviews or pairing" },
+    { id:"CrossTeamImpact", section:"Mid-Level Ownership", type:"likert5", req:false,
+      label:"My work had visible positive impact beyond my immediate squad" },
+    { id:"MidOwnershipDesc",section:"Mid-Level Ownership", type:"textarea", req:true,
+      label:"Describe a project or module you owned end-to-end this cycle",
+      placeholder:"Scope, challenges, decisions you made, and the outcome…" },
+  ],
+
+  "Senior Level": [
+    { id:"TechLeadership",  section:"Senior Leadership", type:"stars", req:true,
+      label:"Technical or domain leadership — others looked to you for direction",
+      explain:true },
+    { id:"MentoringImpact", section:"Senior Leadership", type:"frequency", req:true,
+      label:"I actively mentored junior/mid team members through pairing, reviews or guidance" },
+    { id:"DesignContrib",   section:"Senior Leadership", type:"likert5", req:true,
+      label:"I contributed to architectural or design decisions that improved the system" },
+    { id:"StandardSetting", section:"Senior Leadership", type:"likert5", req:false,
+      label:"I helped raise standards in the team — quality, practices or processes" },
+    { id:"SeniorMentoring", section:"Senior Leadership", type:"textarea", req:true,
+      label:"Describe your mentoring or knowledge-sharing impact this cycle",
+      placeholder:"Who you mentored, what you shared, and what changed for them…" },
+    { id:"SeniorDesign",    section:"Senior Leadership", type:"textarea", req:false,
+      label:"What architectural or technical direction did you contribute to?",
+      placeholder:"Design decision, technical spike, system improvement, or standard you set…" },
+  ],
+
+  "Lead Level": [
+    { id:"TeamDelivery",    section:"Lead Accountability", type:"stars", req:true,
+      label:"Team delivery — your squad delivered on commitments this cycle",
+      desc:"You are accountable for your team's output, not just your own", explain:true },
+    { id:"BlockerRemoval",  section:"Lead Accountability", type:"frequency", req:true,
+      label:"I removed blockers for my team before they impacted delivery" },
+    { id:"TechVision",      section:"Lead Accountability", type:"likert5", req:true,
+      label:"I provided clear technical or functional direction that improved team output" },
+    { id:"StakeholderMgmt", section:"Lead Accountability", type:"frequency", req:false,
+      label:"I proactively managed stakeholder expectations on behalf of my team" },
+    { id:"LeadEnablement",  section:"Lead Accountability", type:"textarea", req:true,
+      label:"How did you enable your team's success this cycle?",
+      placeholder:"Decisions made, blockers removed, direction given, or culture built…" },
+    { id:"LeadChallenge",   section:"Lead Accountability", type:"textarea", req:false,
+      label:"What was your biggest leadership challenge and how did you handle it?",
+      placeholder:"A hard decision, team conflict, delivery pressure, or technical dilemma…" },
+  ],
+
+  "Mgmt Level": [
+    { id:"OrgContrib",      section:"Management & Leadership", type:"stars", req:true,
+      label:"Organisational contribution — strategic impact beyond your team",
+      explain:true },
+    { id:"PeopleGrowth",    section:"Management & Leadership", type:"likert5", req:true,
+      label:"I actively invested in growing the people in my team and org" },
+    { id:"CultureImpact",   section:"Management & Leadership", type:"likert5", req:true,
+      label:"I built a positive, high-performance culture in my area" },
+    { id:"StrategicExec",   section:"Management & Leadership", type:"likert5", req:false,
+      label:"I translated organisational strategy into clear goals for my team" },
+    { id:"CrossFuncLead",   section:"Management & Leadership", type:"frequency", req:false,
+      label:"I drove alignment and collaboration across teams and functions" },
+    { id:"MgmtLevelImpact", section:"Management & Leadership", type:"textarea", req:true,
+      label:"What was your biggest organisational or strategic contribution this cycle?",
+      placeholder:"A decision, initiative, or change you drove at the org level…" },
+    { id:"MgmtLevelGrowth", section:"Management & Leadership", type:"textarea", req:false,
+      label:"How did you grow as a leader this cycle?",
+      placeholder:"New challenges taken, skills developed, mistakes learned from…" },
+  ],
+};
+
+// ── 4. GOALS SECTION ───────────────────────────────────────────
+const Q_GOALS = {
+
+  standard: [
+    { id:"PracticeGoals",  section:"Goals for Next Cycle", type:"textarea", req:true,
+      label:"Practice Goals — 2–3 goals specific to your role and practice",
+      placeholder:"e.g. 'Complete AWS Solutions Architect certification by Aug 2026'\ne.g. 'Reduce bug escape rate to zero for my squad'" },
+    { id:"GalaxyGoals",    section:"Goals for Next Cycle", type:"textarea", req:true,
+      label:"Galaxy / Squad Goals — your contribution to your team's success",
+      placeholder:"e.g. 'Lead the migration of payment module to new architecture'\ne.g. 'Reduce sprint carry-overs from 20% to under 5%'" },
+    { id:"SoftSkillGoals", section:"Goals for Next Cycle", type:"textarea", req:true,
+      label:"Soft Skills & Growth Goals — communication, leadership, training",
+      placeholder:"e.g. 'Complete a public speaking course in Q1'\ne.g. 'Mentor 2 junior engineers this cycle'\ne.g. 'Obtain PMP certification'" },
+  ],
+
+  trainee: [
+    { id:"LearningGoals",  section:"Goals for Next Cycle", type:"textarea", req:true,
+      label:"Learning Goals — 2 skills you want to grow next cycle",
+      placeholder:"e.g. 'Learn React fundamentals and build a small project'\ne.g. 'Write my first automation test suite'" },
+    { id:"MentorGoals",    section:"Goals for Next Cycle", type:"textarea", req:false,
+      label:"What support or mentoring would help you most next cycle?",
+      placeholder:"Specific topics, technologies, or working styles you want guidance on…" },
+  ],
+};
+
+// ── 5. BUILD QUESTIONS FOR AN EMPLOYEE ─────────────────────────
+function buildSelfQuestions(emp) {
+  const practice = (emp.dept||"").trim();
+  const level    = (emp.level||"").trim();
+  const l1EmpId  = (emp.l1EmpId||"").trim();
+  const isTrainee= level === "Trainee Level";
+  const isMgmt   = level === "Mgmt Level";
+  const isBootshanDirectReport = l1EmpId === BOOSHAN_ID;
+
+  // Start with universal soft skills
+  let questions = [...Q_UNIVERSAL];
+
+  // Add practice-specific questions
+  const practiceQs = Q_BY_PRACTICE[practice] || Q_PRACTICE_DEFAULT;
+  questions = questions.concat(practiceQs);
+
+  // Add level-specific questions
+  const levelQs = Q_BY_LEVEL[level] || [];
+  questions = questions.concat(levelQs);
+
+  // Management practice people + Booshan's direct reports get management questions
+  // (but not Booshan himself — he's org-level)
+  const addMgmtQs = (practice === "Management" || isBootshanDirectReport) && emp.id !== BOOSHAN_ID;
+  if (addMgmtQs && !isMgmt) {
+    // Not already added via Mgmt Level questions
+    questions = questions.concat(Q_BY_PRACTICE["Management"]);
+  }
+
+  // Goals — lighter for trainees
+  const goalQs = isTrainee ? Q_GOALS.trainee : Q_GOALS.standard;
+  questions = questions.concat(goalQs);
+
+  return questions;
+}
+
+// Manager review questions — built based on the employee being reviewed
+function buildMgrQuestions(emp) {
+  const practice = (emp.dept||"").trim();
+  const level    = (emp.level||"").trim();
+  const isTrainee= level === "Trainee Level";
+
+  // Manager assessment universal
+  const mgrUniversal = [
+    { id:"OwnsWork",          section:"Manager Assessment", type:"likert5", req:true,
+      label:"This employee demonstrates strong ownership and accountability" },
+    { id:"PositiveForce",     section:"Manager Assessment", type:"likert5", req:false,
+      label:"This employee is a positive force in the team culture" },
+    { id:"StakeholderComms",  section:"Manager Assessment", type:"frequency", req:false,
+      label:"This employee communicates proactively with relevant stakeholders" },
+    { id:"QualityConsistency",section:"Manager Assessment", type:"likert5", req:false,
+      label:"This employee consistently delivers high-quality work" },
+    { id:"ReadyForMore",      section:"Manager Assessment", type:"mcq", req:true,
+      label:"Is this employee ready for increased responsibilities?",
+      options:["Yes, immediately","Yes, within 6 months","Needs development first","No"] },
+    { id:"PromoReady",        section:"Manager Assessment", type:"yesno", req:false,
+      label:"Would you recommend this employee for a promotion this cycle?",
+      options:["Yes","Not Yet","No"] },
+    { id:"RetentionRisk",     section:"Manager Assessment", type:"mcq", req:true,
+      label:"Flight / retention risk assessment",
+      options:["Low — Highly engaged","Medium — Some concerns","High — Likely to leave"] },
+  ];
+
+  // Practice-specific manager view (3rd-person framing)
+  const practiceMgrQs = buildPracticeMgrQuestions(practice);
+
+  // Level-specific manager view
+  const levelMgrQs = buildLevelMgrQuestions(level);
+
+  // Manager open-ended feedback
+  const mgrFeedback = [
+    { id:"MgrComments",  section:"Manager Feedback", type:"textarea", req:true,
+      label:"Overall performance feedback",
+      placeholder:"Specific, constructive, evidence-based feedback on this cycle's performance…" },
+    { id:"Strengths",    section:"Manager Feedback", type:"textarea", req:false,
+      label:"Key strengths to acknowledge",
+      placeholder:"What did this employee do exceptionally well?" },
+    { id:"ImprovAreas",  section:"Manager Feedback", type:"textarea", req:false,
+      label:"Areas for improvement — with specific, actionable suggestions",
+      placeholder:"Specific behaviors to develop — not generic statements…" },
+    { id:"MgrDevPlan",   section:"Manager Feedback", type:"textarea", req:true,
+      label:`Development plan for next cycle (${isTrainee?"learning focus":"growth goals"})`,
+      placeholder:`${isTrainee?"2 learning goals with specific resources and timelines…":"3 concrete growth goals with ways to measure progress…"}` },
+    { id:"HRContext",    section:"Manager Feedback", type:"textarea", req:false,
+      label:"Additional context for HR (confidential — not visible to employee)",
+      placeholder:"Anything HR should know about this employee's situation, risks, or plans…" },
+  ];
+
+  return [...mgrUniversal, ...practiceMgrQs, ...levelMgrQs, ...mgrFeedback];
+}
+
+function buildPracticeMgrQuestions(practice) {
+  const map = {
+    Engineering: [
+      { id:"CodeQualityMgr",  section:"Technical Assessment", type:"stars", req:true,
+        label:"Code quality — correctness, standards adherence, review quality", explain:true },
+      { id:"TechGrowthMgr",   section:"Technical Assessment", type:"likert5", req:false,
+        label:"This engineer is growing their technical skills and depth" },
+      { id:"TechDebtMgr",     section:"Technical Assessment", type:"frequency", req:false,
+        label:"This engineer addresses technical debt proactively" },
+    ],
+    QA: [
+      { id:"TestQualityMgr",  section:"QA Assessment", type:"stars", req:true,
+        label:"Test coverage and defect prevention effectiveness", explain:true },
+      { id:"AutomationMgr",   section:"QA Assessment", type:"likert5", req:false,
+        label:"This QA engineer contributes meaningfully to test automation" },
+    ],
+    "Production Support": [
+      { id:"SLAMgr",          section:"PS Assessment", type:"stars", req:true,
+        label:"SLA adherence and customer communication quality", explain:true },
+      { id:"RCAMgr",          section:"PS Assessment", type:"likert5", req:false,
+        label:"This engineer's RCAs are thorough and prevent recurrence" },
+    ],
+    Product: [
+      { id:"ReqQualityMgr",   section:"Product Assessment", type:"stars", req:true,
+        label:"Requirements and product thinking quality", explain:true },
+      { id:"DeliveryMgr",     section:"Product Assessment", type:"likert5", req:false,
+        label:"This PM delivered features on time and to spec" },
+    ],
+    Sales: [
+      { id:"PipelineMgr",     section:"Sales Assessment", type:"stars", req:true,
+        label:"Pipeline achievement vs target", explain:true },
+      { id:"CustomerRelMgr",  section:"Sales Assessment", type:"likert5", req:false,
+        label:"This person maintains strong customer relationships" },
+    ],
+    Management: [
+      { id:"TeamPerfMgr",     section:"Leadership Assessment", type:"stars", req:true,
+        label:"Team performance under this leader's direction", explain:true },
+      { id:"PeopleDevMgr",    section:"Leadership Assessment", type:"likert5", req:true,
+        label:"This leader invests in growing their people" },
+      { id:"CultureMgr",      section:"Leadership Assessment", type:"likert5", req:false,
+        label:"This leader builds a positive, high-performance culture" },
+    ],
+  };
+  return map[practice] || [
+    { id:"RolePerfMgr", section:"Role Assessment", type:"stars", req:true,
+      label:"Overall role-specific performance quality", explain:true },
+  ];
+}
+
+function buildLevelMgrQuestions(level) {
+  const map = {
+    "Trainee Level": [
+      { id:"LearningRateMgr", section:"Trainee Assessment", type:"stars", req:true,
+        label:"Learning pace — how fast this trainee is picking up skills", explain:true },
+      { id:"MentoringNeeds",  section:"Trainee Assessment", type:"mcq", req:false,
+        label:"Level of supervision this trainee currently needs",
+        options:["Daily check-ins","Weekly guidance","Mostly independent","Fully independent"] },
+    ],
+    "Junior Level": [
+      { id:"JuniorIndep",     section:"Junior Assessment", type:"likert5", req:false,
+        label:"This junior is becoming progressively more independent" },
+    ],
+    "Senior Level": [
+      { id:"SeniorMentorMgr", section:"Senior Assessment", type:"frequency", req:false,
+        label:"This senior actively mentors others and raises team standards" },
+    ],
+    "Lead Level": [
+      { id:"LeadAccountMgr",  section:"Lead Assessment", type:"stars", req:true,
+        label:"Delivery accountability — team delivered under this lead's ownership", explain:true },
+      { id:"LeadEnableMgr",   section:"Lead Assessment", type:"likert5", req:false,
+        label:"This lead removes blockers and enables the team effectively" },
+    ],
+    "Mgmt Level": [
+      { id:"StrategicMgr",    section:"Leadership Assessment", type:"likert5", req:false,
+        label:"This leader translates strategy into clear team direction" },
+      { id:"OrgHealthMgr",    section:"Leadership Assessment", type:"likert5", req:false,
+        label:"This leader positively impacts org health and culture" },
+    ],
+  };
+  return map[level] || [];
+}
+
 
 // ╔══════════════════════════════════════════════════════════════╗
 // ║                         STATE                               ║
@@ -504,6 +1010,17 @@ function renderOneQuestion(q, val, prefix, readOnly) {
 
   if (q.type === "stars") {
     widget = renderStarsWidget(q, val||0, prefix, readOnly);
+    // If explain:true, add a "tell us more" textarea after the stars
+    if (q.explain && !readOnly) {
+      const explainId = `${q.id}_explain`;
+      const ev = answers[explainId]||"";
+      const safeEv = ev.replace(/</g,"&lt;").replace(/>/g,"&gt;");
+      widget += `<textarea id="q-${prefix}-${explainId}" rows="2" style="margin-top:8px;font-size:12px;"
+        placeholder="Add context for this rating (optional)…"
+        oninput="setAnswer('${prefix}','${explainId}',this.value)">${safeEv}</textarea>`;
+    } else if (q.explain && readOnly && answers[`${q.id}_explain`]) {
+      widget += `<div class="readonly-field" style="margin-top:8px;font-size:12px;color:var(--text3)">${answers[q.id+'_explain']}</div>`;
+    }
   } else if (q.type === "likert5") {
     const opts = ["Strongly Disagree","Disagree","Neutral","Agree","Strongly Agree"];
     widget = renderChipGroup(q, val||"", prefix, readOnly, opts);
@@ -1112,7 +1629,8 @@ async function viewSelf() {
   const readOnly  = submitted;
   const sAvg      = compAvg(S.selfAnswers);
 
-  // Build all questions HTML
+  // Build questions dynamically based on employee practice + level
+  const SELF_QUESTIONS = buildSelfQuestions(me);
   const qHtml = renderAllQuestions(SELF_QUESTIONS, S.selfAnswers, "self", readOnly);
 
   // Manager feedback section (if completed)
@@ -1213,7 +1731,7 @@ async function viewSelf() {
   <div class="card mb6">
     <div class="ch">
       <span class="ct">Appraisal Form</span>
-      <span style="font-size:12px;color:var(--text3)">${SELF_QUESTIONS.length} questions · ${SELF_QUESTIONS.filter(q=>q.req).length} required</span>
+      <span style="font-size:12px;color:var(--text3)">Practice: ${me.dept||"General"} · Level: ${me.level||"—"} · ${SELF_QUESTIONS.filter(q=>q.req).length} required fields</span>
     </div>
     <div class="cb">${qHtml}</div>
   </div>
@@ -1297,7 +1815,9 @@ async function submitSelf() {
   const me=S.employees.find(e=>e.email===S.userEmail);
   if (!me) return;
   syncTextAnswers("self");
-  const missing=SELF_QUESTIONS.filter(q=>q.req&&!S.selfAnswers[q.id]);
+  const me_v=S.employees.find(e=>e.email===S.userEmail);
+  const SELF_QUESTIONS_V = me_v ? buildSelfQuestions(me_v) : [];
+  const missing=SELF_QUESTIONS_V.filter(q=>q.req&&!S.selfAnswers[q.id]);
   if (missing.length) { toast(`Complete required fields: ${missing.map(q=>q.label.split(" ").slice(0,3).join(" ")+"…").join(", ")}`, "error"); return; }
   if (!confirm(`Submit your self-appraisal for ${C.cycleName}?\n\nYou won't be able to edit after submission.`)) return;
   loading("Submitting…");
@@ -1393,8 +1913,9 @@ async function viewManager() {
       </div>`;
     }).join("");
 
-    // Manager form (interactive or read-only)
-    const mgrQHtml=renderAllQuestions(MGR_QUESTIONS,S.mgrAnswers,"mgr",isDone);
+    // Build manager questions based on the employee's practice + level
+    const MGR_QUESTIONS_DYN = buildMgrQuestions(selEmp);
+    const mgrQHtml=renderAllQuestions(MGR_QUESTIONS_DYN,S.mgrAnswers,"mgr",isDone);
 
     const jiraSection=C.jiraOn
       ?`<div class="card mb4"><div class="ch"><span class="ct">⚡ Jira — Current Sprint</span></div><div class="cb" id="jiraContent"><div style="color:var(--text3);font-size:13px">Loading…</div></div></div>`
@@ -1556,7 +2077,9 @@ async function saveMgrDraft(itemId) {
 
 async function submitMgr(itemId,empId,empEmail) {
   syncTextAnswers("mgr");
-  const missing=MGR_QUESTIONS.filter(q=>q.req&&!S.mgrAnswers[q.id]);
+  const selEmp_v=S.employees.find(e=>e.id===S.selectedEmpId);
+  const MGR_QUESTIONS_V = selEmp_v ? buildMgrQuestions(selEmp_v) : [];
+  const missing=MGR_QUESTIONS_V.filter(q=>q.req&&!S.mgrAnswers[q.id]);
   if (missing.length) { toast(`Complete required fields: ${missing.map(q=>q.label.split(" ").slice(0,3).join(" ")+"…").join(", ")}`, "error"); return; }
   if (!confirm("Submit manager review? The employee will be notified by email.")) return;
   loading("Submitting…");
