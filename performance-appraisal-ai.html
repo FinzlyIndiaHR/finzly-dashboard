@@ -1708,6 +1708,7 @@ async function openAppraisalModal(empId) {
     const selfAvg = compAvg(selfAnswers);
     const mgrAvg  = compAvg(mgrAnswers);
     const hasMgr  = status === "Completed" || status === "ManagerReviewing";
+    const submittedDate = appraisal?.fields?.SelfSubmittedDate || "";
 
     document.getElementById("modalBody").innerHTML = `
       <!-- Status bar -->
@@ -1717,7 +1718,7 @@ async function openAppraisalModal(empId) {
         ${selfAvg ? `<span style="font-size:12px;color:var(--text3)">Self avg: <strong style="color:var(--accent)">${selfAvg}/5</strong></span>` : ""}
         ${mgrAvg  ? `<span style="font-size:12px;color:var(--text3)">Mgr avg: <strong style="color:var(--success)">${mgrAvg}/5</strong></span>` : ""}
         <span style="font-size:12px;color:var(--text3);margin-left:auto">
-          ${f.SelfSubmittedDate ? `Submitted: ${new Date(f.SelfSubmittedDate).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}` : ""}
+          ${submittedDate ? `Submitted: ${new Date(submittedDate).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}` : ""}
         </span>
       </div>
 
