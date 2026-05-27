@@ -997,7 +997,7 @@ function groupBySections(questions) {
 }
 
 function renderQuestionSection(sectionName, questions, answers, prefix, readOnly) {
-  const items = questions.map(q => renderOneQuestion(q, answers[q.id], prefix, readOnly)).join("");
+  const items = questions.map(q => renderOneQuestion(q, answers[q.id], prefix, readOnly, answers)).join("");
   return `
     <div class="q-section-hdr">
       <div class="q-sec-line"></div>
@@ -1007,7 +1007,7 @@ function renderQuestionSection(sectionName, questions, answers, prefix, readOnly
     ${items}`;
 }
 
-function renderOneQuestion(q, val, prefix, readOnly) {
+function renderOneQuestion(q, val, prefix, readOnly, allAnswers) {
   const req = q.req ? `<span class="q-req">*</span>` : "";
   let widget = "";
 
@@ -1016,13 +1016,13 @@ function renderOneQuestion(q, val, prefix, readOnly) {
     // If explain:true, add a "tell us more" textarea after the stars
     if (q.explain && !readOnly) {
       const explainId = `${q.id}_explain`;
-      const ev = answers[explainId]||"";
+      const ev = (allAnswers||{})[explainId]||"";
       const safeEv = ev.replace(/</g,"&lt;").replace(/>/g,"&gt;");
       widget += `<textarea id="q-${prefix}-${explainId}" rows="2" style="margin-top:8px;font-size:12px;"
         placeholder="Add context for this rating (optional)…"
         oninput="setAnswer('${prefix}','${explainId}',this.value)">${safeEv}</textarea>`;
-    } else if (q.explain && readOnly && answers[`${q.id}_explain`]) {
-      widget += `<div class="readonly-field" style="margin-top:8px;font-size:12px;color:var(--text3)">${answers[q.id+'_explain']}</div>`;
+    } else if (q.explain && readOnly && (allAnswers||{})[`${q.id}_explain`]) {
+      widget += `<div class="readonly-field" style="margin-top:8px;font-size:12px;color:var(--text3)">${(allAnswers||{})[q.id+'_explain']}</div>`;
     }
   } else if (q.type === "likert5") {
     const opts = ["Strongly Disagree","Disagree","Neutral","Agree","Strongly Agree"];
