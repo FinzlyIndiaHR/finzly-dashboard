@@ -392,7 +392,9 @@ const C = {
   jiraBase:    "",
   jiraProject: "",
   jiraToken:   "",
-  hrEmails:   ["bharathkumar.m@finzly.com"],
+  // hrEmails: used for notification routing only (disputes, reminders FYI)
+  // HR Admin access is granted automatically to all employees with Practice = "HR"
+  hrEmails:   ["bharathkumar.m@finzly.com", "hr@finzly.com"],
   orgLevelTitles: ["ceo","chief executive officer","chief of staff","president","coo","cto","md","managing director","vp","vice president"],
   orgLevelEmails: [],
 };
