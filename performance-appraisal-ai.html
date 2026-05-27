@@ -252,6 +252,46 @@
       border-top-color:var(--accent); border-radius:50%; animation:spin .7s linear infinite; }
     @keyframes spin { to{transform:rotate(360deg)} }
 
+    /* ── ACCESS CONTROL ── */
+    .ac-row { display:flex; align-items:center; gap:12px; padding:13px 16px;
+      border-bottom:1px solid var(--border); }
+    .ac-row:last-child { border-bottom:none; }
+    .ac-scope { padding:4px 12px; border-radius:6px; font-size:11px; font-weight:700; cursor:pointer;
+      border:1px solid var(--border2); background:var(--bg); color:var(--text3); transition:all .15s; }
+    .ac-scope:hover { border-color:var(--accent)44; color:var(--text); }
+    .ac-scope.active-org    { background:var(--info)18;    border-color:var(--info);    color:#818cf8; }
+    .ac-scope.active-practice{ background:var(--accent)18; border-color:var(--accent);  color:var(--accent); }
+    .ac-scope.active-squad  { background:var(--success)18; border-color:var(--success); color:var(--success); }
+    .ac-scope.active-individual{ background:var(--border); color:var(--text3); }
+    /* ── DRILL-DOWN MODAL ── */
+    #appraisalModal { position:fixed; inset:0; background:#000000cc; z-index:9000;
+      display:flex; align-items:flex-start; justify-content:center; padding:40px 20px;
+      overflow-y:auto; }
+    .modal-card { background:var(--card); border:1px solid var(--border2); border-radius:18px;
+      width:100%; max-width:860px; animation:fadeIn .2s ease; }
+    .modal-hdr { padding:20px 26px; border-bottom:1px solid var(--border);
+      display:flex; align-items:center; justify-content:space-between; position:sticky;
+      top:0; background:var(--card); border-radius:18px 18px 0 0; z-index:1; }
+    .modal-body { padding:26px; max-height:75vh; overflow-y:auto; }
+    .modal-close { background:none; border:none; color:var(--text3); font-size:22px;
+      cursor:pointer; line-height:1; padding:4px 8px; border-radius:6px; }
+    .modal-close:hover { background:var(--border); color:var(--text); }
+    .qa-block { padding:12px 0; border-bottom:1px solid var(--border)66; }
+    .qa-block:last-child { border-bottom:none; }
+    .qa-q { font-size:12px; font-weight:700; color:var(--text3); margin-bottom:6px;
+      text-transform:uppercase; letter-spacing:.5px; }
+    .qa-a { font-size:13px; color:var(--text); line-height:1.7; }
+    .qa-chips { display:flex; flex-wrap:wrap; gap:6px; }
+    .qa-chip { padding:3px 10px; border-radius:6px; font-size:12px; font-weight:600;
+      background:var(--accent)15; border:1px solid var(--accent)44; color:var(--accent); }
+    .side-by-side { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+    .side-panel { background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:16px; }
+    .side-panel-hdr { font-size:10px; font-weight:800; letter-spacing:1.2px;
+      text-transform:uppercase; margin-bottom:14px; }
+    .self-hdr { color:var(--info); }
+    .mgr-hdr  { color:var(--success); }
+    @media(max-width:640px) { .side-by-side { grid-template-columns:1fr; } }
+
     @media(max-width:768px) {
       .g2,.g4 { grid-template-columns:1fr; }
       #mainContent { padding:16px; }
@@ -310,6 +350,18 @@
 </div>
 
 <div id="toast"></div>
+<div id="appraisalModal" style="display:none" onclick="closeModal(event)">
+  <div class="modal-card" id="modalCard">
+    <div class="modal-hdr">
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:17px" id="modalTitle">Appraisal</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:3px" id="modalSub"></div>
+      </div>
+      <button class="modal-close" onclick="document.getElementById('appraisalModal').style.display='none'">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
 <div id="loadingOverlay" style="display:none">
   <div style="text-align:center">
     <div class="spinner" style="margin:0 auto 14px"></div>
@@ -976,7 +1028,7 @@ function buildLevelMgrQuestions(level) {
 const S = {
   account:null, userEmail:"", userName:"", userRole:"employee",
   employees:[], siteId:null, listId:null,
-  view:"", selectedEmpId:null,
+  view:"", selectedEmpId:null, accessGrant:null,
   selfAnswers:{},   // all self-appraisal answers keyed by question id
   mgrAnswers:{},    // all manager review answers keyed by question id
   myAppraisal:null, allAppraisals:[],
@@ -1496,6 +1548,209 @@ function buildSPFields(prefix, status, extraFields) {
     });
   }
   return Object.assign(base, extraFields||{});
+}
+
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║                   ACCESS CONTROL                            ║
+// ╚══════════════════════════════════════════════════════════════╝
+// Stored in "AccessControl" sheet in the same Excel file
+// Columns: Email | Name | AccessLevel | Practice | Squad | GrantedBy | GrantedDate
+
+const AC_COLS = ["Email","Name","AccessLevel","Practice","Squad","GrantedBy","GrantedDate"];
+
+async function getAccessControlSheet() {
+  const {fileBase} = await getSiteAndDrive();
+  const sheetName = "AccessControl";
+  const sheets = await gGet(`${fileBase}/worksheets`);
+  let sheet = (sheets.value||[]).find(s=>s.name===sheetName);
+  if (!sheet) {
+    await gPost(`${fileBase}/worksheets`, {name:sheetName});
+    await gPatch(`${fileBase}/worksheets/${encodeURIComponent(sheetName)}/range(address='A1:G1')`,
+      {values:[AC_COLS]});
+  }
+  return {fileBase, sheetName};
+}
+
+async function getAllAccessGrants() {
+  try {
+    const {fileBase, sheetName} = await getAccessControlSheet();
+    const range = await gGet(`${fileBase}/worksheets/${encodeURIComponent(sheetName)}/usedRange`);
+    const rows = range.values||[];
+    if (rows.length < 2) return [];
+    const hdrs = rows[0];
+    return rows.slice(1).filter(r=>r[0]).map(r => {
+      const g = {};
+      hdrs.forEach((h,i) => g[h] = r[i]||"");
+      return g;
+    });
+  } catch(e) { console.warn("getAllAccessGrants:", e.message); return []; }
+}
+
+async function saveAccessGrant(grant, rowIndex) {
+  const {fileBase, sheetName} = await getAccessControlSheet();
+  const all = await getAllAccessGrants();
+  const row = AC_COLS.map(c => grant[c]||"");
+  if (rowIndex) {
+    await gPatch(`${fileBase}/worksheets/${encodeURIComponent(sheetName)}/range(address='A${rowIndex}:G${rowIndex}')`,
+      {values:[row]});
+  } else {
+    const nextRow = all.length + 2;
+    await gPatch(`${fileBase}/worksheets/${encodeURIComponent(sheetName)}/range(address='A${nextRow}:G${nextRow}')`,
+      {values:[row]});
+  }
+}
+
+async function deleteAccessGrant(rowIndex) {
+  const {fileBase, sheetName} = await getAccessControlSheet();
+  // Clear the row
+  await gPatch(`${fileBase}/worksheets/${encodeURIComponent(sheetName)}/range(address='A${rowIndex}:G${rowIndex}')`,
+    {values:[["","","","","","",""]]});
+}
+
+// Check if current user has a custom access grant
+async function resolveAccessGrant() {
+  const grants = await getAllAccessGrants();
+  const mine = grants.find(g => g.Email.toLowerCase() === S.userEmail);
+  if (mine) return mine;
+  return null;
+}
+
+// Filter employees based on access level
+function filterEmployeesByGrant(grant) {
+  if (!grant || grant.AccessLevel === "Org") return S.employees;
+  if (grant.AccessLevel === "Practice") {
+    return S.employees.filter(e => e.dept === grant.Practice);
+  }
+  if (grant.AccessLevel === "Squad") {
+    return S.employees.filter(e => e.squad === grant.Squad);
+  }
+  return []; // Individual — no team view
+}
+
+// ── Modal: Full appraisal drill-down ───────────────────────────
+async function openAppraisalModal(empId) {
+  const emp = S.employees.find(e=>e.id===empId);
+  if (!emp) return;
+
+  document.getElementById("appraisalModal").style.display = "flex";
+  document.getElementById("modalTitle").textContent = emp.name;
+  document.getElementById("modalSub").textContent =
+    `${emp.role} · ${emp.dept} · ${emp.squad} · Tenure: ${tenure(emp.joiningDate)}`;
+  document.getElementById("modalBody").innerHTML =
+    `<div style="text-align:center;padding:40px;color:var(--text3)"><div class="spinner" style="margin:0 auto 14px"></div>Loading appraisal…</div>`;
+
+  try {
+    const appraisal = await getAppraisal(emp.id);
+    if (!appraisal) {
+      document.getElementById("modalBody").innerHTML =
+        `<div style="text-align:center;padding:56px">
+          <div style="font-size:40px;margin-bottom:12px">📝</div>
+          <div style="font-weight:600">No appraisal submitted yet</div>
+          <div style="color:var(--text3);font-size:13px;margin-top:6px">Status: Not Started</div>
+        </div>`;
+      return;
+    }
+
+    const f = appraisal.fields;
+    const selfAnswers = {};
+    const mgrAnswers  = {};
+    if (f.SelfFormData) { try { Object.assign(selfAnswers, JSON.parse(f.SelfFormData)); } catch {} }
+    if (f.MgrFormData)  { try { Object.assign(mgrAnswers,  JSON.parse(f.MgrFormData));  } catch {} }
+
+    const selfQs = buildSelfQuestions(emp);
+    const mgrQs  = buildMgrQuestions(emp);
+    const status = f.Status||"Not Started";
+
+    const renderQABlock = (q, answers) => {
+      const val = answers[q.id];
+      if (!val && val !== 0) return "";
+      let ansHtml = "";
+      if (q.type === "stars") {
+        const n = Number(val)||0;
+        ansHtml = `<div style="display:flex;align-items:center;gap:10px">
+          <div style="display:flex;gap:3px">${[1,2,3,4,5].map(i=>`<div class="ro-star ${i<=n?"on":"off"}">★</div>`).join("")}</div>
+          <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:16px;color:var(--accent)">${n}</span>
+          <span style="font-size:12px;color:var(--text3)">${RLBL[n]||""}</span>
+        </div>`;
+        // explain text
+        const ev = answers[q.id+"_explain"];
+        if (ev) ansHtml += `<div style="margin-top:6px;font-size:12px;color:var(--text2);font-style:italic">"${ev}"</div>`;
+      } else if (q.type === "nps") {
+        const npsClass = n=>n<=3?"#ef4444":n<=5?"#f97316":n<=7?"#eab308":n<=8?"#f59e0b":"#10b981";
+        ansHtml = `<span style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:${npsClass(Number(val))}">${val}</span><span style="font-size:12px;color:var(--text3);margin-left:8px">/ 10</span>`;
+      } else if (q.type === "textarea" || q.type === "text") {
+        if (!String(val).trim()) return "";
+        ansHtml = `<div style="background:var(--bg);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--text);line-height:1.7;border:1px solid var(--border)">${String(val).replace(/\n/g,"<br>")}</div>`;
+      } else {
+        ansHtml = `<span class="qa-chip">${val}</span>`;
+      }
+      return `<div class="qa-block">
+        <div class="qa-q">${q.label}</div>
+        <div class="qa-a">${ansHtml}</div>
+      </div>`;
+    };
+
+    // Group by section
+    const renderSection = (qs, answers, colorClass) => {
+      const sections = {};
+      for (const q of qs) {
+        if (!sections[q.section]) sections[q.section] = [];
+        sections[q.section].push(q);
+      }
+      return Object.entries(sections).map(([sec, sqs]) => {
+        const blocks = sqs.map(q => renderQABlock(q, answers)).filter(Boolean).join("");
+        if (!blocks) return "";
+        return `<div style="margin-bottom:20px">
+          <div style="font-size:10px;font-weight:800;color:var(--accent);text-transform:uppercase;
+            letter-spacing:1.4px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)">${sec}</div>
+          ${blocks}
+        </div>`;
+      }).join("");
+    };
+
+    const selfAvg = compAvg(selfAnswers);
+    const mgrAvg  = compAvg(mgrAnswers);
+    const hasMgr  = status === "Completed" || status === "ManagerReviewing";
+
+    document.getElementById("modalBody").innerHTML = `
+      <!-- Status bar -->
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;padding:14px 18px;
+        background:var(--bg);border-radius:10px;border:1px solid var(--border);flex-wrap:wrap">
+        ${badge(status)}
+        ${selfAvg ? `<span style="font-size:12px;color:var(--text3)">Self avg: <strong style="color:var(--accent)">${selfAvg}/5</strong></span>` : ""}
+        ${mgrAvg  ? `<span style="font-size:12px;color:var(--text3)">Mgr avg: <strong style="color:var(--success)">${mgrAvg}/5</strong></span>` : ""}
+        <span style="font-size:12px;color:var(--text3);margin-left:auto">
+          ${f.SelfSubmittedDate ? `Submitted: ${new Date(f.SelfSubmittedDate).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}` : ""}
+        </span>
+      </div>
+
+      ${hasMgr
+        ? `<div class="side-by-side">
+            <div class="side-panel">
+              <div class="side-panel-hdr self-hdr">📝 Self Appraisal</div>
+              ${renderSection(selfQs, selfAnswers, "self")||"<div style='color:var(--text3);font-size:13px'>No answers yet</div>"}
+            </div>
+            <div class="side-panel">
+              <div class="side-panel-hdr mgr-hdr">✅ Manager Review</div>
+              ${renderSection(mgrQs, mgrAnswers, "mgr")||"<div style='color:var(--text3);font-size:13px'>Pending</div>"}
+            </div>
+          </div>`
+        : `<div>
+            <div style="font-size:10px;font-weight:800;color:var(--info);text-transform:uppercase;
+              letter-spacing:1.2px;margin-bottom:16px">📝 Self Appraisal</div>
+            ${renderSection(selfQs, selfAnswers, "self")||"<div style='color:var(--text3);font-size:13px'>No answers submitted yet</div>"}
+          </div>`}`;
+  } catch(e) {
+    document.getElementById("modalBody").innerHTML =
+      `<div style="padding:32px;color:var(--error)">Error loading appraisal: ${e.message}</div>`;
+  }
+}
+
+function closeModal(e) {
+  if (e.target.id === "appraisalModal") {
+    document.getElementById("appraisalModal").style.display = "none";
+  }
 }
 
 // ╔══════════════════════════════════════════════════════════════╗
@@ -2143,20 +2398,27 @@ async function viewHR(readOnly=false) {
   try { S.allAppraisals=await getAllAppraisals(); } catch(e) { S.allAppraisals=[]; }
   doneLoading();
 
-  const total     = S.employees.length;
-  const submitted = S.allAppraisals.filter(a=>["SelfSubmitted","ManagerReviewing","Completed"].includes(a.fields?.Status)).length;
-  const completed = S.allAppraisals.filter(a=>a.fields?.Status==="Completed").length;
+  // Filter employees by access grant
+  const visibleEmpIds = new Set((S.accessGrant ? filterEmployeesByGrant(S.accessGrant) : S.employees).map(e=>e.id));
+  const visibleAppraisals = S.allAppraisals.filter(a => visibleEmpIds.has(a.fields?.EmployeeID));
+  const total     = visibleEmpIds.size;
+  const submitted = visibleAppraisals.filter(a=>["SelfSubmitted","ManagerReviewing","Completed"].includes(a.fields?.Status)).length;
+  const completed = visibleAppraisals.filter(a=>a.fields?.Status==="Completed").length;
   const pending   = total-submitted;
   const pct       = total?Math.round(submitted/total*100):0;
 
-  const trows=S.employees.map(emp=>{
+  // Filter employees by access grant if not full HR
+  const visibleEmps = S.accessGrant ? filterEmployeesByGrant(S.accessGrant) : S.employees;
+
+  const trows=visibleEmps.map(emp=>{
     const a    = S.allAppraisals.find(x=>x.fields?.EmployeeID===emp.id||x.fields?.EmployeeEmail===emp.email);
     const s    = a?.fields?.Status||"NotStarted";
     const sAvg = a?.fields?.SelfRatingTech ? compAvg({Tech:a.fields.SelfRatingTech,Delivery:a.fields.SelfRatingDelivery,Collab:a.fields.SelfRatingCollab,Comms:a.fields.SelfRatingComms,Innovation:a.fields.SelfRatingInnovation,Leadership:a.fields.SelfRatingLeadership}) : null;
     const mAvg = s==="Completed"&&a?.fields?.MgrRatingTech ? compAvg({Tech:a.fields.MgrRatingTech,Delivery:a.fields.MgrRatingDelivery,Collab:a.fields.MgrRatingCollab,Comms:a.fields.MgrRatingComms,Innovation:a.fields.MgrRatingInnovation,Leadership:a.fields.MgrRatingLeadership}) : null;
     const tn   = tenure(emp.joiningDate);
     const risk = tn.includes("mo")||parseFloat(tn)<1.3;
-    return `<tr>
+    const hasData = s !== "NotStarted" && s !== "";
+    return `<tr style="cursor:${hasData?"pointer":"default"}" onclick="${hasData?`openAppraisalModal('${emp.id}')`:""}" title="${hasData?"Click to view full appraisal":""}">
       <td><div style="display:flex;gap:9px;align-items:center">
         <div class="emp-av" style="width:32px;height:32px;font-size:12px;border-radius:8px;flex-shrink:0">${emp.name.charAt(0)}</div>
         <div><div style="font-weight:600;font-size:13px">${emp.name}</div>
@@ -2167,6 +2429,7 @@ async function viewHR(readOnly=false) {
       <td>${badge(s)}</td>
       <td><span style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:${sAvg?"var(--accent)":"var(--text3)"}">${sAvg||"—"}</span></td>
       <td><span style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:${mAvg?"var(--success)":"var(--text3)"}">${mAvg||"—"}</span></td>
+      <td>${hasData?`<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openAppraisalModal('${emp.id}')">View →</button>`:`<span style="color:var(--text3);font-size:12px">—</span>`}</td>
     </tr>`;
   }).join("");
 
@@ -2211,7 +2474,7 @@ async function viewHR(readOnly=false) {
       <table class="dtable">
         <thead><tr>
           <th>Employee</th><th>Role &amp; Squad</th><th>Manager</th>
-          <th>Tenure</th><th>Status</th><th>Self Avg</th><th>Mgr Avg</th>
+          <th>Tenure</th><th>Status</th><th>Self Avg</th><th>Mgr Avg</th><th></th>
         </tr></thead>
         <tbody>${trows}</tbody>
       </table>
@@ -2241,6 +2504,169 @@ function exportCSV() {
   link.click(); toast("CSV exported","success");
 }
 
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║                  ACCESS CONTROL VIEW                        ║
+// ╚══════════════════════════════════════════════════════════════╝
+async function viewAccessControl() {
+  S.view = "ac"; renderNav();
+  loading("Loading access grants…");
+  let grants = [];
+  try { grants = await getAllAccessGrants(); } catch(e) {}
+  doneLoading();
+
+  // Get unique practices and squads for dropdowns
+  const practices = [...new Set(S.employees.map(e=>e.dept).filter(Boolean))].sort();
+  const squads    = [...new Set(S.employees.map(e=>e.squad).filter(Boolean))].sort();
+
+  const grantRows = grants.filter(g=>g.Email).map((g, i) => {
+    const emp = S.employees.find(e=>e.email===g.Email.toLowerCase());
+    const acLevel = (g.AccessLevel||"individual").toLowerCase();
+    const scopeClass = "active-" + acLevel;
+    return `<div class="ac-row">
+      <div class="emp-av" style="width:36px;height:36px;font-size:13px;border-radius:9px;flex-shrink:0">
+        ${(g.Name||"?").charAt(0)}
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:13px">${g.Name||g.Email}</div>
+        <div style="font-size:11px;color:var(--text3)">${g.Email}
+          ${emp ? ` · ${emp.role} · ${emp.dept}` : ""}
+        </div>
+      </div>
+      <div class="badge ac-scope" style="background:var(--border);color:var(--text3)" id="acs-${i}">${g.AccessLevel||"Individual"}
+        ${g.Practice?" · "+g.Practice:""}${g.Squad?" · "+g.Squad:""}
+      </span>
+      <div style="font-size:11px;color:var(--text3);white-space:nowrap">
+        by ${g.GrantedBy||"HR"}<br>${g.GrantedDate||""}
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="revokeGrant('${g.Email}',${i+2})">Revoke</button>
+    </div>`;
+  }).join("") || `<div style="padding:32px;text-align:center;color:var(--text3);font-size:13px">
+    No custom access grants yet. All users see only their own appraisal by default.
+  </div>`;
+
+  const practiceOpts = practices.map(p=>`<option value="${p}">${p}</option>`).join("");
+  const squadOpts    = squads.map(s=>`<option value="${s}">${s}</option>`).join("");
+
+  setContent(`
+  <div class="section-title">Access Control</div>
+  <div class="section-sub">Manage who can view appraisal data beyond their own</div>
+
+  <!-- Info cards -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px">
+    ${[
+      {l:"Org Access",       desc:"Full 294 employees",     c:"var(--info)",    badge:"Org"},
+      {l:"Practice Access",  desc:"Their practice only",    c:"var(--accent)",  badge:"Practice"},
+      {l:"Squad Access",     desc:"Their squad only",       c:"var(--success)", badge:"Squad"},
+      {l:"Individual",       desc:"Own appraisal only",     c:"var(--text3)",   badge:"Default"},
+    ].map(x=>`<div class="card" style="padding:16px">
+      <div style="font-size:10px;font-weight:800;color:${x.c};text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">${x.badge}</div>
+      <div style="font-weight:700;font-size:13px">${x.l}</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:4px">${x.desc}</div>
+    </div>`).join("")}
+  </div>
+
+  <!-- Grant new access -->
+  <div class="card mb6">
+    <div class="ch"><span class="ct">Grant New Access</span></div>
+    <div class="cb">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:12px;align-items:end;flex-wrap:wrap">
+        <div>
+          <div class="form-label">Employee Email</div>
+          <input type="text" id="ac-email" placeholder="name@finzly.com" oninput="acEmailLookup(this.value)">
+          <div id="ac-name-hint" style="font-size:11px;color:var(--accent);margin-top:4px;min-height:16px"></div>
+        </div>
+        <div>
+          <div class="form-label">Access Level</div>
+          <select id="ac-level" onchange="acLevelChange()" style="background:var(--bg);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:11px 14px;font-family:'DM Sans',sans-serif;font-size:13px;width:100%;outline:none">
+            <option value="Org">Org — All employees</option>
+            <option value="Practice">Practice — filtered</option>
+            <option value="Squad">Squad — filtered</option>
+          </select>
+        </div>
+        <div id="ac-practice-wrap">
+          <div class="form-label">Practice</div>
+          <select id="ac-practice" style="background:var(--bg);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:11px 14px;font-family:'DM Sans',sans-serif;font-size:13px;width:100%;outline:none">
+            <option value="">All Practices</option>
+            ${practiceOpts}
+          </select>
+        </div>
+        <div id="ac-squad-wrap" style="display:none">
+          <div class="form-label">Squad</div>
+          <select id="ac-squad" style="background:var(--bg);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:11px 14px;font-family:'DM Sans',sans-serif;font-size:13px;width:100%;outline:none">
+            <option value="">All Squads</option>
+            ${squadOpts}
+          </select>
+        </div>
+        <div>
+          <button class="btn btn-primary" onclick="grantAccess()" style="width:100%;margin-top:20px">Grant Access</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Existing grants -->
+  <div class="card">
+    <div class="ch">
+      <span class="ct">Current Access Grants</span>
+      <span style="font-size:12px;color:var(--text3)">${grants.filter(g=>g.Email).length} grants</span>
+    </div>
+    <div id="grantsList">${grantRows}</div>
+  </div>`);
+}
+
+function acEmailLookup(email) {
+  const emp = S.employees.find(e=>e.email===email.toLowerCase().trim());
+  const hint = document.getElementById("ac-name-hint");
+  if (hint) hint.textContent = emp ? `✓ ${emp.name} · ${emp.role} · ${emp.dept}` : "";
+}
+
+function acLevelChange() {
+  const level = document.getElementById("ac-level")?.value;
+  const pw = document.getElementById("ac-practice-wrap");
+  const sw = document.getElementById("ac-squad-wrap");
+  if (pw) pw.style.display = level==="Squad" ? "none" : (level==="Practice" ? "block" : "none");
+  if (sw) sw.style.display = level==="Squad" ? "block" : "none";
+}
+
+async function grantAccess() {
+  const email   = (document.getElementById("ac-email")?.value||"").trim().toLowerCase();
+  const level   = document.getElementById("ac-level")?.value||"Org";
+  const practice= document.getElementById("ac-practice")?.value||"";
+  const squad   = document.getElementById("ac-squad")?.value||"";
+
+  if (!email) { toast("Enter an employee email","error"); return; }
+  const emp = S.employees.find(e=>e.email===email);
+  if (!emp) { toast("Email not found in employee data","error"); return; }
+
+  loading("Saving access grant…");
+  try {
+    await saveAccessGrant({
+      Email:       email,
+      Name:        emp.name,
+      AccessLevel: level,
+      Practice:    level==="Practice" ? practice : "",
+      Squad:       level==="Squad"    ? squad    : "",
+      GrantedBy:   S.userName,
+      GrantedDate: new Date().toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"}),
+    });
+    toast(`Access granted to ${emp.name}`, "success");
+    await viewAccessControl();
+  } catch(e) { toast("Failed: "+e.message, "error"); }
+  doneLoading();
+}
+
+async function revokeGrant(email, rowIndex) {
+  if (!confirm(`Revoke access for ${email}?`)) return;
+  loading("Revoking…");
+  try {
+    await deleteAccessGrant(rowIndex);
+    toast("Access revoked", "success");
+    await viewAccessControl();
+  } catch(e) { toast("Failed: "+e.message, "error"); }
+  doneLoading();
+}
+
 // ╔══════════════════════════════════════════════════════════════╗
 // ║                      NAVIGATION                            ║
 // ╚══════════════════════════════════════════════════════════════╝
@@ -2248,18 +2674,23 @@ function renderNav() {
   const role=S.userRole, hasTeam=myReportees().length>0;
   const tabs=[];
   if (role==="hr") {
-    tabs.push({v:"hr",    l:"📊 Dashboard",   fn:"viewHR()"});
-    tabs.push({v:"self",  l:"📝 My Appraisal",fn:"viewSelf()"});
+    tabs.push({v:"hr",   l:"📊 Dashboard",       fn:"viewHR()"});
+    tabs.push({v:"self", l:"📝 My Appraisal",     fn:"viewSelf()"});
     if (hasTeam) tabs.push({v:"manager",l:"👥 My Team",fn:"viewManager()"});
+    tabs.push({v:"ac",   l:"🔐 Access Control",   fn:"viewAccessControl()"});
   } else if (role==="leadership") {
-    tabs.push({v:"hr",    l:"📊 Org Overview", fn:"viewHR(true)"});
-    tabs.push({v:"self",  l:"📝 My Appraisal", fn:"viewSelf()"});
+    tabs.push({v:"hr",   l:"📊 Org Overview",     fn:"viewHR(true)"});
+    tabs.push({v:"self", l:"📝 My Appraisal",     fn:"viewSelf()"});
     if (hasTeam) tabs.push({v:"manager",l:"👥 My Team",fn:"viewManager()"});
   } else if (role==="manager") {
-    tabs.push({v:"manager",l:"👥 My Team",    fn:"viewManager()"});
-    tabs.push({v:"self",   l:"📝 My Appraisal",fn:"viewSelf()"});
+    tabs.push({v:"manager",l:"👥 My Team",        fn:"viewManager()"});
+    tabs.push({v:"self",   l:"📝 My Appraisal",   fn:"viewSelf()"});
+  } else if (S.accessGrant) {
+    // Custom access granted — show dashboard
+    tabs.push({v:"hr",   l:"📊 Team Overview",    fn:"viewHR()"});
+    tabs.push({v:"self", l:"📝 My Appraisal",     fn:"viewSelf()"});
   } else {
-    tabs.push({v:"self",l:"📝 My Appraisal",fn:"viewSelf()"});
+    tabs.push({v:"self", l:"📝 My Appraisal",     fn:"viewSelf()"});
   }
   el("mainNav").innerHTML=tabs.map(t=>
     `<button class="nav-tab ${S.view===t.v?"active":""}" onclick="${t.fn}">${t.l}</button>`
@@ -2282,9 +2713,23 @@ async function boot(account) {
   el("hUserRole").textContent={hr:"HR Admin",leadership:"Leadership",manager:"Manager",employee:"Employee"}[S.userRole];
   el("loginScreen").style.display="none"; el("appContainer").style.display="block";
   doneLoading();
+  // Check for custom access grant (for non-HR users given explicit access)
+  if (S.userRole !== "hr" && S.userRole !== "leadership") {
+    try {
+      S.accessGrant = await resolveAccessGrant();
+    } catch(e) { S.accessGrant = null; }
+  } else {
+    S.accessGrant = null;
+  }
+  renderNav(); // re-render nav after access grant resolved
+
   if      (S.userRole==="hr")         await viewHR();
   else if (S.userRole==="leadership") await viewHR(true);
   else if (S.userRole==="manager")    await viewManager();
+  else if (S.accessGrant && S.accessGrant.AccessLevel !== "Individual") {
+    S.allAppraisals = await getAllAppraisals().catch(()=>[]);
+    await viewHR();
+  }
   else                                await viewSelf();
 }
 
