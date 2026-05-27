@@ -2417,8 +2417,7 @@ async function viewHR(readOnly=false) {
     const mAvg = s==="Completed"&&a?.fields?.MgrRatingTech ? compAvg({Tech:a.fields.MgrRatingTech,Delivery:a.fields.MgrRatingDelivery,Collab:a.fields.MgrRatingCollab,Comms:a.fields.MgrRatingComms,Innovation:a.fields.MgrRatingInnovation,Leadership:a.fields.MgrRatingLeadership}) : null;
     const tn   = tenure(emp.joiningDate);
     const risk = tn.includes("mo")||parseFloat(tn)<1.3;
-    const hasData = s !== "NotStarted" && s !== "";
-    return `<tr style="cursor:${hasData?"pointer":"default"}" onclick="${hasData?`openAppraisalModal('${emp.id}')`:""}" title="${hasData?"Click to view full appraisal":""}">
+    return `<tr style="cursor:pointer" onclick="openAppraisalModal('{emp.id}')" title="View appraisal">
       <td><div style="display:flex;gap:9px;align-items:center">
         <div class="emp-av" style="width:32px;height:32px;font-size:12px;border-radius:8px;flex-shrink:0">${emp.name.charAt(0)}</div>
         <div><div style="font-weight:600;font-size:13px">${emp.name}</div>
@@ -2429,7 +2428,7 @@ async function viewHR(readOnly=false) {
       <td>${badge(s)}</td>
       <td><span style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:${sAvg?"var(--accent)":"var(--text3)"}">${sAvg||"—"}</span></td>
       <td><span style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:${mAvg?"var(--success)":"var(--text3)"}">${mAvg||"—"}</span></td>
-      <td>${hasData?`<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openAppraisalModal('${emp.id}')">View →</button>`:`<span style="color:var(--text3);font-size:12px">—</span>`}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openAppraisalModal('${emp.id}')">View →</button></td>
     </tr>`;
   }).join("");
 
