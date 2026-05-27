@@ -197,6 +197,8 @@
     .b-done    { background:var(--success)15; border:1px solid var(--success)44; color:var(--success); }
     .b-risk    { background:var(--error)15;   border:1px solid var(--error)44;   color:var(--error); }
     .b-none    { background:var(--border); color:var(--text3); }
+    .b-l2      { background:#7c3aed22; border:1px solid #7c3aed66; color:#a78bfa; }
+    .b-released{ background:#0891b222; border:1px solid #0891b266; color:#38bdf8; }
 
     /* ── STATS ── */
     .stat-card { padding:20px; }
@@ -1107,7 +1109,7 @@ function buildLevelMgrQuestions(level) {
 const S = {
   account:null, userEmail:"", userName:"", userRole:"employee",
   employees:[], siteId:null, listId:null,
-  view:"", selectedEmpId:null, accessGrant:null,
+  view:"", selectedEmpId:null, accessGrant:null, l2Appraisals:null, l2MgrAnswers:null,
   selfAnswers:{},   // all self-appraisal answers keyed by question id
   mgrAnswers:{},    // all manager review answers keyed by question id
   myAppraisal:null, allAppraisals:[],
@@ -1460,15 +1462,25 @@ function detectRole(email) {
   // 1. Explicit HR email list
   if (C.hrEmails.map(h=>h.toLowerCase()).includes(e)) return "hr";
   const myRec = S.employees.find(emp=>emp.email===e);
-  // 2. Practice = "HR" or "Human Resources" → HR Admin
+  // 2. Practice = "HR" → HR Admin
   const practice = (myRec?.dept||"").toLowerCase();
   if (practice==="hr"||practice==="human resources"||practice==="people"||practice==="human resource") return "hr";
-  // 3. Org-level: CEO, Chief of Staff, President, etc. (by Corporate Title)
+  // 3. Org-level by Corporate Title
   const title = (myRec?.role||"").toLowerCase();
   if (C.orgLevelEmails.map(x=>x.toLowerCase()).includes(e) || C.orgLevelTitles.some(t=>title.includes(t))) return "leadership";
-  // 4. Manager: has at least one direct report (resolved via L1 Employee ID)
+  // 4. L2 Manager: their emp ID appears as someone's l2EmpId
+  const myEmpId = myRec?.id||"";
+  if (myEmpId && S.employees.some(emp=>emp.l2EmpId===myEmpId)) return "l2manager";
+  // 5. L1 Manager: has at least one direct report
   if (S.employees.some(emp=>emp.managerEmail===e)) return "manager";
   return "employee";
+}
+
+function myL2Reportees() {
+  // All employees where this user is the L2 manager
+  const myRec = S.employees.find(e=>e.email===S.userEmail);
+  const myId  = myRec?.id||"";
+  return S.employees.filter(e=>e.l2EmpId===myId);
 }
 
 function myReportees() { return S.employees.filter(e=>e.managerEmail===S.userEmail); }
@@ -1497,11 +1509,13 @@ async function getSiteAndDrive() {
 }
 
 // Column order for appraisal sheet
-const AP_COLS = ["Key","EmployeeID","EmployeeName","EmployeeEmail","ManagerEmail","CycleID",
+const AP_COLS = ["Key","EmployeeID","EmployeeName","EmployeeEmail","ManagerEmail","L2ManagerEmail","CycleID",
   "Status","SelfRatingTech","SelfRatingDelivery","SelfRatingCollab","SelfRatingComms",
   "SelfRatingInnovation","SelfRatingLeadership","SelfFormData","SelfSubmittedDate",
   "MgrRatingTech","MgrRatingDelivery","MgrRatingCollab","MgrRatingComms",
-  "MgrRatingInnovation","MgrRatingLeadership","MgrFormData","MgrReviewedDate"];
+  "MgrRatingInnovation","MgrRatingLeadership","MgrFormData","MgrReviewedDate",
+  "L2FormData","L2Comment","L2ReviewedDate","SentBackComment",
+  "ReleasedDate","EmpAckDate","DisputeComment","DisputeResponseComment","ClosedDate"];
 
 async function getAppraisalSheet() {
   const {fileBase} = await getSiteAndDrive();
@@ -1611,9 +1625,12 @@ function buildSPFields(prefix, status, extraFields) {
   };
   if (prefix==="self") {
     const me = S.employees.find(e=>e.email===S.userEmail);
+    // Resolve L2 email from employee data
+    const l2Emp = S.employees.find(e=>e.id===me?.l2EmpId);
     Object.assign(base, {
       EmployeeID:me?.id||"", EmployeeName:me?.name||"",
       EmployeeEmail:me?.email||"", ManagerEmail:me?.managerEmail||"",
+      L2ManagerEmail:l2Emp?.email||me?.l2Manager||"",
       CycleID:C.cycle,
       SelfRatingTech:Number(ans.Tech||0), SelfRatingDelivery:Number(ans.Delivery||0),
       SelfRatingCollab:Number(ans.Collab||0), SelfRatingComms:Number(ans.Comms||0),
@@ -1629,6 +1646,336 @@ function buildSPFields(prefix, status, extraFields) {
   return Object.assign(base, extraFields||{});
 }
 
+
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║                    L2 REVIEW VIEW                           ║
+// ╚══════════════════════════════════════════════════════════════╝
+async function viewL2() {
+  S.view = "l2"; renderNav();
+
+  const l2Emps = myL2Reportees();
+  if (!l2Emps.length) {
+    setContent(`<div class="section-title">L2 Review</div>
+    <div class="card cb" style="text-align:center;padding:56px">
+      <div style="font-size:46px;margin-bottom:14px">👁</div>
+      <div style="font-weight:600">No employees found in your L2 scope.</div>
+    </div>`); return;
+  }
+
+  if (!S.selectedEmpId) {
+    // Default to first awaiting approval
+    const pending = l2Emps.find(e => {
+      const a = S.l2Appraisals?.[e.id];
+      return a?.fields?.Status === "ManagerReviewed" || a?.fields?.Status === "SentBack";
+    });
+    S.selectedEmpId = (pending || l2Emps[0]).id;
+  }
+
+  loading("Loading L2 appraisals…");
+  if (!S.l2Appraisals) S.l2Appraisals = {};
+  try {
+    for (const emp of l2Emps) {
+      const a = await getAppraisal(emp.id);
+      if (a) S.l2Appraisals[emp.id] = a;
+    }
+  } catch(e) { console.error(e); }
+  doneLoading();
+
+  const selEmp  = l2Emps.find(e=>e.id===S.selectedEmpId);
+  const appr    = S.l2Appraisals[S.selectedEmpId];
+  const status  = appr?.fields?.Status||"NotStarted";
+  const canAct  = status === "ManagerReviewed";
+
+  // Sidebar
+  const sidebar = l2Emps.map(emp => {
+    const s = S.l2Appraisals[emp.id]?.fields?.Status||"NotStarted";
+    return `<div class="emp-item ${emp.id===S.selectedEmpId?"sel":""}" onclick="selectL2Emp('${emp.id}')">
+      <div class="emp-av">${emp.name.charAt(0)}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${emp.name}</div>
+        <div style="font-size:11px;color:var(--text3)">${emp.squad||emp.dept} · ${tenure(emp.joiningDate)}</div>
+      </div>
+      ${badge(s)}
+    </div>`;
+  }).join("");
+
+  // Stats
+  const awaitingCount = l2Emps.filter(e => S.l2Appraisals[e.id]?.fields?.Status === "ManagerReviewed").length;
+  const approvedCount = l2Emps.filter(e => ["L2Approved","Released","Acknowledged"].includes(S.l2Appraisals[e.id]?.fields?.Status)).length;
+
+  let main = "";
+  if (!appr || status === "NotStarted" || status === "Draft" || status === "SelfSubmitted") {
+    main = `<div class="card cb" style="text-align:center;padding:56px">
+      <div style="font-size:46px;margin-bottom:14px">⏳</div>
+      <div style="font-weight:600">Waiting for manager review</div>
+      <div style="color:var(--text3);font-size:13px;margin-top:8px">Manager hasn't submitted yet for ${selEmp.name.split(" ")[0]}.</div>
+    </div>`;
+  } else {
+    const f = appr.fields;
+    const selfAnswers = {}, mgrAnswers = {};
+    if (f.SelfFormData) { try { Object.assign(selfAnswers, JSON.parse(f.SelfFormData)); } catch {} }
+    if (f.MgrFormData)  { try { Object.assign(mgrAnswers,  JSON.parse(f.MgrFormData));  } catch {} }
+
+    // Load L2 modified ratings if any
+    if (!S.l2MgrAnswers) S.l2MgrAnswers = {};
+    if (!S.l2MgrAnswers[S.selectedEmpId]) {
+      S.l2MgrAnswers[S.selectedEmpId] = { ...mgrAnswers };
+    }
+    const l2Answers = S.l2MgrAnswers[S.selectedEmpId];
+
+    const selfAvg = compAvg(selfAnswers);
+    const mgrAvg  = compAvg(mgrAnswers);
+    const l2Avg   = compAvg(l2Answers);
+
+    const mgrQs  = buildMgrQuestions(selEmp);
+    const selfQs = buildSelfQuestions(selEmp);
+
+    // Read-only self appraisal summary
+    const selfStarRows = ["Tech","Delivery","Collab","Comms","Innovation","Leadership"].map(k => {
+      const r = Number(selfAnswers[k]||0);
+      const qLabel = selfQs.find(q=>q.id===k)?.label||k;
+      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)88">
+        <div style="flex:1;font-size:13px;color:var(--text2)">${qLabel}</div>
+        <div style="display:flex;gap:3px">${[1,2,3,4,5].map(n=>`<div class="ro-star ${n<=r?"on":"off"}">★</div>`).join("")}</div>
+        <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:14px;color:var(--accent);min-width:22px;text-align:right">${r||"—"}</span>
+      </div>`;
+    }).join("");
+
+    // L2 can modify the 6 competency ratings only
+    const l2RatingRows = ["Tech","Delivery","Collab","Comms","Innovation","Leadership"].map(k => {
+      const mgrVal = Number(mgrAnswers[k]||0);
+      const l2Val  = Number(l2Answers[k]||mgrVal);
+      const qLabel = mgrQs.find(q=>q.id===k)?.label||k;
+      return `<div class="rating-row">
+        <div class="rating-info">
+          <div class="rating-name">${qLabel}</div>
+          <div class="rating-desc" style="color:var(--text3)">Manager rated: <strong style="color:var(--accent)">${mgrVal||"—"}</strong></div>
+        </div>
+        ${canAct
+          ? `${renderStarsWidget({id:"l2_"+k, type:"stars"}, l2Val, "l2", false)}
+             <div class="r-val" id="r-val-l2-${k}">${l2Val||"—"}</div>
+             <div class="r-lbl" id="r-lbl-l2-${k}">${l2Val?RLBL[l2Val]:"Same as manager"}</div>`
+          : `<div style="display:flex;gap:4px">${[1,2,3,4,5].map(n=>`<div class="ro-star ${n<=l2Val?"on":"off"}">★</div>`).join("")}</div>
+             <div class="r-val">${l2Val||"—"}</div>`}
+      </div>`;
+    }).join("");
+
+    main = `
+    <!-- Profile + status -->
+    <div class="card mb4" style="padding:15px 22px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <div style="display:flex;gap:12px;align-items:center">
+        <div class="emp-av" style="width:46px;height:46px;font-size:19px;border-radius:13px">${selEmp.name.charAt(0)}</div>
+        <div>
+          <div style="font-weight:700;font-size:15px">${selEmp.name}</div>
+          <div style="font-size:12px;color:var(--text3)">${selEmp.role} · ${selEmp.squad||selEmp.dept} · ${tenure(selEmp.joiningDate)}</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        ${badge(status)}
+        <span style="font-size:12px;color:var(--text3)">Mgr avg: <strong style="color:var(--accent)">${mgrAvg||"—"}/5</strong></span>
+        ${l2Avg&&l2Avg!==mgrAvg?`<span style="font-size:12px;color:var(--text3)">L2 avg: <strong style="color:#a78bfa">${l2Avg}/5</strong></span>`:""}
+      </div>
+    </div>
+
+    <!-- Employee self summary (collapsed) -->
+    <div class="card mb4">
+      <div class="ch" style="cursor:pointer" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">
+        <span class="ct">📝 Employee Self-Appraisal</span>
+        <span style="font-size:12px;color:var(--text3)">Avg: ${selfAvg||"—"}/5 · Click to expand</span>
+      </div>
+      <div style="display:none" class="cb">${selfStarRows}
+        ${selfQs.filter(q=>(q.type==="textarea")&&selfAnswers[q.id]).map(q=>
+          `<div class="form-group" style="margin-top:14px">
+            <div class="form-label">${q.label}</div>
+            <div class="readonly-field">${selfAnswers[q.id]||"—"}</div>
+          </div>`).join("")}
+      </div>
+    </div>
+
+    <!-- Manager review (read-only) -->
+    <div class="card mb4">
+      <div class="ch" style="cursor:pointer" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">
+        <span class="ct">👤 Manager Review</span>
+        <span style="font-size:12px;color:var(--text3)">Avg: ${mgrAvg||"—"}/5 · Click to expand</span>
+      </div>
+      <div style="display:none" class="cb">
+        ${mgrQs.filter(q=>(q.type==="textarea")&&mgrAnswers[q.id]).map(q=>
+          `<div class="form-group"><div class="form-label">${q.label}</div>
+           <div class="readonly-field">${mgrAnswers[q.id]||"—"}</div></div>`).join("")}
+      </div>
+    </div>
+
+    <!-- L2 rating adjustments -->
+    <div class="card mb4">
+      <div class="ch">
+        <span class="ct">${canAct?"✏ Your L2 Rating Adjustments":"✅ L2 Ratings Submitted"}</span>
+        <span style="font-size:12px;color:var(--text3)">
+          ${canAct?"Modify ratings if needed — leave unchanged to keep manager's ratings":""}
+        </span>
+      </div>
+      <div class="cb">${l2RatingRows}</div>
+    </div>
+
+    ${canAct ? `
+    <!-- L2 comments + actions -->
+    <div class="card mb4">
+      <div class="ch"><span class="ct">L2 Comments</span></div>
+      <div class="cb">
+        <textarea id="l2Comments" rows="4" placeholder="Add your overall L2 comments on this appraisal (visible to HR and the employee after release)…">${f.L2Comments||""}</textarea>
+      </div>
+    </div>
+    <div class="card mb4" id="sendBackPanel" style="display:none">
+      <div class="ch"><span class="ct">Send Back Reason</span></div>
+      <div class="cb">
+        <textarea id="sendBackReason" rows="3" placeholder="Explain to the manager what needs to be revised…"></textarea>
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;justify-content:flex-end;flex-wrap:wrap">
+      <button class="btn btn-secondary" onclick="toggleSendBack()">↩ Send Back to Manager</button>
+      <button class="btn btn-primary" onclick="l2Approve('${appr.id}','${selEmp.id}')">✅ Approve & Send to HR →</button>
+    </div>` : `
+    ${status==="SentBack"?`<div class="card" style="padding:18px 22px;border-color:var(--error)44;background:var(--error)05">
+      <div style="font-weight:700;color:var(--error);margin-bottom:6px">↩ Sent back to manager</div>
+      <div style="font-size:13px;color:var(--text2)">${f.L2Comments||"Awaiting manager revision"}</div>
+    </div>`:""}
+    `}`;
+  }
+
+  setContent(`
+  <div class="section-title">L2 Review</div>
+  <div class="section-sub">${C.cycleName} · ${l2Emps.length} employees in your scope · ${awaitingCount} awaiting your approval</div>
+
+  <!-- Quick stats -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px">
+    <div class="card stat-card">
+      <div class="s-lbl3">Awaiting Approval</div>
+      <div class="s-val3" style="color:var(--accent)">${awaitingCount}</div>
+    </div>
+    <div class="card stat-card">
+      <div class="s-lbl3">Approved</div>
+      <div class="s-val3" style="color:#a78bfa">${approvedCount}</div>
+    </div>
+    <div class="card stat-card">
+      <div class="s-lbl3">Total Scope</div>
+      <div class="s-val3" style="color:var(--info)">${l2Emps.length}</div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:270px 1fr;gap:20px" class="two-col">
+    <div>
+      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">My L2 Scope</div>
+      <div class="emp-list">${sidebar}</div>
+    </div>
+    <div>${main}</div>
+  </div>`);
+}
+
+function selectL2Emp(empId) {
+  S.selectedEmpId = empId;
+  if (!S.l2MgrAnswers) S.l2MgrAnswers = {};
+  delete S.l2MgrAnswers[empId]; // reset so it reloads from SP
+  viewL2();
+}
+
+function toggleSendBack() {
+  const panel = document.getElementById("sendBackPanel");
+  const btn   = event.target;
+  if (panel.style.display === "none") {
+    panel.style.display = "block";
+    btn.textContent = "Cancel Send Back";
+    btn.classList.remove("btn-secondary");
+    btn.classList.add("btn-ghost");
+  } else {
+    panel.style.display = "none";
+    btn.textContent = "↩ Send Back to Manager";
+    btn.classList.add("btn-secondary");
+    btn.classList.remove("btn-ghost");
+  }
+}
+
+// Override star setAnswer for l2 prefix
+const _origSetAnswer = setAnswer;
+function setAnswer(prefix, qId, val) {
+  if (prefix === "l2") {
+    if (!S.l2MgrAnswers) S.l2MgrAnswers = {};
+    if (!S.l2MgrAnswers[S.selectedEmpId]) S.l2MgrAnswers[S.selectedEmpId] = {};
+    const k = qId.replace("l2_","");
+    S.l2MgrAnswers[S.selectedEmpId][k] = val;
+    const grp = document.getElementById(`og-l2-${qId}`);
+    if (grp) grp.querySelectorAll(".opt-chip").forEach(c=>c.classList.toggle("sel",c.dataset.v===String(val)));
+    const sv = document.getElementById(`r-val-l2-${k}`);
+    const sl = document.getElementById(`r-lbl-l2-${k}`);
+    if (sv) sv.textContent = val;
+    if (sl) sl.textContent = RLBL[val]||"";
+    // Update L2 avg display
+    const l2ans = S.l2MgrAnswers[S.selectedEmpId];
+    const a = compAvg(l2ans);
+    return;
+  }
+  _origSetAnswer(prefix, qId, val);
+}
+
+async function l2Approve(itemId, empId) {
+  const sendBackPanel = document.getElementById("sendBackPanel");
+  const isSendBack = sendBackPanel && sendBackPanel.style.display !== "none";
+
+  if (isSendBack) {
+    // Send back to manager
+    const reason = document.getElementById("sendBackReason")?.value||"";
+    if (!reason.trim()) { toast("Add a reason for sending back","error"); return; }
+    if (!confirm(`Send back to manager with your comment?`)) return;
+    loading("Sending back…");
+    try {
+      const emp = S.employees.find(e=>e.id===empId);
+      const l2Comments = document.getElementById("l2Comments")?.value||"";
+      await saveAppraisal({
+        Status: "SentBack",
+        L2Comments: reason,
+      }, itemId);
+      if (emp) await notifySentBack(emp, reason);
+      toast("Sent back to manager ✓","success");
+      S.selectedEmpId = null;
+      delete S.l2Appraisals;
+      await viewL2();
+    } catch(e) { toast("Failed: "+e.message,"error"); }
+    doneLoading();
+    return;
+  }
+
+  // Approve
+  if (!confirm("Approve this appraisal? It will be sent to HR for final release.")) return;
+  loading("Approving…");
+  try {
+    const emp = S.employees.find(e=>e.id===empId);
+    const l2Comments = document.getElementById("l2Comments")?.value||"";
+    const l2ans = (S.l2MgrAnswers||{})[empId]||{};
+    // Build updated mgr fields with L2-modified ratings
+    const updatedMgr = {
+      Status: "L2Approved",
+      L2Comments: l2Comments,
+      L2ReviewedDate: new Date().toISOString(),
+      L2ReviewerName: S.userName,
+    };
+    // Apply L2 rating overrides to Mgr columns
+    if (l2ans.Tech)       updatedMgr.MgrRatingTech       = Number(l2ans.Tech);
+    if (l2ans.Delivery)   updatedMgr.MgrRatingDelivery   = Number(l2ans.Delivery);
+    if (l2ans.Collab)     updatedMgr.MgrRatingCollab     = Number(l2ans.Collab);
+    if (l2ans.Comms)      updatedMgr.MgrRatingComms      = Number(l2ans.Comms);
+    if (l2ans.Innovation) updatedMgr.MgrRatingInnovation = Number(l2ans.Innovation);
+    if (l2ans.Leadership) updatedMgr.MgrRatingLeadership = Number(l2ans.Leadership);
+
+    await saveAppraisal(updatedMgr, itemId);
+    toast("Approved! Sent to HR for release ✓","success");
+    S.selectedEmpId = null;
+    delete S.l2Appraisals;
+    await viewL2();
+  } catch(e) { toast("Approve failed: "+e.message,"error"); }
+  doneLoading();
+}
+
+// Add extra SP columns for L2
+const AP_COLS_EXTRA = ["L2Comments","L2ReviewedDate","L2ReviewerName","DisputeReason","DisputeResponse","AcknowledgedDate"];
 
 // ╔══════════════════════════════════════════════════════════════╗
 // ║                   ACCESS CONTROL                            ║
@@ -1860,23 +2207,76 @@ async function sendMail(toEmail,toName,subject,htmlBody) {
   } catch(e) { console.warn("Email send failed:",e.message); }
 }
 async function notifySelfSubmit(emp) {
-  await sendMail(emp.email,emp.name,`✅ Self-Appraisal Submitted — ${C.cycleName}`,
+  // To employee
+  await sendMail(emp.email, emp.name, `✅ Self-Appraisal Submitted — ${C.cycleName}`,
     `<p>Hi ${emp.name.split(" ")[0]},</p>
-     <p style="margin:12px 0;color:#94a3b8">Your self-appraisal for <strong style="color:#f59e0b">${C.cycleName}</strong> has been submitted. Your manager will complete their review before <strong style="color:#e2e8f0">${C.deadline}</strong>.</p>`);
+     <p style="margin:12px 0;color:#94a3b8">Your self-appraisal for <strong style="color:#f59e0b">${C.cycleName}</strong> has been submitted. Your manager will review it next.</p>`);
+  // To L1 manager
   if (emp.managerEmail) {
-    const mgr=S.employees.find(e=>e.email===emp.managerEmail);
-    const fn=mgr?mgr.name.split(" ")[0]:"Manager";
-    await sendMail(emp.managerEmail,fn,`📋 Action Required: ${emp.name} submitted their appraisal`,
-      `<p>Hi ${fn},</p><p style="margin:12px 0;color:#94a3b8"><strong style="color:#f59e0b">${emp.name}</strong> has submitted their self-appraisal for ${C.cycleName}. Please complete your review.</p>
-       <p style="color:#94a3b8">Deadline: <strong style="color:#e2e8f0">${C.deadline}</strong></p>
-       <a href="${location.href}" style="display:inline-block;margin-top:16px;padding:10px 22px;background:#f59e0b;color:#0f1117;border-radius:8px;font-weight:700;text-decoration:none">Open Appraisal Tool →</a>`);
+    const mgr = S.employees.find(e=>e.email===emp.managerEmail);
+    const fn  = mgr ? mgr.name.split(" ")[0] : "Manager";
+    await sendMail(emp.managerEmail, fn, `📋 Action Required: ${emp.name} submitted self-appraisal`,
+      `<p>Hi ${fn},</p>
+       <p style="margin:12px 0;color:#94a3b8"><strong style="color:#f59e0b">${emp.name}</strong> has submitted their self-appraisal for ${C.cycleName}. Please complete your manager review.</p>
+       <a href="${location.href}" style="display:inline-block;margin-top:16px;padding:10px 22px;background:#f59e0b;color:#0f1117;border-radius:8px;font-weight:700;text-decoration:none">Open Manager Review →</a>`);
   }
 }
-async function notifyMgrDone(emp) {
-  await sendMail(emp.email,emp.name,`🎉 Your Appraisal is Complete — ${C.cycleName}`,
+
+async function notifyMgrReviewed(emp) {
+  // Notify L2 manager for approval
+  const l2Emp = S.employees.find(e=>e.id===emp.l2EmpId);
+  if (l2Emp?.email) {
+    await sendMail(l2Emp.email, l2Emp.name.split(" ")[0],
+      `📋 Action Required: Manager review ready for your approval — ${emp.name}`,
+      `<p>Hi ${l2Emp.name.split(" ")[0]},</p>
+       <p style="margin:12px 0;color:#94a3b8">The manager review for <strong style="color:#f59e0b">${emp.name}</strong> (${emp.role}, ${emp.squad}) has been submitted and is awaiting your approval for ${C.cycleName}.</p>
+       <a href="${location.href}" style="display:inline-block;margin-top:16px;padding:10px 22px;background:#f59e0b;color:#0f1117;border-radius:8px;font-weight:700;text-decoration:none">Review & Approve →</a>`);
+  }
+}
+
+async function notifySentBack(emp, comment) {
+  // L2 sent back to L1 manager
+  if (emp.managerEmail) {
+    const mgr = S.employees.find(e=>e.email===emp.managerEmail);
+    const fn  = mgr ? mgr.name.split(" ")[0] : "Manager";
+    await sendMail(emp.managerEmail, fn,
+      `↩ Review Sent Back: ${emp.name} — Action Required`,
+      `<p>Hi ${fn},</p>
+       <p style="margin:12px 0;color:#94a3b8">Your manager review for <strong style="color:#f59e0b">${emp.name}</strong> has been sent back by the L2 reviewer with the following comment:</p>
+       <p style="background:#1e2a45;padding:12px;border-radius:8px;color:#e2e8f0;margin:12px 0">"${comment||"Please revisit your ratings and comments."}"</p>
+       <a href="${location.href}" style="display:inline-block;margin-top:16px;padding:10px 22px;background:#f59e0b;color:#0f1117;border-radius:8px;font-weight:700;text-decoration:none">Update Review →</a>`);
+  }
+}
+
+async function notifyReleased(emp) {
+  // Notify employee that appraisal is released
+  await sendMail(emp.email, emp.name,
+    `🎉 Your Appraisal is Ready — ${C.cycleName}`,
     `<p>Hi ${emp.name.split(" ")[0]},</p>
-     <p style="margin:12px 0;color:#94a3b8">Your manager has completed your performance review for <strong style="color:#f59e0b">${C.cycleName}</strong>. Log in to view your results.</p>
-     <a href="${location.href}" style="display:inline-block;margin-top:16px;padding:10px 22px;background:#f59e0b;color:#0f1117;border-radius:8px;font-weight:700;text-decoration:none">View My Appraisal →</a>`);
+     <p style="margin:12px 0;color:#94a3b8">Your performance appraisal for <strong style="color:#f59e0b">${C.cycleName}</strong> has been reviewed and is now available. Please log in to view your results and acknowledge.</p>
+     <a href="${location.href}" style="display:inline-block;margin-top:16px;padding:10px 22px;background:#f59e0b;color:#0f1117;border-radius:8px;font-weight:700;text-decoration:none">View & Acknowledge →</a>`);
+}
+
+async function notifyDisputed(emp, reason) {
+  // Notify L1 manager of dispute
+  if (emp.managerEmail) {
+    const mgr = S.employees.find(e=>e.email===emp.managerEmail);
+    const fn  = mgr ? mgr.name.split(" ")[0] : "Manager";
+    await sendMail(emp.managerEmail, fn,
+      `⚠ Appraisal Disputed by ${emp.name} — Action Required`,
+      `<p>Hi ${fn},</p>
+       <p style="margin:12px 0;color:#94a3b8"><strong style="color:#f59e0b">${emp.name}</strong> has raised a concern about their appraisal for ${C.cycleName}:</p>
+       <p style="background:#1e2a45;padding:12px;border-radius:8px;color:#e2e8f0;margin:12px 0">"${reason||"No reason provided."}"</p>
+       <p style="color:#94a3b8">Please review and respond to the concern, then re-release the appraisal.</p>
+       <a href="${location.href}" style="display:inline-block;margin-top:16px;padding:10px 22px;background:#f59e0b;color:#0f1117;border-radius:8px;font-weight:700;text-decoration:none">Respond to Dispute →</a>`);
+  }
+  // Also notify HR
+  for (const hrEmail of C.hrEmails) {
+    await sendMail(hrEmail, "HR Admin",
+      `ℹ Appraisal Dispute Raised — ${emp.name}`,
+      `<p>Hi,</p>
+       <p style="margin:12px 0;color:#94a3b8"><strong style="color:#f59e0b">${emp.name}</strong> has disputed their appraisal for ${C.cycleName}. The dispute has been sent to their manager. Reason: "${reason||"Not provided"}"</p>`);
+  }
 }
 async function sendBulkReminders() {
   const pending = S.employees.filter(e=>{
@@ -1938,8 +2338,20 @@ function toast(msg,type="info") {
   setTimeout(()=>{d.style.cssText+="opacity:0;transition:opacity .3s";setTimeout(()=>d.remove(),400);},3500);
 }
 function badge(status) {
-  const m={Draft:["b-draft","Draft"],SelfSubmitted:["b-sub","Self Submitted"],
-    ManagerReviewing:["b-review","In Review"],Completed:["b-done","Complete"],NotStarted:["b-none","Not Started"]};
+  const m={
+    "Draft":            ["b-draft",  "Draft"],
+    "SelfSubmitted":    ["b-sub",    "Self Submitted"],
+    "ManagerReviewed":  ["b-review", "With L1 Manager"],
+    "ManagerReviewing": ["b-review", "With L1 Manager"],
+    "SentBack":         ["b-risk",   "Sent Back"],
+    "L2Approved":       ["b-sub",    "With HR"],
+    "Released":         ["b-review", "Pending Acknowledgement"],
+    "Acknowledged":     ["b-done",   "Acknowledged"],
+    "Disputed":         ["b-risk",   "Disputed"],
+    "Completed":        ["b-done",   "Complete"],
+    "Closed":           ["b-done",   "Closed"],
+    "NotStarted":       ["b-none",   "Not Started"],
+  };
   const [cls,lbl]=m[status]||["b-none","Not Started"];
   return `<span class="badge ${cls}">${lbl}</span>`;
 }
@@ -1983,9 +2395,13 @@ async function viewSelf() {
     </div>`); doneLoading(); return;
   }
 
-  const submitted = S.myAppraisal?.fields?.Status && S.myAppraisal.fields.Status!=="Draft";
+  const SUBMITTED_STATUSES = ["SelfSubmitted","ManagerReviewed","SentBack","L2Approved","Released","Acknowledged","Disputed","Closed","Completed","ManagerReviewing"];
+  const submitted = S.myAppraisal?.fields?.Status && SUBMITTED_STATUSES.includes(S.myAppraisal.fields.Status);
+  const isReleased = ["Released","Acknowledged","Disputed","Closed"].includes(S.myAppraisal?.fields?.Status);
+  const isSentBack = S.myAppraisal?.fields?.Status === "SentBack";
   const status    = S.myAppraisal?.fields?.Status||"Draft";
   const readOnly  = submitted;
+  const submitted_acked = ["Acknowledged","Closed"].includes(S.myAppraisal?.fields?.Status);
   const sAvg      = compAvg(S.selfAnswers);
 
   // Build questions dynamically based on employee practice + level
@@ -2232,7 +2648,7 @@ async function viewManager() {
   const selEmp = reportees.find(e=>e.id===S.selectedEmpId);
   const appr   = apprMap[S.selectedEmpId];
   const isReady= appr && appr.fields?.Status && appr.fields.Status!=="Draft";
-  const isDone = appr?.fields?.Status==="Completed";
+  const isDone = ["Completed","ManagerReviewed","L2Approved","Released","Acknowledged","Closed"].includes(appr?.fields?.Status);
 
   // Sidebar
   const sidebar=reportees.map(emp=>{
@@ -2315,6 +2731,28 @@ async function viewManager() {
         ${!isDone?`<button class="btn btn-ghost btn-sm" onclick="showMgrAI('${selEmp.name}')">✦ AI Assist</button>`:""}
       </div>
     </div>
+
+    <!-- Sent Back notice for manager -->
+    ${appr.fields.Status==="SentBack"?`
+    <div class="card mb4" style="border-color:var(--error)44;background:var(--error)05;padding:16px 22px">
+      <div style="font-weight:700;color:var(--error);margin-bottom:6px">↩ Sent Back by L2 — Please Revise</div>
+      <div style="font-size:13px;color:var(--text2)">${appr.fields.SentBackComment||"No reason given."}</div>
+      <div style="font-size:12px;color:var(--text3);margin-top:8px">Update your ratings or comments below and resubmit.</div>
+    </div>`:""}
+
+    <!-- Dispute response panel for manager -->
+    ${appr.fields.Status==="Disputed"?`
+    <div class="card mb4" style="border-color:var(--error)44;background:var(--error)05">
+      <div class="ch"><span class="ct" style="color:var(--error)">⚠ Employee Raised a Concern</span></div>
+      <div class="cb">
+        <div style="font-size:13px;color:var(--text2);margin-bottom:14px;padding:12px;background:var(--bg);border-radius:8px;border:1px solid var(--border)">${appr.fields.DisputeComment||"—"}</div>
+        <div class="form-group">
+          <div class="form-label">Your Response to Employee</div>
+          <textarea id="disputeResponse" rows="4" placeholder="Address their concern clearly and constructively…"></textarea>
+        </div>
+        <button class="btn btn-primary" onclick="respondToDispute('${appr.id}','${selEmp.email}','${selEmp.name}')">Send Response & Re-release →</button>
+      </div>
+    </div>`:""}
 
     ${jiraSection}
 
@@ -2463,7 +2901,7 @@ async function submitMgr(itemId,empId,empEmail) {
   if (!confirm("Submit manager review? The employee will be notified by email.")) return;
   loading("Submitting…");
   try {
-    await saveAppraisal(buildSPFields("mgr","Completed",{MgrReviewedDate:new Date().toISOString()}),itemId);
+    await saveAppraisal(buildSPFields("mgr","ManagerReviewed",{MgrReviewedDate:new Date().toISOString()}),itemId);
     const emp=S.employees.find(e=>e.id===empId||e.email===empEmail);
     if (emp) await notifyMgrDone(emp);
     toast("Review submitted! Employee notified ✓","success");
@@ -2511,7 +2949,13 @@ async function viewHR(readOnly=false) {
       <td>${badge(s)}</td>
       <td><span style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:${sAvg?"var(--accent)":"var(--text3)"}">${sAvg||"—"}</span></td>
       <td><span style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:${mAvg?"var(--success)":"var(--text3)"}">${mAvg||"—"}</span></td>
-      <td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openAppraisalModal('${emp.id}')">View →</button></td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openAppraisalModal('${emp.id}')">View →</button>
+        ${a?.fields?.Status==="L2Approved"?`<button class="btn btn-primary btn-sm" style="margin-left:6px"
+          onclick="event.stopPropagation();releaseAppraisal('${a.id}','${emp.id}','${emp.email}','${emp.name}')">
+          🚀 Release</button>`:""}
+        ${a?.fields?.Status==="Disputed"?`<span class="badge b-risk" style="margin-left:6px">⚠ Disputed</span>`:""}
+      </td>
     </tr>`;
   }).join("");
 
@@ -2564,6 +3008,21 @@ async function viewHR(readOnly=false) {
   </div>`);
 }
 
+async function hrRelease(empId, itemId) {
+  const emp = S.employees.find(e=>e.id===empId);
+  if (!emp) return;
+  if (!confirm(`Release appraisal to ${emp.name}? They will be notified by email.`)) return;
+  loading("Releasing…");
+  try {
+    await saveAppraisal({ Status:"Released", ReleasedDate:new Date().toISOString(), ReleasedBy:S.userName }, itemId);
+    await notifyReleased(emp);
+    toast(`Appraisal released to ${emp.name} ✓`,"success");
+    S.allAppraisals = await getAllAppraisals().catch(()=>[]);
+    await viewHR();
+  } catch(e) { toast("Release failed: "+e.message,"error"); }
+  doneLoading();
+}
+
 async function sendAllReminders() {
   if (!confirm("Send reminder emails to all employees who haven't submitted?")) return;
   loading("Sending reminders…");
@@ -2586,6 +3045,37 @@ function exportCSV() {
   link.click(); toast("CSV exported","success");
 }
 
+
+async function acknowledgeAppraisal(itemId) {
+  if (!confirm("Acknowledge this appraisal? This confirms you have reviewed your results.")) return;
+  loading("Acknowledging…");
+  try {
+    await saveAppraisal({ Status:"Acknowledged", AcknowledgedDate:new Date().toISOString() }, itemId);
+    toast("Appraisal acknowledged ✓","success");
+    await viewSelf();
+  } catch(e) { toast("Failed: "+e.message,"error"); }
+  doneLoading();
+}
+
+function toggleDisputePanel() {
+  const p = document.getElementById("disputePanel");
+  if (p) p.style.display = p.style.display==="none" ? "block" : "none";
+}
+
+async function submitDispute(itemId, empId) {
+  const reason = document.getElementById("disputeReason")?.value||"";
+  if (!reason.trim()) { toast("Please describe your concern","error"); return; }
+  if (!confirm("Submit your concern? It will be sent to your manager.")) return;
+  loading("Submitting concern…");
+  try {
+    await saveAppraisal({ Status:"Disputed", DisputeReason:reason }, itemId);
+    const emp = S.employees.find(e=>e.id===empId);
+    if (emp) await notifyDisputed(emp, reason);
+    toast("Concern submitted — your manager will respond ✓","success");
+    await viewSelf();
+  } catch(e) { toast("Failed: "+e.message,"error"); }
+  doneLoading();
+}
 
 // ╔══════════════════════════════════════════════════════════════╗
 // ║                  ACCESS CONTROL VIEW                        ║
@@ -2749,29 +3239,427 @@ async function revokeGrant(email, rowIndex) {
   doneLoading();
 }
 
+
+// ── Employee Acknowledgement & Dispute ────────────────────────
+async function acknowledgeAppraisal() {
+  const comment = document.getElementById("ackComment")?.value||"";
+  if (!confirm("Acknowledge your appraisal? This confirms you have reviewed the feedback.")) return;
+  loading("Saving…");
+  try {
+    await saveAppraisal({
+      Status:"Acknowledged",
+      EmpAckDate: new Date().toISOString(),
+      DisputeComment: comment,
+    }, S.myAppraisal?.id);
+    toast("Appraisal acknowledged ✓","success");
+    await viewSelf();
+  } catch(e) { toast("Failed: "+e.message,"error"); }
+  doneLoading();
+}
+
+async function disputeAppraisal() {
+  const comment = document.getElementById("ackComment")?.value||"";
+  if (!comment.trim()) { toast("Please describe your concern before raising a dispute","error"); return; }
+  if (!confirm("Raise a concern? This will notify your manager to respond.")) return;
+  loading("Saving…");
+  try {
+    const me = S.employees.find(e=>e.email===S.userEmail);
+    await saveAppraisal({ Status:"Disputed", DisputeComment:comment }, S.myAppraisal?.id);
+    // Notify L1 manager
+    if (me?.managerEmail) {
+      const mgr = S.employees.find(e=>e.email===me.managerEmail);
+      await sendMail(me.managerEmail, mgr?.name||"Manager",
+        `⚠ Concern Raised: ${me.name} has disputed their appraisal`,
+        `<p>Hi,</p><p style="margin:12px 0;color:#94a3b8"><strong style="color:#f59e0b">${me.name}</strong> has raised a concern about their appraisal for <strong>${C.cycleName}</strong>:</p>
+         <div style="background:#1e2a45;padding:14px;border-radius:8px;color:#e2e8f0;font-size:13px">${comment}</div>
+         <p style="margin-top:14px;color:#94a3b8">Please log in and respond to their concern.</p>
+         <a href="${location.href}" style="display:inline-block;margin-top:16px;padding:10px 22px;background:#f59e0b;color:#0f1117;border-radius:8px;font-weight:700;text-decoration:none">Respond →</a>`
+      );
+    }
+    toast("Concern raised — manager notified","success");
+    await viewSelf();
+  } catch(e) { toast("Failed: "+e.message,"error"); }
+  doneLoading();
+}
+
+// ── Manager responds to dispute ───────────────────────────────
+async function respondToDispute(itemId, empEmail, empName) {
+  const response = document.getElementById("disputeResponse")?.value||"";
+  if (!response.trim()) { toast("Please write a response","error"); return; }
+  loading("Saving…");
+  try {
+    await saveAppraisal({ Status:"Released", DisputeResponseComment:response }, itemId);
+    await sendMail(empEmail, empName,
+      `✅ Manager responded to your concern — ${C.cycleName}`,
+      `<p>Hi ${empName.split(" ")[0]},</p>
+       <p style="margin:12px 0;color:#94a3b8">Your manager has responded to your concern. Please log in to review their response and acknowledge your appraisal.</p>
+       <a href="${location.href}" style="display:inline-block;margin-top:16px;padding:10px 22px;background:#f59e0b;color:#0f1117;border-radius:8px;font-weight:700;text-decoration:none">View Response →</a>`
+    );
+    toast("Response sent to employee ✓","success");
+    S.selectedEmpId = null;
+    await viewManager();
+  } catch(e) { toast("Failed: "+e.message,"error"); }
+  doneLoading();
+}
+
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║                   L2 REVIEW VIEW                           ║
+// ╚══════════════════════════════════════════════════════════════╝
+async function viewL2() {
+  S.view = "l2"; renderNav();
+
+  // L2 sees: direct reportees of their L1 managers (everyone under them)
+  const l2Reportees = myL2Reportees();
+  if (!l2Reportees.length) {
+    setContent(`<div class="section-title">L2 Review</div>
+    <div class="card cb" style="text-align:center;padding:56px">
+      <div style="font-size:46px;margin-bottom:14px">🔍</div>
+      <div style="font-weight:600">No employees found in your L2 scope.</div>
+    </div>`); return;
+  }
+
+  if (!S.selectedEmpId) {
+    // Default to first employee awaiting L2 review
+    const pending = l2Reportees.find(e => {
+      const a = S.l2Appraisals?.find(x=>x.fields?.EmployeeID===e.id);
+      return a?.fields?.Status === "ManagerReviewed";
+    });
+    S.selectedEmpId = pending?.id || l2Reportees[0].id;
+  }
+
+  loading("Loading L2 review data…");
+  if (!S.l2Appraisals) {
+    try { S.l2Appraisals = await getAllAppraisals(); }
+    catch(e) { S.l2Appraisals = []; }
+  }
+  doneLoading();
+
+  const selEmp  = l2Reportees.find(e=>e.id===S.selectedEmpId);
+  const appr    = S.l2Appraisals?.find(x=>x.fields?.EmployeeID===selEmp?.id);
+  const status  = appr?.fields?.Status||"NotStarted";
+  const awaitingL2 = status === "ManagerReviewed";
+  const alreadyDone = ["L2Approved","Released","Acknowledged","Disputed","Closed"].includes(status);
+
+  // Build sidebar grouped by status
+  const statusOrder = {"ManagerReviewed":0,"SentBack":1,"L2Approved":2,"Released":3,"Acknowledged":4,"Disputed":5};
+  const sorted = [...l2Reportees].sort((a,b)=>{
+    const sa = S.l2Appraisals?.find(x=>x.fields?.EmployeeID===a.id)?.fields?.Status||"NotStarted";
+    const sb = S.l2Appraisals?.find(x=>x.fields?.EmployeeID===b.id)?.fields?.Status||"NotStarted";
+    return (statusOrder[sa]??9)-(statusOrder[sb]??9);
+  });
+
+  const sidebar = sorted.map(emp => {
+    const a = S.l2Appraisals?.find(x=>x.fields?.EmployeeID===emp.id);
+    const s = a?.fields?.Status||"NotStarted";
+    return `<div class="emp-item ${emp.id===S.selectedEmpId?"sel":""}" onclick="selectL2Emp('${emp.id}')">
+      <div class="emp-av">${emp.name.charAt(0)}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${emp.name}</div>
+        <div style="font-size:11px;color:var(--text3)">${emp.squad||emp.dept} · ${tenure(emp.joiningDate)}</div>
+      </div>
+      ${badge(s)}
+    </div>`;
+  }).join("");
+
+  // Main review panel
+  let main = "";
+  if (!appr || status === "NotStarted" || status === "Draft" || status === "SelfSubmitted") {
+    main = `<div class="card cb" style="text-align:center;padding:56px">
+      <div style="font-size:46px;margin-bottom:14px">⏳</div>
+      <div style="font-weight:600">Not ready for L2 review</div>
+      <div style="color:var(--text3);font-size:13px;margin-top:8px">Current status: ${status||"Not Started"}<br>Waiting for manager to submit review first.</div>
+    </div>`;
+  } else {
+    const f = appr.fields;
+    const selfAnswers = {}; const mgrAnswers = {}; const l2Answers = {};
+    if (f.SelfFormData) { try { Object.assign(selfAnswers, JSON.parse(f.SelfFormData)); } catch {} }
+    if (f.MgrFormData)  { try { Object.assign(mgrAnswers,  JSON.parse(f.MgrFormData));  } catch {} }
+    if (f.L2FormData)   { try { Object.assign(l2Answers,   JSON.parse(f.L2FormData));   } catch {} }
+
+    // Pre-load L2 ratings from saved data or default to manager's ratings
+    if (!S.l2RatingsCopy) {
+      S.l2RatingsCopy = {
+        Tech:       l2Answers.Tech       || mgrAnswers.Tech       || 0,
+        Delivery:   l2Answers.Delivery   || mgrAnswers.Delivery   || 0,
+        Collab:     l2Answers.Collab     || mgrAnswers.Collab     || 0,
+        Comms:      l2Answers.Comms      || mgrAnswers.Comms      || 0,
+        Innovation: l2Answers.Innovation || mgrAnswers.Innovation || 0,
+        Leadership: l2Answers.Leadership || mgrAnswers.Leadership || 0,
+      };
+    }
+
+    const selfAvg = compAvg(selfAnswers);
+    const mgrAvg  = compAvg(mgrAnswers);
+    const sentBackComment = f.SentBackComment||"";
+
+    // Competency comparison table
+    const compRows = ["Tech","Delivery","Collab","Comms","Innovation","Leadership"].map(k => {
+      const selfR = Number(selfAnswers[k]||0);
+      const mgrR  = Number(mgrAnswers[k]||0);
+      const l2R   = S.l2RatingsCopy[k]||mgrR;
+      const q = (buildSelfQuestions(selEmp)||[]).find(q=>q.id===k);
+      return `<div style="display:grid;grid-template-columns:1fr 80px 80px ${alreadyDone?"80px":"120px"};
+        align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)88">
+        <div style="font-size:13px;font-weight:500">${q?.label||k}</div>
+        <div style="text-align:center">
+          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:16px;color:var(--info)">${selfR||"—"}</div>
+          <div style="font-size:10px;color:var(--text3)">Self</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:16px;color:var(--accent)">${mgrR||"—"}</div>
+          <div style="font-size:10px;color:var(--text3)">Manager</div>
+        </div>
+        ${alreadyDone
+          ? `<div style="text-align:center">
+              <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:16px;color:var(--success)">${l2R||"—"}</div>
+              <div style="font-size:10px;color:var(--text3)">L2 Final</div>
+            </div>`
+          : `<div style="display:flex;align-items:center;gap:6px">
+              ${[1,2,3,4,5].map(n=>`<div class="star ${n<=l2R?"on":""}"
+                onclick="setL2Rating('${k}',${n})"
+                onmouseover="hoverL2Stars('${k}',${n})"
+                onmouseout="unhoverL2Stars('${k}')">★</div>`).join("")}
+            </div>`}
+      </div>`;
+    }).join("");
+
+    // Key open-ended answers
+    const openQs = ["Achievements","MgrComments","Strengths","ImprovAreas","MgrDevPlan"];
+    const openRows = openQs.map(qid => {
+      const selfVal = selfAnswers[qid];
+      const mgrVal  = mgrAnswers[qid];
+      if (!selfVal && !mgrVal) return "";
+      return `<div style="margin-bottom:16px">
+        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">
+          ${qid==="Achievements"?"Employee Achievements":qid==="MgrComments"?"Manager Feedback":
+            qid==="Strengths"?"Strengths":qid==="ImprovAreas"?"Areas to Improve":"Development Plan"}
+        </div>
+        ${selfVal?`<div style="font-size:11px;color:var(--info);margin-bottom:4px">Employee</div>
+          <div class="readonly-field" style="margin-bottom:8px;font-size:12px">${selfVal}</div>`:""}
+        ${mgrVal?`<div style="font-size:11px;color:var(--accent);margin-bottom:4px">Manager</div>
+          <div class="readonly-field" style="font-size:12px">${mgrVal}</div>`:""}
+      </div>`;
+    }).join("");
+
+    main = `
+    <!-- Profile strip -->
+    <div class="card mb4" style="padding:15px 22px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <div style="display:flex;gap:12px;align-items:center">
+        <div class="emp-av" style="width:46px;height:46px;font-size:19px;border-radius:13px">${selEmp.name.charAt(0)}</div>
+        <div>
+          <div style="font-weight:700;font-size:15px">${selEmp.name}</div>
+          <div style="font-size:12px;color:var(--text3)">${selEmp.role} · ${selEmp.squad||selEmp.dept} · ${tenure(selEmp.joiningDate)}</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        ${badge(status)}
+        <span style="font-size:12px;color:var(--text3)">Self: <b style="color:var(--info)">${selfAvg||"—"}</b> · Mgr: <b style="color:var(--accent)">${mgrAvg||"—"}</b></span>
+      </div>
+    </div>
+
+    ${sentBackComment && status==="SentBack" ? `
+    <div class="card mb4" style="padding:16px 22px;border-color:var(--error)44;background:var(--error)05">
+      <div style="font-weight:700;color:var(--error);margin-bottom:6px">↩ Previously Sent Back</div>
+      <div style="font-size:13px;color:var(--text2)">${sentBackComment}</div>
+    </div>` : ""}
+
+    <!-- Ratings comparison -->
+    <div class="card mb4">
+      <div class="ch">
+        <span class="ct">Competency Ratings — Self vs Manager ${alreadyDone?"vs L2 Final":""}</span>
+        ${!alreadyDone?`<span style="font-size:12px;color:var(--text3)">Adjust if needed · L2 avg: <strong id="l2-overall" style="color:var(--success)">${compAvg(S.l2RatingsCopy)||"—"}</strong>/5</span>`:""}
+      </div>
+      <div class="cb">
+        <div style="display:grid;grid-template-columns:1fr 80px 80px ${alreadyDone?"80px":"120px"};
+          gap:12px;padding:0 0 8px;border-bottom:2px solid var(--border)">
+          <div style="font-size:11px;font-weight:700;color:var(--text3)">COMPETENCY</div>
+          <div style="font-size:11px;font-weight:700;color:var(--info);text-align:center">SELF</div>
+          <div style="font-size:11px;font-weight:700;color:var(--accent);text-align:center">MANAGER</div>
+          <div style="font-size:11px;font-weight:700;color:var(--success);text-align:${alreadyDone?"center":"left"}">L2 FINAL</div>
+        </div>
+        ${compRows}
+      </div>
+    </div>
+
+    <!-- Key feedback -->
+    <div class="card mb4">
+      <div class="ch"><span class="ct">Key Feedback Summary</span></div>
+      <div class="cb">${openRows||"<div style='color:var(--text3);font-size:13px'>No answers submitted yet.</div>"}</div>
+    </div>
+
+    ${!alreadyDone ? `
+    <!-- L2 Comments + Actions -->
+    <div class="card mb4">
+      <div class="ch"><span class="ct">L2 Review Decision</span></div>
+      <div class="cb">
+        <div class="form-group">
+          <div class="form-label">L2 Comments (shared with employee on release)</div>
+          <textarea id="l2Comment" rows="4"
+            placeholder="Your overall assessment, calibration notes, or development observations…">${l2Answers.L2Comment||""}</textarea>
+        </div>
+        <div class="form-group" id="sendBackWrap" style="display:none">
+          <div class="form-label">Reason for Sending Back (shown to manager)</div>
+          <textarea id="sentBackComment" rows="3"
+            placeholder="What needs to be reconsidered or corrected…"
+            oninput="document.getElementById('confirmSendBack').style.display=this.value.trim()?'inline-flex':'none'"></textarea>
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <button class="btn btn-primary" onclick="l2Approve('${appr.id}','${selEmp.email}','${selEmp.name}')">
+            ✅ Approve & Send to HR
+          </button>
+          <button class="btn btn-secondary" id="sendBackBtn"
+            onclick="document.getElementById('sendBackWrap').style.display=document.getElementById('sendBackWrap').style.display==='none'?'block':'none'">
+            ↩ Send Back to Manager
+          </button>
+          <button class="btn btn-secondary" id="confirmSendBack" style="display:none"
+            onclick="l2SendBack('${appr.id}','${selEmp.managerEmail}','${selEmp.manager}')">
+            ↩ Confirm Send Back
+          </button>
+        </div>
+      </div>
+    </div>` : `
+    <div class="card" style="padding:18px 24px;border-color:var(--success)44;background:var(--success)05;text-align:center">
+      <div style="font-size:28px;margin-bottom:8px">✅</div>
+      <div style="font-weight:700;color:var(--success)">L2 Review Complete</div>
+      <div style="font-size:13px;color:var(--text3);margin-top:6px">Approved and sent to HR for release.</div>
+    </div>`}`;
+  }
+
+  setContent(`
+  <div class="section-title">L2 Review</div>
+  <div class="section-sub">${C.cycleName} · ${l2Reportees.length} employees in your scope</div>
+  <div style="display:grid;grid-template-columns:270px 1fr;gap:20px" class="two-col">
+    <div>
+      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Your Scope</div>
+      <div class="emp-list">${sidebar}</div>
+    </div>
+    <div>${main}</div>
+  </div>`);
+}
+
+function selectL2Emp(empId) { S.selectedEmpId=empId; S.l2RatingsCopy=null; S.l2Appraisals=null; viewL2(); }
+
+function setL2Rating(k, val) {
+  if (!S.l2RatingsCopy) S.l2RatingsCopy = {};
+  S.l2RatingsCopy[k] = val;
+  document.querySelectorAll(`[onclick*="setL2Rating('${k}'"]`).forEach((s,i)=>s.classList.toggle("on",i<val));
+  const ov = document.getElementById("l2-overall");
+  if (ov) ov.textContent = compAvg(S.l2RatingsCopy)||"—";
+}
+function hoverL2Stars(k,n) {
+  document.querySelectorAll(`[onclick*="setL2Rating('${k}'"]`).forEach((s,i)=>s.classList.toggle("on",i<n));
+}
+function unhoverL2Stars(k) {
+  const cur = S.l2RatingsCopy?.[k]||0;
+  document.querySelectorAll(`[onclick*="setL2Rating('${k}'"]`).forEach((s,i)=>s.classList.toggle("on",i<cur));
+}
+function toggleSendBack() {
+  const w = document.getElementById("sendBackWrap");
+  if (w) w.style.display = w.style.display==="none" ? "block" : "none";
+}
+
+async function l2Approve(itemId, empEmail, empName) {
+  const comment = document.getElementById("l2Comment")?.value||"";
+  if (!confirm(`Approve ${empName}'s appraisal and send to HR for release?`)) return;
+  loading("Saving L2 review…");
+  try {
+    const l2Data = { ...S.l2RatingsCopy, L2Comment: comment };
+    await saveAppraisal({
+      Status:        "L2Approved",
+      L2FormData:    JSON.stringify(l2Data),
+      L2Comment:     comment,
+      L2ReviewedDate:new Date().toISOString(),
+      MgrRatingTech:       Number(S.l2RatingsCopy?.Tech||0),
+      MgrRatingDelivery:   Number(S.l2RatingsCopy?.Delivery||0),
+      MgrRatingCollab:     Number(S.l2RatingsCopy?.Collab||0),
+      MgrRatingComms:      Number(S.l2RatingsCopy?.Comms||0),
+      MgrRatingInnovation: Number(S.l2RatingsCopy?.Innovation||0),
+      MgrRatingLeadership: Number(S.l2RatingsCopy?.Leadership||0),
+    }, itemId);
+    // Notify HR
+    for (const hrEmail of C.hrEmails) {
+      const hrEmp = S.employees.find(e=>e.email===hrEmail);
+      await sendMail(hrEmail, hrEmp?.name||"HR",
+        `📋 L2 Approved: ${empName} — Ready for Release`,
+        `<p><strong style="color:#f59e0b">${empName}</strong>'s appraisal has been approved by L2 and is ready to be released to the employee.</p>
+         <a href="${location.href}" style="display:inline-block;margin-top:16px;padding:10px 22px;background:#f59e0b;color:#0f1117;border-radius:8px;font-weight:700;text-decoration:none">Go to HR Dashboard →</a>`
+      );
+    }
+    toast(`${empName}'s appraisal approved — HR notified ✓`,"success");
+    S.selectedEmpId=null; S.l2RatingsCopy=null; S.l2Appraisals=null;
+    await viewL2();
+  } catch(e) { toast("Failed: "+e.message,"error"); }
+  doneLoading();
+}
+
+async function l2SendBack(itemId, mgrEmail, mgrName) {
+  const reason = document.getElementById("sentBackComment")?.value||"";
+  if (!reason.trim()) { toast("Please provide a reason for sending back","error"); return; }
+  if (!confirm(`Send back to manager (${mgrName}) for revision?`)) return;
+  loading("Sending back…");
+  try {
+    await saveAppraisal({ Status:"SentBack", SentBackComment:reason }, itemId);
+    await sendMail(mgrEmail, mgrName,
+      `↩ Appraisal Sent Back for Revision`,
+      `<p>An appraisal in your team has been sent back by the L2 reviewer for revision.</p>
+       <div style="background:#1e2a45;padding:14px;border-radius:8px;color:#e2e8f0;font-size:13px;margin:12px 0">${reason}</div>
+       <a href="${location.href}" style="display:inline-block;padding:10px 22px;background:#f59e0b;color:#0f1117;border-radius:8px;font-weight:700;text-decoration:none">Review and Resubmit →</a>`
+    );
+    toast("Sent back to manager ✓","success");
+    S.selectedEmpId=null; S.l2RatingsCopy=null; S.l2Appraisals=null;
+    await viewL2();
+  } catch(e) { toast("Failed: "+e.message,"error"); }
+  doneLoading();
+}
+
+
+async function releaseAppraisal(itemId, empId, empEmail, empName) {
+  if (!confirm(`Release ${empName}'s appraisal? They will be notified to review and acknowledge.`)) return;
+  loading("Releasing…");
+  try {
+    await saveAppraisal({ Status:"Released", ReleasedDate:new Date().toISOString() }, itemId);
+    await sendMail(empEmail, empName,
+      `🎉 Your Appraisal is Ready — ${C.cycleName}`,
+      `<p>Hi ${empName.split(" ")[0]},</p>
+       <p style="margin:12px 0;color:#94a3b8">Your performance appraisal for <strong style="color:#f59e0b">${C.cycleName}</strong> has been reviewed and is now available. Please log in, review your feedback, and acknowledge.</p>
+       <a href="${location.href}" style="display:inline-block;margin-top:16px;padding:10px 22px;background:#f59e0b;color:#0f1117;border-radius:8px;font-weight:700;text-decoration:none">View My Appraisal →</a>`
+    );
+    toast(`${empName}'s appraisal released ✓`,"success");
+    S.allAppraisals = await getAllAppraisals().catch(()=>[]);
+    await viewHR();
+  } catch(e) { toast("Failed: "+e.message,"error"); }
+  doneLoading();
+}
+
 // ╔══════════════════════════════════════════════════════════════╗
 // ║                      NAVIGATION                            ║
 // ╚══════════════════════════════════════════════════════════════╝
 function renderNav() {
   const role=S.userRole, hasTeam=myReportees().length>0;
+  const hasL2=isL2Manager(S.userEmail);
   const tabs=[];
   if (role==="hr") {
     tabs.push({v:"hr",   l:"📊 Dashboard",       fn:"viewHR()"});
     tabs.push({v:"self", l:"📝 My Appraisal",     fn:"viewSelf()"});
     if (hasTeam) tabs.push({v:"manager",l:"👥 My Team",fn:"viewManager()"});
+    if (hasL2)   tabs.push({v:"l2",    l:"🔍 L2 Review",  fn:"viewL2()"});
     tabs.push({v:"ac",   l:"🔐 Access Control",   fn:"viewAccessControl()"});
   } else if (role==="leadership") {
     tabs.push({v:"hr",   l:"📊 Org Overview",     fn:"viewHR(true)"});
     tabs.push({v:"self", l:"📝 My Appraisal",     fn:"viewSelf()"});
     if (hasTeam) tabs.push({v:"manager",l:"👥 My Team",fn:"viewManager()"});
+    if (hasL2)   tabs.push({v:"l2",    l:"🔍 L2 Review",  fn:"viewL2()"});
   } else if (role==="manager") {
     tabs.push({v:"manager",l:"👥 My Team",        fn:"viewManager()"});
     tabs.push({v:"self",   l:"📝 My Appraisal",   fn:"viewSelf()"});
+    if (hasL2)   tabs.push({v:"l2",    l:"🔍 L2 Review",  fn:"viewL2()"});
   } else if (S.accessGrant) {
-    // Custom access granted — show dashboard
     tabs.push({v:"hr",   l:"📊 Team Overview",    fn:"viewHR()"});
     tabs.push({v:"self", l:"📝 My Appraisal",     fn:"viewSelf()"});
+    if (hasL2)   tabs.push({v:"l2",    l:"🔍 L2 Review",  fn:"viewL2()"});
   } else {
+    if (hasL2)   tabs.push({v:"l2",    l:"🔍 L2 Review",  fn:"viewL2()"});
     tabs.push({v:"self", l:"📝 My Appraisal",     fn:"viewSelf()"});
   }
   el("mainNav").innerHTML=tabs.map(t=>
@@ -2792,7 +3680,7 @@ async function boot(account) {
   loading("Loading employee data…");
   S.employees=await loadEmployees();
   S.userRole=detectRole(S.userEmail);
-  el("hUserRole").textContent={hr:"HR Admin",leadership:"Leadership",manager:"Manager",employee:"Employee"}[S.userRole];
+  el("hUserRole").textContent={hr:"HR Admin",leadership:"Leadership",l2manager:"L2 Manager",manager:"Manager",employee:"Employee"}[S.userRole]||"Employee";
   el("loginScreen").style.display="none"; el("appContainer").style.display="block";
   doneLoading();
   // Check for custom access grant (for non-HR users given explicit access)
@@ -2807,6 +3695,7 @@ async function boot(account) {
 
   if      (S.userRole==="hr")         await viewHR();
   else if (S.userRole==="leadership") await viewHR(true);
+  else if (S.userRole==="l2manager")  await viewL2();
   else if (S.userRole==="manager")    await viewManager();
   else if (S.accessGrant && S.accessGrant.AccessLevel !== "Individual") {
     S.allAppraisals = await getAllAppraisals().catch(()=>[]);
