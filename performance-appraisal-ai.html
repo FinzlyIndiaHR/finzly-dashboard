@@ -824,30 +824,109 @@ const Q_BY_LEVEL = {
   ],
 };
 
-// ── 4. GOALS SECTION ───────────────────────────────────────────
-const Q_GOALS = {
+// ── 4. GOALS SECTION — Level + Practice aware ──────────────────
+// Goals are assigned based on LEVEL first, then practice context
+// Leadership/Mgmt: org/people/strategy goals only — no technical goals
+// Senior/Lead: domain leadership + team impact goals
+// Mid/Junior: role-specific practice goals
+// Trainee: learning goals only
 
-  standard: [
-    { id:"PracticeGoals",  section:"Goals for Next Cycle", type:"textarea", req:true,
-      label:"Practice Goals — 2–3 goals specific to your role and practice",
-      placeholder:"e.g. 'Complete AWS Solutions Architect certification by Aug 2026'\ne.g. 'Reduce bug escape rate to zero for my squad'" },
-    { id:"GalaxyGoals",    section:"Goals for Next Cycle", type:"textarea", req:true,
-      label:"Galaxy / Squad Goals — your contribution to your team's success",
-      placeholder:"e.g. 'Lead the migration of payment module to new architecture'\ne.g. 'Reduce sprint carry-overs from 20% to under 5%'" },
-    { id:"SoftSkillGoals", section:"Goals for Next Cycle", type:"textarea", req:true,
-      label:"Soft Skills & Growth Goals — communication, leadership, training",
-      placeholder:"e.g. 'Complete a public speaking course in Q1'\ne.g. 'Mentor 2 junior engineers this cycle'\ne.g. 'Obtain PMP certification'" },
-  ],
+function buildGoalQuestions(emp) {
+  const level    = (emp.level||"").trim();
+  const practice = (emp.dept||"").trim();
+  const l1EmpId  = (emp.l1EmpId||"").trim();
+  const isTrainee    = level === "Trainee Level";
+  const isJunior     = level === "Junior Level";
+  const isMid        = level === "Mid Level";
+  const isSenior     = level === "Senior Level";
+  const isLead       = level === "Lead Level";
+  const isMgmt       = level === "Mgmt Level";
+  const isBookshanDR = l1EmpId === BOOSHAN_ID && emp.id !== BOOSHAN_ID;
 
-  trainee: [
+  // ── TRAINEE: pure learning focus ──────────────────────────────
+  if (isTrainee) return [
     { id:"LearningGoals",  section:"Goals for Next Cycle", type:"textarea", req:true,
-      label:"Learning Goals — 2 skills you want to grow next cycle",
-      placeholder:"e.g. 'Learn React fundamentals and build a small project'\ne.g. 'Write my first automation test suite'" },
-    { id:"MentorGoals",    section:"Goals for Next Cycle", type:"textarea", req:false,
-      label:"What support or mentoring would help you most next cycle?",
-      placeholder:"Specific topics, technologies, or working styles you want guidance on…" },
-  ],
-};
+      label:"Learning Goals — 2 skills or tools you want to master next cycle",
+      placeholder:"e.g. 'Get comfortable with the full dev/test cycle on 2 features independently'\ne.g. 'Complete internal onboarding modules and shadow 3 client calls'" },
+    { id:"MentorNeeds",    section:"Goals for Next Cycle", type:"textarea", req:false,
+      label:"What mentoring or support would help you grow fastest?",
+      placeholder:"Topics, technologies, or work styles you want guidance on…" },
+  ];
+
+  // ── MGMT LEVEL or Booshan's direct reports: org/people/strategy only ──
+  if (isMgmt || isBookshanDR) return [
+    { id:"PeopleGoals",    section:"Goals for Next Cycle", type:"textarea", req:true,
+      label:"People & Team Goals — how will you grow and retain your team?",
+      placeholder:"e.g. 'Conduct structured development conversations with all direct reports each quarter'\ne.g. 'Reduce attrition in my team from current levels by identifying and addressing retention risks early'" },
+    { id:"OrgGoals",       section:"Goals for Next Cycle", type:"textarea", req:true,
+      label:"Organisational Goals — strategic impact on Finzly as a whole",
+      placeholder:"e.g. 'Drive the rollout of the new performance framework across Engineering'\ne.g. 'Lead the annual workforce planning exercise for FY26-27'" },
+    { id:"CultureGoals",   section:"Goals for Next Cycle", type:"textarea", req:false,
+      label:"Culture & Leadership Goals — what kind of leader do you want to be known as?",
+      placeholder:"e.g. 'Build a feedback-first culture where team members feel safe raising concerns'\ne.g. 'Improve team engagement score by 10 points in next pulse survey'" },
+    { id:"SoftSkillGoals", section:"Goals for Next Cycle", type:"textarea", req:false,
+      label:"Personal Growth Goals — leadership, communication or executive presence",
+      placeholder:"e.g. 'Complete an executive communication programme'\ne.g. 'Improve cross-functional stakeholder influence skills'" },
+  ];
+
+  // ── LEAD LEVEL: team delivery + domain direction, NOT hands-on technical ──
+  if (isLead) return [
+    { id:"TeamDeliveryGoals", section:"Goals for Next Cycle", type:"textarea", req:true,
+      label:"Team Delivery Goals — what will your squad achieve next cycle?",
+      placeholder:"e.g. 'Deliver the FX reconciliation module with zero P1 post-release incidents'\ne.g. 'Reduce squad sprint carry-over rate from 25% to under 10%'" },
+    { id:"DomainGoals",       section:"Goals for Next Cycle", type:"textarea", req:true,
+      label:`${practice} Direction Goals — domain leadership, architecture or process`,
+      placeholder:"e.g. 'Define and document the squad's technical standards and coding guidelines'\ne.g. 'Drive adoption of automated regression testing across the squad'" },
+    { id:"PeopleGoals",       section:"Goals for Next Cycle", type:"textarea", req:false,
+      label:"People Enablement Goals — mentoring, team growth, culture",
+      placeholder:"e.g. 'Actively mentor 2 mid-level engineers toward senior readiness'\ne.g. 'Run a monthly knowledge-sharing session for the squad'" },
+    { id:"SoftSkillGoals",    section:"Goals for Next Cycle", type:"textarea", req:false,
+      label:"Personal Growth Goals — leadership, communication or stakeholder management",
+      placeholder:"e.g. 'Improve stakeholder communication — weekly written status updates'\ne.g. 'Complete a people management course'" },
+  ];
+
+  // ── SENIOR LEVEL: technical/domain leadership + mentoring + squad impact ──
+  if (isSenior) return [
+    { id:"TechLeadershipGoals", section:"Goals for Next Cycle", type:"textarea", req:true,
+      label:`Technical / Domain Goals — deep ${practice} expertise and leadership`,
+      placeholder:"e.g. 'Design and own the end-to-end architecture for the new settlements module'\ne.g. 'Reduce test flakiness in my area by 80% through automation improvements'" },
+    { id:"MentoringGoals",      section:"Goals for Next Cycle", type:"textarea", req:true,
+      label:"Mentoring & Knowledge Goals — raising the team's bar",
+      placeholder:"e.g. 'Mentor 2 mid-level colleagues toward senior readiness'\ne.g. 'Write and publish 3 internal tech deep-dives on key system components'" },
+    { id:"GalaxyGoals",         section:"Goals for Next Cycle", type:"textarea", req:false,
+      label:"Squad / Galaxy Contribution Goals",
+      placeholder:"e.g. 'Lead the squad's migration from monolith to microservices for my domain'\ne.g. 'Take ownership of sprint planning for 2 cycles while lead is on leave'" },
+    { id:"SoftSkillGoals",      section:"Goals for Next Cycle", type:"textarea", req:false,
+      label:"Soft Skills & Growth Goals",
+      placeholder:"e.g. 'Improve cross-team communication — present in 2 all-hands sessions'\ne.g. 'Obtain relevant certification (AWS, ISTQB, PMP, etc.)'" },
+  ];
+
+  // ── JUNIOR LEVEL: skill development + practice goals (simple) ──
+  if (isJunior) return [
+    { id:"SkillGoals",     section:"Goals for Next Cycle", type:"textarea", req:true,
+      label:`${practice} Skill Goals — 2 specific skills to grow`,
+      placeholder:"e.g. 'Go from guided to independent delivery on mid-complexity features'\ne.g. 'Write unit tests for all code I produce with >80% coverage'" },
+    { id:"GalaxyGoals",    section:"Goals for Next Cycle", type:"textarea", req:false,
+      label:"Squad Contribution Goals",
+      placeholder:"e.g. 'Contribute a meaningful code review to at least 2 PRs per sprint'\ne.g. 'Shadow senior colleagues on system design discussions'" },
+    { id:"SoftSkillGoals", section:"Goals for Next Cycle", type:"textarea", req:false,
+      label:"Soft Skills & Growth Goals",
+      placeholder:"e.g. 'Improve written communication — document all my work clearly'\ne.g. 'Complete 1 relevant online course'" },
+  ];
+
+  // ── MID LEVEL (default): balanced practice + squad + soft skills ──
+  return [
+    { id:"PracticeGoals",  section:"Goals for Next Cycle", type:"textarea", req:true,
+      label:`${practice} Goals — 2–3 role-specific goals for next cycle`,
+      placeholder:"e.g. 'Deliver 3 features end-to-end with no critical bugs post-release'\ne.g. 'Reduce incident resolution time by improving runbook coverage'" },
+    { id:"GalaxyGoals",    section:"Goals for Next Cycle", type:"textarea", req:true,
+      label:"Galaxy / Squad Goals — your contribution to the team's success",
+      placeholder:"e.g. 'Take ownership of a key squad initiative end-to-end'\ne.g. 'Help onboard and ramp up 1 new team member'" },
+    { id:"SoftSkillGoals", section:"Goals for Next Cycle", type:"textarea", req:true,
+      label:"Soft Skills & Growth Goals — communication, training, leadership",
+      placeholder:"e.g. 'Complete a relevant certification by Q2'\ne.g. 'Improve cross-team communication — present work in at least 2 sprint reviews'" },
+  ];
+}
 
 // ── 5. BUILD QUESTIONS FOR AN EMPLOYEE ─────────────────────────
 function buildSelfQuestions(emp) {
@@ -877,8 +956,8 @@ function buildSelfQuestions(emp) {
     questions = questions.concat(Q_BY_PRACTICE["Management"]);
   }
 
-  // Goals — lighter for trainees
-  const goalQs = isTrainee ? Q_GOALS.trainee : Q_GOALS.standard;
+  // Goals — built dynamically based on level + practice
+  const goalQs = buildGoalQuestions(emp);
   questions = questions.concat(goalQs);
 
   return questions;
