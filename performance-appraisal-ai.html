@@ -1660,8 +1660,15 @@ async function openAppraisalModal(empId) {
 
     const renderQABlock = (q, answers) => {
       const val = answers[q.id];
-      if (!val && val !== 0) return "";
       let ansHtml = "";
+      // If no answer, show blank placeholder so HR can see the question
+      if (val === undefined || val === null || val === "") {
+        ansHtml = `<div style="font-size:12px;color:var(--text3);font-style:italic;padding:6px 0">— Not answered yet —</div>`;
+        return `<div class="qa-block">
+          <div class="qa-q">${q.label}</div>
+          <div class="qa-a">${ansHtml}</div>
+        </div>`;
+      }
       if (q.type === "stars") {
         const n = Number(val)||0;
         ansHtml = `<div style="display:flex;align-items:center;gap:10px">
@@ -1695,7 +1702,7 @@ async function openAppraisalModal(empId) {
         sections[q.section].push(q);
       }
       return Object.entries(sections).map(([sec, sqs]) => {
-        const blocks = sqs.map(q => renderQABlock(q, answers)).filter(Boolean).join("");
+        const blocks = sqs.map(q => renderQABlock(q, answers)).join("");
         if (!blocks) return "";
         return `<div style="margin-bottom:20px">
           <div style="font-size:10px;font-weight:800;color:var(--accent);text-transform:uppercase;
