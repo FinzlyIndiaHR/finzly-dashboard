@@ -1439,8 +1439,10 @@ async function loadEmployees() {
     const {fileBase} = await getSiteAndDrive();
     const sd = await gGet(`${fileBase}/worksheets`);
     // Find the employee sheet (not the appraisals sheet)
-    const sheet = (sd.value||[]).find(s=>!/appraisal/i.test(s.name) && /appraisal|employee|master|data|emp/i.test(s.name))
-      || (sd.value||[]).find(s=>!/appraisal/i.test(s.name))
+    // Look for the employee master sheet by name priority
+    const sheet = (sd.value||[]).find(s=>/appraisal employees/i.test(s.name))
+      || (sd.value||[]).find(s=>/^employee/i.test(s.name))
+      || (sd.value||[]).find(s=>/employee|master/i.test(s.name) && !/cycles|access|control/i.test(s.name))
       || (sd.value||[])[0];
     if (!sheet) throw new Error("No sheet found");
     const range = await gGet(`${fileBase}/worksheets/${encodeURIComponent(sheet.name)}/usedRange`);
@@ -2340,7 +2342,7 @@ async function loadActiveCycle() {
     if (active) {
       C.cycle       = active.CycleID;
       C.cycleName   = active.CycleName;
-      C.deadline    = active.SubmissionDeadline;
+      C.deadline    = formatDate(active.SubmissionDeadline) || active.SubmissionDeadline;
       C.deadlineISO = active.SubmissionDeadline;
       S.activeCycle = active;
       // Update header
@@ -2363,12 +2365,21 @@ function generateCycleId(name, type) {
 }
 
 function formatDate(isoOrStr) {
-  if (!isoOrStr) return "";
+  if (!isoOrStr && isoOrStr !== 0) return "";
+  // Handle Excel serial date numbers (e.g. 46220)
+  if (typeof isoOrStr === "number" || (typeof isoOrStr === "string" && /^\d{4,6}$/.test(isoOrStr.trim()))) {
+    const serial = Number(isoOrStr);
+    if (serial > 40000 && serial < 60000) {
+      // Excel serial to JS date: (serial - 25569) * 86400 * 1000
+      const d = new Date((serial - 25569) * 86400 * 1000);
+      if (!isNaN(d)) return d.toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"});
+    }
+  }
   try {
     const d = new Date(isoOrStr);
-    if (isNaN(d)) return isoOrStr;
+    if (isNaN(d)) return String(isoOrStr);
     return d.toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"});
-  } catch { return isoOrStr; }
+  } catch { return String(isoOrStr); }
 }
 
 function cycleProgress(cycle) {
