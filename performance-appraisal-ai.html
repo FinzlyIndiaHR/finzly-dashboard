@@ -3687,8 +3687,8 @@ async function viewAccessControl() {
           <div style="position:relative">
             <input type="text" id="ac-search" placeholder="Type name or email to search…"
               oninput="filterEmpDropdown(this.value)"
-              onfocus="document.getElementById('ac-dropdown').style.display='block'"
-              onblur="setTimeout(()=>{const d=document.getElementById('ac-dropdown');if(d)d.style.display='none'},200)"
+              onfocus="filterEmpDropdown(this.value)"
+              onblur="setTimeout(()=>{const d=document.getElementById('ac-dropdown');if(d)d.style.display='none'},250)"
               autocomplete="off">
             <div id="ac-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;
               background:var(--card);border:1px solid var(--border2);border-radius:10px;
@@ -3779,18 +3779,21 @@ async function viewAccessControl() {
 
 function filterEmpDropdown(query) {
   const q = query.toLowerCase().trim();
-  const items = document.querySelectorAll(".emp-dd-item");
+  const dropdown = document.getElementById("ac-dropdown");
+  if (!dropdown) return;
+  const items = dropdown.querySelectorAll(".emp-dd-item");
   let shown = 0;
   items.forEach(item => {
     const name  = (item.dataset.name||"").toLowerCase();
     const email = (item.dataset.email||"").toLowerCase();
     const role  = (item.dataset.role||"").toLowerCase();
     const dept  = (item.dataset.dept||"").toLowerCase();
+    // Show all if query is empty, filter otherwise
     const match = !q || name.includes(q) || email.includes(q) || role.includes(q) || dept.includes(q);
     item.style.display = match ? "block" : "none";
     if (match) shown++;
   });
-  document.getElementById("ac-dropdown").style.display = shown > 0 ? "block" : "none";
+  dropdown.style.display = "block"; // always show while typing
 }
 
 function selectEmpFromDropdown(email, name, role, dept) {
