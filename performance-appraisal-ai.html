@@ -1642,25 +1642,21 @@ async function openAppraisalModal(empId) {
 
   try {
     const appraisal = await getAppraisal(emp.id);
-    if (!appraisal) {
-      document.getElementById("modalBody").innerHTML =
-        `<div style="text-align:center;padding:56px">
-          <div style="font-size:40px;margin-bottom:12px">📝</div>
-          <div style="font-weight:600">No appraisal submitted yet</div>
-          <div style="color:var(--text3);font-size:13px;margin-top:6px">Status: Not Started</div>
-        </div>`;
-      return;
-    }
 
-    const f = appraisal.fields;
     const selfAnswers = {};
     const mgrAnswers  = {};
-    if (f.SelfFormData) { try { Object.assign(selfAnswers, JSON.parse(f.SelfFormData)); } catch {} }
-    if (f.MgrFormData)  { try { Object.assign(mgrAnswers,  JSON.parse(f.MgrFormData));  } catch {} }
+    let status = "Not Started";
 
+    if (appraisal) {
+      const f = appraisal.fields;
+      status = f.Status||"Not Started";
+      if (f.SelfFormData) { try { Object.assign(selfAnswers, JSON.parse(f.SelfFormData)); } catch {} }
+      if (f.MgrFormData)  { try { Object.assign(mgrAnswers,  JSON.parse(f.MgrFormData));  } catch {} }
+    }
+
+    // Always build and show the full question set regardless of submission status
     const selfQs = buildSelfQuestions(emp);
     const mgrQs  = buildMgrQuestions(emp);
-    const status = f.Status||"Not Started";
 
     const renderQABlock = (q, answers) => {
       const val = answers[q.id];
