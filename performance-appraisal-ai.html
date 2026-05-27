@@ -4102,7 +4102,7 @@ async function releaseAppraisal(itemId, empId, empEmail, empName) {
 // ╚══════════════════════════════════════════════════════════════╝
 function renderNav() {
   const role=S.userRole, hasTeam=myReportees().length>0;
-  const hasL2=isL2Manager(S.userEmail);
+  const hasL2 = S.employees.some(emp => { if (!emp.l2EmpId) return false; const l2Emp = S.employees.find(x=>x.id===emp.l2EmpId); return l2Emp && l2Emp.email===S.userEmail; });
   const tabs=[];
   if (role==="hr") {
     tabs.push({v:"cycles", l:"📅 Cycles",          fn:"viewCycles()"});
