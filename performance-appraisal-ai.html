@@ -294,6 +294,38 @@
     .mgr-hdr  { color:var(--success); }
     @media(max-width:640px) { .side-by-side { grid-template-columns:1fr; } }
 
+    /* ── CYCLE MANAGEMENT ── */
+    .cycle-card { background:var(--card); border:1px solid var(--border);
+      border-radius:14px; padding:20px 24px; transition:all .2s; cursor:pointer; }
+    .cycle-card:hover { border-color:var(--border2); }
+    .cycle-card.active-cycle { border-color:var(--success)66; background:var(--success)05; }
+    .cycle-card.draft-cycle  { border-color:var(--border2); }
+    .cycle-status-dot { width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:6px; }
+    .dot-draft     { background:var(--text3); }
+    .dot-active    { background:var(--success); box-shadow:0 0 6px var(--success); }
+    .dot-locked    { background:var(--warn); }
+    .dot-calibration{ background:var(--info); }
+    .dot-released  { background:#38bdf8; }
+    .dot-archived  { background:var(--text3); opacity:.4; }
+    .date-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .date-field { }
+    .date-input { background:var(--bg); border:1px solid var(--border); border-radius:10px;
+      color:var(--text); padding:10px 14px; font-family:'DM Sans',sans-serif; font-size:13px;
+      width:100%; outline:none; transition:border .2s; }
+    .date-input:focus { border-color:var(--accent)66; }
+    select.date-input { cursor:pointer; }
+    .cycle-timeline { display:flex; gap:0; align-items:center; margin:16px 0; overflow-x:auto; padding:4px 0; }
+    .tl-step { display:flex; flex-direction:column; align-items:center; min-width:90px; }
+    .tl-dot  { width:28px; height:28px; border-radius:50%; display:flex; align-items:center;
+      justify-content:center; font-size:12px; font-weight:700; z-index:1; }
+    .tl-dot.done   { background:var(--success); color:#fff; }
+    .tl-dot.current{ background:var(--accent); color:#0f1117; box-shadow:0 0 10px var(--accent)66; }
+    .tl-dot.future { background:var(--border); color:var(--text3); }
+    .tl-line { flex:1; height:2px; background:var(--border); min-width:30px; }
+    .tl-line.done { background:var(--success); }
+    .tl-label { font-size:10px; color:var(--text3); margin-top:6px; text-align:center;
+      white-space:nowrap; }
+
     @media(max-width:768px) {
       .g2,.g4 { grid-template-columns:1fr; }
       #mainContent { padding:16px; }
@@ -1112,6 +1144,8 @@ const S = {
   account:null, userEmail:"", userName:"", userRole:"employee",
   employees:[], siteId:null, listId:null,
   view:"", selectedEmpId:null, accessGrant:null, l2Appraisals:null, l2MgrAnswers:null,
+  activeCycle:null, editingCycleId:null, editingCycleRowIndex:null,
+  editingCycleStatus:null, editingCycleCreatedBy:null, editingCycleCreatedDate:null,
   selfAnswers:{},   // all self-appraisal answers keyed by question id
   mgrAnswers:{},    // all manager review answers keyed by question id
   myAppraisal:null, allAppraisals:[],
@@ -2183,6 +2217,435 @@ function closeModal(e) {
   if (e.target.id === "appraisalModal") {
     document.getElementById("appraisalModal").style.display = "none";
   }
+}
+
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║                CYCLE MANAGEMENT                             ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+const CYCLE_COLS = [
+  "CycleID","CycleName","CycleType","Status",
+  "StartDate","EndDate","WindowOpenDate",
+  "SubmissionDeadline","CalibrationDeadline","FinalReleaseDate",
+  "CreatedBy","CreatedDate","LastModified"
+];
+
+const CYCLE_STATUSES = ["Draft","Active","Locked","Calibration","Released","Archived"];
+
+const CYCLE_STATUS_COLORS = {
+  Draft:"var(--text3)", Active:"var(--success)", Locked:"var(--warn)",
+  Calibration:"var(--info)", Released:"#38bdf8", Archived:"var(--text3)"
+};
+
+async function getCycleSheet() {
+  const {fileBase} = await getSiteAndDrive();
+  const sheetName = "AppraisalCycles";
+  const sheets = await gGet(`${fileBase}/worksheets`);
+  let sheet = (sheets.value||[]).find(s=>s.name===sheetName);
+  if (!sheet) {
+    await gPost(`${fileBase}/worksheets`, {name:sheetName});
+    const hdrRange = `A1:${String.fromCharCode(64+CYCLE_COLS.length)}1`;
+    await gPatch(`${fileBase}/worksheets/${encodeURIComponent(sheetName)}/range(address='${hdrRange}')`,
+      {values:[CYCLE_COLS]});
+  }
+  return {fileBase, sheetName};
+}
+
+async function getAllCycles() {
+  try {
+    const {fileBase, sheetName} = await getCycleSheet();
+    const range = await gGet(`${fileBase}/worksheets/${encodeURIComponent(sheetName)}/usedRange`);
+    const rows = range.values||[];
+    if (rows.length < 2) return [];
+    const hdrs = rows[0];
+    return rows.slice(1).filter(r=>r[0]).map((r,i) => {
+      const c = {};
+      hdrs.forEach((h,j) => c[h] = r[j]||"");
+      c._rowIndex = i + 2;
+      return c;
+    });
+  } catch(e) { console.warn("getAllCycles:", e.message); return []; }
+}
+
+async function saveCycle(cycle, rowIndex) {
+  const {fileBase, sheetName} = await getCycleSheet();
+  const row = CYCLE_COLS.map(c => cycle[c]||"");
+  const colEnd = String.fromCharCode(64 + CYCLE_COLS.length);
+  if (rowIndex) {
+    await gPatch(`${fileBase}/worksheets/${encodeURIComponent(sheetName)}/range(address='A${rowIndex}:${colEnd}${rowIndex}')`,
+      {values:[row]});
+  } else {
+    const all = await getAllCycles();
+    const nextRow = all.length + 2;
+    await gPatch(`${fileBase}/worksheets/${encodeURIComponent(sheetName)}/range(address='A${nextRow}:${colEnd}${nextRow}')`,
+      {values:[row]});
+  }
+}
+
+// Load the active cycle and update CONFIG dynamically
+async function loadActiveCycle() {
+  try {
+    const cycles = await getAllCycles();
+    const active = cycles.find(c=>c.Status==="Active");
+    if (active) {
+      C.cycle       = active.CycleID;
+      C.cycleName   = active.CycleName;
+      C.deadline    = active.SubmissionDeadline;
+      C.deadlineISO = active.SubmissionDeadline;
+      S.activeCycle = active;
+      // Update header
+      const hc = document.getElementById("hCycle");
+      const hd = document.getElementById("hDeadline");
+      const lb = document.getElementById("loginCycleBadge");
+      if (hc) hc.textContent = active.CycleName;
+      if (hd) hd.textContent = active.SubmissionDeadline;
+      if (lb) lb.textContent = `${active.CycleName} · Deadline: ${active.SubmissionDeadline}`;
+      return active;
+    }
+  } catch(e) { console.warn("loadActiveCycle:", e.message); }
+  return null;
+}
+
+function generateCycleId(name, type) {
+  // e.g. "FY 2025-26 H1 Review" + "Half-Yearly" → "FY2025-26-H1"
+  const clean = name.replace(/[^a-zA-Z0-9\-]/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"");
+  return clean.substring(0,30);
+}
+
+function formatDate(isoOrStr) {
+  if (!isoOrStr) return "";
+  try {
+    const d = new Date(isoOrStr);
+    if (isNaN(d)) return isoOrStr;
+    return d.toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"});
+  } catch { return isoOrStr; }
+}
+
+function cycleProgress(cycle) {
+  const now = new Date();
+  const stages = [
+    { key:"WindowOpenDate",       label:"Window Opens" },
+    { key:"SubmissionDeadline",   label:"Submission" },
+    { key:"CalibrationDeadline",  label:"Calibration" },
+    { key:"FinalReleaseDate",     label:"Release" },
+  ];
+  return stages.map(s => ({
+    ...s,
+    date: cycle[s.key],
+    past: cycle[s.key] ? new Date(cycle[s.key]) <= now : false,
+  }));
+}
+
+// ── VIEW: Cycle Management ─────────────────────────────────────
+async function viewCycles() {
+  S.view = "cycles"; renderNav();
+  loading("Loading cycles…");
+  let cycles = [];
+  try { cycles = await getAllCycles(); } catch(e) {}
+  doneLoading();
+
+  const activeCount   = cycles.filter(c=>c.Status==="Active").length;
+  const draftCount    = cycles.filter(c=>c.Status==="Draft").length;
+  const archivedCount = cycles.filter(c=>c.Status==="Archived").length;
+
+  const cycleCards = cycles.length ? cycles.map(c => {
+    const isActive = c.Status === "Active";
+    const dotClass = `dot-${(c.Status||"draft").toLowerCase()}`;
+    const progress = cycleProgress(c);
+    const now = new Date();
+    const completedSteps = progress.filter(p=>p.past).length;
+
+    const timelineHtml = progress.map((p,i) => {
+      const cls = p.past ? "done" : (i===completedSteps ? "current" : "future");
+      return `${i>0?`<div class="tl-line ${p.past?"done":""}"></div>`:""}
+        <div class="tl-step">
+          <div class="tl-dot ${cls}">${p.past?"✓":i+1}</div>
+          <div class="tl-label">${p.label}<br><span style="color:var(--text3)">${formatDate(p.date)}</span></div>
+        </div>`;
+    }).join("");
+
+    return `<div class="cycle-card ${isActive?"active-cycle":"draft-cycle"}" onclick="editCycle('${c.CycleID}')">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:17px">${c.CycleName}</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:2px">${c.CycleType} · ID: ${c.CycleID}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="display:inline-flex;align-items:center;font-size:12px;font-weight:700;
+            color:${CYCLE_STATUS_COLORS[c.Status]||"var(--text3)"}">
+            <span class="cycle-status-dot ${dotClass}"></span>${c.Status}
+          </span>
+          ${c.Status!=="Archived"?`
+          <div style="display:flex;gap:6px" onclick="event.stopPropagation()">
+            ${c.Status==="Draft"   ?`<button class="btn btn-primary btn-sm"   onclick="setCycleStatus('${c.CycleID}','Active',${c._rowIndex})">Activate</button>`:""}
+            ${c.Status==="Active"  ?`<button class="btn btn-secondary btn-sm" onclick="setCycleStatus('${c.CycleID}','Locked',${c._rowIndex})">Lock</button>`:""}
+            ${c.Status==="Locked"  ?`<button class="btn btn-info btn-sm"      onclick="setCycleStatus('${c.CycleID}','Calibration',${c._rowIndex})">Calibration</button>`:""}
+            ${c.Status==="Calibration"?`<button class="btn btn-primary btn-sm" onclick="setCycleStatus('${c.CycleID}','Released',${c._rowIndex})">Release</button>`:""}
+            ${c.Status==="Released"?`<button class="btn btn-secondary btn-sm" onclick="setCycleStatus('${c.CycleID}','Archived',${c._rowIndex})">Archive</button>`:""}
+          </div>`:""}
+        </div>
+      </div>
+      <div class="cycle-timeline">${timelineHtml}</div>
+      <div style="display:flex;gap:20px;margin-top:12px;flex-wrap:wrap">
+        <div style="font-size:11px;color:var(--text3)">Start: <strong style="color:var(--text)">${formatDate(c.StartDate)}</strong></div>
+        <div style="font-size:11px;color:var(--text3)">End: <strong style="color:var(--text)">${formatDate(c.EndDate)}</strong></div>
+        <div style="font-size:11px;color:var(--text3)">Created by: <strong style="color:var(--text)">${c.CreatedBy||"—"}</strong></div>
+      </div>
+    </div>`;
+  }).join("") : `<div class="card cb" style="text-align:center;padding:48px">
+    <div style="font-size:40px;margin-bottom:12px">📅</div>
+    <div style="font-weight:600;font-size:15px">No appraisal cycles yet</div>
+    <div style="color:var(--text3);font-size:13px;margin-top:6px">Create your first cycle to get started</div>
+  </div>`;
+
+  setContent(`
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:6px">
+    <div>
+      <div class="section-title">Appraisal Cycles</div>
+      <div class="section-sub">Create and manage appraisal cycles · Active cycle drives the entire tool</div>
+    </div>
+    <button class="btn btn-primary" onclick="showCreateCycle()">+ New Cycle</button>
+  </div>
+
+  <!-- Stats -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px">
+    ${[
+      {l:"Total Cycles",  v:cycles.length,  c:"var(--info)"},
+      {l:"Active",        v:activeCount,    c:"var(--success)"},
+      {l:"Draft",         v:draftCount,     c:"var(--accent)"},
+      {l:"Archived",      v:archivedCount,  c:"var(--text3)"},
+    ].map(x=>`<div class="card stat-card">
+      <div class="s-lbl3">${x.l}</div>
+      <div class="s-val3" style="color:${x.c}">${x.v}</div>
+    </div>`).join("")}
+  </div>
+
+  <!-- Create form (hidden by default) -->
+  <div id="createCycleForm" class="card mb6" style="display:none">
+    <div class="ch">
+      <span class="ct" id="cycleFormTitle">New Appraisal Cycle</span>
+      <button onclick="hideCycleForm()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px">✕</button>
+    </div>
+    <div class="cb">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+        <div>
+          <div class="form-label">Cycle Name <span class="q-req">*</span></div>
+          <input type="text" id="cf-name" placeholder="e.g. FY 2026 Annual Review"
+            oninput="autoFillCycleId(this.value)">
+          <div style="font-size:11px;color:var(--text3);margin-top:4px">
+            ID: <span id="cf-id-preview" style="color:var(--accent)">—</span>
+          </div>
+        </div>
+        <div>
+          <div class="form-label">Cycle Type <span class="q-req">*</span></div>
+          <select id="cf-type" class="date-input" onchange="autoFillDates()">
+            <option value="">Select type…</option>
+            <option value="Annual">Annual</option>
+            <option value="Half-Yearly">Half-Yearly</option>
+            <option value="Quarterly">Quarterly</option>
+            <option value="Custom">Custom</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;
+        letter-spacing:1px;margin-bottom:12px">Cycle Dates</div>
+
+      <div class="date-grid">
+        <div class="date-field">
+          <div class="form-label">Start Date <span class="q-req">*</span></div>
+          <input type="date" id="cf-start" class="date-input" oninput="autoFillDates()">
+        </div>
+        <div class="date-field">
+          <div class="form-label">End Date <span class="q-req">*</span></div>
+          <input type="date" id="cf-end" class="date-input">
+        </div>
+        <div class="date-field">
+          <div class="form-label">Appraisal Window Opens</div>
+          <input type="date" id="cf-window" class="date-input">
+        </div>
+        <div class="date-field">
+          <div class="form-label">Submission Deadline <span class="q-req">*</span></div>
+          <input type="date" id="cf-submission" class="date-input">
+        </div>
+        <div class="date-field">
+          <div class="form-label">Calibration Deadline</div>
+          <input type="date" id="cf-calibration" class="date-input">
+        </div>
+        <div class="date-field">
+          <div class="form-label">Final Release Date</div>
+          <input type="date" id="cf-release" class="date-input">
+        </div>
+      </div>
+
+      <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px">
+        <button class="btn btn-secondary" onclick="hideCycleForm()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveCycleForm()">Save as Draft →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cycle list -->
+  <div style="display:flex;flex-direction:column;gap:14px">${cycleCards}</div>`);
+}
+
+function showCreateCycle() {
+  S.editingCycleId = null;
+  const form = document.getElementById("createCycleForm");
+  const title = document.getElementById("cycleFormTitle");
+  if (form) { form.style.display="block"; form.scrollIntoView({behavior:"smooth"}); }
+  if (title) title.textContent = "New Appraisal Cycle";
+  // Clear form
+  ["cf-name","cf-type","cf-start","cf-end","cf-window","cf-submission","cf-calibration","cf-release"]
+    .forEach(id => { const el2=document.getElementById(id); if(el2) el2.value=""; });
+  document.getElementById("cf-id-preview").textContent = "—";
+}
+
+function hideCycleForm() {
+  const form = document.getElementById("createCycleForm");
+  if (form) form.style.display = "none";
+}
+
+function autoFillCycleId(name) {
+  const preview = document.getElementById("cf-id-preview");
+  if (preview) preview.textContent = generateCycleId(name) || "—";
+}
+
+function autoFillDates() {
+  const type  = document.getElementById("cf-type")?.value;
+  const start = document.getElementById("cf-start")?.value;
+  if (!start || !type || type === "Custom") return;
+
+  const s = new Date(start);
+  let end, submission, calibration, release, windowOpen;
+
+  if (type === "Annual") {
+    end          = new Date(s); end.setFullYear(end.getFullYear()+1); end.setDate(end.getDate()-1);
+    windowOpen   = new Date(s); windowOpen.setDate(windowOpen.getDate()+7);
+    submission   = new Date(end); submission.setDate(submission.getDate()-30);
+    calibration  = new Date(end); calibration.setDate(calibration.getDate()-15);
+    release      = new Date(end); release.setDate(release.getDate()-5);
+  } else if (type === "Half-Yearly") {
+    end          = new Date(s); end.setMonth(end.getMonth()+6); end.setDate(end.getDate()-1);
+    windowOpen   = new Date(s); windowOpen.setDate(windowOpen.getDate()+7);
+    submission   = new Date(end); submission.setDate(submission.getDate()-21);
+    calibration  = new Date(end); calibration.setDate(calibration.getDate()-10);
+    release      = new Date(end); release.setDate(release.getDate()-3);
+  } else if (type === "Quarterly") {
+    end          = new Date(s); end.setMonth(end.getMonth()+3); end.setDate(end.getDate()-1);
+    windowOpen   = new Date(s); windowOpen.setDate(windowOpen.getDate()+5);
+    submission   = new Date(end); submission.setDate(submission.getDate()-14);
+    calibration  = new Date(end); calibration.setDate(calibration.getDate()-7);
+    release      = new Date(end); release.setDate(release.getDate()-2);
+  }
+
+  const fmt = d => d.toISOString().split("T")[0];
+  if (end)         document.getElementById("cf-end").value         = fmt(end);
+  if (windowOpen)  document.getElementById("cf-window").value      = fmt(windowOpen);
+  if (submission)  document.getElementById("cf-submission").value  = fmt(submission);
+  if (calibration) document.getElementById("cf-calibration").value = fmt(calibration);
+  if (release)     document.getElementById("cf-release").value     = fmt(release);
+}
+
+async function saveCycleForm() {
+  const name       = document.getElementById("cf-name")?.value?.trim();
+  const type       = document.getElementById("cf-type")?.value;
+  const start      = document.getElementById("cf-start")?.value;
+  const end        = document.getElementById("cf-end")?.value;
+  const submission = document.getElementById("cf-submission")?.value;
+
+  if (!name)       { toast("Cycle name is required","error"); return; }
+  if (!type)       { toast("Cycle type is required","error"); return; }
+  if (!start)      { toast("Start date is required","error"); return; }
+  if (!end)        { toast("End date is required","error"); return; }
+  if (!submission) { toast("Submission deadline is required","error"); return; }
+  if (new Date(end) <= new Date(start)) { toast("End date must be after start date","error"); return; }
+
+  loading("Saving cycle…");
+  try {
+    const cycleId = S.editingCycleId || generateCycleId(name);
+    const cycle = {
+      CycleID:             cycleId,
+      CycleName:           name,
+      CycleType:           type,
+      Status:              S.editingCycleId ? (S.editingCycleStatus||"Draft") : "Draft",
+      StartDate:           start,
+      EndDate:             end,
+      WindowOpenDate:      document.getElementById("cf-window")?.value||"",
+      SubmissionDeadline:  submission,
+      CalibrationDeadline: document.getElementById("cf-calibration")?.value||"",
+      FinalReleaseDate:    document.getElementById("cf-release")?.value||"",
+      CreatedBy:           S.editingCycleId ? (S.editingCycleCreatedBy||S.userName) : S.userName,
+      CreatedDate:         S.editingCycleId ? (S.editingCycleCreatedDate||new Date().toISOString()) : new Date().toISOString(),
+      LastModified:        new Date().toISOString(),
+    };
+    await saveCycle(cycle, S.editingCycleRowIndex||null);
+    toast(`Cycle "${name}" saved as Draft ✓`,"success");
+    hideCycleForm();
+    await viewCycles();
+  } catch(e) { toast("Save failed: "+e.message,"error"); }
+  doneLoading();
+}
+
+async function editCycle(cycleId) {
+  loading("Loading cycle…");
+  const cycles = await getAllCycles().catch(()=>[]);
+  const c = cycles.find(x=>x.CycleID===cycleId);
+  doneLoading();
+  if (!c) return;
+
+  S.editingCycleId          = cycleId;
+  S.editingCycleRowIndex    = c._rowIndex;
+  S.editingCycleStatus      = c.Status;
+  S.editingCycleCreatedBy   = c.CreatedBy;
+  S.editingCycleCreatedDate = c.CreatedDate;
+
+  showCreateCycle();
+  document.getElementById("cycleFormTitle").textContent = `Edit — ${c.CycleName}`;
+  document.getElementById("cf-name").value        = c.CycleName||"";
+  document.getElementById("cf-type").value        = c.CycleType||"";
+  document.getElementById("cf-start").value       = c.StartDate||"";
+  document.getElementById("cf-end").value         = c.EndDate||"";
+  document.getElementById("cf-window").value      = c.WindowOpenDate||"";
+  document.getElementById("cf-submission").value  = c.SubmissionDeadline||"";
+  document.getElementById("cf-calibration").value = c.CalibrationDeadline||"";
+  document.getElementById("cf-release").value     = c.FinalReleaseDate||"";
+  document.getElementById("cf-id-preview").textContent = cycleId;
+}
+
+async function setCycleStatus(cycleId, newStatus, rowIndex) {
+  const statusMessages = {
+    Active:      "Activate this cycle? This will make it the live cycle employees see.",
+    Locked:      "Lock this cycle? Employees will no longer be able to edit their appraisals.",
+    Calibration: "Move to Calibration stage? L2 and leadership can review ratings.",
+    Released:    "Release this cycle? All approved appraisals will be released to employees.",
+    Archived:    "Archive this cycle? It will be read-only.",
+  };
+  if (!confirm(statusMessages[newStatus]||`Change status to ${newStatus}?`)) return;
+
+  loading(`Setting to ${newStatus}…`);
+  try {
+    const cycles = await getAllCycles();
+    const c = cycles.find(x=>x.CycleID===cycleId);
+    if (!c) throw new Error("Cycle not found");
+
+    // If activating — deactivate any other active cycle
+    if (newStatus === "Active") {
+      for (const other of cycles.filter(x=>x.Status==="Active"&&x.CycleID!==cycleId)) {
+        await saveCycle({...other, Status:"Locked", LastModified:new Date().toISOString()}, other._rowIndex);
+      }
+    }
+
+    await saveCycle({...c, Status:newStatus, LastModified:new Date().toISOString()}, rowIndex);
+
+    // If activated — reload active cycle into CONFIG
+    if (newStatus === "Active") await loadActiveCycle();
+
+    toast(`Cycle status updated to ${newStatus} ✓`,"success");
+    await viewCycles();
+  } catch(e) { toast("Failed: "+e.message,"error"); }
+  doneLoading();
 }
 
 // ╔══════════════════════════════════════════════════════════════╗
@@ -3642,11 +4105,12 @@ function renderNav() {
   const hasL2=isL2Manager(S.userEmail);
   const tabs=[];
   if (role==="hr") {
-    tabs.push({v:"hr",   l:"📊 Dashboard",       fn:"viewHR()"});
-    tabs.push({v:"self", l:"📝 My Appraisal",     fn:"viewSelf()"});
+    tabs.push({v:"cycles", l:"📅 Cycles",          fn:"viewCycles()"});
+    tabs.push({v:"hr",     l:"📊 Dashboard",       fn:"viewHR()"});
+    tabs.push({v:"self",   l:"📝 My Appraisal",    fn:"viewSelf()"});
     if (hasTeam) tabs.push({v:"manager",l:"👥 My Team",fn:"viewManager()"});
     if (hasL2)   tabs.push({v:"l2",    l:"🔍 L2 Review",  fn:"viewL2()"});
-    tabs.push({v:"ac",   l:"🔐 Access Control",   fn:"viewAccessControl()"});
+    tabs.push({v:"ac",     l:"🔐 Access Control",  fn:"viewAccessControl()"});
   } else if (role==="leadership") {
     tabs.push({v:"hr",   l:"📊 Org Overview",     fn:"viewHR(true)"});
     tabs.push({v:"self", l:"📝 My Appraisal",     fn:"viewSelf()"});
@@ -3681,6 +4145,8 @@ async function boot(account) {
   el("hUserName").textContent=S.userName; el("hAvatar").textContent=S.userName.charAt(0).toUpperCase();
   loading("Loading employee data…");
   S.employees=await loadEmployees();
+  // Load active cycle into CONFIG dynamically
+  await loadActiveCycle();
   S.userRole=detectRole(S.userEmail);
   el("hUserRole").textContent={hr:"HR Admin",leadership:"Leadership",l2manager:"L2 Manager",manager:"Manager",employee:"Employee"}[S.userRole]||"Employee";
   el("loginScreen").style.display="none"; el("appContainer").style.display="block";
