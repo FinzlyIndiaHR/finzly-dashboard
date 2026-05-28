@@ -2342,7 +2342,18 @@ async function loadActiveCycle() {
     if (active) {
       C.cycle       = active.CycleID;
       C.cycleName   = active.CycleName;
-      C.deadline    = formatDate(active.SubmissionDeadline) || active.SubmissionDeadline;
+      // Convert Excel serial date to readable string inline
+      const _fmtD = (v) => {
+        if (!v) return "";
+        const n = Number(v);
+        if (n > 40000 && n < 60000) {
+          const d = new Date((n - 25569) * 86400 * 1000);
+          if (!isNaN(d)) return d.toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"});
+        }
+        try { const d=new Date(v); return isNaN(d)?String(v):d.toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"}); }
+        catch { return String(v); }
+      };
+      C.deadline    = _fmtD(active.SubmissionDeadline);
       C.deadlineISO = active.SubmissionDeadline;
       S.activeCycle = active;
       // Update header
@@ -2367,7 +2378,7 @@ function generateCycleId(name, type) {
 function formatDate(isoOrStr) {
   if (!isoOrStr && isoOrStr !== 0) return "";
   // Handle Excel serial date numbers (e.g. 46220)
-  if (typeof isoOrStr === "number" || (typeof isoOrStr === "string" && /^\d{4,6}$/.test(isoOrStr.trim()))) {
+  if (typeof isoOrStr === "number" || (typeof isoOrStr === "string" && /^[0-9]{4,6}$/.test(isoOrStr.trim()))) {
     const serial = Number(isoOrStr);
     if (serial > 40000 && serial < 60000) {
       // Excel serial to JS date: (serial - 25569) * 86400 * 1000
