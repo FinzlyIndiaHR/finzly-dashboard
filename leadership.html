@@ -354,6 +354,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
     <div class="load-step" id="ls-emp">⏳ Loading Emp Master…</div>
     <div class="load-step" id="ls-calc">⏳ Loading Attrition data…</div>
     <div class="load-step" id="ls-org">⏳ Loading People Trend…</div>
+    <div class="load-step" id="ls-oo">⏳ Loading 1:1 Discussion data…</div>
     <div class="load-step" id="ls-render">⏳ Rendering dashboard…</div>
   </div>
 </div>
@@ -377,6 +378,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
     <div class="h-sub">HR Master Intelligence · Live SharePoint</div>
     <div class="h-right">
       <span class="hp live" id="h-live">● Live</span>
+      <span class="hp" id="h-oo-status" style="display:none">💬 1:1 —</span>
       <span class="hp" id="h-active">Active: —</span>
       <span class="hp" id="h-ts">—</span>
       <span class="hp" id="h-user"></span>
@@ -574,6 +576,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
       <div style="font-weight:700;font-size:1rem;margin-bottom:6px">1-on-1 Engagement Data Not Available</div>
       <div style="font-size:.78rem;color:var(--muted);max-width:420px;margin:0 auto;line-height:1.7">The One-on-One Discussion Excel (owned by Vishwata Mayekar) could not be loaded. Ensure the dashboard has access to <code>vishwata.mayekar@finzly.com</code>'s SharePoint file or share the file with the service account.</div>
     </div>
+    <div id="oo-status-banner"></div>
     <div id="p6-content">
       <!-- KPI strip -->
       <div id="eng-kpis" style="display:grid;grid-template-columns:repeat(5,1fr);gap:11px;margin-bottom:18px"></div>
@@ -900,12 +903,39 @@ async function getToken(){
 }
 
 // ── LOADING STEPS ─────────────────────────────────────────────
-function setStep(id,state){
+function setStep(id,state,msg){
   const el=document.getElementById(id); if(!el)return;
   el.className='load-step '+state;
   const icons={done:'✅',active:'⏳',error:'❌'};
-  const text=el.textContent.replace(/^[✅⏳❌]\s*/,'');
-  el.textContent=(icons[state]||'⏳')+' '+text;
+  // If msg provided use it; otherwise keep existing label text
+  const base=msg||el.textContent.replace(/^[✅⏳❌]\s*/,'');
+  el.textContent=(icons[state]||'⏳')+' '+base;
+}
+
+async function retryOOLoad(){
+  const banner=document.getElementById('oo-status-banner');
+  if(banner)banner.innerHTML=`<div style="padding:10px 16px;background:#f0f9ff;border:1px solid #7dd3fc;border-radius:8px;margin-bottom:14px;font-size:.76rem;color:#0369a1">⏳ Retrying 1:1 data fetch…</div>`;
+  try{
+    const token=await getToken(); if(!token)return;
+    const ooUrl=`https://graph.microsoft.com/v1.0/users/${OO_OWNER}/drive/items/${OO_FILE_ID}/workbook/worksheets('${OO_SHEET}')/usedRange`;
+    const ooRes=await fetch(ooUrl,{headers:{Authorization:'Bearer '+token}});
+    if(ooRes.ok){
+      const ooD=await ooRes.json();
+      OO_HDRS=ooD.values[0].map(h=>String(h||'').trim().toLowerCase());
+      OO_DATA=ooD.values.slice(1).filter(r=>r.some(c=>c!==null&&c!==''));
+      buildOOSquadMap();
+      const sqCount=Object.keys(OO_SQUAD_MAP).length;
+      const matched=Object.values(OO_SQUAD_MAP).reduce((s,d)=>s+d.empIds.length,0);
+      if(banner)banner.innerHTML=`<div style="padding:10px 16px;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;margin-bottom:14px;font-size:.76rem;color:#15803d">✅ Retry successful — ${OO_DATA.length} rows loaded · ${sqCount} squads · ${matched} matched by Emp ID</div>`;
+      const badge=document.getElementById('h-oo-status');
+      if(badge){badge.style.display='';badge.textContent=`💬 1:1: ${OO_DATA.length} rows`;badge.style.color='#86efac';}
+      renderEngagementTab();
+    } else {
+      if(banner)banner.innerHTML=`<div style="padding:10px 16px;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;margin-bottom:14px;font-size:.76rem;color:#dc2626">✕ Retry failed — HTTP ${ooRes.status}. Check file permissions for ${OO_OWNER}. <a href="https://support.microsoft.com/sharepoint" target="_blank" style="color:#dc2626">Help</a></div>`;
+    }
+  }catch(e){
+    if(banner)banner.innerHTML=`<div style="padding:10px 16px;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;margin-bottom:14px;font-size:.76rem;color:#dc2626">✕ Retry failed — ${e.message}</div>`;
+  }
 }
 
 // ── GRAPH FETCH ───────────────────────────────────────────────
@@ -1311,22 +1341,109 @@ async function loadData(){
     setStep('ls-org', orgLoaded?'done':'error');
     setStep('ls-render','active');
 
-    // ── Load 1:1 Discussion data (non-blocking) ─────────────
+    // ── Load 1:1 Discussion data ────────────────────────────
+    setStep('ls-oo','active');
+    const ooStatusBadge = document.getElementById('h-oo-status');
+    const ooStatusBanner = document.getElementById('oo-status-banner');
+
     try{
       const ooUrl=`https://graph.microsoft.com/v1.0/users/${OO_OWNER}/drive/items/${OO_FILE_ID}/workbook/worksheets('${OO_SHEET}')/usedRange`;
       const ooRes=await fetch(ooUrl,{headers:{Authorization:'Bearer '+token}});
+
       if(ooRes.ok){
         const ooD=await ooRes.json();
         OO_HDRS=ooD.values[0].map(h=>String(h||'').trim().toLowerCase());
         OO_DATA=ooD.values.slice(1).filter(r=>r.some(c=>c!==null&&c!==''));
         buildOOSquadMap();
-        console.log('✅ 1:1 data loaded:',OO_DATA.length,'rows,',Object.keys(OO_SQUAD_MAP).length,'squads with data');
-        document.getElementById('h-ts').textContent+=' · +1:1';
+
+        const sqCount=Object.keys(OO_SQUAD_MAP).length;
+        const matched=Object.values(OO_SQUAD_MAP).reduce((s,d)=>s+d.empIds.length,0);
+        const unmatched=OO_DATA.length-matched;
+
+        setStep('ls-oo','done',`✅ 1:1 data: ${OO_DATA.length} rows · ${sqCount} squads · ${matched} matched by Emp ID`);
+
+        // Header badge — green
+        if(ooStatusBadge){
+          ooStatusBadge.style.display='';
+          ooStatusBadge.textContent=`💬 1:1: ${OO_DATA.length} rows`;
+          ooStatusBadge.style.color='#86efac';
+          ooStatusBadge.style.borderColor='rgba(134,239,172,.3)';
+          ooStatusBadge.style.background='rgba(134,239,172,.07)';
+        }
+
+        // Engagement tab banner — green
+        if(ooStatusBanner){
+          ooStatusBanner.innerHTML=`
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;margin-bottom:14px;font-size:.76rem">
+              <span style="color:#15803d;font-size:1rem">✅</span>
+              <div>
+                <strong style="color:#15803d">1:1 Data Loaded Successfully</strong> · 
+                ${OO_DATA.length} responses · ${sqCount} squads · ${matched} employees matched by Emp ID
+                ${unmatched>0?`<span style="color:#d97706"> · ⚠ ${unmatched} rows could not be matched (Emp ID not found in Employee Master — check console)</span>`:''}
+              </div>
+              <span style="margin-left:auto;font-size:.68rem;color:#888">Last loaded: ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</span>
+            </div>`;
+        }
+
+        if(unmatched>0) console.warn(`⚠ ${unmatched} 1:1 rows unmatched. Check Emp IDs — they may be missing from the 1:1 file or spelled differently.`);
+
       } else {
-        console.warn('⚠ 1:1 file not accessible (status '+ooRes.status+'). Team Radar engagement signal will be hidden.');
+        // HTTP error from Graph API
+        const errText = ooRes.status===403
+          ? `Access denied (403). The logged-in account does not have permission to read Vishwata's file. Share the file with this account or add Files.Read.All permission.`
+          : ooRes.status===404
+          ? `File not found (404). File ID: ${OO_FILE_ID}. Check if the file was moved or renamed.`
+          : `Graph API error: HTTP ${ooRes.status}. The 1:1 file could not be fetched.`;
+
+        setStep('ls-oo','error',`⚠ 1:1 not loaded: HTTP ${ooRes.status}`);
+        if(ooStatusBadge){
+          ooStatusBadge.style.display='';
+          ooStatusBadge.textContent=`💬 1:1: ✕ Error ${ooRes.status}`;
+          ooStatusBadge.style.color='#fca5a5';
+          ooStatusBadge.style.borderColor='rgba(252,165,165,.3)';
+          ooStatusBadge.style.background='rgba(220,38,38,.08)';
+        }
+        if(ooStatusBanner){
+          ooStatusBanner.innerHTML=`
+            <div style="display:flex;align-items:flex-start;gap:10px;padding:12px 16px;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;margin-bottom:14px;font-size:.76rem">
+              <span style="color:#dc2626;font-size:1rem;flex-shrink:0">✕</span>
+              <div>
+                <strong style="color:#dc2626">1:1 Data Failed to Load (HTTP ${ooRes.status})</strong><br>
+                <span style="color:#555">${errText}</span><br>
+                <span style="color:#888;font-size:.7rem">File: One on One Discussion- 2026.xlsx · Owner: ${OO_OWNER} · File ID: ${OO_FILE_ID}</span>
+              </div>
+              <button onclick="retryOOLoad()" style="margin-left:auto;font-family:Outfit,sans-serif;font-size:.72rem;padding:5px 12px;border-radius:6px;border:1.5px solid #dc2626;background:transparent;color:#dc2626;cursor:pointer;white-space:nowrap;flex-shrink:0">↺ Retry</button>
+            </div>`;
+        }
       }
     } catch(ooErr){
-      console.warn('⚠ 1:1 load skipped:',ooErr.message);
+      // Network/runtime error
+      const isNetwork = ooErr.message.includes('fetch') || ooErr.message.includes('network');
+      const errMsg = isNetwork
+        ? 'Network error — could not reach Microsoft Graph. Check your internet connection.'
+        : ooErr.message;
+
+      setStep('ls-oo','error','⚠ 1:1 not loaded: '+ooErr.message.slice(0,60));
+      if(ooStatusBadge){
+        ooStatusBadge.style.display='';
+        ooStatusBadge.textContent='💬 1:1: ✕ Failed';
+        ooStatusBadge.style.color='#fca5a5';
+        ooStatusBadge.style.borderColor='rgba(252,165,165,.3)';
+        ooStatusBadge.style.background='rgba(220,38,38,.08)';
+      }
+      if(ooStatusBanner){
+        ooStatusBanner.innerHTML=`
+          <div style="display:flex;align-items:flex-start;gap:10px;padding:12px 16px;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;margin-bottom:14px;font-size:.76rem">
+            <span style="color:#dc2626;font-size:1rem;flex-shrink:0">✕</span>
+            <div>
+              <strong style="color:#dc2626">1:1 Data Could Not Load</strong><br>
+              <span style="color:#555">${errMsg}</span><br>
+              <span style="color:#888;font-size:.7rem">The rest of the dashboard is fully functional. Engagement tab will show empty state.</span>
+            </div>
+            <button onclick="retryOOLoad()" style="margin-left:auto;font-family:Outfit,sans-serif;font-size:.72rem;padding:5px 12px;border-radius:6px;border:1.5px solid #dc2626;background:transparent;color:#dc2626;cursor:pointer;white-space:nowrap;flex-shrink:0">↺ Retry</button>
+          </div>`;
+      }
+      console.warn('⚠ 1:1 load error:', ooErr);
     }
 
     // Populate filters & render
@@ -1533,6 +1650,11 @@ function ooEngLabel(v){
   if(v>=3.5)return{text:'At Risk',cls:'⚠',color:'#ea580c'};
   return{text:'Critical',cls:'🔴',color:'#dc2626'};
 }
+
+// ── CHARTS & HELPERS ─────────────────────────────────────────
+const CHARTS={};
+const SQUAD_COLORS={'Payment':'#e8541a','Trade':'#0ea5e9','Professional Services':'#7c3aed','Digital':'#16a34a','GTM':'#d97706','Production Support':'#2563eb','DevOps':'#64748b','HR':'#ec4899','Finance':'#14b8a6','Account':'#f59e0b','InfoSec':'#6366f1','Management':'#78716c','Client Services':'#84cc16','PS':'#7c3aed','Prod Sup':'#2563eb','Infosec':'#6366f1','Mgmt':'#78716c'};
+function avg(a){return a.length?a.reduce((x,y)=>x+y,0)/a.length:0}
 
 // Register datalabels plugin globally
 if(typeof ChartDataLabels!=='undefined') Chart.register(ChartDataLabels);
