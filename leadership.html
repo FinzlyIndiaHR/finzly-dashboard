@@ -423,6 +423,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
     <button class="tab" onclick="goTab(this,'p7')">🧭 Leadership Summary</button>
     <button class="tab" onclick="goTab(this,'p9')">🌳 Org Chart</button>
     <button class="tab" onclick="goTab(this,'p8')">🧠 Team Radar</button>
+    <button class="tab" onclick="goTab(this,'p6')">💬 Engagement</button>
     <button class="tab" onclick="goTab(this,'p11')">📥 Reports</button>
   </div>
 
@@ -565,6 +566,63 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
   </div>
 
   <!-- P6 removed - RAG now in Squad Intelligence (P3) -->
+
+  <!-- P6 ENGAGEMENT — 1:1 Intelligence -->
+  <div class="pg" id="p6">
+    <div id="p6-ndata" style="display:none;padding:32px;text-align:center;background:var(--card);border-radius:12px;border:1px solid var(--border)">
+      <div style="font-size:2rem;margin-bottom:10px">💬</div>
+      <div style="font-weight:700;font-size:1rem;margin-bottom:6px">1-on-1 Engagement Data Not Available</div>
+      <div style="font-size:.78rem;color:var(--muted);max-width:420px;margin:0 auto;line-height:1.7">The One-on-One Discussion Excel (owned by Vishwata Mayekar) could not be loaded. Ensure the dashboard has access to <code>vishwata.mayekar@finzly.com</code>'s SharePoint file or share the file with the service account.</div>
+    </div>
+    <div id="p6-content">
+      <!-- KPI strip -->
+      <div id="eng-kpis" style="display:grid;grid-template-columns:repeat(5,1fr);gap:11px;margin-bottom:18px"></div>
+      <!-- Squad heatmap -->
+      <div class="card" style="margin-bottom:14px">
+        <div class="c-title">
+          <div class="c-title-l">Squad Engagement Heatmap · 1:1 Q1 2026</div>
+          <div style="display:flex;gap:8px;font-size:.68rem;color:var(--muted)">
+            <span style="background:#f0fdf4;border:1px solid #86efac;color:#15803d;padding:2px 8px;border-radius:4px">≥4.5 Thriving</span>
+            <span style="background:#fffbeb;border:1px solid #fcd34d;color:#d97706;padding:2px 8px;border-radius:4px">4.0–4.4 Engaged</span>
+            <span style="background:#fff7ed;border:1px solid #fdba74;color:#ea580c;padding:2px 8px;border-radius:4px">3.5–3.9 At Risk</span>
+            <span style="background:#fef2f2;border:1px solid #fca5a5;color:#dc2626;padding:2px 8px;border-radius:4px">&lt;3.5 Critical</span>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table id="eng-heatmap" style="width:100%;border-collapse:collapse;font-family:'Outfit',sans-serif"></table>
+        </div>
+      </div>
+      <!-- What employees are asking for + signals -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+        <div class="card">
+          <div class="c-title"><div class="c-title-l">Top Employee Requests · This Quarter</div></div>
+          <div id="eng-requests"></div>
+        </div>
+        <div class="card">
+          <div class="c-title"><div class="c-title-l">Key Signals from 1:1s</div></div>
+          <div id="eng-signals"></div>
+        </div>
+      </div>
+      <!-- SSC panel -->
+      <div class="card">
+        <div class="c-title"><div class="c-title-l">Start · Stop · Continue — Aggregated Themes</div></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">
+          <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:10px;padding:14px 16px">
+            <div style="font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#dc2626;margin-bottom:10px">⚠ Needs Fixing / Stop</div>
+            <div id="eng-fix" style="font-size:.76rem;color:#333;line-height:1.8"></div>
+          </div>
+          <div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:14px 16px">
+            <div style="font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#d97706;margin-bottom:10px">▶ Start</div>
+            <div id="eng-start" style="font-size:.76rem;color:#333;line-height:1.8"></div>
+          </div>
+          <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:14px 16px">
+            <div style="font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#15803d;margin-bottom:10px">✅ Keep Going</div>
+            <div id="eng-keep" style="font-size:.76rem;color:#333;line-height:1.8"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- P7 LEADERSHIP SUMMARY -->
   <div class="pg" id="p7">
@@ -761,6 +819,14 @@ const CLIENT_ID  = 'd893026d-d1c9-4285-947a-0a672018b8d1';
 const TENANT_ID  = '4d4c58f7-6978-4a93-ba72-f1d987c46c89';
 const OWNER_UPN  = 'bharathkumar.m@finzly.com';
 const FILE_ID    = '788b3929-4077-4e6e-9909-e26c071ffab4';  // Master Employee Data - without Compensation- Bharath
+
+// ── ONE-ON-ONE DISCUSSION FILE ──────────────────────────────
+const OO_FILE_ID  = 'DD1F5741-CCA4-442E-8FA4-27E9157C936C'; // One on One Discussion- 2026.xlsx
+const OO_OWNER    = 'vishwata.mayekar@finzly.com';
+const OO_SHEET    = 'Sheet1';
+let   OO_DATA     = [];   // raw rows from 1:1 file
+let   OO_HDRS     = [];   // header row
+let   OO_SQUAD_MAP= {};   // { squadName: {eng:[], mgr:[], ov:[], n, rag:{G,A,R}, loc, requests:[] } }
 const REDIRECT   = 'https://finzlyindiahr.github.io/finzly-dashboard/leadership.html';
 const SCOPES     = ['Files.Read.All','User.Read'];
 
@@ -1245,6 +1311,24 @@ async function loadData(){
     setStep('ls-org', orgLoaded?'done':'error');
     setStep('ls-render','active');
 
+    // ── Load 1:1 Discussion data (non-blocking) ─────────────
+    try{
+      const ooUrl=`https://graph.microsoft.com/v1.0/users/${OO_OWNER}/drive/items/${OO_FILE_ID}/workbook/worksheets('${OO_SHEET}')/usedRange`;
+      const ooRes=await fetch(ooUrl,{headers:{Authorization:'Bearer '+token}});
+      if(ooRes.ok){
+        const ooD=await ooRes.json();
+        OO_HDRS=ooD.values[0].map(h=>String(h||'').trim().toLowerCase());
+        OO_DATA=ooD.values.slice(1).filter(r=>r.some(c=>c!==null&&c!==''));
+        buildOOSquadMap();
+        console.log('✅ 1:1 data loaded:',OO_DATA.length,'rows,',Object.keys(OO_SQUAD_MAP).length,'squads with data');
+        document.getElementById('h-ts').textContent+=' · +1:1';
+      } else {
+        console.warn('⚠ 1:1 file not accessible (status '+ooRes.status+'). Team Radar engagement signal will be hidden.');
+      }
+    } catch(ooErr){
+      console.warn('⚠ 1:1 load skipped:',ooErr.message);
+    }
+
     // Populate filters & render
     populateFilters();
     applyFilter();
@@ -1266,10 +1350,189 @@ async function loadData(){
   }
 }
 
-// ── CHARTS & HELPERS ─────────────────────────────────────────
-const CHARTS={};
-const SQUAD_COLORS={'Payment':'#e8541a','Trade':'#0ea5e9','Professional Services':'#7c3aed','Digital':'#16a34a','GTM':'#d97706','Production Support':'#2563eb','DevOps':'#64748b','HR':'#ec4899','Finance':'#14b8a6','Account':'#f59e0b','InfoSec':'#6366f1','Management':'#78716c','Client Services':'#84cc16'};
-function avg(a){return a.length?a.reduce((x,y)=>x+y,0)/a.length:0}
+// ── 1:1 DATA PROCESSING ──────────────────────────────────────
+function buildOOSquadMap(){
+  OO_SQUAD_MAP={};
+  if(!OO_DATA.length||!OO_HDRS.length)return;
+
+  // ── Build Emp ID → Employee Master lookup ──────────────────
+  // Source of truth for Squad, City, Country comes from Employee Master
+  // NOT from the 1:1 file — join key is Emp ID (unique, stable)
+  const empIdMap={};  // { empId: {squad, city, country, name} }
+  EMP_DATA.forEach(d=>{
+    const id=String(d['Emp Id']||d['empId']||'').trim();
+    if(id) empIdMap[id]={
+      squad: d.Squad||'Unknown',
+      city:  d.City||'',
+      country: d.Country||'India',
+      name: `${d['First Name']||''} ${d['Last Name']||''}`.trim(),
+      rag:  d['Rag Status']||'Not Set'   // RAG from Employee Master
+    };
+  });
+  console.log('📋 Emp ID map built:', Object.keys(empIdMap).length, 'employees');
+
+  // ── Parse 1:1 column headers ────────────────────────────────
+  const ci=kw=>OO_HDRS.findIndex(h=>kw.some(k=>h.toLowerCase().includes(k.toLowerCase())));
+
+  // Emp ID column in 1:1 file — try several common labels
+  const iEmpId = ci(['emp id','empid','employee id','emp_id','employeeid','id']);
+  const iEng   = ci(['how engaged','feel at work','engaged do you','currently feel','engagement score','engagement rating']);
+  const iMgr   = ci(['relationship and communication','rating on a scale','describe your relationship','manager rating','manager score']);
+  const iOv    = ci(['overall experience','overall experience rating','overall satisfaction']);
+  const iRag   = ci(['rag','rag status']);
+  const iSsc   = ci(['start, stop','stop, or continue','team/company','as a team','ssc','start stop']);
+  const iCom   = ci(['additional comments','comments (if any)','comments','any other','additional feedback']);
+  const iSup   = ci(['support do you need','kind of support','what support','need from']);
+  const iQ1    = ci(['last quarter','day-to-day','went well','going well']);
+  const iQ2    = ci(['challenging','difficult','concern','friction']);
+  const iPsych = ci(['comfortable','psychological','safe to share','concerns','new ideas']);
+  const iLearn = ci(['skills','training','certifications','udemy','learning']);
+
+  console.log('📋 1:1 col map — EmpId:',iEmpId,'Eng:',iEng,'Mgr:',iMgr,'Ov:',iOv,'Rag:',iRag,'SSC:',iSsc,'Com:',iCom);
+
+  const str=(row,i)=>i<0||i>=row.length?'':String(row[i]||'').trim();
+  const num=(row,i)=>{
+    if(i<0||i>=row.length)return null;
+    const raw=row[i];
+    if(raw===null||raw===undefined||raw==='')return null;
+    if(typeof raw==='number'){const n=Math.round(raw);return(n>=1&&n<=5)?n:null;}
+    const v=String(raw).trim();
+    const m=v.match(/^([1-5])/)||v.match(/\b([1-5])\b/);
+    return m?+m[1]:null;
+  };
+
+  let matched=0, unmatched=0;
+
+  OO_DATA.forEach(row=>{
+    // ── Resolve employee identity via Emp ID → Employee Master ──
+    const rawId=str(row,iEmpId);
+    const empRecord=rawId&&empIdMap[rawId]?empIdMap[rawId]:null;
+
+    let squad, city, country;
+    if(empRecord){
+      // Authoritative: from Employee Master
+      squad   = empRecord.squad;
+      city    = empRecord.city;
+      country = empRecord.country;
+      matched++;
+    } else {
+      // Fallback: try squad column in 1:1 file itself
+      const iSq2=ci(['squad','sqaud','squads']);
+      squad = (str(row,iSq2)||'Unknown').trim();
+      city  = 'Unknown';
+      country='Unknown';
+      unmatched++;
+      if(rawId) console.warn('⚠ Emp ID not found in Employee Master:',rawId);
+    }
+
+    if(!squad||squad==='Unknown'||squad===''){squad='Unknown';}
+
+    if(!OO_SQUAD_MAP[squad])OO_SQUAD_MAP[squad]={
+      eng:[],mgr:[],ov:[],n:0,
+      rag:{G:0,A:0,R:0,NotSet:0},
+      loc:city, country,
+      requests:[],
+      comments:[],
+      allText:[],  // ALL open-text fields concatenated — for comprehensive issue tagging
+      empIds:[]
+    };
+    const d=OO_SQUAD_MAP[squad];
+    d.n++;
+    d.loc=city;
+    if(empRecord) d.empIds.push(rawId);
+
+    const e=num(row,iEng),m=num(row,iMgr),o=num(row,iOv);
+    if(e!==null)d.eng.push(e);
+    if(m!==null)d.mgr.push(m);
+    if(o!==null)d.ov.push(o);
+
+    // RAG: use 1:1 RAG if present, else derive from engagement score
+    // Do NOT default to Green if blank — that's the key fix
+    const ragRaw=str(row,iRag).toLowerCase();
+    if(ragRaw.includes('green'))d.rag.G++;
+    else if(ragRaw.includes('amber')||ragRaw.includes('yellow'))d.rag.A++;
+    else if(ragRaw.includes('red'))d.rag.R++;
+    else if(e!==null){
+      // Derive from engagement score — not Green by default
+      if(e>=4.5)d.rag.G++;
+      else if(e>=3.5)d.rag.A++;   // 3.5–4.4 = Amber, not Green
+      else d.rag.R++;
+    } else {
+      d.rag.NotSet++;  // No RAG set AND no engagement score = genuinely unknown
+    }
+
+    // ── Comprehensive text capture — ALL open fields ────────────
+    // Capture every open-text field, not just SSC
+    const allFields=[
+      str(row,iSsc),str(row,iCom),str(row,iSup),
+      str(row,iQ1),str(row,iQ2),str(row,iPsych),str(row,iLearn)
+    ].filter(Boolean).join(' ');
+    d.requests.push(allFields.toLowerCase());
+    d.allText.push(allFields);
+    if(allFields.length>30) d.comments.push(allFields);
+  });
+
+  console.log(`✅ 1:1 join complete: ${matched} matched by Emp ID, ${unmatched} unmatched (fell back to squad column)`);
+}
+
+// ── COMPREHENSIVE ISSUE TAXONOMY ──────────────────────────────
+// These cover the actual themes found in the 1:1 data — not just the top-level ones
+const OO_ISSUE_DEFS={
+  // NEEDS FIXING
+  fix:[
+    {l:'Spot Award nominations not reaching all squads',        kw:['spot award','spot  award','not receiv','nomination','recogni']},
+    {l:'Recreational spaces removed (TT, cricket, play area)',  kw:['table tennis','tt table','cricket','sport','badminton','play area','recreational']},
+    {l:'Cross-team demo/knowledge sessions stopped',            kw:['demo','cross-team','cross team','other team','knowledge session','stopped']},
+    {l:'Last-minute Friday tickets pushing into weekend',       kw:['weekend','friday ticket','friday evening','last minute']},
+    {l:'Too many adhoc tasks disrupting planned work',          kw:['adhoc','ad hoc','too many task','unplanned','transparency']},
+    {l:'Cafeteria / hygiene / facility concerns',               kw:['toilet','restroom','hygiene','water can','canteen','biscuit','snack','milk','facility']},
+    {l:'Office crowding / insufficient seating',                kw:['space constraint','crowded','workspace','no space','seating','over crowded']},
+    {l:'Udemy courses — theory not converting to practice',     kw:['hands-on','practice session','practical','paid version','premium','udemy practice']},
+    {l:'Holiday / leave not communicated across regions',       kw:['holiday notif','region holiday','other location holiday','leave notif']},
+    {l:'Work-life balance / overtime concerns',                 kw:['work life','overtime','over time','workload','burn out','burnout','long hours','extra hours']},
+    {l:'Lack of clarity on career path / promotions',           kw:['career path','promo','growth path','ladder','career clarity','no clarity']},
+    {l:'Different opinions / alignment friction in team',       kw:['different opinion','convince','align','not aligned','conflict','disagree']},
+  ],
+  // START
+  start:[
+    {l:'Team outings / company trips',                         kw:['trip','outing','tour','company trip','team outing','asking for','want to go']},
+    {l:'Fun Friday or monthly activities',                     kw:['fun friday','fun-friday','movie friday','movie on friday','monthly activity','fun activity']},
+    {l:'Team lunches (formal / sponsored)',                    kw:['team lunch','lunch together','lunch outing','sponsored lunch']},
+    {l:'Hybrid or WFH option',                                kw:['hybrid','wfh','work from home','work from','remote day']},
+    {l:'Hands-on sessions tied to Udemy courses',              kw:['hands-on','practice session','practical','automation session','lab session']},
+    {l:'Cross-squad knowledge and demo sessions',              kw:['demo','cross-team','cross team','other team','knowledge share']},
+    {l:'Agile / sprint planning for all teams',                kw:['agile','sprint','scrum','planning session']},
+    {l:'Counselling / wellness / stress support',              kw:['counsel','stress','relieve','wellness','mental health','support session']},
+    {l:'Holiday calendar shared across all regions',           kw:['holiday calendar','region calendar','holiday schedule','notif of holiday']},
+    {l:'Better canteen / food options',                        kw:['better food','food option','canteen option','healthy food','snack option']},
+    {l:'Bring back recreational activities',                   kw:['table tennis','tt','cricket','sport','badminton','game room','reintroduc']},
+    {l:'Structured 1:1 cadence (quarterly minimum)',           kw:['quarterly','increase cadence','monthly 1-on-1','regular 1-on-1','more frequent']},
+  ],
+  // KEEP GOING
+  keep:[
+    {l:'Supportive and accessible managers',                   kw:['supportive','accessible','very supportive','comfortable with manager','open manager','great manager']},
+    {l:'Manager-assigned Udemy training',                      kw:['udemy','training','courses assigned','manager assigned','learning path']},
+    {l:'Multi-project / cross-functional exposure',            kw:['multiple project','multi project','different project','variety','cross-functional','exposure to']},
+    {l:'This 1:1 programme',                                   kw:['1-on-1','one on one','this programme','this discussion','1:1 session']},
+    {l:'AI course recommendations from managers',              kw:['ai course','ai prompting','prompt','rag ai','ai learning','gpt','llm']},
+    {l:'Team collaboration and coordination',                  kw:['collaboration','team coord','working together','squad collab']},
+    {l:'Flexible working arrangements',                        kw:['flexible','flexibility','work schedule','flexi hour']},
+    {l:'Transparent communication from leadership',            kw:['transparent','open communication','leadership update','town hall','all hands']},
+  ]
+};
+
+function ooAvg(arr){return arr.length?Math.round(arr.reduce((a,b)=>a+b,0)/arr.length*100)/100:null;}
+function ooEngColor(v){
+  if(v===null)return'#888';
+  return v>=4.5?'#15803d':v>=4?'#d97706':v>=3.5?'#ea580c':'#dc2626';
+}
+function ooEngLabel(v){
+  if(v===null)return{text:'No Data',cls:'',color:'#888'};
+  if(v>=4.5)return{text:'Thriving',cls:'✅',color:'#15803d'};
+  if(v>=4.0)return{text:'Engaged',cls:'⚠',color:'#d97706'};
+  if(v>=3.5)return{text:'At Risk',cls:'⚠',color:'#ea580c'};
+  return{text:'Critical',cls:'🔴',color:'#dc2626'};
+}
 
 // Register datalabels plugin globally
 if(typeof ChartDataLabels!=='undefined') Chart.register(ChartDataLabels);
@@ -1308,11 +1571,12 @@ function goTab(el,pid){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
   document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
   el.classList.add('on'); document.getElementById(pid).classList.add('on');
-  // Render org chart on first visit to p9 or p10
   if((pid==='p9'||pid==='p10')&&EMP_DATA.length>0){
     const galaxies=document.getElementById('galaxy-trees');
     if(galaxies&&galaxies.children.length===0) renderOrgChart();
   }
+  if(pid==='p8') renderMgrFilter();
+  if(pid==='p6') renderEngagementTab();
 }
 function toggleSquad2(sqId){
   const panel = document.getElementById(sqId+'-panel');
@@ -1866,6 +2130,10 @@ function render(){
   // RAG totals across active
   const ragTot={Green:0,Amber:0,Red:0,NotSet:0};
   active.forEach(d=>{const r=d['Rag Status']||'Not Set';if(r==='Green')ragTot.Green++;else if(r==='Amber')ragTot.Amber++;else if(r==='Red')ragTot.Red++;else ragTot.NotSet++;});
+  // KEY FIX: NotSet ≠ Green. Show separately so leadership knows 45% are unassessed.
+  const ragNoticeHtml=ragTot.NotSet>0
+    ?`<div style="font-size:.64rem;color:#888;margin-top:4px">⬜ ${ragTot.NotSet} not assessed</div>`
+    :'';
 
   // Manager span per squad
   const sqSpanMap={};
@@ -2527,6 +2795,123 @@ function renderManagerSpan(activeEmps){
   renderMgrFilter();
 }
 
+// ── ENGAGEMENT TAB (P6) — 1:1 Intelligence ────────────────────
+function renderEngagementTab(){
+  const hasData=Object.keys(OO_SQUAD_MAP).length>0;
+  document.getElementById('p6-ndata').style.display=hasData?'none':'block';
+  document.getElementById('p6-content').style.display=hasData?'block':'none';
+  if(!hasData)return;
+
+  const squads=Object.entries(OO_SQUAD_MAP).sort((a,b)=>b[1].n-a[1].n);
+  const allEngs=squads.flatMap(([,d])=>d.eng);
+  const allMgrs=squads.flatMap(([,d])=>d.mgr);
+  const allOvs=squads.flatMap(([,d])=>d.ov);
+  const totalN=squads.reduce((s,[,d])=>s+d.n,0);
+  const totalRag=squads.reduce((s,[,d])=>({G:s.G+d.rag.G,A:s.A+d.rag.A,R:s.R+d.rag.R}),{G:0,A:0,R:0});
+  const avgE=ooAvg(allEngs),avgM=ooAvg(allMgrs),avgO=ooAvg(allOvs);
+  const watchSqs=squads.filter(([,d])=>ooAvg(d.eng)<4||ooAvg(d.mgr)<4).length;
+
+  // KPI strip
+  const kpi=(l,v,s,col)=>`<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;border-top:3px solid ${col}">
+    <div style="font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:4px">${l}</div>
+    <div style="font-family:'Fira Code',monospace;font-size:1.7rem;font-weight:700;color:${col};line-height:1">${v}</div>
+    <div style="font-size:.62rem;color:var(--muted);margin-top:3px">${s}</div>
+  </div>`;
+  document.getElementById('eng-kpis').innerHTML=
+    kpi('Avg Engagement',avgE??'—',totalN+' responses',ooEngColor(avgE))+
+    kpi('Avg Manager Rating',avgM??'—','quality of 1:1s',ooEngColor(avgM))+
+    kpi('Overall Experience',avgO??'—','work satisfaction',ooEngColor(avgO))+
+    kpi('Needs Attention',watchSqs,'squads below 4.0',watchSqs>0?'#dc2626':'#15803d')+
+    kpi('RAG Split',`${totalRag.G}G·${totalRag.A}A·${totalRag.R}R`,'from 1:1 responses',totalRag.R>0?'#dc2626':totalRag.A>0?'#d97706':'#15803d');
+
+  // Squad heatmap table
+  const th=(t,w)=>`<th style="padding:8px 10px;background:#1e3a5f;color:#fff;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:left;white-space:nowrap${w?';width:'+w:''}">${t}</th>`;
+  const cell=(v,isScore=false)=>{
+    if(!isScore)return`<td style="padding:8px 10px;font-size:.76rem;border-bottom:1px solid #f0ede8">${v}</td>`;
+    const n=parseFloat(v);
+    const bg=isNaN(n)?'#f5f5f5':n>=4.5?'#f0fdf4':n>=4?'#fffbeb':n>=3.5?'#fff7ed':'#fef2f2';
+    const col=isNaN(n)?'#888':ooEngColor(n);
+    return`<td style="padding:8px 10px;border-bottom:1px solid #f0ede8;text-align:center"><span style="display:inline-block;min-width:52px;padding:4px 10px;border-radius:8px;background:${bg};color:${col};font-family:'Fira Code',monospace;font-size:.78rem;font-weight:700">${isNaN(n)?'—':n.toFixed(1)}</span></td>`;
+  };
+  const rows=squads.map(([sq,d],i)=>{
+    const e=ooAvg(d.eng),m=ooAvg(d.mgr),o=ooAvg(d.ov);
+    const lbl=ooEngLabel(e);
+    const bg=i%2?'#fafafa':'#fff';
+    return`<tr style="background:${bg}">
+      ${cell(`<strong style="font-size:.78rem">${sq}</strong><div style="font-size:.62rem;color:#888;margin-top:1px">${d.loc||'India'} · ${d.n} responses</div>`)}
+      ${cell(e!==null?e.toFixed(1):'—',true)}
+      ${cell(m!==null?m.toFixed(1):'—',true)}
+      ${cell(o!==null?o.toFixed(1):'—',true)}
+      <td style="padding:8px 10px;border-bottom:1px solid #f0ede8;font-size:.72rem">
+        <span style="color:${d.rag.R>0?'#dc2626':'#888'};font-weight:700">${d.rag.R>0?'🔴 '+d.rag.R+' Red':''}</span>
+        <span style="color:${d.rag.A>0?'#d97706':'#888'};font-weight:600;margin-left:${d.rag.R>0?6:0}px">${d.rag.A>0?'⚠ '+d.rag.A+' Amber':''}</span>
+        ${d.rag.R===0&&d.rag.A===0?'<span style="color:#15803d">✅ All Green</span>':''}
+      </td>
+      <td style="padding:8px 10px;border-bottom:1px solid #f0ede8">
+        <span style="background:${lbl.color}18;color:${lbl.color};padding:3px 10px;border-radius:10px;font-size:.68rem;font-weight:700">${lbl.cls} ${lbl.text}</span>
+      </td>
+    </tr>`;
+  }).join('');
+  document.getElementById('eng-heatmap').innerHTML=`<thead><tr>
+    ${th('Squad')+''+th('Engagement','90px')+th('Manager','80px')+th('Overall','80px')+th('RAG','120px')+th('Status','100px')}
+  </tr></thead><tbody>${rows}</tbody>`;
+
+  // Requests aggregated across all 1:1 data
+  const allReqText=squads.flatMap(([,d])=>d.requests).join(' ');
+  const reqDefs=[
+    {l:'Team Outings & Trips',icon:'🏖',kw:['trip','outing','tour','travel']},
+    {l:'Fun Friday',icon:'🎉',kw:['fun friday','fun-friday','movie']},
+    {l:'Team Lunches',icon:'🍽',kw:['lunch','team lunch']},
+    {l:'Hybrid / WFH',icon:'🏠',kw:['hybrid','wfh','work from home']},
+    {l:'Hands-on Learning',icon:'🛠',kw:['hands-on','practical','practice session','automation']},
+    {l:'Cross-team Demos',icon:'🔄',kw:['demo','cross-team','other team']},
+    {l:'Recreation (cricket, TT)',icon:'🏏',kw:['cricket','table tennis','sport','game','badminton']},
+    {l:'Better Food / Canteen',icon:'🥗',kw:['food','canteen','snack','biscuit']},
+    {l:'Holiday Calendar',icon:'📅',kw:['holiday','calendar','region','notif']},
+  ];
+  const allRows=squads.flatMap(([,d])=>d.requests);
+  const reqCounts=reqDefs.map(r=>({...r,c:allRows.filter(t=>r.kw.some(k=>t.includes(k))).length})).filter(r=>r.c>0).sort((a,b)=>b.c-a.c);
+  const maxC=reqCounts[0]?.c||1;
+  document.getElementById('eng-requests').innerHTML=reqCounts.length
+    ?reqCounts.map(r=>`<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid #f0ede8">
+        <span style="font-size:1.1rem">${r.icon}</span>
+        <span style="font-size:.76rem;flex:1">${r.l}</span>
+        <div style="flex:2;height:7px;background:#f0ede8;border-radius:99px;overflow:hidden"><div style="width:${Math.round(r.c/maxC*100)}%;height:100%;background:var(--accent);border-radius:99px"></div></div>
+        <span style="font-family:'Fira Code',monospace;font-size:.7rem;font-weight:700;color:var(--accent);min-width:28px;text-align:right">${r.c}</span>
+      </div>`).join('')
+    :'<div style="font-size:.76rem;color:var(--muted)">No specific requests detected.</div>';
+
+  // Signals
+  const critSqs=squads.filter(([,d])=>ooAvg(d.eng)<3.5||ooAvg(d.mgr)<3.5).map(([sq])=>sq);
+  const watchSqList=squads.filter(([,d])=>{const e=ooAvg(d.eng),m=ooAvg(d.mgr);return(e<4||m<4)&&(e===null||e>=3.5)&&(m===null||m>=3.5);}).map(([sq])=>sq);
+  const sig=(color,title,body)=>`<div style="border-left:4px solid ${color};padding:10px 12px;background:${color}12;border-radius:0 8px 8px 0;margin-bottom:8px">
+    <div style="font-size:.78rem;font-weight:700;color:${color};margin-bottom:4px">${title}</div>
+    <div style="font-size:.72rem;color:#333;line-height:1.5">${body}</div>
+  </div>`;
+  let signals='';
+  if(critSqs.length)signals+=sig('#dc2626','🔴 Critical Squads — Immediate Action',`${critSqs.join(', ')} — scores below 3.5/5. Schedule skip-level 1:1 this week. Risk of voluntary exit within 60–90 days.`);
+  if(watchSqList.length)signals+=sig('#d97706','⚠ Watch List — Below 4.0',`${watchSqList.join(', ')} — trending below healthy threshold. Check in next 1:1 cycle within 2 weeks.`);
+  if(allReqText.includes('spot')||allReqText.includes('award'))signals+=sig('#ea580c','🏆 Recognition Gap',`Spot Award nominations not reaching all squads. Creates perceived inequity — high performers in unrecognised squads silently reduce effort.`);
+  if(allReqText.includes('trip')||allReqText.includes('outing'))signals+=sig('#2563eb','🏖 Team Outing — Highest ROI Action',`${reqCounts.find(r=>r.l.includes('Outing'))?.c||0} employees asked for team events. Highest morale-per-rupee action this quarter.`);
+  if(!signals)signals=sig('#15803d','✅ All Signals Healthy',`Engagement above 4.0 across all squads. Maintain current manager practices and 1:1 cadence.`);
+  document.getElementById('eng-signals').innerHTML=signals;
+
+  // SSC themes — using OO_ISSUE_DEFS comprehensive taxonomy
+  // allText captures ALL open-text fields per squad (not just SSC)
+  const renderSSC=(defs,elId)=>{
+    const found=defs
+      .map(d=>({l:d.l,cnt:allRows.filter(r=>d.kw.some(k=>r.includes(k))).length}))
+      .filter(d=>d.cnt>0)
+      .sort((a,b)=>b.cnt-a.cnt);
+    document.getElementById(elId).innerHTML=found.length
+      ?found.map(f=>`<div style="padding:3px 0;border-bottom:1px solid rgba(0,0,0,.06)">→ ${f.l} <span style="font-family:'Fira Code',monospace;font-size:.62rem;opacity:.65">(${f.cnt})</span></div>`).join('')
+      :'<div style="opacity:.6;font-size:.74rem">None detected in current data.</div>';
+  };
+  renderSSC(OO_ISSUE_DEFS.fix,'eng-fix');
+  renderSSC(OO_ISSUE_DEFS.start,'eng-start');
+  renderSSC(OO_ISSUE_DEFS.keep,'eng-keep');
+}
+
 function renderMgrFilter(){
   const activeAll=EMP_DATA.filter(d=>d.Status==='Active'||d.ActiveFlag===1);
   const inactAll =EMP_DATA.filter(d=>d.Status==='Inactive'||d.ActiveFlag===0);
@@ -2610,11 +2995,31 @@ function renderMgrFilter(){
   const tbl=document.getElementById('mgr-scorecard');
   if(!tbl)return;
   const th=(t,w)=>`<th style="padding:8px 10px;background:#1e3a5f;color:#fff;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:left;white-space:nowrap${w?';width:'+w:''}">${t}</th>`;
-  tbl.innerHTML=`<thead><tr>${th('Manager')}${th('Level','90px')}${th('Direct','65px')}${th('Branch','65px')}${th('Span','90px')}${th('RAG Risk','100px')}${th('Exits 12m','75px')}${th('Contractors','90px')}${th('Avg Perf','75px')}${th('Health','90px')}</tr></thead>
+  tbl.innerHTML=`<thead><tr>${th('Manager')}${th('Level','90px')}${th('Direct','65px')}${th('Branch','65px')}${th('Span','90px')}${th('RAG Risk','100px')}${th('Exits 12m','75px')}${th('Contractors','90px')}${th('Avg Perf','75px')}${th('💬 Engagement','100px')}${th('Health','90px')}</tr></thead>
   <tbody>${filtered.map((r,i)=>{
     const bg=i%2?'#fafafa':'#fff';
     const dot=c=>`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${c};margin-right:4px"></span>`;
     const td=(v,c='#1a1a2e',b=false,a='left')=>`<td style="padding:8px 10px;font-size:.74rem;color:${c};font-weight:${b?700:400};border-bottom:1px solid #f0ede8;text-align:${a};white-space:nowrap">${v}</td>`;
+
+    // 6th signal: Engagement from 1:1 data joined by squad
+    const sqName=[...r.data.squads][0]||'';
+    const ooSq=OO_SQUAD_MAP[sqName]||null;
+    const ooE=ooSq?ooAvg(ooSq.eng):null;
+    const ooLbl=ooEngLabel(ooE);
+    const ooCell=ooE!==null
+      ?`${dot(ooLbl.color)}${ooE.toFixed(1)}★`
+      :'<span style="color:#aaa;font-size:.68rem">No 1:1 data</span>';
+    const ooColor=ooE!==null?ooLbl.color:'#aaa';
+    const ooOk=ooE===null||ooE>=4;
+
+    // Overall health now includes engagement signal
+    const engRedSig=ooE!==null&&ooE<3.5?1:0;
+    const engAmbrSig=ooE!==null&&ooE>=3.5&&ooE<4?1:0;
+    const redSigsTotal=(r.overallColor==='#dc2626'?1:0)+engRedSig;
+    const ambrSigsTotal=(r.overallColor==='#d97706'?1:0)+engAmbrSig;
+    const finalColor=redSigsTotal>0?'#dc2626':ambrSigsTotal>0?'#d97706':'#15803d';
+    const finalLabel=redSigsTotal>0?'🔴 Act Now':ambrSigsTotal>0?'⚠ Watch':'✅ Strong';
+
     return `<tr onclick="openMgrModal(${i})" style="background:${bg};cursor:pointer" onmouseover="this.style.background='#f5f3ff'" onmouseout="this.style.background='${bg}'">
       ${td(`<div style="font-weight:700">${r.mgr}</div><div style="font-size:.6rem;color:#888">${[...r.data.squads].join(', ')}</div>`)}
       ${td(`<span style="background:${r.levelColor}18;color:${r.levelColor};padding:2px 7px;border-radius:10px;font-size:.62rem;font-weight:700">${r.levelTag}</span>`)}
@@ -2625,9 +3030,10 @@ function renderMgrFilter(){
       ${td(r.exits12m===0?'—':r.exits12m,r.exitColor,!r.exitOk,'center')}
       ${td(r.conCnt===0?'—':`${r.conPct}%(${r.conCnt})`,r.conColor,!r.conOk,'center')}
       ${td(r.avgPerf===null?'—':r.avgPerf+'★',r.perfColor,!r.perfOk,'center')}
-      ${td(`<span style="background:${r.overallColor}18;color:${r.overallColor};padding:2px 8px;border-radius:10px;font-size:.68rem;font-weight:700">${r.overallLabel}</span>`)}
+      ${td(ooCell,ooColor,!ooOk,'center')}
+      ${td(`<span style="background:${finalColor}18;color:${finalColor};padding:2px 8px;border-radius:10px;font-size:.68rem;font-weight:700">${finalLabel}</span>`)}
     </tr>`;
-  }).join('')||'<tr><td colspan="10" style="padding:24px;text-align:center;color:#888">No managers match this filter</td></tr>'}</tbody>`;
+  }).join('')||'<tr><td colspan="11" style="padding:24px;text-align:center;color:#888">No managers match this filter</td></tr>'}</tbody>`;
 
   window._mgrRows=filtered;
 }
@@ -2681,9 +3087,32 @@ function openMgrModal(idx){
     sigs.push({c:r.perfColor,i:'⭐',t:`Below-Average Team Performance — ${r.avgPerf}★`,
       why:`${r.mgr}'s team averages ${r.avgPerf}/5 — below the 3.5 benchmark. This can reflect unclear goals, insufficient coaching, or low morale.`,
       act:'Review performance calibration. Discuss goal clarity and coaching approach with the manager.'});
-  if(sigs.length===0)
-    sigs.push({c:'#15803d',i:'✅',t:'All Signals Healthy',
-      why:`${r.mgr} shows no red flags across span, RAG, attrition, contractors, or performance. Strong management anchor.`,
+
+  // 6. 1:1 Engagement signal (cross-referenced from 1:1 Discussion file)
+  const sqName2=[...r.data.squads][0]||'';
+  const ooSq2=OO_SQUAD_MAP[sqName2]||null;
+  const ooE2=ooSq2?ooAvg(ooSq2.eng):null;
+  const ooM2=ooSq2?ooAvg(ooSq2.mgr):null;
+  if(ooE2!==null){
+    const ooLbl2=ooEngLabel(ooE2);
+    if(ooE2<4){
+      sigs.push({c:ooLbl2.color,i:'💬',t:`${ooLbl2.text} · 1:1 Engagement ${ooE2.toFixed(1)}/5`,
+        why:`The ${sqName2} squad averaged ${ooE2.toFixed(1)}/5 on engagement in the Q1 2026 1:1 survey (${ooSq2.n} responses).${ooM2!==null?` Manager rating from 1:1s: ${ooM2.toFixed(1)}/5.`:''} This independently confirms morale signals from RAG/performance data.`,
+        act:ooE2<3.5?'Schedule skip-level 1:1 with this squad this week. Co-create action plan with manager using 1:1 themes.':'Run a career conversation with flagged employees within 2 weeks. Share top requests from 1:1s.'});
+    } else {
+      sigs.push({c:'#15803d',i:'💬',t:`1:1 Engagement Strong — ${ooE2.toFixed(1)}/5`,
+        why:`1:1 survey for ${sqName2} shows ${ooE2.toFixed(1)}/5 engagement (${ooSq2.n} responses).${ooM2!==null?` Manager rating: ${ooM2.toFixed(1)}/5.`:''} Team is satisfied — this reinforces the healthy signals in other metrics.`,
+        act:'Maintain current manager cadence. Use this squad as a reference for practices to replicate elsewhere.'});
+    }
+  } else if(Object.keys(OO_SQUAD_MAP).length>0){
+    sigs.push({c:'#888',i:'💬',t:`No 1:1 Data — ${sqName2}`,
+      why:`No responses found for "${sqName2}" in the 1:1 discussion survey. Either the squad wasn't included or the name differs between files.`,
+      act:'Include this squad in the next 1:1 cycle to get independent engagement intelligence.'});
+  }
+
+  if(sigs.length===0||sigs.every(s=>s.c==='#15803d'))
+    sigs.unshift({c:'#15803d',i:'✅',t:'All Signals Healthy',
+      why:`${r.mgr} shows no red flags across span, RAG, attrition, contractors, performance, or 1:1 engagement. Strong management anchor.`,
       act:'Consider nominating as a management mentor. Study their practices for org-wide replication.'});
 
   document.getElementById('mgr-modal-content').innerHTML=`
