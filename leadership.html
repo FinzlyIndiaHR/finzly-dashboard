@@ -192,9 +192,18 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
 .act-box{background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:12px 14px}
 .act-box-t{font-size:.64rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:8px}
 .act-ul{list-style:none}
-.act-ul li{font-size:.72rem;color:var(--ink);padding:4px 0;border-bottom:1px solid var(--border2);line-height:1.5}
+.act-ul li{font-size:.72rem;color:var(--ink);padding:0;border-bottom:1px solid var(--border2);line-height:1.5}
 .act-ul li:last-child{border-bottom:none}
-.act-ul li::before{content:'→ ';color:var(--accent);font-weight:700}
+.act-item{display:flex;align-items:flex-start;gap:6px;padding:6px 4px;cursor:pointer;border-radius:6px;transition:background .12s;position:relative}
+.act-item:hover{background:rgba(232,84,26,.05)}
+.act-item::before{content:'→ ';color:var(--accent);font-weight:700;flex-shrink:0;margin-top:1px}
+.act-chevron{margin-left:auto;font-size:.65rem;color:var(--muted);flex-shrink:0;margin-top:2px;transition:transform .2s}
+.act-chevron.open{transform:rotate(90deg)}
+.act-detail{display:none;margin:0 4px 8px 16px;padding:10px 12px;background:var(--card);border-radius:7px;border-left:3px solid var(--accent);font-size:.72rem;line-height:1.6;color:#444}
+.act-detail.open{display:block}
+.act-detail-why{font-weight:700;color:var(--ink);margin-bottom:4px;font-size:.72rem}
+.act-detail-data{color:#555;margin-bottom:6px}
+.act-detail-action{background:rgba(232,84,26,.07);border-radius:5px;padding:5px 8px;font-size:.7rem;color:var(--accent);font-weight:600}
 .cta-bar{padding:11px 14px;background:var(--bbg);border:1px solid var(--bbr);border-radius:8px;font-size:.74rem;line-height:1.7}
 .cta-bar strong{color:var(--accent)}
 /* MANAGER SPAN */
@@ -1689,6 +1698,25 @@ function mkChart(id,type,data,opts={}){
   CHARTS[id]=new Chart(ctx,{type,data,options:merged});
 }
 
+function toggleActDetail(id){
+  const detail=document.getElementById(id+'-detail');
+  const chev=document.getElementById(id+'-chev');
+  if(!detail)return;
+  const isOpen=detail.classList.contains('open');
+  // Close all others first
+  document.querySelectorAll('.act-detail.open').forEach(el=>{
+    el.classList.remove('open');
+    const c=document.getElementById(el.id.replace('-detail','-chev'));
+    if(c)c.classList.remove('open');
+  });
+  // Toggle this one
+  if(!isOpen){
+    detail.classList.add('open');
+    if(chev)chev.classList.add('open');
+    detail.scrollIntoView({behavior:'smooth',block:'nearest'});
+  }
+}
+
 function goTab(el,pid){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
   document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
@@ -2562,7 +2590,7 @@ function render(){
     <div class="attr-kpi">
       <div class="ak-lbl">Avg Tenure at Exit · ${yrLabel}</div>
       <div class="ak-val" style="color:${earlyExitPct>50?'var(--red)':'var(--amber)'}">${avgExitTenureYr?avgExitTenureYr+'y':'—'}</div>
-      <div class="ak-sub">${earlyExitPct}% left within Year 1 · ${tenureSignal}</div>
+      <div class="ak-sub">${actEarlyExitPct}% left within Year 1 · ${tenureSignal}</div>
     </div>
     <div class="attr-kpi g">
       <div class="ak-lbl">Trend vs ${priorYear||'Prior Year'}</div>
@@ -2786,27 +2814,141 @@ function render(){
     <div class="sum-k"><div class="sum-kv">${avg25}</div><div class="sum-kl">Avg Rating</div></div>
     <div class="sum-k"><div class="sum-kv">${avgTenure.toFixed(1)}y</div><div class="sum-kl">Avg Tenure</div></div>
   `;
+  // Build rich clickable insight items
+  // Each item: label shown, why triggered, what data backs it, suggested action
+  const redEmps=active.filter(d=>d['Rag Status']==='Red');
+  const amberEmps=active.filter(d=>d['Rag Status']==='Amber');
+  const notSetEmps=active.filter(d=>!d['Rag Status']||d['Rag Status']==='Not Set'||d['Rag Status']==='NA');
+  const unratedEmps=active.filter(d=>!(d[PERF_COL_CURR]>=1&&d[PERF_COL_CURR]<=5));
+  const actEarlyExitPct=Math.round(inactAll.filter(d=>{
+    const sd=parseEmpDate(d['Start Date']),td=parseEmpDate(d['Termination Date']);
+    return sd&&td&&(td-sd)<365*24*60*60*1000;
+  }).length/(inactAll.length||1)*100);
+  const actVolPct=Math.round(inactAll.filter(d=>d['Termination Type']==='Voluntary').length/(inactAll.length||1)*100);
+  const longTenureEmps=active.filter(d=>typeof d['Finzly Experience']==='number'&&d['Finzly Experience']>=3);
+  const moSoFar2=new Date().getMonth()+1;
+  const projectedExits=moSoFar2>0?Math.round(inact2026/moSoFar2*12):0;
+
+  function actItem(id,label,why,dataPoints,action,urgency='accent'){
+    const colors={red:'#dc2626',amber:'#d97706',accent:'var(--accent)',blue:'#2563eb',green:'#15803d'};
+    const col=colors[urgency]||colors.accent;
+    return`<li>
+      <div class="act-item" onclick="toggleActDetail('${id}')">
+        <span style="flex:1">${label}</span>
+        <span class="act-chevron" id="${id}-chev">›</span>
+      </div>
+      <div class="act-detail" id="${id}-detail">
+        <div class="act-detail-why">Why this is flagged</div>
+        <div class="act-detail-data" style="margin-bottom:8px">${why}</div>
+        <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#888;margin-bottom:4px">Data behind this</div>
+        <div class="act-detail-data">${dataPoints}</div>
+        <div class="act-detail-action">▶ Suggested Action: ${action}</div>
+      </div>
+    </li>`;
+  }
+
   document.getElementById('act-grid').innerHTML=`
-    <div class="act-box"><div class="act-box-t">🔴 Act This Month</div><ul class="act-ul">
-      ${ragTot.Red>0?`<li>🔴 <strong>${ragTot.Red} Red-status employees</strong> — schedule skip-level 1-on-1 immediately. Check Squad Intelligence tab for names.</li>`:'<li>✅ No Red-status employees — maintain monthly 1-on-1 cadence</li>'}
-      <li>2026 already <strong>${inact2026} exits</strong> — run structured exit conversation with all departing employees</li>
-      ${ratedPct<80?`<li>Complete 2025 appraisals for <strong>${active.length-r25.length} unrated employees</strong> before any pay or promotion decision</li>`:''}
-    </ul></div>
-    <div class="act-box"><div class="act-box-t">📊 This Quarter</div><ul class="act-ul">
-      <li>Attrition at <strong>${lastAnnNum.toFixed(1)}% annualised</strong> — target &lt;15%. Voluntary exits dominate: fix growth path, not just pay</li>
-      <li>${ragTot.Amber>0?`<strong>${ragTot.Amber} Amber employees</strong> at flight risk — structured career conversations needed`:'RAG trending green — maintain check-in cadence'}</li>
-      <li>Review 2023–2024 cohort retention — early-career exits signal onboarding or manager gaps</li>
-    </ul></div>
-    <div class="act-box"><div class="act-box-t">🏆 Protect What Works</div><ul class="act-ul">
-      <li>Long-tenure employees (3+ years) are your institutional knowledge — identify top 20 and run targeted retention conversations</li>
-      <li>India team at ${india.length} — formalise career ladder before scale makes it harder</li>
-    </ul></div>
-    <div class="act-box"><div class="act-box-t">📅 Plan Ahead</div><ul class="act-ul">
-      <li>Build a monthly flight-risk list: combine RAG Amber/Red + low rating + 2–3yr tenure = early warning</li>
-      <li>Target annualised attrition <strong>&lt;12%</strong> by year-end — requires ~${Math.max(0,Math.round((lastAnnNum-12)/12*active.length))} fewer exits than current pace</li>
-    </ul></div>
+    <div class="act-box">
+      <div class="act-box-t">🔴 Act This Month</div>
+      <ul class="act-ul">
+        ${redEmps.length>0
+          ? actItem('ins-red',
+              `🔴 <strong>${redEmps.length} Red-status employee${redEmps.length>1?'s':''}</strong> — skip-level 1-on-1 immediately`,
+              `Red RAG status is a direct flight-risk signal. Employees marked Red have either self-reported or been assessed as likely to leave. Without immediate intervention, voluntary exit typically follows within 30–90 days.`,
+              `${redEmps.map(e=>`${e['First Name']} ${e['Last Name']} (${e.Squad})`).join(', ')}`,
+              `Call each Red employee this week. Ask: what would make you stay? Don't wait for the next review cycle.`,
+              'red')
+          : actItem('ins-red','✅ No Red-status employees — maintain monthly 1-on-1 cadence',
+              'No employees are currently flagged Red. This is a healthy state.',
+              `Green: ${ragTot.Green} · Amber: ${ragTot.Amber} · Not assessed: ${notSetEmps.length}`,
+              `Focus on the ${notSetEmps.length} employees with no RAG set — assign status based on next 1:1 round.`,
+              'green')}
+        ${actItem('ins-exits',
+            `2026 already <strong>${inact2026} exits</strong> — run structured exit conversations`,
+            `${inact2026} employees have left in ${CURR_YEAR} so far. Projected run-rate at current pace: ~${projectedExits} exits by year-end. ${actVolPct}% of all-time exits are voluntary — meaning people are choosing to leave, not being let go.`,
+            `${CURR_YEAR} exits: ${inact2026} · Projected full-year: ${projectedExits} · Voluntary (all-time): ${actVolPct}% · Early exits (within 1 year, all-time): ${actEarlyExitPct}%`,
+            `Run a structured exit interview for every departure. Ask: manager, role clarity, growth, compensation. Patterns across 3+ exits = systemic issue.`,
+            'red')}
+        ${ratedPct<80
+          ? actItem('ins-appraisal',
+              `Complete appraisals for <strong>${unratedEmps.length} unrated employees</strong> before pay/promo decisions`,
+              `${unratedEmps.length} active employees have no ${PERF_COL_CURR} rating. Making pay or promotion decisions without ratings is a governance risk — and signals to rated employees that the process is inconsistent.`,
+              `Rated: ${r25.length}/${active.length} (${ratedPct}%) · Unrated: ${unratedEmps.length} · Coverage benchmark: ≥80%`,
+              `Send managers a list of their unrated direct reports. Set a 2-week deadline before any pay review meeting.`,
+              'amber')
+          : actItem('ins-appraisal',
+              `✅ Appraisal coverage strong — ${ratedPct}% of employees rated`,
+              `${r25.length} of ${active.length} active employees have a ${PERF_COL_CURR} rating. This is above the 80% healthy benchmark.`,
+              `Rated: ${r25.length}/${active.length} (${ratedPct}%) · Avg rating: ${avg25}/5`,
+              `Review the remaining ${unratedEmps.length} unrated employees and ensure they have goals set for the next cycle.`,
+              'green')}
+      </ul>
+    </div>
+    <div class="act-box">
+      <div class="act-box-t">📊 This Quarter</div>
+      <ul class="act-ul">
+        ${actItem('ins-attrition',
+            `Attrition at <strong>${lastAnnNum.toFixed(1)}% annualised</strong> — target &lt;15%`,
+            `Annualised attrition of ${lastAnnNum.toFixed(1)}% means roughly 1 in ${Math.round(100/lastAnnNum)} employees leaves per year. ${lastAnnNum>20?'This is above the 20% red threshold — urgent action needed.':lastAnnNum>12?'This is in the amber zone (12–20%). Watch closely.':'This is within healthy range (<12%). Maintain.'} The voluntary exit rate of ${volPct}% means this is a retention problem, not a performance management problem.`,
+            `Annualised rate: ${lastAnnNum.toFixed(1)}% · Threshold: Red >20%, Amber 12–20% · ${CURR_YEAR} exits: ${inact2026} · Projected: ${projectedExits}/yr · Voluntary: ${volPct}%`,
+            `Focus on 2–3yr tenure employees — this cohort has the highest exit probability. Run stay interviews. Ask: what would need to change for you to see your career here long-term?`,
+            lastAnnNum>20?'red':lastAnnNum>12?'amber':'green')}
+        ${amberEmps.length>0
+          ? actItem('ins-amber',
+              `<strong>${amberEmps.length} Amber employees</strong> — structured career conversations needed`,
+              `Amber means at-risk but not yet a confirmed flight risk. These employees are dissatisfied enough to have been flagged but haven't made a decision yet. Amber typically converts to Red or exit within 1–2 quarters without intervention. This is the highest-leverage intervention window.`,
+              `Amber: ${amberEmps.length} · Squads: ${[...new Set(amberEmps.map(e=>e.Squad))].join(', ')} · ${amberEmps.map(e=>`${e['First Name']} ${e['Last Name']}`).join(', ')}`,
+              `Each Amber employee needs a 30-min career conversation within 2 weeks. Ask: what's working, what's not, where do you want to be in 12 months? Share the outcome with their manager.`,
+              'amber')
+          : actItem('ins-amber','✅ No Amber employees — engagement appears stable',
+              'No employees are currently in the Amber (at-risk) category.',
+              `Green: ${ragTot.Green} · Not assessed: ${notSetEmps.length}`,
+              `${notSetEmps.length} employees have no RAG set — assess these in the next 1:1 cycle to prevent blind spots.`,
+              'green')}
+        ${actItem('ins-cohort',
+            `Review 2023–2024 cohort — early exits signal onboarding or manager gaps`,
+            `${actEarlyExitPct}% of all exits happened within the first year of joining. This is the most expensive type of attrition: full recruitment cost with near-zero productivity return. It almost always indicates a hiring fit, onboarding, or manager quality issue — not compensation.`,
+            `Early exits (<1yr tenure, all-time): ${actEarlyExitPct}% of all exits · Avg exit tenure (all-time): see Attrition tab · 2023–2024 joiners still active: ${active.filter(d=>d['Start Year']>=2023&&d['Start Year']<=2024).length}`,
+            `Pull a list of 2023–2024 joiners. Check RAG status and performance rating. Those with Amber/Red RAG + <2yr tenure = highest churn risk this quarter.`,
+            'amber')}
+      </ul>
+    </div>
+    <div class="act-box">
+      <div class="act-box-t">🏆 Protect What Works</div>
+      <ul class="act-ul">
+        ${actItem('ins-tenure',
+            `<strong>${longTenureEmps.length} employees with 3+ years</strong> — run targeted retention conversations`,
+            `Long-tenure employees carry institutional knowledge that is extremely expensive to replace. They also signal cultural stability to newer employees. Losing a 3–5yr employee typically costs 6–9 months of productivity to backfill, plus full recruitment cost.`,
+            `3+ year employees: ${longTenureEmps.length} (${Math.round(longTenureEmps.length/active.length*100)}% of headcount) · Squads: ${[...new Set(longTenureEmps.map(e=>e.Squad))].slice(0,5).join(', ')}`,
+            `Identify your top 20 longest-tenured employees. Run a 30-min retention conversation. Ask: what would need to be true for you to still be here in 3 years?`,
+            'blue')}
+        ${actItem('ins-india',
+            `India team at ${india.length} — formalise career ladder before scale makes it harder`,
+            `At ${india.length} employees in India, Finzly is at the scale where informal career progression stops working. Without a documented ladder, high performers plateau, managers make inconsistent decisions, and attrition accelerates among the 2–4yr cohort who feel stuck.`,
+            `India headcount: ${india.length} · % of total: ${Math.round(india.length/active.length*100)}% · Senior/Lead: ${active.filter(d=>d.Level&&(d.Level.includes('Senior')||d.Level.includes('Lead'))).length} employees`,
+            `Define 5–6 levels with clear criteria for promotion from one to the next. Publish it. Tie appraisal scores to progression. This is a 2-quarter project — start the framework now.`,
+            'blue')}
+      </ul>
+    </div>
+    <div class="act-box">
+      <div class="act-box-t">📅 Plan Ahead</div>
+      <ul class="act-ul">
+        ${actItem('ins-flightrisk',
+            `Build a monthly flight-risk list: RAG Amber/Red + low rating + 2–3yr tenure`,
+            `The three strongest predictors of voluntary exit, combined: Amber/Red RAG (dissatisfaction signal) + low performance rating (disengagement signal) + 2–3yr tenure (highest-churn window). Employees matching all three should be on a watch list reviewed monthly.`,
+            `RAG Amber/Red: ${ragTot.Amber+ragTot.Red} employees · Low perf (★1–2): ${active.filter(d=>d[PERF_COL_CURR]<=2&&d[PERF_COL_CURR]>=1).length} employees · 2–3yr tenure: ${active.filter(d=>typeof d['Finzly Experience']==='number'&&d['Finzly Experience']>=2&&d['Finzly Experience']<4).length} employees`,
+            `Each month: run a filter combining these three signals. Share the output with squad leads. Not to act on every name — but to have a conversation about each one.`,
+            'blue')}
+        ${actItem('ins-target',
+            `Target annualised attrition <strong>&lt;12%</strong> by year-end`,
+            `Current annualised attrition is ${lastAnnNum.toFixed(1)}%. Getting to 12% requires ~${Math.max(0,Math.round((lastAnnNum-12)/100*active.length))} fewer exits than the current pace allows. That gap is closeable — but requires acting on the Amber employees, fixing the onboarding gap, and running retention conversations in Q2.`,
+            `Current: ${lastAnnNum.toFixed(1)}% · Target: <12% · Gap: ${Math.max(0,(lastAnnNum-12).toFixed(1))} percentage points · Projected exits at current pace: ${projectedExits} · Exits needed to hit target: ${Math.max(0,Math.round(0.12*active.length))} or fewer`,
+            `The three levers: (1) Convert Amber → Green through career conversations. (2) Fix onboarding to reduce Year 1 exits. (3) Formalise career ladder to reduce 2–4yr exits.`,
+            lastAnnNum>12?'amber':'green')}
+      </ul>
+    </div>
   `;
-  document.getElementById('cta-bar').innerHTML=`<strong>Board Headline:</strong> <strong>${active.length} active</strong> (India ${india.length} · USA ${usa.length}). Attrition <strong>${lastAnnNum.toFixed(1)}% annualised</strong> · <strong>${inact2026} exits in 2026</strong>. RAG: ${ragTot.Green} Green · ${ragTot.Amber} Amber · ${ragTot.Red} Red. ${ragTot.Red>0?`<strong>🔴 ${ragTot.Red} employees need immediate attention.</strong>`:'Engagement stable — focus on attrition prevention.'}`;
+  document.getElementById('cta-bar').innerHTML=`<strong>Board Headline:</strong> <strong>${active.length} active</strong> (India ${india.length} · USA ${usa.length}). Attrition <strong>${lastAnnNum.toFixed(1)}% annualised</strong> · <strong>${inact2026} exits in ${CURR_YEAR}</strong>. RAG: ${ragTot.Green} Green · ${ragTot.Amber} Amber · ${ragTot.Red} Red${ragTot.NotSet>0?` · <span style="color:#888">⬜ ${ragTot.NotSet} not assessed</span>`:''}. ${ragTot.Red>0?`<strong>🔴 ${ragTot.Red} employees need immediate attention.</strong>`:'Engagement stable — focus on attrition prevention.'}`;
 
   // P3 Manager cards (at bottom of Squad Intelligence)
   renderMgrFilter();
