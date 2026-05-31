@@ -1481,40 +1481,72 @@ function buildOOSquadMap(){
   OO_SQUAD_MAP={};
   if(!OO_DATA.length||!OO_HDRS.length)return;
 
-  // ── Build Emp ID → Employee Master lookup ──────────────────
-  // Source of truth for Squad, City, Country comes from Employee Master
-  // NOT from the 1:1 file — join key is Emp ID (unique, stable)
-  const empIdMap={};  // { empId: {squad, city, country, name} }
+  // ── Emp ID normalisation ──────────────────────────────────
+  // India: numeric  e.g. 1293  (Excel may export as 1293.0)
+  // USA  : alphanumeric e.g. F001, EMP-001 (string, case varies)
+  // Rule : strip trailing .0 from numbers; uppercase everything; trim spaces
+  function normaliseEmpId(v){
+    if(v===null||v===undefined||v==='')return'';
+    let s=String(v).trim();
+    // Remove trailing .0 or .00 from numeric exports
+    s=s.replace(/\.0+$/,'');
+    // Uppercase so "f001" === "F001"
+    return s.toUpperCase();
+  }
+
+  // Build empIdMap with normalised keys
+  const empIdMap={};
   EMP_DATA.forEach(d=>{
-    const id=String(d['Emp Id']||d['empId']||'').trim();
+    const id=normaliseEmpId(d['Emp Id']||d['empId']||'');
     if(id) empIdMap[id]={
       squad: d.Squad||'Unknown',
       city:  d.City||'',
       country: d.Country||'India',
       name: `${d['First Name']||''} ${d['Last Name']||''}`.trim(),
-      rag:  d['Rag Status']||'Not Set'   // RAG from Employee Master
+      rag:  d['Rag Status']||'Not Set'
     };
   });
-  console.log('📋 Emp ID map built:', Object.keys(empIdMap).length, 'employees');
+  console.log('📋 Emp ID map built:', Object.keys(empIdMap).length, 'employees (India numeric + US alphanumeric)');
 
   // ── Parse 1:1 column headers ────────────────────────────────
   const ci=kw=>OO_HDRS.findIndex(h=>kw.some(k=>h.toLowerCase().includes(k.toLowerCase())));
 
-  // Emp ID column in 1:1 file — try several common labels
-  const iEmpId = ci(['emp id','empid','employee id','emp_id','employeeid','id']);
-  const iEng   = ci(['how engaged','feel at work','engaged do you','currently feel','engagement score','engagement rating']);
-  const iMgr   = ci(['relationship and communication','rating on a scale','describe your relationship','manager rating','manager score']);
-  const iOv    = ci(['overall experience','overall experience rating','overall satisfaction']);
-  const iRag   = ci(['rag','rag status']);
-  const iSsc   = ci(['start, stop','stop, or continue','team/company','as a team','ssc','start stop']);
-  const iCom   = ci(['additional comments','comments (if any)','comments','any other','additional feedback']);
-  const iSup   = ci(['support do you need','kind of support','what support','need from']);
-  const iQ1    = ci(['last quarter','day-to-day','went well','going well']);
-  const iQ2    = ci(['challenging','difficult','concern','friction']);
-  const iPsych = ci(['comfortable','psychological','safe to share','concerns','new ideas']);
-  const iLearn = ci(['skills','training','certifications','udemy','learning']);
+  // ── Column detection using EXACT Microsoft Forms header text ──
+  // Headers (confirmed): Id | Start time | Completion time | Email | Name |
+  // Employee Name | Emp Id | Manager name | Sqauds | Sub Project | Practice |
+  // Q1(last quarter) | Q2(going well/challenging) | Manager rating 1-5 |
+  // Comfort/psych safety | Skills/Udemy | Engagement 1-5 | SSC |
+  // Support needed | Overall rating 1-5 | Additional Comments | RAG Status
 
-  console.log('📋 1:1 col map — EmpId:',iEmpId,'Eng:',iEng,'Mgr:',iMgr,'Ov:',iOv,'Rag:',iRag,'SSC:',iSsc,'Com:',iCom);
+  // Log ALL headers for verification
+  console.log('📋 1:1 FILE — all headers:');
+  OO_HDRS.forEach((h,i)=>{ if(h) console.log(`  [${i}] col ${String.fromCharCode(65+i>90?i+65:65+i)}: "${h}"`); });
+
+  // "Emp Id" is distinct from "Id" (col A = form auto-number)
+  // Using 'emp id' (with space) ensures we match "Emp Id" not "Id"
+  const iEmpId = ci(['emp id']);                          // col G — "Emp Id"
+  const iMgrN  = ci(['manager name']);                    // col H — "Manager name"
+  const iQ1    = ci(['last quarter','day-to-day']);       // col L
+  const iQ2    = ci(['going well','challenging']);        // col M
+  const iMgr   = ci(['relationship and communication',   // col N — Manager rating 1-5
+                      'rating on a scale']);
+  const iPsych = ci(['comfortable','concerns','new ideas']); // col O
+  const iLearn = ci(['skills','training','udemy']);       // col P
+  const iEng   = ci(['how engaged','engaged do you',     // col Q — Engagement 1-5
+                      'currently feel at work']);
+  const iSsc   = ci(['start, stop','stop, or continue',  // col R — SSC
+                      'as a team/company']);
+  const iSup   = ci(['support do you need',              // col S
+                      'kind of support']);
+  const iOv    = ci(['overall experience rating',        // col T — Overall 1-5
+                      'overall experience']);
+  const iCom   = ci(['additional comments']);             // col U
+  const iRag   = ci(['rag status','rag']);                // col V
+
+  // Verify — log what we found
+  const sampleIds = OO_DATA.slice(0,3).map(r=>String(r[iEmpId]||'—'));
+  console.log(`📋 Emp Id col: [${iEmpId}] → sample values: ${sampleIds.join(', ')}`);
+  console.log(`📋 Eng:[${iEng}] Mgr:[${iMgr}] Ov:[${iOv}] SSC:[${iSsc}] RAG:[${iRag}]`);
 
   const str=(row,i)=>i<0||i>=row.length?'':String(row[i]||'').trim();
   const num=(row,i)=>{
@@ -1530,9 +1562,8 @@ function buildOOSquadMap(){
   let matched=0, unmatched=0;
 
   OO_DATA.forEach(row=>{
-    // ── Resolve employee identity via Emp ID → Employee Master ──
-    // Squad, City, Country, RAG ALL come from Employee Master — NEVER from 1:1 file columns
-    const rawId=str(row,iEmpId);
+    // Normalise both sides identically — handles India numeric & US alphanumeric
+    const rawId=normaliseEmpId(row[iEmpId]);
     const empRecord=rawId&&empIdMap[rawId]?empIdMap[rawId]:null;
 
     let squad, city, country, compRag;
@@ -1550,7 +1581,8 @@ function buildOOSquadMap(){
       country = 'Unknown';
       compRag = null;
       unmatched++;
-      if(rawId) console.warn('⚠ Emp ID not found in Employee Master:',rawId,'— row grouped under Unknown');
+      if(rawId) console.warn(`⚠ Emp ID "${rawId}" not found in Employee Master — check if ID exists in comp file (India=numeric, US=alphanumeric)`);
+      else console.warn('⚠ 1:1 row has no Emp ID at col index',iEmpId,'— row skipped from join');
     }
 
     if(!OO_SQUAD_MAP[squad])OO_SQUAD_MAP[squad]={
