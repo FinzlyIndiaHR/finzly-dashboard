@@ -2590,7 +2590,7 @@ function render(){
     <div class="attr-kpi">
       <div class="ak-lbl">Avg Tenure at Exit · ${yrLabel}</div>
       <div class="ak-val" style="color:${earlyExitPct>50?'var(--red)':'var(--amber)'}">${avgExitTenureYr?avgExitTenureYr+'y':'—'}</div>
-      <div class="ak-sub">${actEarlyExitPct}% left within Year 1 · ${tenureSignal}</div>
+      <div class="ak-sub">${earlyExitPct}% left within Year 1 · ${tenureSignal}</div>
     </div>
     <div class="attr-kpi g">
       <div class="ak-lbl">Trend vs ${priorYear||'Prior Year'}</div>
