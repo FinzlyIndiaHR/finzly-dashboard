@@ -838,7 +838,9 @@ const OO_OWNER    = 'vishwata.mayekar@finzly.com';
 const OO_SHEET    = 'Sheet1';
 let   OO_DATA     = [];   // raw rows from 1:1 file
 let   OO_HDRS     = [];   // header row
-let   OO_SQUAD_MAP= {};   // { squadName: {eng:[], mgr:[], ov:[], n, rag:{G,A,R}, loc, requests:[] } }
+let   OO_SQUAD_MAP= {};   // { squadName: {eng[], mgr[], ov[], n, rag, loc, requests[]} }
+let   OO_MGR_MAP  = {};   // { normalisedMgrName: {eng[], mgr[], ov[], n, empIds[], rag} }
+                          // keyed by L1 Manager from comp file — NOT from 1:1 file
 const REDIRECT   = 'https://finzlyindiahr.github.io/finzly-dashboard/leadership.html';
 const SCOPES     = ['Files.Read.All','User.Read'];
 
@@ -1647,6 +1649,59 @@ function buildOOSquadMap(){
   });
 
   console.log(`✅ 1:1 join: ${matched} matched by Emp ID → squad from comp file | ${unmatched} unmatched → grouped as Unknown`);
+
+  // ── Build OO_MGR_MAP — per-manager 1:1 scores ──────────────
+  // Key = normalised L1 Manager name from comp file
+  // This separates teams within the same squad (two managers, one squad)
+  // So Team Radar shows Anandhraj's DIRECT REPORTS' scores, not whole squad
+  OO_MGR_MAP={};
+  const normMgr=n=>String(n||'').trim().toLowerCase();
+  const str2=(row,i)=>i<0||i>=row.length?'':String(row[i]||'').trim();
+  const num2=(row,i)=>{
+    if(i<0||i>=row.length)return null;
+    const raw=row[i];
+    if(raw===null||raw===undefined||raw==='')return null;
+    if(typeof raw==='number'){const n=Math.round(raw);return(n>=1&&n<=5)?n:null;}
+    const v=String(raw).trim();
+    const m=v.match(/^([1-5])/)||v.match(/\b([1-5])\b/);
+    return m?+m[1]:null;
+  };
+
+  OO_DATA.forEach(row=>{
+    const empId=normaliseEmpId(row[iEmpId]);
+    const emp=empId&&empIdMap[empId]?empIdMap[empId]:null;
+    if(!emp||!emp.l1mgr)return;   // skip if we can't identify the manager
+
+    const mgrKey=normMgr(emp.l1mgr);
+    if(!OO_MGR_MAP[mgrKey])OO_MGR_MAP[mgrKey]={
+      eng:[],mgr:[],ov:[],n:0,
+      rag:{G:0,A:0,R:0},
+      empIds:[],
+      mgrDisplayName:emp.l1mgr   // original casing for display
+    };
+    const d=OO_MGR_MAP[mgrKey];
+    d.n++;
+    d.empIds.push(empId);
+    const e=num2(row,iEng),m=num2(row,iMgr),o=num2(row,iOv);
+    if(e!==null)d.eng.push(e);
+    if(m!==null)d.mgr.push(m);
+    if(o!==null)d.ov.push(o);
+    // RAG: same 3-rule priority as squad map
+    const ragRaw2=str2(row,iRag).toLowerCase();
+    if(ragRaw2.includes('green'))                                  d.rag.G++;
+    else if(ragRaw2.includes('amber')||ragRaw2.includes('yellow')) d.rag.A++;
+    else if(ragRaw2.includes('red'))                               d.rag.R++;
+    else if(emp.rag&&emp.rag!=='Not Set'){
+      const cr=emp.rag.toLowerCase();
+      if(cr.includes('green'))      d.rag.G++;
+      else if(cr.includes('amber')) d.rag.A++;
+      else if(cr.includes('red'))   d.rag.R++;
+      else                          d.rag.G++;
+    } else { d.rag.G++; }
+  });
+
+  console.log('📋 OO_MGR_MAP:',Object.keys(OO_MGR_MAP).length,'managers —',
+    Object.keys(OO_MGR_MAP).map(k=>`${OO_MGR_MAP[k].mgrDisplayName}(${OO_MGR_MAP[k].n})`).join(', '));
 }
 
 // ── COMPREHENSIVE ISSUE TAXONOMY ──────────────────────────────
@@ -3315,21 +3370,21 @@ function renderMgrFilter(){
     const dot=c=>`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${c};margin-right:4px"></span>`;
     const td=(v,c='#1a1a2e',b=false,a='left')=>`<td style="padding:8px 10px;font-size:.74rem;color:${c};font-weight:${b?700:400};border-bottom:1px solid #f0ede8;text-align:${a};white-space:nowrap">${v}</td>`;
 
-    // 6th signal: Engagement from 1:1 data joined by squad
-    const sqName=[...r.data.squads][0]||'';
-    const ooSq=OO_SQUAD_MAP[sqName]||null;
-    const ooE=ooSq?ooAvg(ooSq.eng):null;
+    // 6th signal: 1:1 score for THIS manager's direct reports
+    // Lookup by normalised manager name → OO_MGR_MAP (not squad-level)
+    const mgrKey=r.mgr.trim().toLowerCase();
+    const ooMgr=OO_MGR_MAP[mgrKey]||null;
+    const ooE=ooMgr?ooAvg(ooMgr.eng):null;
+    const ooM=ooMgr?ooAvg(ooMgr.mgr):null;
     const ooLbl=ooEngLabel(ooE);
     const ooCell=ooE!==null
-      ?`${dot(ooLbl.color)}${ooE.toFixed(1)}★`
-      :'<span style="color:#aaa;font-size:.68rem">No 1:1 data</span>';
+      ?`${ooE.toFixed(1)}★ <span style="font-size:.62rem;color:#888">(${ooMgr.n})</span>`
+      :'<span style="color:#aaa;font-size:.68rem">No 1:1</span>';
     const ooColor=ooE!==null?ooLbl.color:'#aaa';
     const ooOk=ooE===null||ooE>=4;
 
-    // ── Health badge: use squad RAG from OO_SQUAD_MAP (which already follows
-    //    the 3-rule priority: 1:1 RAG → comp file RAG → Green default)
-    //    Do NOT derive health from raw engagement score alone
-    const ooRag=ooSq?ooSq.rag:null;
+    // Health badge uses OO_MGR_MAP RAG for this manager's team
+    const ooRag=ooMgr?ooMgr.rag:null;
     const ooRagRed =ooRag&&ooRag.R>0;
     const ooRagAmbr=ooRag&&ooRag.A>0&&!ooRagRed;
     const engRedSig =ooRagRed?1:0;
@@ -3407,26 +3462,26 @@ function openMgrModal(idx){
       why:`${r.mgr}'s team averages ${r.avgPerf}/5 — below the 3.5 benchmark. This can reflect unclear goals, insufficient coaching, or low morale.`,
       act:'Review performance calibration. Discuss goal clarity and coaching approach with the manager.'});
 
-  // 6. 1:1 Engagement signal (cross-referenced from 1:1 Discussion file)
-  const sqName2=[...r.data.squads][0]||'';
-  const ooSq2=OO_SQUAD_MAP[sqName2]||null;
-  const ooE2=ooSq2?ooAvg(ooSq2.eng):null;
-  const ooM2=ooSq2?ooAvg(ooSq2.mgr):null;
+  // Signal 6: 1:1 score for THIS manager's direct reports from OO_MGR_MAP
+  const mgrKey2=r.mgr.trim().toLowerCase();
+  const ooMgr2=OO_MGR_MAP[mgrKey2]||null;
+  const ooE2=ooMgr2?ooAvg(ooMgr2.eng):null;
+  const ooM2=ooMgr2?ooAvg(ooMgr2.mgr):null;
   if(ooE2!==null){
     const ooLbl2=ooEngLabel(ooE2);
     if(ooE2<4){
-      sigs.push({c:ooLbl2.color,i:'💬',t:`${ooLbl2.text} · 1:1 Engagement ${ooE2.toFixed(1)}/5`,
-        why:`The ${sqName2} squad averaged ${ooE2.toFixed(1)}/5 on engagement in the Q1 2026 1:1 survey (${ooSq2.n} responses).${ooM2!==null?` Manager rating from 1:1s: ${ooM2.toFixed(1)}/5.`:''} This independently confirms morale signals from RAG/performance data.`,
-        act:ooE2<3.5?'Schedule skip-level 1:1 with this squad this week. Co-create action plan with manager using 1:1 themes.':'Run a career conversation with flagged employees within 2 weeks. Share top requests from 1:1s.'});
+      sigs.push({c:ooLbl2.color,i:'💬',t:`${ooLbl2.text} · Direct Reports Engagement ${ooE2.toFixed(1)}/5`,
+        why:`${ooMgr2.n} of ${r.mgr}'s direct reports responded in the Q1 2026 1:1 survey. Their avg engagement: ${ooE2.toFixed(1)}/5.${ooM2!==null?` They rated manager quality: ${ooM2.toFixed(1)}/5.`:''} This is the team's own voice — independently confirms what RAG/performance data shows.`,
+        act:ooE2<3.5?`Schedule a skip-level 1:1 with ${r.mgr}'s team this week. Share themes with ${r.mgr} and co-create an action plan.`:`Run a career conversation with flagged team members within 2 weeks. Share top 1:1 requests with ${r.mgr}.`});
     } else {
-      sigs.push({c:'#15803d',i:'💬',t:`1:1 Engagement Strong — ${ooE2.toFixed(1)}/5`,
-        why:`1:1 survey for ${sqName2} shows ${ooE2.toFixed(1)}/5 engagement (${ooSq2.n} responses).${ooM2!==null?` Manager rating: ${ooM2.toFixed(1)}/5.`:''} Team is satisfied — this reinforces the healthy signals in other metrics.`,
-        act:'Maintain current manager cadence. Use this squad as a reference for practices to replicate elsewhere.'});
+      sigs.push({c:'#15803d',i:'💬',t:`Direct Reports Engaged — ${ooE2.toFixed(1)}/5 (${ooMgr2.n} responses)`,
+        why:`${ooMgr2.n} of ${r.mgr}'s direct reports averaged ${ooE2.toFixed(1)}/5 engagement.${ooM2!==null?` Manager quality rated: ${ooM2.toFixed(1)}/5.`:''} Strong signal — team is satisfied with this manager.`,
+        act:`Maintain current 1:1 cadence. Use ${r.mgr}'s management style as a reference for other managers.`});
     }
-  } else if(Object.keys(OO_SQUAD_MAP).length>0){
-    sigs.push({c:'#888',i:'💬',t:`No 1:1 Data — ${sqName2}`,
-      why:`No responses found for "${sqName2}" in the 1:1 discussion survey. Either the squad wasn't included or the name differs between files.`,
-      act:'Include this squad in the next 1:1 cycle to get independent engagement intelligence.'});
+  } else if(Object.keys(OO_MGR_MAP).length>0){
+    sigs.push({c:'#888',i:'💬',t:`No 1:1 Data for ${r.mgr}'s Direct Reports`,
+      why:`No 1:1 survey responses found for employees reporting directly to ${r.mgr}. Either none of their direct reports participated, or Emp IDs didn't match.`,
+      act:`Include ${r.mgr}'s team in the next 1:1 cycle.`});
   }
 
   if(sigs.length===0||sigs.every(s=>s.c==='#15803d'))
