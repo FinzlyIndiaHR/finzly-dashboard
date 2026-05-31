@@ -1531,27 +1531,27 @@ function buildOOSquadMap(){
 
   OO_DATA.forEach(row=>{
     // ── Resolve employee identity via Emp ID → Employee Master ──
+    // Squad, City, Country, RAG ALL come from Employee Master — NEVER from 1:1 file columns
     const rawId=str(row,iEmpId);
     const empRecord=rawId&&empIdMap[rawId]?empIdMap[rawId]:null;
 
-    let squad, city, country;
+    let squad, city, country, compRag;
     if(empRecord){
-      // Authoritative: from Employee Master
-      squad   = empRecord.squad;
+      squad   = empRecord.squad;    // authoritative squad from comp file
       city    = empRecord.city;
       country = empRecord.country;
+      compRag = empRecord.rag;      // RAG from comp file — used as fallback
       matched++;
     } else {
-      // Fallback: try squad column in 1:1 file itself
-      const iSq2=ci(['squad','sqaud','squads']);
-      squad = (str(row,iSq2)||'Unknown').trim();
-      city  = 'Unknown';
-      country='Unknown';
+      // Emp ID not found — group under Unknown, do NOT read squad from 1:1 file
+      // (1:1 squad names like "PS" differ from comp file "Professional Services")
+      squad   = 'Unknown';
+      city    = 'Unknown';
+      country = 'Unknown';
+      compRag = null;
       unmatched++;
-      if(rawId) console.warn('⚠ Emp ID not found in Employee Master:',rawId);
+      if(rawId) console.warn('⚠ Emp ID not found in Employee Master:',rawId,'— row grouped under Unknown');
     }
-
-    if(!squad||squad==='Unknown'||squad===''){squad='Unknown';}
 
     if(!OO_SQUAD_MAP[squad])OO_SQUAD_MAP[squad]={
       eng:[],mgr:[],ov:[],n:0,
@@ -1559,7 +1559,7 @@ function buildOOSquadMap(){
       loc:city, country,
       requests:[],
       comments:[],
-      allText:[],  // ALL open-text fields concatenated — for comprehensive issue tagging
+      allText:[],
       empIds:[]
     };
     const d=OO_SQUAD_MAP[squad];
@@ -1572,23 +1572,30 @@ function buildOOSquadMap(){
     if(m!==null)d.mgr.push(m);
     if(o!==null)d.ov.push(o);
 
-    // RAG: use 1:1 RAG if present, else derive from engagement score
-    // Do NOT default to Green if blank — that's the key fix
+    // ── RAG PRIORITY RULES ──────────────────────────────────────
+    // Rule 1: If 1:1 file has an explicit RAG field → use it
+    // Rule 2: If 1:1 RAG blank → use comp file RAG (manually set by HR)
+    // Rule 3: If neither has it → GREEN (not Amber, not Red)
+    // NOTE: Do NOT derive RAG from engagement score — that is a satisfaction
+    //       score (1–5), not the same as the HR-assessed RAG status
     const ragRaw=str(row,iRag).toLowerCase();
-    if(ragRaw.includes('green'))d.rag.G++;
-    else if(ragRaw.includes('amber')||ragRaw.includes('yellow'))d.rag.A++;
-    else if(ragRaw.includes('red'))d.rag.R++;
-    else if(e!==null){
-      // Derive from engagement score — not Green by default
-      if(e>=4.5)d.rag.G++;
-      else if(e>=3.5)d.rag.A++;   // 3.5–4.4 = Amber, not Green
-      else d.rag.R++;
+    if(ragRaw.includes('green'))         d.rag.G++;
+    else if(ragRaw.includes('amber')||ragRaw.includes('yellow')) d.rag.A++;
+    else if(ragRaw.includes('red'))      d.rag.R++;
+    else if(compRag&&compRag!=='Not Set'){
+      // Fallback to comp file RAG
+      const cr=compRag.toLowerCase();
+      if(cr.includes('green'))           d.rag.G++;
+      else if(cr.includes('amber')||cr.includes('yellow')) d.rag.A++;
+      else if(cr.includes('red'))        d.rag.R++;
+      else                               d.rag.G++; // comp file has a value but not R/A/G → treat as Green
     } else {
-      d.rag.NotSet++;  // No RAG set AND no engagement score = genuinely unknown
+      // Neither 1:1 nor comp file has RAG set → default Green
+      // "Not mentioned" does NOT mean at-risk
+      d.rag.G++;
     }
 
     // ── Comprehensive text capture — ALL open fields ────────────
-    // Capture every open-text field, not just SSC
     const allFields=[
       str(row,iSsc),str(row,iCom),str(row,iSup),
       str(row,iQ1),str(row,iQ2),str(row,iPsych),str(row,iLearn)
@@ -1598,7 +1605,7 @@ function buildOOSquadMap(){
     if(allFields.length>30) d.comments.push(allFields);
   });
 
-  console.log(`✅ 1:1 join complete: ${matched} matched by Emp ID, ${unmatched} unmatched (fell back to squad column)`);
+  console.log(`✅ 1:1 join: ${matched} matched by Emp ID → squad from comp file | ${unmatched} unmatched → grouped as Unknown`);
 }
 
 // ── COMPREHENSIVE ISSUE TAXONOMY ──────────────────────────────
@@ -3278,9 +3285,14 @@ function renderMgrFilter(){
     const ooColor=ooE!==null?ooLbl.color:'#aaa';
     const ooOk=ooE===null||ooE>=4;
 
-    // Overall health now includes engagement signal
-    const engRedSig=ooE!==null&&ooE<3.5?1:0;
-    const engAmbrSig=ooE!==null&&ooE>=3.5&&ooE<4?1:0;
+    // ── Health badge: use squad RAG from OO_SQUAD_MAP (which already follows
+    //    the 3-rule priority: 1:1 RAG → comp file RAG → Green default)
+    //    Do NOT derive health from raw engagement score alone
+    const ooRag=ooSq?ooSq.rag:null;
+    const ooRagRed =ooRag&&ooRag.R>0;
+    const ooRagAmbr=ooRag&&ooRag.A>0&&!ooRagRed;
+    const engRedSig =ooRagRed?1:0;
+    const engAmbrSig=ooRagAmbr?1:0;
     const redSigsTotal=(r.overallColor==='#dc2626'?1:0)+engRedSig;
     const ambrSigsTotal=(r.overallColor==='#d97706'?1:0)+engAmbrSig;
     const finalColor=redSigsTotal>0?'#dc2626':ambrSigsTotal>0?'#d97706':'#15803d';
