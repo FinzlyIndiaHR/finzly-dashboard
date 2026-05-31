@@ -2820,11 +2820,13 @@ function render(){
   const amberEmps=active.filter(d=>d['Rag Status']==='Amber');
   const notSetEmps=active.filter(d=>!d['Rag Status']||d['Rag Status']==='Not Set'||d['Rag Status']==='NA');
   const unratedEmps=active.filter(d=>!(d[PERF_COL_CURR]>=1&&d[PERF_COL_CURR]<=5));
-  const actEarlyExitPct=Math.round(inactAll.filter(d=>{
+  // Derive from EMP_DATA directly — inactAll is not in scope here
+  const _inactAll=EMP_DATA.filter(d=>d.Status==='Inactive'||d.ActiveFlag===0);
+  const actEarlyExitPct=Math.round(_inactAll.filter(d=>{
     const sd=parseEmpDate(d['Start Date']),td=parseEmpDate(d['Termination Date']);
     return sd&&td&&(td-sd)<365*24*60*60*1000;
-  }).length/(inactAll.length||1)*100);
-  const actVolPct=Math.round(inactAll.filter(d=>d['Termination Type']==='Voluntary').length/(inactAll.length||1)*100);
+  }).length/(_inactAll.length||1)*100);
+  const actVolPct=Math.round(_inactAll.filter(d=>d['Termination Type']==='Voluntary').length/(_inactAll.length||1)*100);
   const longTenureEmps=active.filter(d=>typeof d['Finzly Experience']==='number'&&d['Finzly Experience']>=3);
   const moSoFar2=new Date().getMonth()+1;
   const projectedExits=moSoFar2>0?Math.round(inact2026/moSoFar2*12):0;
