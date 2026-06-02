@@ -3702,7 +3702,9 @@ function renderOrgChart(){
      Section 1: Leadership Team (Booshan + direct reports). Section 2: Each leader's full Galaxy tree — click header to expand. 🔵 India · 🟣 USA`;
 
   const {roots}=buildOrgTree(activeAll);
-  const root=roots[0]; // Booshan Rengachari
+  // Always use Booshan Rengachari as root. If not found, fall back to largest subtree.
+  const root=roots.find(r=>r.full==='Booshan Rengachari')
+           ||roots.reduce((a,b)=>subtreeCount(a)>=subtreeCount(b)?a:b,roots[0]);
   if(!root)return;
 
   // ── SECTION 1: Leadership Strip ───────────────────────────
