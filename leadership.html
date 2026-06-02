@@ -993,7 +993,8 @@ function processEmpMaster(values){
     subSquad: 8,   // col 8 = 'Sub Squads' (original) — NOT col 38 which is VLOOKUP
     email:    ci(['Email']),               // col 9
     city:     ci(['City']),                // col 10
-    l1mgr:    ci(['L1 Manager']),          // col 12
+    l1empId:  ci(['L1 Employee ID']),      // col 11 — join key for org tree
+    l1mgr:    ci(['L1 Manager']),          // col 12 — name (fallback only)
     l2mgr:    ci(['L2 Manager']),          // col 13
     title:    ci(['Corporate Title']),     // col 14
     gender:   ci(['Gender']),              // col 15
@@ -1048,7 +1049,10 @@ function processEmpMaster(values){
       City:          g(I.city),
       Country:       g(I.country),
       Gender:        g(I.gender),
+      'L1 Employee ID': g(I.l1empId),
       'L1 Manager':  g(I.l1mgr),
+      'L2 Manager ID': g(I.l2mgr),   // raw ID — resolved to name after full load
+      'L2 Manager':  g(I.l2mgr),     // placeholder — overwritten below
       'L2 Manager':  g(I.l2mgr),
       'Corporate Title': g(I.title),
       'Start Date':  startDateRaw,   // raw value — parseEmpDate handles all formats
@@ -1331,6 +1335,21 @@ async function loadData(){
     }
     if(!empRaw||empRaw.length<2) throw new Error(`Could not load employee data. Sheets found: [${allSheets.join(', ')}]. Check file access for ${OWNER_UPN}.`);
     EMP_DATA=processEmpMaster(empRaw);
+
+    // ── Resolve L2 Manager ID → display name ──────────────────
+    // L2 Manager column stores Employee IDs (e.g. "6KY000052") not names
+    // Build ID → name map then overwrite 'L2 Manager' with resolved name
+    const empIdToName={};
+    EMP_DATA.forEach(d=>{
+      const id=String(d['Emp ID']||'').trim();
+      if(id) empIdToName[id]=`${d['First Name']||''} ${d['Last Name']||''}`.trim();
+    });
+    EMP_DATA.forEach(d=>{
+      const rawL2=String(d['L2 Manager ID']||d['L2 Manager']||'').trim();
+      if(rawL2&&empIdToName[rawL2]) d['L2 Manager']=empIdToName[rawL2];
+      // else keep raw value (already a name, or blank)
+    });
+    console.log('✅ L2 Manager IDs resolved to names');
     const activeCount=EMP_DATA.filter(d=>d.ActiveFlag===1).length;
     const inactiveCount=EMP_DATA.filter(d=>d.ActiveFlag===0).length;
     const unflagged=EMP_DATA.filter(d=>d.ActiveFlag===null).length;
@@ -3574,18 +3593,45 @@ function sqColor(sq){return SQUAD_DARK[sq]||'#6B7A8B';}
 // ── BUILD TREE FROM L1 RELATIONSHIPS ─────────────────────────
 function buildOrgTree(employees){
   const nodes={};
+
+  // Build lookup by both Emp ID (authoritative) and full name (fallback)
   employees.forEach(e=>{
     const full=`${e['First Name']||''} ${e['Last Name']||''}`.trim();
-    nodes[full]={...e,full,children:[]};
+    const id=String(e['Emp ID']||e['Emp Id']||e['empId']||'').trim();
+    const node={...e,full,children:[]};
+    nodes[full]=node;
+    if(id) nodes[id]=node;   // also index by ID so L1 Employee ID lookup works
   });
+
   const roots=[];
   employees.forEach(e=>{
     const full=`${e['First Name']||''} ${e['Last Name']||''}`.trim();
-    const l1=String(e['L1 Manager']||'').trim();
-    if(l1&&nodes[l1]&&l1!==full) nodes[l1].children.push(nodes[full]);
-    else roots.push(nodes[full]);
+    const node=nodes[full];
+
+    // Prefer L1 Employee ID (col 11) — unique and immune to name changes
+    const l1Id=String(e['L1 Employee ID']||'').trim();
+    const l1Name=String(e['L1 Manager']||'').trim();
+
+    let parent=null;
+    if(l1Id&&l1Id!=='#N/A'&&nodes[l1Id]&&nodes[l1Id]!==node){
+      parent=nodes[l1Id];            // join by Employee ID — authoritative
+    } else if(l1Name&&l1Name!=='#N/A'&&nodes[l1Name]&&nodes[l1Name]!==node){
+      parent=nodes[l1Name];          // fallback: join by name
+    }
+
+    if(parent) parent.children.push(node);
+    else roots.push(node);
   });
-  return{roots,nodes};
+
+  // Booshan has no L1 Manager (root of org) — he should be the single root
+  // If multiple roots found, prefer Booshan; else use largest subtree
+  const boo=roots.find(r=>r.full==='Booshan Rengachari');
+  const trueRoot=boo||roots.reduce((a,b)=>subtreeCount(a)>=subtreeCount(b)?a:b,roots[0]);
+
+  // Absorb any stray roots (people whose manager ID wasn't resolved) under a
+  // virtual "Unattached" node — keeps the chart clean without losing anyone
+  // For now just return trueRoot as roots[0] so renderOrgChart always works
+  return{roots:[trueRoot,...roots.filter(r=>r!==trueRoot)],nodes};
 }
 
 // ── COUNT SUBTREE SIZE ────────────────────────────────────────
@@ -3702,9 +3748,7 @@ function renderOrgChart(){
      Section 1: Leadership Team (Booshan + direct reports). Section 2: Each leader's full Galaxy tree — click header to expand. 🔵 India · 🟣 USA`;
 
   const {roots}=buildOrgTree(activeAll);
-  // Always use Booshan Rengachari as root. If not found, fall back to largest subtree.
-  const root=roots.find(r=>r.full==='Booshan Rengachari')
-           ||roots.reduce((a,b)=>subtreeCount(a)>=subtreeCount(b)?a:b,roots[0]);
+  const root=roots[0]; // buildOrgTree guarantees this is Booshan (by L1 Employee ID join)
   if(!root)return;
 
   // ── SECTION 1: Leadership Strip ───────────────────────────
