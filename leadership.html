@@ -702,8 +702,11 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
           <div style="font-size:.72rem;color:var(--muted);margin-top:3px">One row per manager · 5 signals CXOs use to make decisions · Click any row for reasoning</div>
         </div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <select id="f-mgr-squad" onchange="renderMgrFilter()" style="font-family:'Outfit',sans-serif;font-size:.76rem;padding:5px 22px 5px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);appearance:none;min-width:150px">
+          <select id="f-mgr-squad" onchange="renderMgrSubSquads();renderMgrFilter()" style="font-family:'Outfit',sans-serif;font-size:.76rem;padding:5px 22px 5px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);appearance:none;min-width:150px">
             <option value="all">All Squads</option>
+          </select>
+          <select id="f-mgr-subsquad" onchange="renderMgrFilter()" style="font-family:'Outfit',sans-serif;font-size:.76rem;padding:5px 22px 5px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);appearance:none;min-width:160px;display:none">
+            <option value="all">All Sub Squads</option>
           </select>
           <select id="f-mgr-level" onchange="renderMgrFilter()" style="font-family:'Outfit',sans-serif;font-size:.76rem;padding:5px 22px 5px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);appearance:none;min-width:150px">
             <option value="all">All Levels</option>
@@ -3281,13 +3284,36 @@ function renderEngagementTab(){
   renderSSC(OO_ISSUE_DEFS.keep,'eng-keep');
 }
 
+function renderMgrSubSquads(){
+  const sqF=document.getElementById('f-mgr-squad')?.value||'all';
+  const sel=document.getElementById('f-mgr-subsquad');
+  if(!sel)return;
+  // Reset
+  sel.innerHTML='<option value="all">All Sub Squads</option>';
+  if(sqF==='all'){sel.style.display='none';return;}
+  // Collect sub-squads for selected squad from EMP_DATA
+  const active=EMP_DATA.filter(d=>d.Status==='Active'||d.ActiveFlag===1);
+  const subs=[...new Set(
+    active.filter(d=>d.Squad===sqF).map(d=>(d['Sub Squad']||'').trim()).filter(Boolean)
+  )].sort();
+  if(subs.length===0){sel.style.display='none';return;}
+  subs.forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;sel.appendChild(o);});
+  sel.style.display='';
+}
+
 function renderMgrFilter(){
   const activeAll=EMP_DATA.filter(d=>d.Status==='Active'||d.ActiveFlag===1);
   const inactAll =EMP_DATA.filter(d=>d.Status==='Inactive'||d.ActiveFlag===0);
-  const sqF  =document.getElementById('f-mgr-squad')?.value||'all';
-  const lvlF =document.getElementById('f-mgr-level')?.value||'all';
-  const hlthF=document.getElementById('f-mgr-health')?.value||'all';
-  const emps=sqF==='all'?activeAll:activeAll.filter(d=>d.Squad===sqF);
+  const sqF    =document.getElementById('f-mgr-squad')?.value||'all';
+  const subSqF =document.getElementById('f-mgr-subsquad')?.value||'all';
+  const lvlF   =document.getElementById('f-mgr-level')?.value||'all';
+  const hlthF  =document.getElementById('f-mgr-health')?.value||'all';
+
+  // Filter employees by squad AND sub-squad
+  let emps=activeAll;
+  if(sqF!=='all')    emps=emps.filter(d=>d.Squad===sqF);
+  if(subSqF!=='all') emps=emps.filter(d=>(d['Sub Squad']||'').trim()===subSqF);
+
   const mgrMap=buildMgrMap(emps);
 
   const {nodes:orgNodes}=buildOrgTree(activeAll);
