@@ -1898,9 +1898,14 @@ function renderDataHealth(){
       id:'missing-perf',
       title:`Missing ${PERF_COL_CURR} Rating`,
       color:'#d97706', bg:'#fffbeb', border:'#fcd34d',
-      desc:`Active employees missing ${PERF_COL_CURR}. Excludes employees who joined in the rating year or later — no completed appraisal cycle yet.`,
-      action:`Open Employee Master → set ${PERF_COL_CURR} (col 33) for each employee below.`,
+      desc:`Active FTE employees missing ${PERF_COL_CURR}. Excludes: Consultants (no appraisal cycle), employees who joined in the rating year or later, and the CEO.`,
+      action:`Open Employee Master → set ${PERF_COL_CURR} (col 33) for each FTE below.`,
       rows: active.filter(d=>{
+        // Exclude consultants — no performance appraisal
+        if(String(d.Type||'').trim().toLowerCase()==='consultant') return false;
+        // Exclude CEO (Booshan) — no appraisal applicable
+        if(String(d['Emp ID']||'').trim()===ROOT_ID) return false;
+        // Exclude employees who joined in the perf year or later — no completed cycle
         const perfYear=parseInt(PERF_COL_CURR.replace('Performance Rating ',''))||2025;
         const sy=d['Start Year']?parseInt(d['Start Year']):null;
         if(sy&&sy>=perfYear) return false;
