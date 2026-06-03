@@ -3404,7 +3404,7 @@ function renderEngagementTab(){
     kpi('Needs Attention',watchSqs,'squads below 4.0',watchSqs>0?'#dc2626':'#15803d')+
     kpi('RAG Split',`${totalRag.G}G·${totalRag.A}A·${totalRag.R}R`,'from 1:1 responses',totalRag.R>0?'#dc2626':totalRag.A>0?'#d97706':'#15803d');
 
-  // Squad heatmap table
+  // Squad heatmap table — click row to see Red/Amber employees by name
   const th=(t,w)=>`<th style="padding:8px 10px;background:#1e3a5f;color:#fff;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:left;white-space:nowrap${w?';width:'+w:''}">${t}</th>`;
   const cell=(v,isScore=false)=>{
     if(!isScore)return`<td style="padding:8px 10px;font-size:.76rem;border-bottom:1px solid #f0ede8">${v}</td>`;
@@ -3413,12 +3413,62 @@ function renderEngagementTab(){
     const col=isNaN(n)?'#888':ooEngColor(n);
     return`<td style="padding:8px 10px;border-bottom:1px solid #f0ede8;text-align:center"><span style="display:inline-block;min-width:52px;padding:4px 10px;border-radius:8px;background:${bg};color:${col};font-family:'Fira Code',monospace;font-size:.78rem;font-weight:700">${isNaN(n)?'—':n.toFixed(1)}</span></td>`;
   };
+
+  // Build emp lookup by ID for drill-down
+  const empById={};
+  EMP_DATA.filter(d=>d.ActiveFlag===1).forEach(d=>{
+    const id=String(d['Emp ID']||'').trim();
+    if(id) empById[id]=d;
+  });
+
   const rows=squads.map(([sq,d],i)=>{
     const e=ooAvg(d.eng),m=ooAvg(d.mgr),o=ooAvg(d.ov);
     const lbl=ooEngLabel(e);
     const bg=i%2?'#fafafa':'#fff';
-    return`<tr style="background:${bg}">
-      ${cell(`<strong style="font-size:.78rem">${sq}</strong><div style="font-size:.62rem;color:#888;margin-top:1px">${d.loc||'India'} · ${d.n} responses</div>`)}
+    const rowId=`oo-sq-${i}`;
+    const hasRag=d.rag.R>0||d.rag.A>0;
+
+    // Build drill-down: find employees in this squad by empIds, get their RAG from EMP_DATA
+    let drillHtml='';
+    if(hasRag){
+      const sqEmps=d.empIds.map(id=>empById[id]).filter(Boolean);
+      const redEmps =sqEmps.filter(emp=>String(emp['Rag Status']||'').toLowerCase()==='red');
+      const ambrEmps=sqEmps.filter(emp=>String(emp['Rag Status']||'').toLowerCase()==='amber');
+
+      const empRow=(emp,col,icon)=>`
+        <div style="display:flex;align-items:center;gap:10px;padding:6px 12px;border-bottom:1px solid #f9f9f9">
+          <span style="font-size:.72rem">${icon}</span>
+          <div style="flex:1">
+            <span style="font-size:.78rem;font-weight:700;color:#1a1a2e">${emp['First Name']||''} ${emp['Last Name']||''}</span>
+            <span style="font-size:.68rem;color:#888;margin-left:8px">${emp['Emp ID']||''}</span>
+          </div>
+          <span style="font-size:.72rem;color:#555">${emp['Sub Squad']||emp.Squad||''}</span>
+          <span style="font-size:.72rem;color:#555">${emp.City||''}</span>
+          <span style="font-size:.72rem;color:#555">${emp['L1 Manager']||'—'}</span>
+          <span style="background:${col}18;color:${col};font-size:.66rem;font-weight:700;padding:2px 8px;border-radius:20px;border:1px solid ${col}40">${icon === '🔴' ? 'Red' : 'Amber'}</span>
+        </div>`;
+
+      if(redEmps.length||ambrEmps.length){
+        drillHtml=`
+          <tr id="${rowId}-detail" style="display:none">
+            <td colspan="6" style="padding:0;background:#fff;border-bottom:2px solid #e0dbd2">
+              <div style="border-left:4px solid #dc2626;margin:0">
+                ${redEmps.length?`<div style="padding:6px 12px;background:#fef2f2;font-size:.7rem;font-weight:700;color:#dc2626;letter-spacing:.05em">🔴 RED STATUS — ${redEmps.length} employee${redEmps.length>1?'s':''}</div>${redEmps.map(e=>empRow(e,'#dc2626','🔴')).join('')}`:''}
+                ${ambrEmps.length?`<div style="padding:6px 12px;background:#fffbeb;font-size:.7rem;font-weight:700;color:#d97706;letter-spacing:.05em;border-top:1px solid #fde68a">⚠ AMBER STATUS — ${ambrEmps.length} employee${ambrEmps.length>1?'s':''}</div>${ambrEmps.map(e=>empRow(e,'#d97706','⚠️')).join('')}`:''}
+                <div style="padding:6px 12px;font-size:.7rem;color:#888;background:#fafafa;border-top:1px solid #f0ede8">
+                  Source: Employee Master RAG Status · ${d.empIds.length} of ${d.n} respondents matched by Emp ID
+                </div>
+              </div>
+            </td>
+          </tr>`;
+      }
+    }
+
+    const clickAttr=hasRag?`onclick="document.getElementById('${rowId}-detail').style.display=document.getElementById('${rowId}-detail').style.display==='none'?'table-row':'none';this.querySelector('.oo-chev').textContent=document.getElementById('${rowId}-detail').style.display!=='none'?'▲':'▼'" style="background:${bg};cursor:pointer" onmouseover="this.style.background='#f5f3ff'" onmouseout="this.style.background='${bg}'"`:
+      `style="background:${bg}"`;
+
+    return`<tr ${clickAttr}>
+      ${cell(`<strong style="font-size:.78rem">${sq}</strong><div style="font-size:.62rem;color:#888;margin-top:1px">${d.loc||'India'} · ${d.n} responses${hasRag?` <span class="oo-chev" style="color:var(--accent);font-size:.62rem;margin-left:4px">▼</span>`:''}</div>`)}
       ${cell(e!==null?e.toFixed(1):'—',true)}
       ${cell(m!==null?m.toFixed(1):'—',true)}
       ${cell(o!==null?o.toFixed(1):'—',true)}
@@ -3430,10 +3480,11 @@ function renderEngagementTab(){
       <td style="padding:8px 10px;border-bottom:1px solid #f0ede8">
         <span style="background:${lbl.color}18;color:${lbl.color};padding:3px 10px;border-radius:10px;font-size:.68rem;font-weight:700">${lbl.cls} ${lbl.text}</span>
       </td>
-    </tr>`;
+    </tr>${drillHtml}`
   }).join('');
+
   document.getElementById('eng-heatmap').innerHTML=`<thead><tr>
-    ${th('Squad')+''+th('Engagement','90px')+th('Manager','80px')+th('Overall','80px')+th('RAG','120px')+th('Status','100px')}
+    ${th('Squad ↓ click Red/Amber to expand')+''+th('Engagement','90px')+th('Manager','80px')+th('Overall','80px')+th('RAG','120px')+th('Status','100px')}
   </tr></thead><tbody>${rows}</tbody>`;
 
   // Requests aggregated across all 1:1 data
