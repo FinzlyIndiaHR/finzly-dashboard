@@ -3421,51 +3421,115 @@ function renderEngagementTab(){
     if(id) empById[id]=d;
   });
 
+  // Build per-employee 1:1 response lookup (reason for status)
+  // Stored during buildOOSquadMap via OO_EMP_MAP
+  // Key = normalised Emp ID → {rag, comment, q2, ssc, eng, mgr}
+  // (we build this here from OO_DATA directly since OO_EMP_MAP may not be global)
+  const ooEmpData={};
+  if(OO_DATA.length&&OO_HDRS.length){
+    const ci2=kw=>OO_HDRS.findIndex(h=>kw.some(k=>h.toLowerCase().includes(k.toLowerCase())));
+    const iEmpId2=ci2(['emp id']);
+    const iEng2  =ci2(['how engaged','engaged do you','currently feel at work']);
+    const iMgr2  =ci2(['relationship and communication','rating on a scale']);
+    const iRag2  =ci2(['rag status','rag']);
+    const iCom2  =ci2(['additional comments']);
+    const iQ22   =ci2(['going well','challenging']);
+    const iSsc2  =ci2(['start, stop','stop, or continue','as a team']);
+    const str2=(row,i)=>i<0||i>=row.length?'':String(row[i]||'').trim();
+    OO_DATA.forEach(row=>{
+      const id=normaliseEmpId(row[iEmpId2]);
+      if(!id)return;
+      ooEmpData[id]={
+        rag:    str2(row,iRag2),
+        eng:    str2(row,iEng2),
+        mgr:    str2(row,iMgr2),
+        comment:str2(row,iCom2),
+        q2:     str2(row,iQ22),
+        ssc:    str2(row,iSsc2),
+      };
+    });
+  }
+
   const rows=squads.map(([sq,d],i)=>{
     const e=ooAvg(d.eng),m=ooAvg(d.mgr),o=ooAvg(d.ov);
     const lbl=ooEngLabel(e);
     const bg=i%2?'#fafafa':'#fff';
     const rowId=`oo-sq-${i}`;
-    const hasRag=d.rag.R>0||d.rag.A>0;
 
-    // Build drill-down: find employees in this squad by empIds, get their RAG from EMP_DATA
+    // ── DRILL-DOWN: get Red/Amber employees from EMP_DATA by squad ──
+    // NOT limited to 1:1 respondents — covers all active squad members
+    const allSqEmps=EMP_DATA.filter(d=>d.ActiveFlag===1&&d.Squad===sq);
+    const redEmps =allSqEmps.filter(d=>String(d['Rag Status']||'').toLowerCase()==='red');
+    const ambrEmps=allSqEmps.filter(d=>String(d['Rag Status']||'').toLowerCase()==='amber');
+    const hasRag=redEmps.length>0||ambrEmps.length>0;
+
+    const empRow=(emp,col,icon)=>{
+      const empId=String(emp['Emp ID']||'').trim();
+      const oo=ooEmpData[normaliseEmpId(empId)]||null;
+
+      // Build reason from 1:1 response if available
+      let reason='';
+      if(oo){
+        const parts=[];
+        if(oo.comment&&oo.comment.length>10) parts.push(oo.comment);
+        else if(oo.q2&&oo.q2.length>10) parts.push(oo.q2);
+        if(oo.ssc&&oo.ssc.length>10) parts.push(`SSC: ${oo.ssc}`);
+        reason=parts[0]||'';
+      }
+      const reasonHtml=reason
+        ?`<div style="font-size:.72rem;color:#555;font-style:italic;margin-top:3px;padding:5px 8px;background:rgba(0,0,0,.03);border-radius:4px;border-left:2px solid ${col}">
+            "${reason.length>200?reason.slice(0,197)+'…':reason}"
+          </div>`
+        :oo
+          ?`<div style="font-size:.7rem;color:#aaa;margin-top:2px">No specific comment recorded in 1:1</div>`
+          :`<div style="font-size:.7rem;color:#aaa;margin-top:2px">Did not participate in 1:1 survey</div>`;
+
+      return`<div style="padding:10px 14px;border-bottom:1px solid #f5f5f5">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span style="font-size:.88rem">${icon}</span>
+          <div style="flex:1;min-width:160px">
+            <span style="font-size:.82rem;font-weight:700;color:#1a1a2e">${emp['First Name']||''} ${emp['Last Name']||''}</span>
+            <span style="font-family:'Fira Code',monospace;font-size:.66rem;color:#888;margin-left:8px">${empId}</span>
+          </div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:.72rem;color:#555">
+            <span>👤 <strong>Manager:</strong> ${emp['L1 Manager']||'—'}</span>
+            <span>🏙 ${emp.City||'—'}</span>
+            <span>⚙ ${emp['Sub Squad']||emp.Squad||'—'}</span>
+            ${oo&&oo.eng?`<span>💬 Engagement: <strong style="color:${ooEngColor(parseFloat(oo.eng)||0)}">${oo.eng.charAt(0)}/5</strong></span>`:''}
+          </div>
+          <span style="background:${col}18;color:${col};font-size:.66rem;font-weight:700;padding:2px 9px;border-radius:20px;border:1px solid ${col}40">${icon==='🔴'?'Red':'Amber'}</span>
+        </div>
+        ${reasonHtml}
+      </div>`;
+    };
+
     let drillHtml='';
     if(hasRag){
-      const sqEmps=d.empIds.map(id=>empById[id]).filter(Boolean);
-      const redEmps =sqEmps.filter(emp=>String(emp['Rag Status']||'').toLowerCase()==='red');
-      const ambrEmps=sqEmps.filter(emp=>String(emp['Rag Status']||'').toLowerCase()==='amber');
-
-      const empRow=(emp,col,icon)=>`
-        <div style="display:flex;align-items:center;gap:10px;padding:6px 12px;border-bottom:1px solid #f9f9f9">
-          <span style="font-size:.72rem">${icon}</span>
-          <div style="flex:1">
-            <span style="font-size:.78rem;font-weight:700;color:#1a1a2e">${emp['First Name']||''} ${emp['Last Name']||''}</span>
-            <span style="font-size:.68rem;color:#888;margin-left:8px">${emp['Emp ID']||''}</span>
-          </div>
-          <span style="font-size:.72rem;color:#555">${emp['Sub Squad']||emp.Squad||''}</span>
-          <span style="font-size:.72rem;color:#555">${emp.City||''}</span>
-          <span style="font-size:.72rem;color:#555">${emp['L1 Manager']||'—'}</span>
-          <span style="background:${col}18;color:${col};font-size:.66rem;font-weight:700;padding:2px 8px;border-radius:20px;border:1px solid ${col}40">${icon === '🔴' ? 'Red' : 'Amber'}</span>
-        </div>`;
-
-      if(redEmps.length||ambrEmps.length){
-        drillHtml=`
-          <tr id="${rowId}-detail" style="display:none">
-            <td colspan="6" style="padding:0;background:#fff;border-bottom:2px solid #e0dbd2">
-              <div style="border-left:4px solid #dc2626;margin:0">
-                ${redEmps.length?`<div style="padding:6px 12px;background:#fef2f2;font-size:.7rem;font-weight:700;color:#dc2626;letter-spacing:.05em">🔴 RED STATUS — ${redEmps.length} employee${redEmps.length>1?'s':''}</div>${redEmps.map(e=>empRow(e,'#dc2626','🔴')).join('')}`:''}
-                ${ambrEmps.length?`<div style="padding:6px 12px;background:#fffbeb;font-size:.7rem;font-weight:700;color:#d97706;letter-spacing:.05em;border-top:1px solid #fde68a">⚠ AMBER STATUS — ${ambrEmps.length} employee${ambrEmps.length>1?'s':''}</div>${ambrEmps.map(e=>empRow(e,'#d97706','⚠️')).join('')}`:''}
-                <div style="padding:6px 12px;font-size:.7rem;color:#888;background:#fafafa;border-top:1px solid #f0ede8">
-                  Source: Employee Master RAG Status · ${d.empIds.length} of ${d.n} respondents matched by Emp ID
+      drillHtml=`
+        <tr id="${rowId}-detail" style="display:none">
+          <td colspan="6" style="padding:0;background:#fff;border-bottom:2px solid #e0dbd2">
+            <div>
+              ${redEmps.length?`
+                <div style="padding:7px 14px;background:#fef2f2;font-size:.7rem;font-weight:700;color:#dc2626;letter-spacing:.04em;border-left:4px solid #dc2626">
+                  🔴 RED STATUS — ${redEmps.length} employee${redEmps.length>1?'s':''} · Immediate skip-level 1:1 recommended
                 </div>
+                ${redEmps.map(e=>empRow(e,'#dc2626','🔴')).join('')}`:''}
+              ${ambrEmps.length?`
+                <div style="padding:7px 14px;background:#fffbeb;font-size:.7rem;font-weight:700;color:#d97706;letter-spacing:.04em;border-left:4px solid #d97706${redEmps.length?';border-top:1px solid #fde68a':''}">
+                  ⚠ AMBER STATUS — ${ambrEmps.length} employee${ambrEmps.length>1?'s':''} · Career conversation needed within 2 weeks
+                </div>
+                ${ambrEmps.map(e=>empRow(e,'#d97706','⚠️')).join('')}`:''}
+              <div style="padding:6px 14px;font-size:.68rem;color:#aaa;background:#fafafa;border-top:1px solid #f0ede8">
+                RAG from Employee Master · 1:1 reasons from survey where available (${d.empIds.length}/${allSqEmps.length} squad members participated)
               </div>
-            </td>
-          </tr>`;
-      }
+            </div>
+          </td>
+        </tr>`;
     }
 
-    const clickAttr=hasRag?`onclick="document.getElementById('${rowId}-detail').style.display=document.getElementById('${rowId}-detail').style.display==='none'?'table-row':'none';this.querySelector('.oo-chev').textContent=document.getElementById('${rowId}-detail').style.display!=='none'?'▲':'▼'" style="background:${bg};cursor:pointer" onmouseover="this.style.background='#f5f3ff'" onmouseout="this.style.background='${bg}'"`:
-      `style="background:${bg}"`;
+    const clickAttr=hasRag
+      ?`onclick="const dr=document.getElementById('${rowId}-detail');const ch=this.querySelector('.oo-chev');const open=dr.style.display!=='none';dr.style.display=open?'none':'table-row';ch.textContent=open?'▼':'▲';" style="background:${bg};cursor:pointer" onmouseover="this.style.background='#f5f3ff'" onmouseout="this.style.background='${bg}'"`
+      :`style="background:${bg}"`;
 
     return`<tr ${clickAttr}>
       ${cell(`<strong style="font-size:.78rem">${sq}</strong><div style="font-size:.62rem;color:#888;margin-top:1px">${d.loc||'India'} · ${d.n} responses${hasRag?` <span class="oo-chev" style="color:var(--accent);font-size:.62rem;margin-left:4px">▼</span>`:''}</div>`)}
@@ -3473,18 +3537,18 @@ function renderEngagementTab(){
       ${cell(m!==null?m.toFixed(1):'—',true)}
       ${cell(o!==null?o.toFixed(1):'—',true)}
       <td style="padding:8px 10px;border-bottom:1px solid #f0ede8;font-size:.72rem">
-        <span style="color:${d.rag.R>0?'#dc2626':'#888'};font-weight:700">${d.rag.R>0?'🔴 '+d.rag.R+' Red':''}</span>
-        <span style="color:${d.rag.A>0?'#d97706':'#888'};font-weight:600;margin-left:${d.rag.R>0?6:0}px">${d.rag.A>0?'⚠ '+d.rag.A+' Amber':''}</span>
-        ${d.rag.R===0&&d.rag.A===0?'<span style="color:#15803d">✅ All Green</span>':''}
+        <span style="color:${redEmps.length>0?'#dc2626':'#888'};font-weight:700">${redEmps.length>0?'🔴 '+redEmps.length+' Red':''}</span>
+        <span style="color:${ambrEmps.length>0?'#d97706':'#888'};font-weight:600;margin-left:${redEmps.length>0?6:0}px">${ambrEmps.length>0?'⚠ '+ambrEmps.length+' Amber':''}</span>
+        ${redEmps.length===0&&ambrEmps.length===0?'<span style="color:#15803d">✅ All Green</span>':''}
       </td>
       <td style="padding:8px 10px;border-bottom:1px solid #f0ede8">
         <span style="background:${lbl.color}18;color:${lbl.color};padding:3px 10px;border-radius:10px;font-size:.68rem;font-weight:700">${lbl.cls} ${lbl.text}</span>
       </td>
-    </tr>${drillHtml}`
+    </tr>${drillHtml}`;
   }).join('');
 
   document.getElementById('eng-heatmap').innerHTML=`<thead><tr>
-    ${th('Squad ↓ click Red/Amber to expand')+''+th('Engagement','90px')+th('Manager','80px')+th('Overall','80px')+th('RAG','120px')+th('Status','100px')}
+    ${th('Squad ↓ click Red/Amber rows to expand')+''+th('Engagement','90px')+th('Manager','80px')+th('Overall','80px')+th('RAG','120px')+th('Status','100px')}
   </tr></thead><tbody>${rows}</tbody>`;
 
   // Requests aggregated across all 1:1 data
