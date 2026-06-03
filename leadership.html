@@ -1887,17 +1887,25 @@ function renderDataHealth(){
       id:'missing-rag',
       title:'RAG Status Not Set',
       color:'#d97706', bg:'#fffbeb', border:'#fcd34d',
-      desc:'Active employees with no RAG status. These 45% of the workforce show as "Not Set" and cannot be used for flight-risk analysis until assessed.',
-      action:'Open Employee Master → set RAG Status (col 30) to Green, Amber, or Red for each employee below.',
-      rows: active.filter(d=>!d['Rag Status']||d['Rag Status']==='Not Set'||d['Rag Status']==='NA')
+      desc:'Active FTE employees with no RAG status. Consultants excluded — RAG not applicable for them.',
+      action:'Open Employee Master → set RAG Status (col 30) to Green, Amber, or Red for each FTE below.',
+      rows: active.filter(d=>{
+        if(String(d.Type||'').trim().toLowerCase()==='consultant') return false;
+        return !d['Rag Status']||d['Rag Status']==='Not Set'||d['Rag Status']==='NA';
+      })
     },
     {
       id:'missing-perf',
       title:`Missing ${PERF_COL_CURR} Rating`,
       color:'#d97706', bg:'#fffbeb', border:'#fcd34d',
-      desc:'Active employees with no current year performance rating. Pay and promotion decisions should not be made without a rating.',
+      desc:`Active employees missing ${PERF_COL_CURR}. Excludes employees who joined in the rating year or later — no completed appraisal cycle yet.`,
       action:`Open Employee Master → set ${PERF_COL_CURR} (col 33) for each employee below.`,
-      rows: active.filter(d=>!(d[PERF_COL_CURR]>=1&&d[PERF_COL_CURR]<=5))
+      rows: active.filter(d=>{
+        const perfYear=parseInt(PERF_COL_CURR.replace('Performance Rating ',''))||2025;
+        const sy=d['Start Year']?parseInt(d['Start Year']):null;
+        if(sy&&sy>=perfYear) return false;
+        return !(d[PERF_COL_CURR]>=1&&d[PERF_COL_CURR]<=5);
+      })
     },
     {
       id:'missing-city',
@@ -1913,7 +1921,7 @@ function renderDataHealth(){
       color:'#2563eb', bg:'#eff6ff', border:'#93c5fd',
       desc:'Active employees with no Level set. Team Radar span analysis and level filters will not work correctly.',
       action:'Open Employee Master → set Level (col 29) for each employee below.',
-      rows: active.filter(d=>!d.Level||d.Level==='#N/A')
+      rows: active.filter(d=>{ if(String(d.Type||'').trim().toLowerCase()==='consultant') return false; return !d.Level||d.Level==='#N/A'; })
     },
     {
       id:'missing-country',
