@@ -3426,6 +3426,7 @@ function renderEngagementTab(){
   // Key = normalised Emp ID → {rag, comment, q2, ssc, eng, mgr}
   // (we build this here from OO_DATA directly since OO_EMP_MAP may not be global)
   const ooEmpData={};
+  const normId=v=>{if(!v&&v!==0)return'';let s=String(v).trim();s=s.replace(/\.0+$/,'');return s.toUpperCase();};
   if(OO_DATA.length&&OO_HDRS.length){
     const ci2=kw=>OO_HDRS.findIndex(h=>kw.some(k=>h.toLowerCase().includes(k.toLowerCase())));
     const iEmpId2=ci2(['emp id']);
@@ -3437,7 +3438,7 @@ function renderEngagementTab(){
     const iSsc2  =ci2(['start, stop','stop, or continue','as a team']);
     const str2=(row,i)=>i<0||i>=row.length?'':String(row[i]||'').trim();
     OO_DATA.forEach(row=>{
-      const id=normaliseEmpId(row[iEmpId2]);
+      const id=normId(row[iEmpId2]);
       if(!id)return;
       ooEmpData[id]={
         rag:    str2(row,iRag2),
@@ -3465,7 +3466,7 @@ function renderEngagementTab(){
 
     const empRow=(emp,col,icon)=>{
       const empId=String(emp['Emp ID']||'').trim();
-      const oo=ooEmpData[normaliseEmpId(empId)]||null;
+      const oo=ooEmpData[normId(empId)]||null;
 
       // Build reason from 1:1 response if available
       let reason='';
