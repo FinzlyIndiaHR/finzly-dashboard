@@ -892,6 +892,7 @@ const SUBSQUAD_MAP = {
 function cleanSquad(v){ if(!v||v==='#N/A')return v; return SQUAD_MAP[v.trim()]||v.trim(); }
 function cleanSub(v){ if(!v||v==='#N/A')return v; const s=v.trim(); return SUBSQUAD_MAP[s]||s; }
 function cleanRag(v){ if(!v||v==='NA'||v==='#N/A')return 'Not Set'; return v; }
+function cleanMgr(v){ const s=String(v||'').trim(); return(s==='#N/A'||s==='#NA'||s==='NA'||s==='#REF!'||s==='#VALUE!')?'':s; }
 
 // ── AUTH ──────────────────────────────────────────────────────
 async function signIn(){
@@ -1050,9 +1051,9 @@ function processEmpMaster(values){
       Country:       g(I.country),
       Gender:        g(I.gender),
       'L1 Employee ID': g(I.l1empId),
-      'L1 Manager':  g(I.l1mgr),
-      'L2 Manager ID': g(I.l2mgr),   // raw ID — resolved to name after full load
-      'L2 Manager':  g(I.l2mgr),     // placeholder — overwritten below
+      'L1 Manager':  cleanMgr(g(I.l1mgr)),
+      'L2 Manager ID': g(I.l2mgr),
+      'L2 Manager':  cleanMgr(g(I.l2mgr)),
       'L2 Manager':  g(I.l2mgr),
       'Corporate Title': g(I.title),
       'Start Date':  startDateRaw,   // raw value — parseEmpDate handles all formats
@@ -3084,9 +3085,11 @@ function render(){
 // ── MANAGER SPAN LOGIC ────────────────────────────────────────
 function buildMgrMap(activeEmps){
   const mgrMap={};
+  // Invalid manager name values to skip
+  const INVALID_MGR=new Set(['','#n/a','#na','na','n/a','null','undefined','#ref!','#value!']);
   activeEmps.forEach(d=>{
     const mgr=String(d['L1 Manager']||'').trim();
-    if(!mgr)return;
+    if(!mgr||INVALID_MGR.has(mgr.toLowerCase()))return;
     if(!mgrMap[mgr])mgrMap[mgr]={reports:[],squads:new Set(),countries:new Set()};
     mgrMap[mgr].reports.push(d);
     if(d.Squad)mgrMap[mgr].squads.add(d.Squad);
