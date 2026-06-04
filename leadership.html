@@ -326,11 +326,9 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
 .ins-txt{font-size:.72rem;color:var(--ink);line-height:1.55}
 .ins-txt strong{font-weight:700}
 /* ── APP BODY WITH SUB-NAV SIDEBAR ──────────────────────── */
-.app-body{display:flex;min-height:calc(100vh - 107px)}
-/* Sidebar = sub-section index for current tab */
-.sidebar{width:210px;flex-shrink:0;background:var(--card);border-right:1px solid var(--border);position:sticky;top:107px;height:calc(100vh - 107px);overflow-y:auto;padding:10px 0;scrollbar-width:thin}
+.app-body{display:flex;align-items:flex-start}
+.sidebar{width:210px;flex-shrink:0;background:var(--card);border-right:1px solid var(--border);position:sticky;top:142px;max-height:calc(100vh - 142px);overflow-y:auto;padding:10px 0;scrollbar-width:thin}
 .sidebar::-webkit-scrollbar{width:3px}.sidebar::-webkit-scrollbar-thumb{background:var(--border2);border-radius:99px}
-/* Sidebar section items */
 .sb-item{display:flex;flex-direction:column;align-items:flex-start;width:100%;padding:9px 14px;border:none;border-left:3px solid transparent;background:transparent;cursor:pointer;font-family:'Outfit',sans-serif;text-align:left;transition:all .14s;position:relative}
 .sb-item:hover{background:var(--bg);border-left-color:var(--border)}
 .sb-item.on{background:rgba(232,84,26,.06);border-left-color:var(--accent)}
@@ -338,14 +336,10 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
 .sb-label{font-size:.78rem;font-weight:500;color:var(--ink);line-height:1.3}
 .sb-sub{font-size:.64rem;color:var(--muted);margin-top:1px;line-height:1.2}
 .sb-group-header{font-size:.58rem;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--muted2);padding:12px 14px 4px;display:block}
-/* Content area */
-.content-area{flex:1;min-width:0;overflow-y:auto;height:calc(100vh - 107px)}
-/* Section anchors within a tab */
-.tab-section{scroll-margin-top:20px;margin-bottom:28px}
-.tab-section-title{display:none}/* hidden — sidebar is the nav */
-/* Remove old tabs display override */
+.content-area{flex:1;min-width:0}
+.tab-section{scroll-margin-top:160px;margin-bottom:28px}
 .tabs{display:flex!important}
-@media(max-width:860px){.sidebar{display:none}.content-area{padding:14px 14px 40px}}
+@media(max-width:860px){.sidebar{display:none}}
 /* Inner sub-tabs for Engagement */
 .inner-tabs{display:flex;gap:2px;padding:2px;background:var(--bg);border-radius:10px;margin-bottom:16px;width:fit-content}
 .inner-tab{font-family:'Outfit',sans-serif;font-size:.76rem;padding:6px 16px;border-radius:8px;border:none;cursor:pointer;color:var(--muted);background:transparent;font-weight:500;transition:all .15s;white-space:nowrap}
@@ -5896,8 +5890,8 @@ window.onload=async function(){
   }
 };
 </script>
-</div><!-- /content-area -->
-</div><!-- /app-body -->
+    </div><!-- /content-area -->
+  </div><!-- /app-body -->
 </div><!-- /dash -->
 </body>
 </html>
