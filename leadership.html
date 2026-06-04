@@ -980,7 +980,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
         <span style="font-size:.62rem;color:var(--muted);align-self:center"><span style="background:rgba(217,119,6,.15);color:var(--amber);padding:1px 5px;border-radius:3px;font-weight:700">CON</span> Contractor · 🔵 India · 🟣 USA</span>
       </div>
     </div>
-    <div id="p9-galaxy"></div>
+    <div id="galaxy-trees"></div>
   </div>
   <!-- P11 REPORTS -->
   <!-- reports anchor added in p11 div -->
@@ -2530,7 +2530,7 @@ const TAB_SECTIONS={
   ],
   p9:[
     {id:'p9-lead',     label:'Leadership Team',       sub:'Top 2 levels'},
-    {id:'p9-galaxy',   label:'Galaxy Trees',          sub:'Full org by galaxy'},
+    {id:'galaxy-trees',label:'Galaxy Trees',          sub:'Full org by galaxy'},
   ],
   p11:[
     {id:'p11-reports', label:'Generate Reports',      sub:'AI-narrative PPT export'},
@@ -4768,6 +4768,7 @@ function renderOrgChart(){
 
   // ── SECTION 2: Galaxy Trees ───────────────────────────────
   const galaxyWrap=document.getElementById('galaxy-trees');
+  if(!galaxyWrap){console.warn('renderOrgChart: #galaxy-trees not found');return;}
   galaxyWrap.innerHTML='';
 
   const sorted=[...root.children].sort((a,b)=>subtreeCount(b)-subtreeCount(a));
