@@ -577,7 +577,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
     <div class="inf blue" id="inf-trend"></div>
     <div class="ch-box">
       <div class="ch-title">Headcount Trend — US vs India</div>
-      <div class="ch-inf" id="p2-joining" class="removed-id" hidden></div>
+      <span id="p2-joining" style="scroll-margin-top:20px"></span><div class="ch-inf" id="inf-trend2"></div>
       <div class="ch-wrap xtall"><canvas id="ch-trend"></canvas></div>
     </div>
     <div class="g2">
@@ -621,7 +621,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
           <span id="sq-panel-info" style="font-size:.65rem;color:var(--muted)">Click a squad to expand</span>
         </div>
       </div>
-      <div id="p3-squad-det"></div>
+      <span id="p3-squad-det" style="scroll-margin-top:20px"></span><div id="squad-tree"></div>
     </div>
 
   </div>
@@ -951,6 +951,9 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
       </div>
       <!-- KPI strip -->
       <div id="radar-kpis" style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px"></div>
+      <!-- Insight strip -->
+      <div class="insight-strip cols3" id="ins-p8" style="margin-bottom:12px"></div>
+      <div class="inf blue" id="inf-mgr" style="margin-bottom:12px"></div>
       <!-- Scorecard table -->
       <div style="overflow-x:auto">
         <table id="mgr-scorecard" style="width:100%;border-collapse:collapse;font-family:'Outfit',sans-serif"></table>
