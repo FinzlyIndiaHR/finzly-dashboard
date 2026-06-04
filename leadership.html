@@ -2781,6 +2781,7 @@ function resetFilters(){
 
 // ── RENDER ────────────────────────────────────────────────────
 function render(){
+  try{
   const D=filtered;
   const active  = D.filter(d=> d.Status==='Active'   || d.ActiveFlag===1);
   const inactive= D.filter(d=> d.Status==='Inactive' || d.ActiveFlag===0);
@@ -3872,6 +3873,19 @@ function render(){
 
   // P3 Manager cards (at bottom of Squad Intelligence)
   renderMgrFilter();
+  } catch(renderErr) {
+    console.error('❌ render() crashed:', renderErr.message);
+    console.error('Stack:', renderErr.stack);
+    // Find the null element — scan all getElementById calls
+    const ids=['ins-p1','k1','city-cards','country-visual','emptype-visual','gender-visual',
+      'ins-p2','inf-trend','inf-trend2','inf-us','inf-india','ins-p3','inf-sq-rag',
+      'inf-sq-span','squad-tree','inf-attr','attr-kpis','inf-yr-exit','inf-cohort',
+      'sum-kpis','sum-sub','act-grid','cta-bar','inf-mgr','ins-p8'];
+    ids.forEach(id=>{
+      if(!document.getElementById(id)) console.error('  NULL element: #'+id);
+    });
+    throw renderErr; // re-throw so the error screen shows
+  }
 }
 
 // ── MANAGER SPAN LOGIC ────────────────────────────────────────
