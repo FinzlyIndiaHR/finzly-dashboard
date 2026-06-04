@@ -325,28 +325,28 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
 .ins-val.red{color:var(--red)}.ins-val.green{color:var(--green)}.ins-val.amber{color:var(--amber)}.ins-val.blue{color:var(--blue)}
 .ins-txt{font-size:.72rem;color:var(--ink);line-height:1.55}
 .ins-txt strong{font-weight:700}
-/* ── APP BODY WITH SUB-NAV SIDEBAR ──────────────────────── */
-.app-body{display:flex;min-height:calc(100vh - 107px)}
-/* Sidebar = sub-section index for current tab */
-.sidebar{width:210px;flex-shrink:0;background:var(--card);border-right:1px solid var(--border);position:sticky;top:107px;height:calc(100vh - 107px);overflow-y:auto;padding:10px 0;scrollbar-width:thin}
-.sidebar::-webkit-scrollbar{width:3px}.sidebar::-webkit-scrollbar-thumb{background:var(--border2);border-radius:99px}
-/* Sidebar section items */
-.sb-item{display:flex;flex-direction:column;align-items:flex-start;width:100%;padding:9px 14px;border:none;border-left:3px solid transparent;background:transparent;cursor:pointer;font-family:'Outfit',sans-serif;text-align:left;transition:all .14s;position:relative}
-.sb-item:hover{background:var(--bg);border-left-color:var(--border)}
-.sb-item.on{background:rgba(232,84,26,.06);border-left-color:var(--accent)}
-.sb-item.on .sb-label{color:var(--accent);font-weight:700}
-.sb-label{font-size:.78rem;font-weight:500;color:var(--ink);line-height:1.3}
-.sb-sub{font-size:.64rem;color:var(--muted);margin-top:1px;line-height:1.2}
-.sb-group-header{font-size:.58rem;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--muted2);padding:12px 14px 4px;display:block}
+/* ── SIDEBAR LAYOUT ──────────────────────────────────────── */
+.app-body{display:flex;min-height:calc(100vh - 107px);/* header+fbar */}
+.sidebar{width:220px;flex-shrink:0;background:var(--card);border-right:1px solid var(--border);position:sticky;top:107px;height:calc(100vh - 107px);overflow-y:auto;padding:12px 0;scrollbar-width:thin}
+.sidebar::-webkit-scrollbar{width:4px}.sidebar::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px}
+.sb-group{margin-bottom:6px;padding:0 10px}
+.sb-group-label{font-size:.58rem;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--muted2);padding:10px 8px 5px;display:block}
+.sb-item{display:flex;flex-direction:column;align-items:flex-start;width:100%;padding:8px 10px;border:none;border-radius:8px;background:transparent;cursor:pointer;font-family:'Outfit',sans-serif;text-align:left;transition:all .15s;margin-bottom:2px;position:relative}
+.sb-item:hover{background:var(--bg)}
+.sb-item.on{background:rgba(232,84,26,.08);border:1px solid rgba(232,84,26,.15)}
+.sb-item.on::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:3px;height:60%;background:var(--accent);border-radius:0 3px 3px 0}
+.sb-icon{font-size:1rem;margin-bottom:2px}
+.sb-label{font-size:.8rem;font-weight:600;color:var(--ink);line-height:1.2}
+.sb-item.on .sb-label{color:var(--accent)}
+.sb-sub{font-size:.65rem;color:var(--muted);margin-top:1px;line-height:1.2}
 /* Content area */
-.content-area{flex:1;min-width:0;padding:20px 28px 56px}
-.pg{display:none}.pg.on{display:block}
-/* Section anchors within a tab */
-.tab-section{scroll-margin-top:20px;margin-bottom:28px}
-.tab-section-title{display:none}/* hidden — sidebar is the nav */
-/* Remove old tabs display override */
-.tabs{display:flex!important}
-@media(max-width:860px){.sidebar{display:none}.content-area{padding:14px 14px 40px}}
+.content-area{flex:1;min-width:0;padding:20px 28px 56px;overflow-x:hidden}
+.pg{display:none;max-width:1200px}.pg.on{display:block}
+/* Remove old tab CSS interference */
+.tabs{display:none!important}
+/* Adjust filter bar */
+.fbar{top:54px}
+@media(max-width:860px){.sidebar{width:52px}.sb-label,.sb-sub,.sb-group-label{display:none}.sb-item{align-items:center;padding:10px}.sb-icon{font-size:1.1rem;margin:0}.app-body{flex-direction:column}.sidebar{width:100%;height:auto;flex-direction:row;display:flex;position:static;border-right:none;border-bottom:1px solid var(--border);padding:4px 8px;overflow-x:auto}.sb-group{display:flex;flex-direction:row;margin:0}.sb-group-label{display:none}.sb-item{flex-direction:column;padding:6px 8px;min-width:52px}.content-area{padding:14px 14px 40px}}
 /* Inner sub-tabs for Engagement */
 .inner-tabs{display:flex;gap:2px;padding:2px;background:var(--bg);border-radius:10px;margin-bottom:16px;width:fit-content}
 .inner-tab{font-family:'Outfit',sans-serif;font-size:.76rem;padding:6px 16px;border-radius:8px;border:none;cursor:pointer;color:var(--muted);background:transparent;font-weight:500;transition:all .15s;white-space:nowrap}
@@ -509,30 +509,87 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
     <span class="fb-info" id="f-info">Loading…</span>
   </div>
 
-  <!-- TOP TABS -->
-  <div class="tabs" id="main-tabs">
-    <button class="tab on" onclick="goTab(this,'p1')">📊 Org Snapshot</button>
-    <button class="tab" onclick="goTab(this,'p7')">🧭 Leadership</button>
-    <button class="tab" onclick="goTab(this,'p8')">🧠 Team Radar</button>
-    <button class="tab" onclick="goTab(this,'p6')">💬 Engagement</button>
-    <button class="tab" onclick="goTab(this,'p4')">📉 Attrition</button>
-    <button class="tab" onclick="goTab(this,'p5')">⭐ Performance</button>
-    <button class="tab" onclick="goTab(this,'p2')">📈 People Trend</button>
-    <button class="tab" onclick="goTab(this,'p3')">🏗 Squads</button>
-    <button class="tab" onclick="goTab(this,'p9')">🌳 Org Chart</button>
-    <button class="tab" onclick="goTab(this,'p11')">📥 Reports</button>
-    <button class="tab" onclick="goTab(this,'p12')">🔍 Data Health</button>
-  </div>
-
   <!-- SIDEBAR + CONTENT LAYOUT -->
   <div class="app-body">
-    <!-- LEFT SIDEBAR — index of sub-sections for current tab -->
+
+    <!-- LEFT SIDEBAR NAV -->
     <nav class="sidebar" id="sidebar">
-      <div class="sb-empty" id="sb-empty" style="padding:18px 14px;font-size:.74rem;color:var(--muted);line-height:1.6">Select a section →</div>
-      <div id="sb-nav"></div>
+
+      <div class="sb-group">
+        <div class="sb-group-label">Main Views</div>
+        <button class="sb-item on" id="sb-p1" onclick="goTab(this,'p1')">
+          <span class="sb-icon">📊</span>
+          <span class="sb-label">Org Snapshot</span>
+          <span class="sb-sub">Headcount & KPIs</span>
+        </button>
+        <button class="sb-item" id="sb-p7" onclick="goTab(this,'p7')">
+          <span class="sb-icon">🧭</span>
+          <span class="sb-label">Leadership Summary</span>
+          <span class="sb-sub">Actions & insights</span>
+        </button>
+        <button class="sb-item" id="sb-p8" onclick="goTab(this,'p8')">
+          <span class="sb-icon">🧠</span>
+          <span class="sb-label">Team Radar</span>
+          <span class="sb-sub">Manager health</span>
+        </button>
+      </div>
+
+      <div class="sb-group">
+        <div class="sb-group-label">1:1 Intelligence</div>
+        <button class="sb-item" id="sb-p6" onclick="goTab(this,'p6')">
+          <span class="sb-icon">💬</span>
+          <span class="sb-label">Engagement</span>
+          <span class="sb-sub">Survey insights</span>
+        </button>
+      </div>
+
+      <div class="sb-group">
+        <div class="sb-group-label">People Analytics</div>
+        <button class="sb-item" id="sb-p4" onclick="goTab(this,'p4')">
+          <span class="sb-icon">📉</span>
+          <span class="sb-label">Attrition</span>
+          <span class="sb-sub">Who's leaving & why</span>
+        </button>
+        <button class="sb-item" id="sb-p5" onclick="goTab(this,'p5')">
+          <span class="sb-icon">⭐</span>
+          <span class="sb-label">Performance</span>
+          <span class="sb-sub">Ratings & coverage</span>
+        </button>
+        <button class="sb-item" id="sb-p3" onclick="goTab(this,'p3')">
+          <span class="sb-icon">🏗</span>
+          <span class="sb-label">Squad Intelligence</span>
+          <span class="sb-sub">Team breakdown</span>
+        </button>
+        <button class="sb-item" id="sb-p2" onclick="goTab(this,'p2')">
+          <span class="sb-icon">📈</span>
+          <span class="sb-label">People Trend</span>
+          <span class="sb-sub">Growth over time</span>
+        </button>
+      </div>
+
+      <div class="sb-group">
+        <div class="sb-group-label">Organisation</div>
+        <button class="sb-item" id="sb-p9" onclick="goTab(this,'p9')">
+          <span class="sb-icon">🌳</span>
+          <span class="sb-label">Org Chart</span>
+          <span class="sb-sub">Live reporting tree</span>
+        </button>
+        <button class="sb-item" id="sb-p11" onclick="goTab(this,'p11')">
+          <span class="sb-icon">📥</span>
+          <span class="sb-label">Reports</span>
+          <span class="sb-sub">Generate PPT</span>
+        </button>
+        <button class="sb-item" id="sb-p12" onclick="goTab(this,'p12')">
+          <span class="sb-icon">🔍</span>
+          <span class="sb-label">Data Health</span>
+          <span class="sb-sub">Missing fields audit</span>
+        </button>
+      </div>
+
     </nav>
-    <!-- RIGHT CONTENT -->
-    <div class="content-area" id="content-area">
+
+    <!-- RIGHT CONTENT AREA -->
+    <div class="content-area">
 
   <!-- P1 -->
   <div class="pg on" id="p1">
@@ -627,7 +684,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
   </div>
 
   <!-- P4 -->
-  <div class="pg" id="p4"><div id="p4-kpi" style="scroll-margin-top:20px">
+  <div class="pg" id="p4">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
       <span style="font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">Attrition Year</span>
       <select id="f-attr-year" onchange="render()" style="font-family:'Outfit',sans-serif;font-size:.78rem;padding:5px 26px 5px 10px;border-radius:6px;border:1.5px solid var(--border);background:var(--bg);color:var(--ink);cursor:pointer;appearance:none;background-image:url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2710%27 height=%277%27%3E%3Cpath d=%27M1 1l4 4 4-4%27 stroke=%27%238a8578%27 stroke-width=%271.5%27 fill=%27none%27 stroke-linecap=%27round%27/%3E%3C/svg%3E');background-repeat:no-repeat;background-position:right 8px center">
@@ -691,7 +748,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
   </div>
 
   <!-- P5 -->
-  <div class="pg" id="p5"><div id="p5-rating" style="scroll-margin-top:20px">
+  <div class="pg" id="p5">
     <div class="inf green" id="inf-perf"></div>
     <div class="g2">
       <div class="card"><div class="c-title"><div class="c-title-l">Level Distribution — Active</div></div><div id="level-pyramid"></div></div>
@@ -836,14 +893,12 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
         <div><div class="sum-hl">Leadership Intelligence. <em>Act on what matters.</em></div><div style="font-size:.72rem;color:var(--muted);margin-top:3px" id="sum-sub"></div></div>
         <div class="sum-kpis" id="sum-kpis"></div>
       </div>
-      <div id="s-p7-actions" style="scroll-margin-top:20px">
-        <div class="g2" id="act-grid"></div>
-        <div class="cta-bar" id="cta-bar"></div>
-      </div>
+      <div class="g2" id="act-grid"></div>
+      <div class="cta-bar" id="cta-bar"></div>
+    </div>
 
     <!-- ── 1:1 INTELLIGENCE BRIEF (enhancement — from 1:1 dashboard P7) ── -->
     <div id="p7-oo-brief" style="display:none;margin-bottom:14px">
-      <div class="tab-section" id="s-p7-1on1">
       <div style="font-size:.9rem;font-weight:800;color:var(--ink);margin-bottom:10px">💬 1:1 People Intelligence Brief</div>
       <div class="g2" style="margin-bottom:14px">
         <!-- Location Intelligence -->
@@ -857,7 +912,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
           <div id="p7-oo-actions"></div>
         </div>
       </div>
-      <div id="s-p7-predict" style="scroll-margin-top:20px"><!-- Predictive + 6-month forecast from 1:1 -->
+      <!-- Predictive + 6-month forecast from 1:1 -->
       <div class="card">
         <div class="c-title"><div class="c-title-l">🔮 Predictive Intelligence from 1:1 Data</div></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
@@ -873,7 +928,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
       </div>
     </div>
     <!-- AI Intel moved here from P10 -->
-    <div id="s-p7-ai" style="margin-top:18px;scroll-margin-top:20px"><div style="font-size:.9rem;font-weight:800;color:var(--ink);margin-bottom:10px">🤖 AI Workforce Intelligence</div>
+    <div style="margin-top:18px"><div style="font-size:.9rem;font-weight:800;color:var(--ink);margin-bottom:10px">🤖 AI Workforce Intelligence</div>
 
     <div class="card" style="margin-bottom:14px">
       <div class="c-title"><div class="c-title-l">🤖 AI Workforce Intelligence</div></div>
@@ -920,7 +975,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
 
 
   <!-- P8 TEAM RADAR — Manager Health Scorecard -->
-  <div class="pg" id="p8"><div id="p8-radar" style="scroll-margin-top:20px">
+  <div class="pg" id="p8">
     <div class="card" style="margin-bottom:14px">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px">
         <div>
@@ -980,10 +1035,9 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
         <span style="font-size:.62rem;color:var(--muted);align-self:center"><span style="background:rgba(217,119,6,.15);color:var(--amber);padding:1px 5px;border-radius:3px;font-weight:700">CON</span> Contractor · 🔵 India · 🟣 USA</span>
       </div>
     </div>
-    <div id="p9-galaxy"></div>
+    <div id="galaxy-trees"></div>
   </div>
   <!-- P11 REPORTS -->
-  <!-- reports anchor added in p11 div -->
   <div class="pg" id="p11">
     <div class="inf blue">
       <strong>Download Reports</strong> — All reports are generated from your live SharePoint data at the time of download. Select the report you need and click Download.
@@ -1062,12 +1116,13 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
       </div>
       <button onclick="renderDataHealth()" style="font-family:'Outfit',sans-serif;font-size:.76rem;padding:7px 16px;border-radius:8px;border:1.5px solid var(--border);background:var(--card);cursor:pointer;font-weight:600">↺ Refresh</button>
     </div>
-    <div id="p12-audit" style="scroll-margin-top:20px"><div id="dh-kpis" style="display:grid;grid-template-columns:repeat(5,1fr);gap:11px;margin-bottom:18px"></div>
+    <div id="dh-kpis" style="display:grid;grid-template-columns:repeat(5,1fr);gap:11px;margin-bottom:18px"></div>
     <div id="dh-sections"></div>
   </div>
 
     </div><!-- /content-area -->
   </div><!-- /app-body -->
+
 </div><!-- /dash -->
 
 <script>
@@ -2486,149 +2541,21 @@ function toggleActDetail(id){
   }
 }
 
-// ── TAB SUB-SECTION INDEX ─────────────────────────────────
-// Each tab has named sub-sections. Sidebar shows these as clickable index.
-// Clicking scrolls to the section and highlights it.
-const TAB_SECTIONS={
-  p1:[
-    {id:'k1',          label:'KPI Overview',         sub:'Headcount · Joiners · Exits'},
-    {id:'card-country',label:'Location Split',        sub:'India vs USA breakdown'},
-    {id:'city-cards',  label:'City Breakdown',        sub:'Chennai · Pune · Charlotte'},
-  ],
-  p2:[
-    {id:'p2-trend',    label:'Headcount Trend',       sub:'Growth over time'},
-    {id:'p2-joining',  label:'Joining Pattern',       sub:'Monthly joiners'},
-  ],
-  p3:[
-    {id:'ins-p3',      label:'Squad Health',          sub:'HC · RAG · Manager span'},
-    {id:'p3-squad-det',label:'Squad Detail',          sub:'Per-squad breakdown'},
-    {id:'p3-oo-pulse', label:'1:1 Engagement Pulse',  sub:'Survey scores by practice'},
-  ],
-  p4:[
-    {id:'p4-kpi',      label:'Attrition KPIs',        sub:'Rate · trend · forecast'},
-    {id:'p4-cohort',   label:'Exit Analysis',         sub:'By tenure and type'},
-    {id:'p4-reasons',  label:'Exit Reasons',          sub:'Why people leave'},
-  ],
-  p5:[
-    {id:'p5-rating',   label:'Performance Ratings',   sub:'Distribution · coverage'},
-    {id:'p5-yoy',      label:'Year-on-Year Trend',    sub:'2024 vs 2025'},
-  ],
-  p6:[
-    {id:'eng-s1',      label:'Overview & Heatmap',    sub:'Scores · signals · requests'},
-    {id:'eng-s2',      label:'Voice of Employee',     sub:'Click themes to explore'},
-    {id:'eng-s3',      label:'Location Intelligence', sub:'Chennai vs Pune'},
-    {id:'eng-s4',      label:'Start · Stop · Continue',sub:'Aggregated themes'},
-  ],
-  p7:[
-    {id:'s-p7-actions',label:'Leadership Actions',    sub:'Act now · this quarter'},
-    {id:'s-p7-1on1',   label:'1:1 Intelligence Brief',sub:'People insights from surveys'},
-    {id:'s-p7-predict',label:'Predictive Intelligence',sub:'Opportunities · risks'},
-    {id:'s-p7-ai',     label:'AI Workforce Intel',    sub:'AI-generated insights'},
-  ],
-  p8:[
-    {id:'p8-radar',    label:'Manager Scorecard',     sub:'6 signals · click to expand'},
-  ],
-  p9:[
-    {id:'p9-lead',     label:'Leadership Team',       sub:'Top 2 levels'},
-    {id:'p9-galaxy',   label:'Galaxy Trees',          sub:'Full org by galaxy'},
-  ],
-  p11:[
-    {id:'p11-reports', label:'Generate Reports',      sub:'AI-narrative PPT export'},
-  ],
-  p12:[
-    {id:'p12-audit',   label:'Data Audit',            sub:'Missing fields · issues'},
-  ],
-};
-
-function buildSidebar(pid){
-  const sections=TAB_SECTIONS[pid]||[];
-  const nav=document.getElementById('sb-nav');
-  const empty=document.getElementById('sb-empty');
-  if(!nav)return;
-  if(!sections.length){
-    if(empty)empty.style.display='block';
-    nav.innerHTML='';
-    return;
-  }
-  if(empty)empty.style.display='none';
-  nav.innerHTML=sections.map((s,i)=>`
-    <button class="sb-item${i===0?' on':''}" id="sbi-${s.id}" onclick="scrollToSection('${s.id}','${pid}')">
-      <span class="sb-label">${s.label}</span>
-      <span class="sb-sub">${s.sub}</span>
-    </button>`).join('');
-}
-
-function scrollToSection(sectionId, pid){
-  // Engagement tab uses inner sub-tabs — switch section, don't scroll
-  if(pid==='p6'){
-    const innerBtn=document.querySelector(`.inner-tab[onclick*="'${sectionId}'"]`);
-    if(innerBtn){engTab(innerBtn,sectionId);}else{
-      document.querySelectorAll('.eng-section').forEach(s=>s.classList.remove('active'));
-      const sec=document.getElementById(sectionId);
-      if(sec)sec.classList.add('active');
-    }
-  } else {
-    // Scroll within the content area to the section
-    const el=document.getElementById(sectionId);
-    const ca=document.getElementById('content-area');
-    if(el&&ca){
-      const elTop=el.getBoundingClientRect().top - ca.getBoundingClientRect().top + ca.scrollTop;
-      ca.scrollTo({top:Math.max(0,elTop-16),behavior:'smooth'});
-    } else if(el){
-      el.scrollIntoView({behavior:'smooth',block:'start'});
-    }
-  }
-  // Highlight sidebar item
-  document.querySelectorAll('.sb-item').forEach(b=>b.classList.remove('on'));
-  const btn=document.getElementById('sbi-'+sectionId);
-  if(btn)btn.classList.add('on');
-}
-
-// Observe sections to auto-highlight sidebar on scroll
-let _sectionObserver=null;
-function observeSections(pid){
-  if(_sectionObserver)_sectionObserver.disconnect();
-  const sections=TAB_SECTIONS[pid]||[];
-  if(!sections.length||pid==='p6')return; // p6 uses inner tabs
-  _sectionObserver=new IntersectionObserver(entries=>{
-    entries.forEach(e=>{
-      if(e.isIntersecting){
-        const id=e.target.id;
-        document.querySelectorAll('.sb-item').forEach(b=>b.classList.remove('on'));
-        const btn=document.getElementById(`sbi-${id}`);
-        if(btn)btn.classList.add('on');
-      }
-    });
-  },{threshold:0.3,rootMargin:'-10% 0px -60% 0px'});
-  sections.forEach(s=>{
-    const el=document.getElementById(s.id);
-    if(el)_sectionObserver.observe(el);
-  });
-}
-
 function engTab(el,sid){
   document.querySelectorAll('.inner-tab').forEach(t=>t.classList.remove('on'));
   document.querySelectorAll('.eng-section').forEach(s=>s.classList.remove('active'));
   el.classList.add('on');
   const sec=document.getElementById(sid);
   if(sec)sec.classList.add('active');
-  // Sync sidebar highlight
-  document.querySelectorAll('.sb-item').forEach(b=>b.classList.remove('on'));
-  const btn=document.getElementById(`sbi-${sid}`);
-  if(btn)btn.classList.add('on');
 }
 
 function goTab(el,pid){
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  document.querySelectorAll('.sb-item').forEach(t=>t.classList.remove('on'));
   document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
   el.classList.add('on');
   const pg=document.getElementById(pid);
   if(pg)pg.classList.add('on');
-  // Build left sidebar index for this tab
-  buildSidebar(pid);
-  observeSections(pid);
-  // Scroll content to top
-  const ca=document.getElementById('content-area');
+  const ca=document.querySelector('.content-area');
   if(ca)ca.scrollTop=0;
   if((pid==='p9'||pid==='p10')&&EMP_DATA.length>0){
     const galaxies=document.getElementById('galaxy-trees');
@@ -5851,8 +5778,6 @@ window.onload=async function(){
     const wb=document.getElementById('welcome-bar');
     if(wb)wb.style.display='none';
   }
-  // Build sidebar for default tab (p1)
-  buildSidebar('p1');
   try{
     msalApp=new msal.PublicClientApplication(msalConfig);
     const resp=await msalApp.handleRedirectPromise();
