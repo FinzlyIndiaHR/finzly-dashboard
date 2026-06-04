@@ -627,7 +627,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
   </div>
 
   <!-- P4 -->
-  <div class="pg" id="p4">
+  <div class="pg" id="p4"><div id="p4-kpi" style="scroll-margin-top:20px">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
       <span style="font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">Attrition Year</span>
       <select id="f-attr-year" onchange="render()" style="font-family:'Outfit',sans-serif;font-size:.78rem;padding:5px 26px 5px 10px;border-radius:6px;border:1.5px solid var(--border);background:var(--bg);color:var(--ink);cursor:pointer;appearance:none;background-image:url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2710%27 height=%277%27%3E%3Cpath d=%27M1 1l4 4 4-4%27 stroke=%27%238a8578%27 stroke-width=%271.5%27 fill=%27none%27 stroke-linecap=%27round%27/%3E%3C/svg%3E');background-repeat:no-repeat;background-position:right 8px center">
@@ -691,7 +691,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
   </div>
 
   <!-- P5 -->
-  <div class="pg" id="p5">
+  <div class="pg" id="p5"><div id="p5-rating" style="scroll-margin-top:20px">
     <div class="inf green" id="inf-perf"></div>
     <div class="g2">
       <div class="card"><div class="c-title"><div class="c-title-l">Level Distribution — Active</div></div><div id="level-pyramid"></div></div>
@@ -857,7 +857,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
           <div id="p7-oo-actions"></div>
         </div>
       </div>
-      <!-- Predictive + 6-month forecast from 1:1 -->
+      <div id="s-p7-predict" style="scroll-margin-top:20px"><!-- Predictive + 6-month forecast from 1:1 -->
       <div class="card">
         <div class="c-title"><div class="c-title-l">🔮 Predictive Intelligence from 1:1 Data</div></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
@@ -873,7 +873,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
       </div>
     </div>
     <!-- AI Intel moved here from P10 -->
-    <div style="margin-top:18px"><div style="font-size:.9rem;font-weight:800;color:var(--ink);margin-bottom:10px">🤖 AI Workforce Intelligence</div>
+    <div id="s-p7-ai" style="margin-top:18px;scroll-margin-top:20px"><div style="font-size:.9rem;font-weight:800;color:var(--ink);margin-bottom:10px">🤖 AI Workforce Intelligence</div>
 
     <div class="card" style="margin-bottom:14px">
       <div class="c-title"><div class="c-title-l">🤖 AI Workforce Intelligence</div></div>
@@ -920,7 +920,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
 
 
   <!-- P8 TEAM RADAR — Manager Health Scorecard -->
-  <div class="pg" id="p8">
+  <div class="pg" id="p8"><div id="p8-radar" style="scroll-margin-top:20px">
     <div class="card" style="margin-bottom:14px">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px">
         <div>
@@ -980,9 +980,10 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
         <span style="font-size:.62rem;color:var(--muted);align-self:center"><span style="background:rgba(217,119,6,.15);color:var(--amber);padding:1px 5px;border-radius:3px;font-weight:700">CON</span> Contractor · 🔵 India · 🟣 USA</span>
       </div>
     </div>
-    <div id="galaxy-trees"></div>
+    <div id="p9-galaxy"></div>
   </div>
   <!-- P11 REPORTS -->
+  <!-- reports anchor added in p11 div -->
   <div class="pg" id="p11">
     <div class="inf blue">
       <strong>Download Reports</strong> — All reports are generated from your live SharePoint data at the time of download. Select the report you need and click Download.
@@ -1061,7 +1062,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
       </div>
       <button onclick="renderDataHealth()" style="font-family:'Outfit',sans-serif;font-size:.76rem;padding:7px 16px;border-radius:8px;border:1.5px solid var(--border);background:var(--card);cursor:pointer;font-weight:600">↺ Refresh</button>
     </div>
-    <div id="dh-kpis" style="display:grid;grid-template-columns:repeat(5,1fr);gap:11px;margin-bottom:18px"></div>
+    <div id="p12-audit" style="scroll-margin-top:20px"><div id="dh-kpis" style="display:grid;grid-template-columns:repeat(5,1fr);gap:11px;margin-bottom:18px"></div>
     <div id="dh-sections"></div>
   </div>
 
@@ -2490,54 +2491,52 @@ function toggleActDetail(id){
 // Clicking scrolls to the section and highlights it.
 const TAB_SECTIONS={
   p1:[
-    {id:'s-p1-kpi',   label:'KPI Overview',        sub:'Headcount · Joiners · Exits'},
-    {id:'s-p1-loc',   label:'Location Split',       sub:'India vs USA breakdown'},
-    {id:'s-p1-squad', label:'Squad Distribution',   sub:'Headcount by squad'},
-    {id:'s-p1-type',  label:'Employment Type',      sub:'FTE vs Contractors'},
+    {id:'k1',          label:'KPI Overview',         sub:'Headcount · Joiners · Exits'},
+    {id:'card-country',label:'Location Split',        sub:'India vs USA breakdown'},
+    {id:'city-cards',  label:'City Breakdown',        sub:'Chennai · Pune · Charlotte'},
   ],
   p2:[
-    {id:'s-p2-trend', label:'Headcount Trend',      sub:'Growth over time'},
-    {id:'s-p2-join',  label:'Joining Pattern',      sub:'Monthly joiners'},
+    {id:'p2-trend',    label:'Headcount Trend',       sub:'Growth over time'},
+    {id:'p2-joining',  label:'Joining Pattern',       sub:'Monthly joiners'},
   ],
   p3:[
-    {id:'s-p3-health',label:'Squad Health',         sub:'HC · RAG · Manager span'},
-    {id:'s-p3-detail',label:'Squad Detail',         sub:'Per-squad breakdown'},
-    {id:'s-p3-exit',  label:'Exit Reasons',         sub:'Voluntary · involuntary'},
-    {id:'s-p3-pulse', label:'1:1 Engagement Pulse', sub:'Survey scores by practice'},
+    {id:'ins-p3',      label:'Squad Health',          sub:'HC · RAG · Manager span'},
+    {id:'p3-squad-det',label:'Squad Detail',          sub:'Per-squad breakdown'},
+    {id:'p3-oo-pulse', label:'1:1 Engagement Pulse',  sub:'Survey scores by practice'},
   ],
   p4:[
-    {id:'s-p4-kpi',   label:'Attrition KPIs',       sub:'Rate · trend · forecast'},
-    {id:'s-p4-cohort',label:'Cohort Analysis',       sub:'Exit by tenure group'},
-    {id:'s-p4-reason',label:'Exit Reasons',          sub:'Why people leave'},
+    {id:'p4-kpi',      label:'Attrition KPIs',        sub:'Rate · trend · forecast'},
+    {id:'p4-cohort',   label:'Exit Analysis',         sub:'By tenure and type'},
+    {id:'p4-reasons',  label:'Exit Reasons',          sub:'Why people leave'},
   ],
   p5:[
-    {id:'s-p5-rating',label:'Performance Ratings',   sub:'Distribution · coverage'},
-    {id:'s-p5-yoy',   label:'Year-on-Year Trend',    sub:'2024 vs 2025'},
+    {id:'p5-rating',   label:'Performance Ratings',   sub:'Distribution · coverage'},
+    {id:'p5-yoy',      label:'Year-on-Year Trend',    sub:'2024 vs 2025'},
   ],
   p6:[
-    {id:'eng-s1',     label:'Overview & Heatmap',    sub:'Scores · signals · requests'},
-    {id:'eng-s2',     label:'Voice of Employee',     sub:'Click themes to explore'},
-    {id:'eng-s3',     label:'Location Intelligence', sub:'Chennai vs Pune'},
-    {id:'eng-s4',     label:'Start · Stop · Continue',sub:'Aggregated themes'},
+    {id:'eng-s1',      label:'Overview & Heatmap',    sub:'Scores · signals · requests'},
+    {id:'eng-s2',      label:'Voice of Employee',     sub:'Click themes to explore'},
+    {id:'eng-s3',      label:'Location Intelligence', sub:'Chennai vs Pune'},
+    {id:'eng-s4',      label:'Start · Stop · Continue',sub:'Aggregated themes'},
   ],
   p7:[
-    {id:'s-p7-actions',label:'Leadership Actions',   sub:'Act now · this quarter'},
-    {id:'s-p7-1on1',  label:'1:1 Intelligence Brief',sub:'People insights from surveys'},
+    {id:'s-p7-actions',label:'Leadership Actions',    sub:'Act now · this quarter'},
+    {id:'s-p7-1on1',   label:'1:1 Intelligence Brief',sub:'People insights from surveys'},
     {id:'s-p7-predict',label:'Predictive Intelligence',sub:'Opportunities · risks'},
-    {id:'s-p7-ai',    label:'AI Workforce Intel',     sub:'AI-generated insights'},
+    {id:'s-p7-ai',     label:'AI Workforce Intel',    sub:'AI-generated insights'},
   ],
   p8:[
-    {id:'s-p8-radar',  label:'Manager Scorecard',    sub:'6 signals · click to expand'},
+    {id:'p8-radar',    label:'Manager Scorecard',     sub:'6 signals · click to expand'},
   ],
   p9:[
-    {id:'s-p9-lead',   label:'Leadership Team',      sub:'Top 2 levels'},
-    {id:'s-p9-galaxy', label:'Galaxy Trees',         sub:'Full org by galaxy'},
+    {id:'p9-lead',     label:'Leadership Team',       sub:'Top 2 levels'},
+    {id:'p9-galaxy',   label:'Galaxy Trees',          sub:'Full org by galaxy'},
   ],
   p11:[
-    {id:'s-p11-rep',   label:'Generate Reports',     sub:'AI-narrative PPT export'},
+    {id:'p11-reports', label:'Generate Reports',      sub:'AI-narrative PPT export'},
   ],
   p12:[
-    {id:'s-p12-audit', label:'Data Audit',           sub:'Missing fields · issues'},
+    {id:'p12-audit',   label:'Data Audit',            sub:'Missing fields · issues'},
   ],
 };
 
@@ -2560,25 +2559,28 @@ function buildSidebar(pid){
 }
 
 function scrollToSection(sectionId, pid){
-  // For Engagement tab inner sub-tabs, switch section
+  // Engagement tab uses inner sub-tabs — switch section, don't scroll
   if(pid==='p6'){
-    const innerTab=document.querySelector(`.inner-tab[onclick*="${sectionId}"]`);
-    if(innerTab){engTab(innerTab,sectionId);}
-    else{
+    const innerBtn=document.querySelector(`.inner-tab[onclick*="'${sectionId}'"]`);
+    if(innerBtn){engTab(innerBtn,sectionId);}else{
       document.querySelectorAll('.eng-section').forEach(s=>s.classList.remove('active'));
       const sec=document.getElementById(sectionId);
       if(sec)sec.classList.add('active');
     }
   } else {
-    // Scroll to the section anchor
+    // Scroll within the content area to the section
     const el=document.getElementById(sectionId);
-    if(el){
+    const ca=document.getElementById('content-area');
+    if(el&&ca){
+      const elTop=el.getBoundingClientRect().top - ca.getBoundingClientRect().top + ca.scrollTop;
+      ca.scrollTo({top:Math.max(0,elTop-16),behavior:'smooth'});
+    } else if(el){
       el.scrollIntoView({behavior:'smooth',block:'start'});
     }
   }
   // Highlight sidebar item
   document.querySelectorAll('.sb-item').forEach(b=>b.classList.remove('on'));
-  const btn=document.getElementById(`sbi-${sectionId}`);
+  const btn=document.getElementById('sbi-'+sectionId);
   if(btn)btn.classList.add('on');
 }
 
