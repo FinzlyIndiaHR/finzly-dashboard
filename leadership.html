@@ -3552,8 +3552,34 @@ function renderEngagementTab(){
     ${th('Squad ↓ click Red/Amber rows to expand')+''+th('Engagement','90px')+th('Manager','80px')+th('Overall','80px')+th('RAG','120px')+th('Status','100px')}
   </tr></thead><tbody>${rows}</tbody>`;
 
-  // Requests aggregated across all 1:1 data
-  const allReqText=squads.flatMap(([,d])=>d.requests).join(' ');
+  // ── Build per-location row arrays for location tagging ─────
+  // City groups: Chennai, Pune, US (Charlotte + Remote-USA)
+  const rowsByLoc={
+    Chennai: squads.filter(([,d])=>d.loc==='Chennai').flatMap(([,d])=>d.requests),
+    Pune:    squads.filter(([,d])=>d.loc==='Pune'   ).flatMap(([,d])=>d.requests),
+    US:      squads.filter(([,d])=>d.loc&&(d.loc.toLowerCase().includes('charlotte')||d.loc.toLowerCase().includes('usa')||d.loc.toLowerCase().includes('remote'))).flatMap(([,d])=>d.requests),
+  };
+  // Also build from OO_SQUAD_MAP entries keyed by squad → city comes from d.loc
+  // For squads spanning multiple cities, collect all requests under each city
+  Object.entries(OO_SQUAD_MAP).forEach(([sq,d])=>{
+    const loc=d.loc||'';
+    if(loc==='Chennai'){}
+    else if(loc==='Pune'){}
+    else if(loc.toLowerCase().includes('charlotte')||loc.toLowerCase().includes('usa')||loc.toLowerCase().includes('remote')){}
+  });
+
+  const locTags=(kw)=>{
+    const tags=[];
+    const locs=[['Chennai','#0ea5e9'],['Pune','#7c3aed'],['US','#16a34a']];
+    locs.forEach(([name,col])=>{
+      const cnt=(rowsByLoc[name]||[]).filter(r=>kw.some(k=>r.includes(k))).length;
+      if(cnt>0) tags.push(`<span style="font-family:'Fira Code',monospace;font-size:.62rem;background:${col}15;color:${col};border:1px solid ${col}40;padding:1px 6px;border-radius:20px;margin-left:4px">${name} ${cnt}</span>`);
+    });
+    return tags.join('');
+  };
+
+  // Requests — with location tags
+  const allRows=squads.flatMap(([,d])=>d.requests);
   const reqDefs=[
     {l:'Team Outings & Trips',icon:'🏖',kw:['trip','outing','tour','travel']},
     {l:'Fun Friday',icon:'🎉',kw:['fun friday','fun-friday','movie']},
@@ -3565,42 +3591,70 @@ function renderEngagementTab(){
     {l:'Better Food / Canteen',icon:'🥗',kw:['food','canteen','snack','biscuit']},
     {l:'Holiday Calendar',icon:'📅',kw:['holiday','calendar','region','notif']},
   ];
-  const allRows=squads.flatMap(([,d])=>d.requests);
   const reqCounts=reqDefs.map(r=>({...r,c:allRows.filter(t=>r.kw.some(k=>t.includes(k))).length})).filter(r=>r.c>0).sort((a,b)=>b.c-a.c);
   const maxC=reqCounts[0]?.c||1;
   document.getElementById('eng-requests').innerHTML=reqCounts.length
-    ?reqCounts.map(r=>`<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid #f0ede8">
-        <span style="font-size:1.1rem">${r.icon}</span>
-        <span style="font-size:.76rem;flex:1">${r.l}</span>
-        <div style="flex:2;height:7px;background:#f0ede8;border-radius:99px;overflow:hidden"><div style="width:${Math.round(r.c/maxC*100)}%;height:100%;background:var(--accent);border-radius:99px"></div></div>
-        <span style="font-family:'Fira Code',monospace;font-size:.7rem;font-weight:700;color:var(--accent);min-width:28px;text-align:right">${r.c}</span>
+    ?reqCounts.map(r=>`
+      <div style="padding:7px 0;border-bottom:1px solid #f0ede8">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:3px">
+          <span style="font-size:1rem">${r.icon}</span>
+          <span style="font-size:.76rem;font-weight:600;flex:1">${r.l}</span>
+          <span style="font-family:'Fira Code',monospace;font-size:.7rem;font-weight:700;color:var(--accent)">${r.c} total</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div style="flex:1;height:5px;background:#f0ede8;border-radius:99px;overflow:hidden"><div style="width:${Math.round(r.c/maxC*100)}%;height:100%;background:var(--accent);border-radius:99px"></div></div>
+          <div style="display:flex;gap:3px">${locTags(r.kw)}</div>
+        </div>
       </div>`).join('')
     :'<div style="font-size:.76rem;color:var(--muted)">No specific requests detected.</div>';
 
-  // Signals
-  const critSqs=squads.filter(([,d])=>ooAvg(d.eng)<3.5||ooAvg(d.mgr)<3.5).map(([sq])=>sq);
-  const watchSqList=squads.filter(([,d])=>{const e=ooAvg(d.eng),m=ooAvg(d.mgr);return(e<4||m<4)&&(e===null||e>=3.5)&&(m===null||m>=3.5);}).map(([sq])=>sq);
-  const sig=(color,title,body)=>`<div style="border-left:4px solid ${color};padding:10px 12px;background:${color}12;border-radius:0 8px 8px 0;margin-bottom:8px">
+  // Signals — with location context
+  const allReqText=allRows.join(' ');
+  const critSqs=squads.filter(([,d])=>ooAvg(d.eng)<3.5||ooAvg(d.mgr)<3.5);
+  const watchSqList=squads.filter(([,d])=>{const e=ooAvg(d.eng),m=ooAvg(d.mgr);return(e<4||m<4)&&(e===null||e>=3.5)&&(m===null||m>=3.5);});
+
+  const sig=(color,title,body,locLine)=>`<div style="border-left:4px solid ${color};padding:10px 12px;background:${color}12;border-radius:0 8px 8px 0;margin-bottom:8px">
     <div style="font-size:.78rem;font-weight:700;color:${color};margin-bottom:4px">${title}</div>
-    <div style="font-size:.72rem;color:#333;line-height:1.5">${body}</div>
+    <div style="font-size:.72rem;color:#333;line-height:1.5;margin-bottom:${locLine?'5px':'0'}">${body}</div>
+    ${locLine?`<div style="display:flex;gap:5px;flex-wrap:wrap">${locLine}</div>`:''}
   </div>`;
+
+  const sqLocTags=(sqList)=>sqList.map(([sq,d])=>{
+    const col=d.loc==='Chennai'?'#0ea5e9':d.loc==='Pune'?'#7c3aed':'#16a34a';
+    return`<span style="font-family:'Fira Code',monospace;font-size:.62rem;background:${col}15;color:${col};border:1px solid ${col}40;padding:1px 7px;border-radius:20px">${sq} · ${d.loc||'?'}</span>`;
+  }).join('');
+
   let signals='';
-  if(critSqs.length)signals+=sig('#dc2626','🔴 Critical Squads — Immediate Action',`${critSqs.join(', ')} — scores below 3.5/5. Schedule skip-level 1:1 this week. Risk of voluntary exit within 60–90 days.`);
-  if(watchSqList.length)signals+=sig('#d97706','⚠ Watch List — Below 4.0',`${watchSqList.join(', ')} — trending below healthy threshold. Check in next 1:1 cycle within 2 weeks.`);
-  if(allReqText.includes('spot')||allReqText.includes('award'))signals+=sig('#ea580c','🏆 Recognition Gap',`Spot Award nominations not reaching all squads. Creates perceived inequity — high performers in unrecognised squads silently reduce effort.`);
-  if(allReqText.includes('trip')||allReqText.includes('outing'))signals+=sig('#2563eb','🏖 Team Outing — Highest ROI Action',`${reqCounts.find(r=>r.l.includes('Outing'))?.c||0} employees asked for team events. Highest morale-per-rupee action this quarter.`);
-  if(!signals)signals=sig('#15803d','✅ All Signals Healthy',`Engagement above 4.0 across all squads. Maintain current manager practices and 1:1 cadence.`);
+  if(critSqs.length) signals+=sig('#dc2626','🔴 Critical Squads — Immediate Action',
+    `Scores below 3.5/5. Risk of voluntary exit within 60–90 days. Schedule skip-level 1:1 this week.`,
+    sqLocTags(critSqs));
+  if(watchSqList.length) signals+=sig('#d97706','⚠ Watch List — Below 4.0',
+    `Trending below healthy threshold. Check in next 1:1 cycle within 2 weeks.`,
+    sqLocTags(watchSqList));
+  if(allReqText.includes('spot')||allReqText.includes('award')) signals+=sig('#ea580c','🏆 Recognition Gap',
+    `Spot Award nominations not reaching all squads. High performers in unrecognised squads silently reduce effort.`,
+    locTags(['spot','award','recogni']));
+  if(allReqText.includes('trip')||allReqText.includes('outing')) signals+=sig('#2563eb','🏖 Team Outing — Highest ROI Action',
+    `${reqCounts.find(r=>r.l.includes('Outing'))?.c||0} employees asked for team events. Highest morale-per-rupee action this quarter.`,
+    locTags(['trip','outing','tour']));
+  if(!signals) signals=sig('#15803d','✅ All Signals Healthy',`Engagement above 4.0 across all squads. Maintain current manager practices and 1:1 cadence.`,'');
   document.getElementById('eng-signals').innerHTML=signals;
 
-  // SSC themes — using OO_ISSUE_DEFS comprehensive taxonomy
-  // allText captures ALL open-text fields per squad (not just SSC)
+  // SSC — with location breakdown per theme
   const renderSSC=(defs,elId)=>{
     const found=defs
-      .map(d=>({l:d.l,cnt:allRows.filter(r=>d.kw.some(k=>r.includes(k))).length}))
+      .map(d=>({l:d.l,kw:d.kw,cnt:allRows.filter(r=>d.kw.some(k=>r.includes(k))).length}))
       .filter(d=>d.cnt>0)
       .sort((a,b)=>b.cnt-a.cnt);
     document.getElementById(elId).innerHTML=found.length
-      ?found.map(f=>`<div style="padding:3px 0;border-bottom:1px solid rgba(0,0,0,.06)">→ ${f.l} <span style="font-family:'Fira Code',monospace;font-size:.62rem;opacity:.65">(${f.cnt})</span></div>`).join('')
+      ?found.map(f=>`
+        <div style="padding:4px 0;border-bottom:1px solid rgba(0,0,0,.06)">
+          <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
+            <span style="font-size:.76rem;flex:1">→ ${f.l}</span>
+            <span style="font-family:'Fira Code',monospace;font-size:.62rem;opacity:.65">(${f.cnt})</span>
+            ${locTags(f.kw)}
+          </div>
+        </div>`).join('')
       :'<div style="opacity:.6;font-size:.74rem">None detected in current data.</div>';
   };
   renderSSC(OO_ISSUE_DEFS.fix,'eng-fix');
