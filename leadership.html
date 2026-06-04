@@ -325,9 +325,28 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
 .ins-val.red{color:var(--red)}.ins-val.green{color:var(--green)}.ins-val.amber{color:var(--amber)}.ins-val.blue{color:var(--blue)}
 .ins-txt{font-size:.72rem;color:var(--ink);line-height:1.55}
 .ins-txt strong{font-weight:700}
-.tab-sep{width:1px;height:28px;background:var(--border);margin:0 4px;align-self:center;flex-shrink:0}
-.tab-utility{color:var(--muted2)!important;font-size:.7rem!important}
-.tab-utility.on{color:var(--accent)!important}
+/* ── SIDEBAR LAYOUT ──────────────────────────────────────── */
+.app-body{display:flex;min-height:calc(100vh - 107px);/* header+fbar */}
+.sidebar{width:220px;flex-shrink:0;background:var(--card);border-right:1px solid var(--border);position:sticky;top:107px;height:calc(100vh - 107px);overflow-y:auto;padding:12px 0;scrollbar-width:thin}
+.sidebar::-webkit-scrollbar{width:4px}.sidebar::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px}
+.sb-group{margin-bottom:6px;padding:0 10px}
+.sb-group-label{font-size:.58rem;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--muted2);padding:10px 8px 5px;display:block}
+.sb-item{display:flex;flex-direction:column;align-items:flex-start;width:100%;padding:8px 10px;border:none;border-radius:8px;background:transparent;cursor:pointer;font-family:'Outfit',sans-serif;text-align:left;transition:all .15s;margin-bottom:2px;position:relative}
+.sb-item:hover{background:var(--bg)}
+.sb-item.on{background:rgba(232,84,26,.08);border:1px solid rgba(232,84,26,.15)}
+.sb-item.on::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:3px;height:60%;background:var(--accent);border-radius:0 3px 3px 0}
+.sb-icon{font-size:1rem;margin-bottom:2px}
+.sb-label{font-size:.8rem;font-weight:600;color:var(--ink);line-height:1.2}
+.sb-item.on .sb-label{color:var(--accent)}
+.sb-sub{font-size:.65rem;color:var(--muted);margin-top:1px;line-height:1.2}
+/* Content area */
+.content-area{flex:1;min-width:0;padding:20px 28px 56px;overflow-x:hidden}
+.pg{display:none;max-width:1200px}.pg.on{display:block}
+/* Remove old tab CSS interference */
+.tabs{display:none!important}
+/* Adjust filter bar */
+.fbar{top:54px}
+@media(max-width:860px){.sidebar{width:52px}.sb-label,.sb-sub,.sb-group-label{display:none}.sb-item{align-items:center;padding:10px}.sb-icon{font-size:1.1rem;margin:0}.app-body{flex-direction:column}.sidebar{width:100%;height:auto;flex-direction:row;display:flex;position:static;border-right:none;border-bottom:1px solid var(--border);padding:4px 8px;overflow-x:auto}.sb-group{display:flex;flex-direction:row;margin:0}.sb-group-label{display:none}.sb-item{flex-direction:column;padding:6px 8px;min-width:52px}.content-area{padding:14px 14px 40px}}
 /* Inner sub-tabs for Engagement */
 .inner-tabs{display:flex;gap:2px;padding:2px;background:var(--bg);border-radius:10px;margin-bottom:16px;width:fit-content}
 .inner-tab{font-family:'Outfit',sans-serif;font-size:.76rem;padding:6px 16px;border-radius:8px;border:none;cursor:pointer;color:var(--muted);background:transparent;font-weight:500;transition:all .15s;white-space:nowrap}
@@ -490,22 +509,87 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
     <span class="fb-info" id="f-info">Loading…</span>
   </div>
 
-  <div class="tabs" id="main-tabs">
-    <!-- Primary tabs — always visible -->
-    <button class="tab on" onclick="goTab(this,'p1')">📊 Snapshot</button>
-    <button class="tab" onclick="goTab(this,'p7')">🧭 Leadership</button>
-    <button class="tab" onclick="goTab(this,'p8')">🧠 Team Radar</button>
-    <button class="tab" onclick="goTab(this,'p6')">💬 Engagement</button>
-    <button class="tab" onclick="goTab(this,'p4')">📉 Attrition</button>
-    <button class="tab" onclick="goTab(this,'p5')">⭐ Performance</button>
-    <div class="tab-sep"></div>
-    <!-- Secondary tabs -->
-    <button class="tab" onclick="goTab(this,'p2')">📈 Trend</button>
-    <button class="tab" onclick="goTab(this,'p3')">🏗 Squads</button>
-    <button class="tab" onclick="goTab(this,'p9')">🌳 Org Chart</button>
-    <button class="tab" onclick="goTab(this,'p11')">📥 Reports</button>
-    <button class="tab tab-utility" onclick="goTab(this,'p12')">🔍 Data Health</button>
-  </div>
+  <!-- SIDEBAR + CONTENT LAYOUT -->
+  <div class="app-body">
+
+    <!-- LEFT SIDEBAR NAV -->
+    <nav class="sidebar" id="sidebar">
+
+      <div class="sb-group">
+        <div class="sb-group-label">Main Views</div>
+        <button class="sb-item on" id="sb-p1" onclick="goTab(this,'p1')">
+          <span class="sb-icon">📊</span>
+          <span class="sb-label">Org Snapshot</span>
+          <span class="sb-sub">Headcount & KPIs</span>
+        </button>
+        <button class="sb-item" id="sb-p7" onclick="goTab(this,'p7')">
+          <span class="sb-icon">🧭</span>
+          <span class="sb-label">Leadership Summary</span>
+          <span class="sb-sub">Actions & insights</span>
+        </button>
+        <button class="sb-item" id="sb-p8" onclick="goTab(this,'p8')">
+          <span class="sb-icon">🧠</span>
+          <span class="sb-label">Team Radar</span>
+          <span class="sb-sub">Manager health</span>
+        </button>
+      </div>
+
+      <div class="sb-group">
+        <div class="sb-group-label">1:1 Intelligence</div>
+        <button class="sb-item" id="sb-p6" onclick="goTab(this,'p6')">
+          <span class="sb-icon">💬</span>
+          <span class="sb-label">Engagement</span>
+          <span class="sb-sub">Survey insights</span>
+        </button>
+      </div>
+
+      <div class="sb-group">
+        <div class="sb-group-label">People Analytics</div>
+        <button class="sb-item" id="sb-p4" onclick="goTab(this,'p4')">
+          <span class="sb-icon">📉</span>
+          <span class="sb-label">Attrition</span>
+          <span class="sb-sub">Who's leaving & why</span>
+        </button>
+        <button class="sb-item" id="sb-p5" onclick="goTab(this,'p5')">
+          <span class="sb-icon">⭐</span>
+          <span class="sb-label">Performance</span>
+          <span class="sb-sub">Ratings & coverage</span>
+        </button>
+        <button class="sb-item" id="sb-p3" onclick="goTab(this,'p3')">
+          <span class="sb-icon">🏗</span>
+          <span class="sb-label">Squad Intelligence</span>
+          <span class="sb-sub">Team breakdown</span>
+        </button>
+        <button class="sb-item" id="sb-p2" onclick="goTab(this,'p2')">
+          <span class="sb-icon">📈</span>
+          <span class="sb-label">People Trend</span>
+          <span class="sb-sub">Growth over time</span>
+        </button>
+      </div>
+
+      <div class="sb-group">
+        <div class="sb-group-label">Organisation</div>
+        <button class="sb-item" id="sb-p9" onclick="goTab(this,'p9')">
+          <span class="sb-icon">🌳</span>
+          <span class="sb-label">Org Chart</span>
+          <span class="sb-sub">Live reporting tree</span>
+        </button>
+        <button class="sb-item" id="sb-p11" onclick="goTab(this,'p11')">
+          <span class="sb-icon">📥</span>
+          <span class="sb-label">Reports</span>
+          <span class="sb-sub">Generate PPT</span>
+        </button>
+        <button class="sb-item" id="sb-p12" onclick="goTab(this,'p12')">
+          <span class="sb-icon">🔍</span>
+          <span class="sb-label">Data Health</span>
+          <span class="sb-sub">Missing fields audit</span>
+        </button>
+      </div>
+
+    </nav>
+
+    <!-- RIGHT CONTENT AREA -->
+    <div class="content-area">
 
   <!-- P1 -->
   <div class="pg on" id="p1">
@@ -1035,6 +1119,9 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
     <div id="dh-kpis" style="display:grid;grid-template-columns:repeat(5,1fr);gap:11px;margin-bottom:18px"></div>
     <div id="dh-sections"></div>
   </div>
+
+    </div><!-- /content-area -->
+  </div><!-- /app-body -->
 
 </div><!-- /dash -->
 
@@ -2463,16 +2550,20 @@ function engTab(el,sid){
 }
 
 function goTab(el,pid){
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  document.querySelectorAll('.sb-item').forEach(t=>t.classList.remove('on'));
   document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
-  el.classList.add('on'); document.getElementById(pid).classList.add('on');
+  el.classList.add('on');
+  const pg=document.getElementById(pid);
+  if(pg)pg.classList.add('on');
+  const ca=document.querySelector('.content-area');
+  if(ca)ca.scrollTop=0;
   if((pid==='p9'||pid==='p10')&&EMP_DATA.length>0){
     const galaxies=document.getElementById('galaxy-trees');
-    if(galaxies&&galaxies.children.length===0) renderOrgChart();
+    if(galaxies&&galaxies.children.length===0)renderOrgChart();
   }
-  if(pid==='p8') renderMgrFilter();
-  if(pid==='p6') renderEngagementTab();
-  if(pid==='p12') renderDataHealth();
+  if(pid==='p8')renderMgrFilter();
+  if(pid==='p6')renderEngagementTab();
+  if(pid==='p12')renderDataHealth();
 }
 function toggleSquad2(sqId){
   const panel = document.getElementById(sqId+'-panel');
@@ -3565,7 +3656,15 @@ function render(){
   const redEmps=active.filter(d=>d['Rag Status']==='Red');
   const amberEmps=active.filter(d=>d['Rag Status']==='Amber');
   const notSetEmps=active.filter(d=>!d['Rag Status']||d['Rag Status']==='Not Set'||d['Rag Status']==='NA');
-  const unratedEmps=active.filter(d=>!(d[PERF_COL_CURR]>=1&&d[PERF_COL_CURR]<=5));
+  // Unrated: same exclusion rules as Data Health — consultants, CEO, joined in perf year or later
+  const perfYearNum=parseInt(PERF_COL_CURR.replace('Performance Rating ',''))||2025;
+  const unratedEmps=active.filter(d=>{
+    if(String(d.Type||'').trim().toLowerCase()==='consultant') return false;
+    if(String(d['Emp ID']||'').trim()==='6KY000052') return false; // Booshan
+    const sy=d['Start Year']?parseInt(d['Start Year']):null;
+    if(sy&&sy>=perfYearNum) return false; // joined in cycle year or later
+    return !(d[PERF_COL_CURR]>=1&&d[PERF_COL_CURR]<=5);
+  });
   // Derive from EMP_DATA directly — inactAll is not in scope here
   const _inactAll=EMP_DATA.filter(d=>d.Status==='Inactive'||d.ActiveFlag===0);
   const actEarlyExitPct=Math.round(_inactAll.filter(d=>{
