@@ -339,7 +339,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
 .sb-sub{font-size:.64rem;color:var(--muted);margin-top:1px;line-height:1.2}
 .sb-group-header{font-size:.58rem;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--muted2);padding:12px 14px 4px;display:block}
 /* Content area */
-.content-area{flex:1;min-width:0;padding:20px 28px 56px}
+.content-area{flex:1;min-width:0;padding:20px 28px 56px;overflow-y:auto;height:calc(100vh - 107px)}
 .pg{display:none}.pg.on{display:block}
 /* Section anchors within a tab */
 .tab-section{scroll-margin-top:20px;margin-bottom:28px}
@@ -572,12 +572,12 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
   </div>
 
   <!-- P2 -->
-  <div class="pg" id="p2">
+  <div class="pg" id="p2"><span id="p2-trend"></span>
     <div class="insight-strip cols3" id="ins-p2"></div>
     <div class="inf blue" id="inf-trend"></div>
     <div class="ch-box">
       <div class="ch-title">Headcount Trend — US vs India</div>
-      <div class="ch-inf" id="inf-trend2"></div>
+      <div class="ch-inf" id="p2-joining" class="removed-id" hidden></div>
       <div class="ch-wrap xtall"><canvas id="ch-trend"></canvas></div>
     </div>
     <div class="g2">
@@ -621,7 +621,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
           <span id="sq-panel-info" style="font-size:.65rem;color:var(--muted)">Click a squad to expand</span>
         </div>
       </div>
-      <div id="squad-tree"></div>
+      <div id="p3-squad-det"></div>
     </div>
 
   </div>
@@ -647,7 +647,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
     <div class="g4" id="attr-kpis"></div>
     <div class="g2" style="margin-top:14px">
       <div class="ch-box"><div class="ch-title">Year-wise Exits — Voluntary vs Involuntary</div><div class="ch-inf" id="inf-yr-exit"></div><div class="ch-wrap tall"><canvas id="ch-yr-exit"></canvas></div></div>
-      <div class="ch-box"><div class="ch-title">Cohort Retention by Join Year</div><div class="ch-inf" id="inf-cohort"></div><div class="ch-wrap tall"><canvas id="ch-cohort"></canvas></div></div>
+      <span id="p4-cohort" style="scroll-margin-top:20px"></span><div class="ch-box"><div class="ch-title">Cohort Retention by Join Year</div><div class="ch-inf" id="inf-cohort"></div><div class="ch-wrap tall"><canvas id="ch-cohort"></canvas></div></div>
     </div>
     <div class="card"><div class="c-title"><div class="c-title-l">Monthly OHC · CHC · Avg HC · Full Breakdown</div></div><div style="overflow-x:auto"><table class="ohc-table" id="ohc-tbl"></table></div></div>
     <div class="ch-box"><div class="ch-title">Monthly & Annualised Attrition Trend</div><div class="ch-inf" id="inf-attr2"></div><div class="ch-wrap tall"><canvas id="ch-attr"></canvas></div></div>
@@ -658,7 +658,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
     <div class="g2">
       <div class="card">
         <div class="c-title"><div class="c-title-l" style="--accent:var(--green)">✅ Voluntary Exit Reasons</div><span id="vol-total-badge" style="font-family:'Fira Code',monospace;font-size:.66rem;color:var(--green)"></span></div>
-        <div id="vol-reasons"></div>
+        <div id="p4-reasons"></div>
       </div>
       <div class="card">
         <div class="c-title"><div class="c-title-l" style="--accent:var(--red)">🔴 Involuntary Exit Reasons</div><span id="invol-total-badge" style="font-family:'Fira Code',monospace;font-size:.66rem;color:var(--red)"></span></div>
@@ -695,7 +695,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
     <div class="inf green" id="inf-perf"></div>
     <div class="g2">
       <div class="card"><div class="c-title"><div class="c-title-l">Level Distribution — Active</div></div><div id="level-pyramid"></div></div>
-      <div class="card"><div class="c-title"><div class="c-title-l" id="perf-card-title">Performance Rating</div></div><div id="perf-2025"></div></div>
+      <div class="card"><div class="c-title"><div class="c-title-l" id="perf-card-title">Performance Rating</div></div><div id="p5-yoy"></div></div>
     </div>
     <div class="g2">
       <div class="ch-box"><div class="ch-title" id="perf-chart-title">Rating 2024 vs 2025</div><div class="ch-inf" id="inf-perf2"></div><div class="ch-wrap tall"><canvas id="ch-perf"></canvas></div></div>
@@ -970,7 +970,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
     <div class="inf blue" id="inf-org-chart"></div>
     <div class="card" style="margin-bottom:18px">
       <div class="c-title"><div class="c-title-l">🏛 Leadership Team — Direct Reports to President</div></div>
-      <div id="leadership-strip" style="overflow-x:auto;padding:10px 0"></div>
+      <div id="p9-lead" style="overflow-x:auto;padding:10px 0"></div>
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
       <div style="font-size:.78rem;font-weight:700;color:var(--ink)">🌌 Galaxy Trees — Click to Expand</div>
@@ -984,7 +984,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
   </div>
   <!-- P11 REPORTS -->
   <!-- reports anchor added in p11 div -->
-  <div class="pg" id="p11">
+  <div class="pg" id="p11"><span id="p11-reports"></span>
     <div class="inf blue">
       <strong>Download Reports</strong> — All reports are generated from your live SharePoint data at the time of download. Select the report you need and click Download.
     </div>
@@ -2559,29 +2559,23 @@ function buildSidebar(pid){
 }
 
 function scrollToSection(sectionId, pid){
-  // Engagement tab uses inner sub-tabs — switch section, don't scroll
   if(pid==='p6'){
-    const innerBtn=document.querySelector(`.inner-tab[onclick*="'${sectionId}'"]`);
-    if(innerBtn){engTab(innerBtn,sectionId);}else{
+    // Engagement uses inner sub-tabs — switch, don't scroll
+    const btn=document.querySelector(`.inner-tab[onclick*="'${sectionId}'"]`);
+    if(btn) engTab(btn, sectionId);
+    else {
       document.querySelectorAll('.eng-section').forEach(s=>s.classList.remove('active'));
       const sec=document.getElementById(sectionId);
-      if(sec)sec.classList.add('active');
+      if(sec) sec.classList.add('active');
     }
   } else {
-    // Scroll within the content area to the section
     const el=document.getElementById(sectionId);
-    const ca=document.getElementById('content-area');
-    if(el&&ca){
-      const elTop=el.getBoundingClientRect().top - ca.getBoundingClientRect().top + ca.scrollTop;
-      ca.scrollTo({top:Math.max(0,elTop-16),behavior:'smooth'});
-    } else if(el){
-      el.scrollIntoView({behavior:'smooth',block:'start'});
-    }
+    if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
   }
   // Highlight sidebar item
   document.querySelectorAll('.sb-item').forEach(b=>b.classList.remove('on'));
   const btn=document.getElementById('sbi-'+sectionId);
-  if(btn)btn.classList.add('on');
+  if(btn) btn.classList.add('on');
 }
 
 // Observe sections to auto-highlight sidebar on scroll
