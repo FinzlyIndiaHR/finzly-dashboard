@@ -339,8 +339,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
 .sb-sub{font-size:.64rem;color:var(--muted);margin-top:1px;line-height:1.2}
 .sb-group-header{font-size:.58rem;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--muted2);padding:12px 14px 4px;display:block}
 /* Content area */
-.content-area{flex:1;min-width:0;padding:20px 28px 56px;overflow-y:auto;height:calc(100vh - 107px)}
-.pg{display:none}.pg.on{display:block}
+.content-area{flex:1;min-width:0;overflow-y:auto;height:calc(100vh - 107px)}
 /* Section anchors within a tab */
 .tab-section{scroll-margin-top:20px;margin-bottom:28px}
 .tab-section-title{display:none}/* hidden — sidebar is the nav */
@@ -1359,6 +1358,8 @@ function parseEmpDate(v){
   }
 
   const s=String(v).trim();
+  // Skip long text strings that are clearly not dates
+  if(s.length>30)return null;
   if(!s||s==='null'||s==='0'||s==='undefined'||s==='false')return null;
 
   // 2. ISO: "2024-06-12" or "2024-06-12T00:00:00"
@@ -3996,9 +3997,12 @@ function renderManagerSpan(activeEmps){
 
 // ── ENGAGEMENT TAB (P6) — 1:1 Intelligence ────────────────────
 function renderEngagementTab(){
+  console.log('💬 renderEngagementTab — OO_SQUAD_MAP keys:', Object.keys(OO_SQUAD_MAP).length, Object.keys(OO_SQUAD_MAP).slice(0,5));
   const hasData=Object.keys(OO_SQUAD_MAP).length>0;
-  document.getElementById('p6-ndata').style.display=hasData?'none':'block';
-  document.getElementById('p6-content').style.display=hasData?'block':'none';
+  const ndata=document.getElementById('p6-ndata');
+  const pcontent=document.getElementById('p6-content');
+  if(ndata)ndata.style.display=hasData?'none':'block';
+  if(pcontent)pcontent.style.display=hasData?'block':'none';
   if(!hasData)return;
 
   const squads=Object.entries(OO_SQUAD_MAP).sort((a,b)=>b[1].n-a[1].n);
