@@ -325,69 +325,6 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
 .ins-val.red{color:var(--red)}.ins-val.green{color:var(--green)}.ins-val.amber{color:var(--amber)}.ins-val.blue{color:var(--blue)}
 .ins-txt{font-size:.72rem;color:var(--ink);line-height:1.55}
 .ins-txt strong{font-weight:700}
-
-/* Inner sub-tabs for Engagement */
-.inner-tabs{display:flex;gap:2px;padding:2px;background:var(--bg);border-radius:10px;margin-bottom:16px;width:fit-content}
-.inner-tab{font-family:'Outfit',sans-serif;font-size:.76rem;padding:6px 16px;border-radius:8px;border:none;cursor:pointer;color:var(--muted);background:transparent;font-weight:500;transition:all .15s;white-space:nowrap}
-.inner-tab.on{background:var(--card);color:var(--ink);font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,.08)}
-.inner-tab:hover:not(.on){color:var(--ink)}
-/* Clickable card affordance */
-.click-card{cursor:pointer;transition:all .15s;position:relative}
-.click-card:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,0,0,.07)}
-.click-hint{display:inline-flex;align-items:center;gap:4px;font-size:.64rem;color:var(--accent);font-weight:600;padding:2px 8px;border-radius:20px;background:rgba(232,84,26,.08);border:1px solid rgba(232,84,26,.2);margin-top:6px}
-/* Welcome banner */
-.welcome-bar{background:linear-gradient(135deg,#0f172a,#1e3a5f);border-radius:12px;padding:16px 20px;margin-bottom:18px;display:flex;align-items:center;gap:16px;cursor:pointer}
-.wb-text{flex:1;font-size:.78rem;color:rgba(255,255,255,.75);line-height:1.6}
-.wb-text strong{color:#fff}
-.wb-close{font-size:.72rem;color:rgba(255,255,255,.4);padding:4px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:transparent;cursor:pointer;font-family:'Outfit',sans-serif}
-.wb-close:hover{background:rgba(255,255,255,.08);color:rgba(255,255,255,.7)}
-/* Section expand toggle */
-.sec-toggle{display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:4px 0}
-.sec-toggle:hover .sec-toggle-icon{color:var(--accent)}
-.sec-toggle-icon{font-size:.8rem;color:var(--muted);transition:transform .2s}
-.sec-toggle-icon.open{transform:rotate(90deg);color:var(--accent)}
-/* Engagement inner sections */
-.eng-section{display:none}.eng-section.active{display:block}
-.voe-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
-.voe-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 16px;cursor:pointer;transition:all .18s;position:relative;overflow:hidden}
-.voe-card:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.1);border-color:var(--accent)}
-.voe-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
-.voe-card.negative::before{background:#dc2626}.voe-card.positive::before{background:#16a34a}
-.voe-card.mixed::before{background:#d97706}.voe-card.neutral::before{background:#2563eb}
-.voe-icon{font-size:1.8rem;margin-bottom:8px}
-.voe-title{font-size:.84rem;font-weight:700;color:var(--ink);margin-bottom:4px}
-.voe-count{font-family:'Fira Code',monospace;font-size:.72rem;color:var(--muted);margin-bottom:8px}
-.voe-locs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px}
-.voe-sentiment{font-size:.62rem;font-weight:700;padding:3px 9px;border-radius:20px;display:inline-block}
-.voe-card.negative .voe-sentiment{background:#fef2f2;color:#dc2626;border:1px solid #fca5a5}
-.voe-card.positive .voe-sentiment{background:#f0fdf4;color:#16a34a;border:1px solid #86efac}
-.voe-card.mixed .voe-sentiment{background:#fffbeb;color:#d97706;border:1px solid #fcd34d}
-.voe-card.neutral .voe-sentiment{background:#eff6ff;color:#2563eb;border:1px solid #93c5fd}
-.voe-arrow{position:absolute;bottom:10px;right:14px;font-size:.7rem;color:var(--muted);opacity:.5}
-/* ── THEME SLIDE-IN PANEL ───────────────────────────────── */
-.theme-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:900;opacity:0;pointer-events:none;transition:opacity .2s}
-.theme-overlay.open{opacity:1;pointer-events:all}
-.theme-panel{position:fixed;top:0;right:0;width:500px;max-width:95vw;height:100vh;background:var(--card);z-index:901;transform:translateX(100%);transition:transform .25s cubic-bezier(.4,0,.2,1);overflow-y:auto;display:flex;flex-direction:column}
-.theme-panel.open{transform:translateX(0)}
-.tp-hdr{padding:22px 24px 14px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--card);z-index:2}
-.tp-close{position:absolute;top:14px;right:14px;width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:var(--bg);cursor:pointer;font-size:.9rem;display:flex;align-items:center;justify-content:center;color:var(--muted)}
-.tp-close:hover{background:var(--border);color:var(--ink)}
-.tp-body{padding:20px 24px;flex:1}
-.tp-sec{margin-bottom:18px}
-.tp-sec-t{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:5px}
-.tp-sec-t::before{content:'';width:3px;height:10px;background:var(--accent);border-radius:2px;flex-shrink:0}
-.quote-card{background:var(--bg);border-radius:8px;border-left:3px solid var(--accent);padding:10px 13px;margin-bottom:7px;font-size:.77rem;color:var(--ink);line-height:1.6;font-style:italic}
-.quote-meta{font-size:.63rem;color:var(--muted);margin-top:4px;font-style:normal}
-.loc-bar-wrap{margin-bottom:12px}
-.loc-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}
-.loc-bar-lbl{font-size:.72rem;width:70px;color:var(--ink)}
-.loc-bar-track{flex:1;height:7px;background:var(--border2);border-radius:99px;overflow:hidden}
-.loc-bar-fill{height:100%;border-radius:99px}
-.loc-bar-val{font-family:'Fira Code',monospace;font-size:.68rem;font-weight:600;width:32px;text-align:right}
-.tp-action{background:linear-gradient(135deg,#e8541a,#ff6b35);border-radius:10px;padding:14px 16px;color:#fff;margin-top:4px}
-.tp-action-tag{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px;opacity:.8}
-.tp-action-body{font-size:.82rem;font-weight:600;line-height:1.5}
-@media(max-width:640px){.voe-grid{grid-template-columns:1fr 1fr}.theme-panel{width:100%}}
 @media(max-width:1100px){.kstrip{grid-template-columns:repeat(4,1fr)}.formula-box{grid-template-columns:1fr}}
 @media(max-width:860px){.kstrip,.g2,.g3,.g4{grid-template-columns:1fr 1fr}.pg{padding:14px 14px 50px}.hdr,.fbar,.tabs{padding-left:14px;padding-right:14px}}
 @media(max-width:560px){.kstrip,.g2,.g3,.g4{grid-template-columns:1fr}}
@@ -488,33 +425,22 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
     <span class="fb-info" id="f-info">Loading…</span>
   </div>
 
-  <!-- TOP TABS -->
-  <div class="tabs" id="main-tabs">
+  <div class="tabs">
     <button class="tab on" onclick="goTab(this,'p1')">📊 Org Snapshot</button>
-    <button class="tab" onclick="goTab(this,'p7')">🧭 Leadership</button>
-    <button class="tab" onclick="goTab(this,'p8')">🧠 Team Radar</button>
-    <button class="tab" onclick="goTab(this,'p6')">💬 Engagement</button>
+    <button class="tab" onclick="goTab(this,'p2')">📈 People Trend</button>
+    <button class="tab" onclick="goTab(this,'p3')">🏗 Squad Intelligence</button>
     <button class="tab" onclick="goTab(this,'p4')">📉 Attrition</button>
     <button class="tab" onclick="goTab(this,'p5')">⭐ Performance</button>
-    <button class="tab" onclick="goTab(this,'p2')">📈 People Trend</button>
-    <button class="tab" onclick="goTab(this,'p3')">🏗 Squads</button>
+    <button class="tab" onclick="goTab(this,'p7')">🧭 Leadership Summary</button>
     <button class="tab" onclick="goTab(this,'p9')">🌳 Org Chart</button>
+    <button class="tab" onclick="goTab(this,'p8')">🧠 Team Radar</button>
+    <button class="tab" onclick="goTab(this,'p6')">💬 Engagement</button>
     <button class="tab" onclick="goTab(this,'p11')">📥 Reports</button>
     <button class="tab" onclick="goTab(this,'p12')">🔍 Data Health</button>
   </div>
 
-
   <!-- P1 -->
   <div class="pg on" id="p1">
-    <!-- Welcome guide — dismissible -->
-    <div class="welcome-bar" id="welcome-bar">
-      <div style="font-size:1.8rem">👋</div>
-      <div class="wb-text">
-        <strong>Welcome to the Finzly HR Leadership Dashboard.</strong><br>
-        Start here on <strong>Snapshot</strong> for headcount KPIs → <strong>Leadership</strong> for what needs action now → <strong>Team Radar</strong> to review managers → <strong>Engagement</strong> for 1:1 employee intelligence. Click any card, row, or insight item to see the detail behind it.
-      </div>
-      <button class="wb-close" onclick="document.getElementById('welcome-bar').style.display='none';localStorage.setItem('wb_closed','1')">Got it ✕</button>
-    </div>
     <div class="ts" id="ts1"></div>
     <div class="insight-strip cols3" id="ins-p1"></div>
     <div class="kstrip" id="k1"></div>
@@ -542,12 +468,12 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
   </div>
 
   <!-- P2 -->
-  <div class="pg" id="p2"><span id="p2-trend"></span>
+  <div class="pg" id="p2">
     <div class="insight-strip cols3" id="ins-p2"></div>
     <div class="inf blue" id="inf-trend"></div>
     <div class="ch-box">
       <div class="ch-title">Headcount Trend — US vs India</div>
-      <span id="p2-joining" style="scroll-margin-top:20px"></span><div class="ch-inf" id="inf-trend2"></div>
+      <div class="ch-inf" id="inf-trend2"></div>
       <div class="ch-wrap xtall"><canvas id="ch-trend"></canvas></div>
     </div>
     <div class="g2">
@@ -591,13 +517,13 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
           <span id="sq-panel-info" style="font-size:.65rem;color:var(--muted)">Click a squad to expand</span>
         </div>
       </div>
-      <span id="p3-squad-det" style="scroll-margin-top:20px"></span><div id="squad-tree"></div>
+      <div id="squad-tree"></div>
     </div>
 
   </div>
 
   <!-- P4 -->
-  <div class="pg" id="p4"><span id="p4-kpi" style="scroll-margin-top:20px"></span>
+  <div class="pg" id="p4">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
       <span style="font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">Attrition Year</span>
       <select id="f-attr-year" onchange="render()" style="font-family:'Outfit',sans-serif;font-size:.78rem;padding:5px 26px 5px 10px;border-radius:6px;border:1.5px solid var(--border);background:var(--bg);color:var(--ink);cursor:pointer;appearance:none;background-image:url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2710%27 height=%277%27%3E%3Cpath d=%27M1 1l4 4 4-4%27 stroke=%27%238a8578%27 stroke-width=%271.5%27 fill=%27none%27 stroke-linecap=%27round%27/%3E%3C/svg%3E');background-repeat:no-repeat;background-position:right 8px center">
@@ -617,7 +543,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
     <div class="g4" id="attr-kpis"></div>
     <div class="g2" style="margin-top:14px">
       <div class="ch-box"><div class="ch-title">Year-wise Exits — Voluntary vs Involuntary</div><div class="ch-inf" id="inf-yr-exit"></div><div class="ch-wrap tall"><canvas id="ch-yr-exit"></canvas></div></div>
-      <span id="p4-cohort" style="scroll-margin-top:20px"></span><div class="ch-box"><div class="ch-title">Cohort Retention by Join Year</div><div class="ch-inf" id="inf-cohort"></div><div class="ch-wrap tall"><canvas id="ch-cohort"></canvas></div></div>
+      <div class="ch-box"><div class="ch-title">Cohort Retention by Join Year</div><div class="ch-inf" id="inf-cohort"></div><div class="ch-wrap tall"><canvas id="ch-cohort"></canvas></div></div>
     </div>
     <div class="card"><div class="c-title"><div class="c-title-l">Monthly OHC · CHC · Avg HC · Full Breakdown</div></div><div style="overflow-x:auto"><table class="ohc-table" id="ohc-tbl"></table></div></div>
     <div class="ch-box"><div class="ch-title">Monthly & Annualised Attrition Trend</div><div class="ch-inf" id="inf-attr2"></div><div class="ch-wrap tall"><canvas id="ch-attr"></canvas></div></div>
@@ -628,44 +554,21 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
     <div class="g2">
       <div class="card">
         <div class="c-title"><div class="c-title-l" style="--accent:var(--green)">✅ Voluntary Exit Reasons</div><span id="vol-total-badge" style="font-family:'Fira Code',monospace;font-size:.66rem;color:var(--green)"></span></div>
-        <span id="p4-reasons" style="scroll-margin-top:20px"></span><div id="vol-reasons"></div>
+        <div id="vol-reasons"></div>
       </div>
       <div class="card">
         <div class="c-title"><div class="c-title-l" style="--accent:var(--red)">🔴 Involuntary Exit Reasons</div><span id="invol-total-badge" style="font-family:'Fira Code',monospace;font-size:.66rem;color:var(--red)"></span></div>
         <div id="invol-reasons"></div>
       </div>
     </div>
-
-    <!-- ── 1:1 ENGAGEMENT PULSE (enhancement — from 1:1 dashboard P3) ── -->
-    <div id="p3-oo-pulse" style="display:none">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin:18px 0 10px">
-        <div style="font-size:.9rem;font-weight:800;color:var(--ink)">💬 1:1 Engagement Pulse · Practice & Squad View</div>
-        <div style="font-size:.7rem;color:var(--muted)">From 1:1 Discussion Survey · Click any card to explore</div>
-      </div>
-      <!-- Practice engagement cards -->
-      <div id="p3-prac-pulse" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px"></div>
-      <!-- Practice × Location chart placeholder -->
-      <div class="g2">
-        <div class="ch-box">
-          <div class="ch-title">Practice Engagement vs Manager Rating</div>
-          <div class="ch-inference" id="p3-prac-inf">Loading…</div>
-          <div class="ch-wrap"><canvas id="ch-p3-prac"></canvas></div>
-        </div>
-        <div class="ch-box">
-          <div class="ch-title">Engagement by Practice × Location</div>
-          <div class="ch-inference" id="p3-loc-inf">Loading…</div>
-          <div class="ch-wrap"><canvas id="ch-p3-loc"></canvas></div>
-        </div>
-      </div>
-    </div>
   </div>
 
   <!-- P5 -->
-  <div class="pg" id="p5"><span id="p5-rating" style="scroll-margin-top:20px"></span>
+  <div class="pg" id="p5">
     <div class="inf green" id="inf-perf"></div>
     <div class="g2">
       <div class="card"><div class="c-title"><div class="c-title-l">Level Distribution — Active</div></div><div id="level-pyramid"></div></div>
-      <div class="card"><div class="c-title"><div class="c-title-l" id="perf-card-title">Performance Rating</div></div><span id="p5-yoy" style="scroll-margin-top:20px"></span><div id="perf-2025"></div></div>
+      <div class="card"><div class="c-title"><div class="c-title-l" id="perf-card-title">Performance Rating</div></div><div id="perf-2025"></div></div>
     </div>
     <div class="g2">
       <div class="ch-box"><div class="ch-title" id="perf-chart-title">Rating 2024 vs 2025</div><div class="ch-inf" id="inf-perf2"></div><div class="ch-wrap tall"><canvas id="ch-perf"></canvas></div></div>
@@ -676,116 +579,49 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
 
   <!-- P6 removed - RAG now in Squad Intelligence (P3) -->
 
-  <!-- THEME SLIDE-IN PANEL — shared -->
-  <div class="theme-overlay" id="theme-overlay" onclick="closeThemePanel()"></div>
-  <div class="theme-panel" id="theme-panel">
-    <div class="tp-hdr">
-      <div id="tp-icon" style="font-size:2rem;margin-bottom:6px"></div>
-      <div id="tp-title" style="font-size:1.05rem;font-weight:800;color:var(--ink)"></div>
-      <div id="tp-subtitle" style="font-size:.72rem;color:var(--muted);margin-top:3px"></div>
-      <button class="tp-close" onclick="closeThemePanel()">✕</button>
-    </div>
-    <div class="tp-body" id="tp-body"></div>
-  </div>
-
   <!-- P6 ENGAGEMENT — 1:1 Intelligence -->
   <div class="pg" id="p6">
     <div id="p6-ndata" style="display:none;padding:32px;text-align:center;background:var(--card);border-radius:12px;border:1px solid var(--border)">
       <div style="font-size:2rem;margin-bottom:10px">💬</div>
       <div style="font-weight:700;font-size:1rem;margin-bottom:6px">1-on-1 Engagement Data Not Available</div>
-      <div style="font-size:.78rem;color:var(--muted);max-width:420px;margin:0 auto;line-height:1.7">The One-on-One Discussion Excel could not be loaded.</div>
+      <div style="font-size:.78rem;color:var(--muted);max-width:420px;margin:0 auto;line-height:1.7">The One-on-One Discussion Excel (owned by Vishwata Mayekar) could not be loaded. Ensure the dashboard has access to <code>vishwata.mayekar@finzly.com</code>'s SharePoint file or share the file with the service account.</div>
     </div>
     <div id="oo-status-banner"></div>
     <div id="p6-content">
-      <!-- Inner sub-navigation -->
-      <div class="inner-tabs" id="eng-inner-tabs">
-        <button class="inner-tab on" onclick="engTab(this,'eng-s1')">📊 Overview</button>
-        <button class="inner-tab" onclick="engTab(this,'eng-s2')">🗣 Voice of Employee</button>
-        <button class="inner-tab" onclick="engTab(this,'eng-s3')">📍 Location View</button>
-        <button class="inner-tab" onclick="engTab(this,'eng-s4')">🔄 Start · Stop · Continue</button>
-      </div>
-
-      <!-- S1: OVERVIEW — KPIs + heatmap + signals -->
-      <div class="eng-section active" id="eng-s1">
-        <div id="eng-kpis" style="display:grid;grid-template-columns:repeat(5,1fr);gap:11px;margin-bottom:18px"></div>
-        <div class="g2" style="margin-bottom:14px">
-          <div class="card" style="grid-column:span 2">
-            <div class="c-title">
-              <div class="c-title-l">Squad Engagement Heatmap</div>
-              <div style="font-size:.68rem;color:var(--muted)">↓ Click a row with Red or Amber to see employee names + reasons</div>
-            </div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;font-size:.68rem">
-              <span style="background:#f0fdf4;border:1px solid #86efac;color:#15803d;padding:2px 8px;border-radius:4px">≥4.5 Thriving</span>
-              <span style="background:#fffbeb;border:1px solid #fcd34d;color:#d97706;padding:2px 8px;border-radius:4px">4.0–4.4 Engaged</span>
-              <span style="background:#fff7ed;border:1px solid #fdba74;color:#ea580c;padding:2px 8px;border-radius:4px">3.5–3.9 At Risk</span>
-              <span style="background:#fef2f2;border:1px solid #fca5a5;color:#dc2626;padding:2px 8px;border-radius:4px">&lt;3.5 Critical</span>
-            </div>
-            <div style="overflow-x:auto"><table id="eng-heatmap" style="width:100%;border-collapse:collapse"></table></div>
+      <!-- KPI strip -->
+      <div id="eng-kpis" style="display:grid;grid-template-columns:repeat(5,1fr);gap:11px;margin-bottom:18px"></div>
+      <!-- Squad heatmap -->
+      <div class="card" style="margin-bottom:14px">
+        <div class="c-title">
+          <div class="c-title-l">Squad Engagement Heatmap · 1:1 Q1 2026</div>
+          <div style="display:flex;gap:8px;font-size:.68rem;color:var(--muted)">
+            <span style="background:#f0fdf4;border:1px solid #86efac;color:#15803d;padding:2px 8px;border-radius:4px">≥4.5 Thriving</span>
+            <span style="background:#fffbeb;border:1px solid #fcd34d;color:#d97706;padding:2px 8px;border-radius:4px">4.0–4.4 Engaged</span>
+            <span style="background:#fff7ed;border:1px solid #fdba74;color:#ea580c;padding:2px 8px;border-radius:4px">3.5–3.9 At Risk</span>
+            <span style="background:#fef2f2;border:1px solid #fca5a5;color:#dc2626;padding:2px 8px;border-radius:4px">&lt;3.5 Critical</span>
           </div>
         </div>
-        <div class="card">
-          <div class="c-title"><div class="c-title-l">Key Signals</div><span style="font-size:.64rem;color:var(--muted)">Automatically detected from 1:1 responses</span></div>
-          <div id="eng-signals"></div>
+        <div style="overflow-x:auto">
+          <table id="eng-heatmap" style="width:100%;border-collapse:collapse;font-family:'Outfit',sans-serif"></table>
         </div>
-        <div class="card" style="margin-top:14px">
+      </div>
+      <!-- What employees are asking for + signals -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+        <div class="card">
           <div class="c-title"><div class="c-title-l">Top Employee Requests · This Quarter</div></div>
           <div id="eng-requests"></div>
         </div>
-      </div>
-
-      <!-- S2: VOICE OF EMPLOYEE -->
-      <div class="eng-section" id="eng-s2">
-        <div style="background:var(--bg);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:.76rem;color:var(--muted);line-height:1.6">
-          💡 <strong style="color:var(--ink)">How to use:</strong> Each card below represents a theme from 1:1 survey responses. Click any card to see anonymized quotes, location breakdown, and the recommended action.
-        </div>
-        <div class="voe-grid" id="eng-voe-grid"></div>
-      </div>
-
-      <!-- S3: LOCATION INTELLIGENCE -->
-      <div class="eng-section" id="eng-s3">
-        <div id="eng-loc-section">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
-            <div style="background:var(--ch-bg);border:1px solid var(--ch-br);border-radius:12px;padding:18px 20px">
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-                <div style="font-size:.95rem;font-weight:800;color:var(--ch)">📍 Chennai</div>
-                <span id="ch-eng-badge" style="font-family:'Fira Code',monospace;font-size:.72rem;padding:2px 10px;border-radius:20px;background:rgba(14,165,233,.15);color:var(--ch);border:1px solid var(--ch-br)">— employees</span>
-              </div>
-              <div id="ch-loc-inference" style="font-size:.78rem;color:var(--ink);margin-bottom:10px;padding:8px 10px;background:rgba(255,255,255,.6);border-radius:6px;border-left:3px solid var(--ch);line-height:1.5">Loading…</div>
-              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px" id="ch-loc-kpis"></div>
-              <div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px">Squad Scores</div>
-              <div id="ch-sq-bars"></div>
-              <div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:8px 0 5px">Top Requests</div>
-              <div id="ch-loc-req"></div>
-            </div>
-            <div style="background:var(--pu-bg);border:1px solid var(--pu-br);border-radius:12px;padding:18px 20px">
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-                <div style="font-size:.95rem;font-weight:800;color:var(--pu)">📍 Pune</div>
-                <span id="pu-eng-badge" style="font-family:'Fira Code',monospace;font-size:.72rem;padding:2px 10px;border-radius:20px;background:rgba(124,58,237,.15);color:var(--pu);border:1px solid var(--pu-br)">— employees</span>
-              </div>
-              <div id="pu-loc-inference" style="font-size:.78rem;color:var(--ink);margin-bottom:10px;padding:8px 10px;background:rgba(255,255,255,.6);border-radius:6px;border-left:3px solid var(--pu);line-height:1.5">Loading…</div>
-              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px" id="pu-loc-kpis"></div>
-              <div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px">Squad Scores</div>
-              <div id="pu-sq-bars"></div>
-              <div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:8px 0 5px">Top Requests</div>
-              <div id="pu-loc-req"></div>
-            </div>
-          </div>
-          <div class="ch-box">
-            <div class="ch-title">Location Score Comparison · Engagement · Manager · Overall</div>
-            <div class="ch-inference" id="eng-loc-compare-inf"></div>
-            <div class="ch-wrap"><canvas id="ch-loc-compare"></canvas></div>
-          </div>
+        <div class="card">
+          <div class="c-title"><div class="c-title-l">Key Signals from 1:1s</div></div>
+          <div id="eng-signals"></div>
         </div>
       </div>
-
-      <!-- S4: START STOP CONTINUE -->
-      <div class="eng-section" id="eng-s4">
-        <div style="background:var(--bg);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:.76rem;color:var(--muted);line-height:1.6">
-          💡 <strong style="color:var(--ink)">What this shows:</strong> Aggregated themes from all open-text responses in the 1:1 survey. Numbers in brackets show how many employees mentioned each item independently.
-        </div>
+      <!-- SSC panel -->
+      <div class="card">
+        <div class="c-title"><div class="c-title-l">Start · Stop · Continue — Aggregated Themes</div></div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">
           <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:10px;padding:14px 16px">
-            <div style="font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#dc2626;margin-bottom:10px">⚠ Stop / Fix</div>
+            <div style="font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#dc2626;margin-bottom:10px">⚠ Needs Fixing / Stop</div>
             <div id="eng-fix" style="font-size:.76rem;color:#333;line-height:1.8"></div>
           </div>
           <div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:14px 16px">
@@ -800,50 +636,19 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
       </div>
     </div>
   </div>
+
+  <!-- P7 LEADERSHIP SUMMARY -->
   <div class="pg" id="p7">
     <div class="card" style="margin-bottom:14px">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;gap:16px;flex-wrap:wrap">
         <div><div class="sum-hl">Leadership Intelligence. <em>Act on what matters.</em></div><div style="font-size:.72rem;color:var(--muted);margin-top:3px" id="sum-sub"></div></div>
         <div class="sum-kpis" id="sum-kpis"></div>
       </div>
-      <div id="s-p7-actions" style="scroll-margin-top:20px">
-        <div class="g2" id="act-grid"></div>
-        <div class="cta-bar" id="cta-bar"></div>
-      </div>
-
-    <!-- ── 1:1 INTELLIGENCE BRIEF (enhancement — from 1:1 dashboard P7) ── -->
-    <div id="p7-oo-brief" style="display:none;margin-bottom:14px">
-      <div class="tab-section" id="s-p7-1on1">
-      <div style="font-size:.9rem;font-weight:800;color:var(--ink);margin-bottom:10px">💬 1:1 People Intelligence Brief</div>
-      <div class="g2" style="margin-bottom:14px">
-        <!-- Location Intelligence -->
-        <div class="card">
-          <div class="c-title"><div class="c-title-l">📍 Location Intelligence</div></div>
-          <div id="p7-loc-intel"></div>
-        </div>
-        <!-- Action items from 1:1 -->
-        <div class="card">
-          <div class="c-title"><div class="c-title-l">🎯 Actions Driven by 1:1 Data</div><span style="font-size:.64rem;color:var(--muted)">Click to expand</span></div>
-          <div id="p7-oo-actions"></div>
-        </div>
-      </div>
-      <span id="s-p7-predict" style="scroll-margin-top:20px"></span><!-- Predictive + 6-month forecast from 1:1 -->
-      <div class="card">
-        <div class="c-title"><div class="c-title-l">🔮 Predictive Intelligence from 1:1 Data</div></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-          <div>
-            <div style="font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px">Opportunity Forecast</div>
-            <div id="p7-opp-forecast"></div>
-          </div>
-          <div>
-            <div style="font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px">6-Month Risk if No Action Taken</div>
-            <div id="p7-risk-forecast"></div>
-          </div>
-        </div>
-      </div>
+      <div class="g2" id="act-grid"></div>
+      <div class="cta-bar" id="cta-bar"></div>
     </div>
     <!-- AI Intel moved here from P10 -->
-    <div id="s-p7-ai" style="margin-top:18px;scroll-margin-top:20px"><div style="font-size:.9rem;font-weight:800;color:var(--ink);margin-bottom:10px">🤖 AI Workforce Intelligence</div>
+    <div style="margin-top:18px"><div style="font-size:.9rem;font-weight:800;color:var(--ink);margin-bottom:10px">🤖 AI Workforce Intelligence</div>
 
     <div class="card" style="margin-bottom:14px">
       <div class="c-title"><div class="c-title-l">🤖 AI Workforce Intelligence</div></div>
@@ -890,7 +695,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
 
 
   <!-- P8 TEAM RADAR — Manager Health Scorecard -->
-  <div class="pg" id="p8"><span id="p8-radar" style="scroll-margin-top:20px"></span>
+  <div class="pg" id="p8">
     <div class="card" style="margin-bottom:14px">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px">
         <div>
@@ -921,9 +726,6 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
       </div>
       <!-- KPI strip -->
       <div id="radar-kpis" style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px"></div>
-      <!-- Insight strip -->
-      <div class="insight-strip cols3" id="ins-p8" style="margin-bottom:12px"></div>
-      <div class="inf blue" id="inf-mgr" style="margin-bottom:12px"></div>
       <!-- Scorecard table -->
       <div style="overflow-x:auto">
         <table id="mgr-scorecard" style="width:100%;border-collapse:collapse;font-family:'Outfit',sans-serif"></table>
@@ -943,7 +745,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
     <div class="inf blue" id="inf-org-chart"></div>
     <div class="card" style="margin-bottom:18px">
       <div class="c-title"><div class="c-title-l">🏛 Leadership Team — Direct Reports to President</div></div>
-      <span id="p9-lead" style="scroll-margin-top:20px"></span><div id="leadership-strip" style="overflow-x:auto;padding:10px 0"></div>
+      <div id="leadership-strip" style="overflow-x:auto;padding:10px 0"></div>
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
       <div style="font-size:.78rem;font-weight:700;color:var(--ink)">🌌 Galaxy Trees — Click to Expand</div>
@@ -956,8 +758,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
     <div id="galaxy-trees"></div>
   </div>
   <!-- P11 REPORTS -->
-  <!-- reports anchor added in p11 div -->
-  <div class="pg" id="p11"><span id="p11-reports"></span>
+  <div class="pg" id="p11">
     <div class="inf blue">
       <strong>Download Reports</strong> — All reports are generated from your live SharePoint data at the time of download. Select the report you need and click Download.
     </div>
@@ -1035,12 +836,10 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
       </div>
       <button onclick="renderDataHealth()" style="font-family:'Outfit',sans-serif;font-size:.76rem;padding:7px 16px;border-radius:8px;border:1.5px solid var(--border);background:var(--card);cursor:pointer;font-weight:600">↺ Refresh</button>
     </div>
-    <span id="p12-audit" style="scroll-margin-top:20px"></span><div id="dh-kpis" style="display:grid;grid-template-columns:repeat(5,1fr);gap:11px;margin-bottom:18px"></div>
+    <div id="dh-kpis" style="display:grid;grid-template-columns:repeat(5,1fr);gap:11px;margin-bottom:18px"></div>
     <div id="dh-sections"></div>
   </div>
 
-    </div><!-- /content-area -->
-  </div><!-- /app-body -->
 </div><!-- /dash -->
 
 <script>
@@ -1329,8 +1128,6 @@ function parseEmpDate(v){
   }
 
   const s=String(v).trim();
-  // Skip long text strings that are clearly not dates
-  if(s.length>30)return null;
   if(!s||s==='null'||s==='0'||s==='undefined'||s==='false')return null;
 
   // 2. ISO: "2024-06-12" or "2024-06-12T00:00:00"
@@ -1623,7 +1420,6 @@ async function loadData(){
         OO_HDRS=ooD.values[0].map(h=>String(h||'').trim().toLowerCase());
         OO_DATA=ooD.values.slice(1).filter(r=>r.some(c=>c!==null&&c!==''));
         buildOOSquadMap();
-        renderOOEnhancements();
 
         const sqCount=Object.keys(OO_SQUAD_MAP).length;
         const matched=Object.values(OO_SQUAD_MAP).reduce((s,d)=>s+d.empIds.length,0);
@@ -2059,236 +1855,7 @@ function mkChart(id,type,data,opts={}){
   CHARTS[id]=new Chart(ctx,{type,data,options:merged});
 }
 
-// ── VOICE OF EMPLOYEE — THEME DEFINITIONS ────────────────────
-const VOE_THEMES=[
-  {id:'recognition',icon:'🏆',title:'Recognition & Awards',
-   sentiment:'negative',sentLabel:'Needs Attention',
-   kw:['spot award','recogni','appreciate','appreciation','not recogni','award','reward'],
-   action:'Review Spot Award distribution. Ensure all squads included in nominations. Communicate outcomes visibly to the whole team.'},
-  {id:'learning',icon:'📚',title:'Learning & Growth',
-   sentiment:'positive',sentLabel:'Positive Signal',
-   kw:['udemy','learning','course','certif','skill','training','grow','ai course'],
-   action:'Link each Udemy course to a real project task within 30 days of completion. Manager to assign explicitly.'},
-  {id:'culture',icon:'🎉',title:'Culture & Team Events',
-   sentiment:'mixed',sentLabel:'Action Needed',
-   kw:['fun friday','outing','trip','lunch','event','team bonding','cricket','badminton','table tennis'],
-   action:'Plan one team event per quarter. Book the next one this month and announce the date.'},
-  {id:'worklife',icon:'⚖️',title:'Work-Life Balance',
-   sentiment:'negative',sentLabel:'Critical',
-   kw:['work life','overtime','leave','weekend','burnout','hours','adhoc','ad hoc','too many'],
-   action:'Review workload distribution in next 1:1 round. Flag tickets raised after 6pm for sprint planning review.'},
-  {id:'management',icon:'👤',title:'Manager Quality',
-   sentiment:'positive',sentLabel:'Strength',
-   kw:['manager','supportive','accessible','guidance','feedback from manager','lead','comfortable with','very supportive'],
-   action:'Document what high-rated managers do differently. Share as internal best practices across all squads.'},
-  {id:'collaboration',icon:'🔄',title:'Cross-team Collaboration',
-   sentiment:'negative',sentLabel:'Gap Identified',
-   kw:['demo','cross-team','knowledge','other team','silo','visibility','knowledge share'],
-   action:'Revive monthly cross-squad 30-min demo sessions. Zero cost. Assign a rotating host each month.'},
-  {id:'environment',icon:'🏢',title:'Office Environment',
-   sentiment:'mixed',sentLabel:'Monitor',
-   kw:['space','crowded','table tennis','cricket','canteen','food','hygiene','restroom','snack','biscuit'],
-   action:'Assess seating utilisation this week. Restore at least one recreational activity by end of quarter.'},
-  {id:'career',icon:'📈',title:'Career Path Clarity',
-   sentiment:'mixed',sentLabel:'Needs Clarity',
-   kw:['career','promo','growth','ladder','clarity','future','role','career path'],
-   action:'Publish a career levels document. Review each employee\'s career path in the next 1:1 cycle.'},
-];
-
-function openThemePanel(themeId){
-  const theme=VOE_THEMES.find(t=>t.id===themeId);
-  if(!theme)return;
-
-  // Get all 1:1 text rows
-  const allRows=Object.values(OO_SQUAD_MAP).flatMap(d=>d.requests||[]);
-  const allOOText=Object.values(OO_SQUAD_MAP).flatMap(d=>d.allText||[]);
-
-  // Location counts
-  const byLoc={};
-  Object.entries(OO_SQUAD_MAP).forEach(([,d])=>{
-    const loc=d.loc||'Other';
-    if(!byLoc[loc])byLoc[loc]=[];
-    (d.requests||[]).forEach((r,i)=>{
-      if(theme.kw.some(k=>r.includes(k))) byLoc[loc].push((d.allText||[])[i]||r);
-    });
-  });
-  const locCounts=Object.entries(byLoc).filter(([,v])=>v.length>0).sort((a,b)=>b[1].length-a[1].length);
-  const total=locCounts.reduce((s,[,v])=>s+v.length,0);
-  const maxLoc=locCounts[0]?.[1].length||1;
-
-  // Quotes — anonymized, from matching allText entries
-  const quotes=[];
-  Object.entries(OO_SQUAD_MAP).forEach(([sq,d])=>{
-    (d.allText||[]).forEach(text=>{
-      if(text.length>40&&theme.kw.some(k=>text.toLowerCase().includes(k))){
-        quotes.push({text:text.length>250?text.slice(0,247)+'…':text,squad:sq,loc:d.loc||''});
-      }
-    });
-  });
-  const uniqQuotes=[...new Map(quotes.map(q=>[q.text.slice(0,40),q])).values()].slice(0,5);
-
-  // Loc colors
-  const locCol=l=>l==='Chennai'?'#0ea5e9':l==='Pune'?'#7c3aed':'#16a34a';
-  const sentCol={negative:'#dc2626',positive:'#16a34a',mixed:'#d97706',neutral:'#2563eb'}[theme.sentiment];
-
-  document.getElementById('tp-icon').textContent=theme.icon;
-  document.getElementById('tp-title').textContent=theme.title;
-  document.getElementById('tp-subtitle').innerHTML=`<span style="background:${sentCol}18;color:${sentCol};padding:2px 9px;border-radius:20px;font-size:.68rem;font-weight:700;border:1px solid ${sentCol}40">${theme.sentLabel}</span>  <span style="margin-left:6px">${total} mention${total!==1?'s':''} across ${locCounts.length} location${locCounts.length!==1?'s':''}</span>`;
-
-  let body='';
-
-  // Location breakdown
-  if(locCounts.length>0){
-    body+=`<div class="tp-sec"><div class="tp-sec-t">Location Breakdown</div><div class="loc-bar-wrap">`;
-    locCounts.forEach(([loc,rows])=>{
-      const col=locCol(loc);
-      body+=`<div class="loc-bar-row">
-        <div class="loc-bar-lbl">${loc}</div>
-        <div class="loc-bar-track"><div class="loc-bar-fill" style="width:${Math.round(rows.length/maxLoc*100)}%;background:${col}"></div></div>
-        <div class="loc-bar-val" style="color:${col}">${rows.length}</div>
-      </div>`;
-    });
-    body+=`</div></div>`;
-  }
-
-  // Anonymized quotes
-  if(uniqQuotes.length>0){
-    body+=`<div class="tp-sec"><div class="tp-sec-t">What Employees Are Saying</div>`;
-    uniqQuotes.forEach(q=>{
-      const col=locCol(q.loc);
-      body+=`<div class="quote-card">"${q.text}"
-        <div class="quote-meta">
-          <span style="background:${col}15;color:${col};padding:1px 7px;border-radius:20px;font-size:.62rem;font-weight:600">${q.squad||'—'} · ${q.loc||'—'}</span>
-          <span style="margin-left:6px;opacity:.6">Anonymous · 1:1 Q1 2026</span>
-        </div>
-      </div>`;
-    });
-    body+=`</div>`;
-  } else {
-    body+=`<div class="tp-sec"><div class="tp-sec-t">What Employees Are Saying</div><div style="font-size:.76rem;color:var(--muted);padding:12px;background:var(--bg);border-radius:8px">No direct quotes matched for this theme in the current data.</div></div>`;
-  }
-
-  // Recommended action
-  body+=`<div class="tp-sec"><div class="tp-sec-t">Recommended Action</div>
-    <div class="tp-action">
-      <div class="tp-action-tag">🎯 Action for HR Leadership</div>
-      <div class="tp-action-body">${theme.action}</div>
-    </div>
-  </div>`;
-
-  document.getElementById('tp-body').innerHTML=body;
-  document.getElementById('theme-overlay').classList.add('open');
-  document.getElementById('theme-panel').classList.add('open');
-  document.body.style.overflow='hidden';
-}
-
-function closeThemePanel(){
-  document.getElementById('theme-overlay').classList.remove('open');
-  document.getElementById('theme-panel').classList.remove('open');
-  document.body.style.overflow='';
-}
-
-// ── RENDER ALL 1:1 ENHANCEMENTS ─────────────────────────────
-function renderOOEnhancements(){
-  if(!Object.keys(OO_SQUAD_MAP).length)return;
-  renderLocIntelligence();
-  renderP3OOPulse();
-  renderP7OOBrief();
-}
-
-function renderLocIntelligence(){
-  // eng-loc-section is now always inside eng-s3 — no display toggle needed
-  const squads=Object.entries(OO_SQUAD_MAP);
-  const byLoc={Chennai:[],Pune:[]};
-  squads.forEach(([sq,d])=>{
-    if(d.loc==='Chennai')byLoc.Chennai.push([sq,d]);
-    else if(d.loc==='Pune')byLoc.Pune.push([sq,d]);
-  });
-  const locKpi=(v,lbl,col)=>`<div style="background:rgba(255,255,255,.7);border-radius:7px;padding:8px;text-align:center"><div style="font-family:'Fira Code',monospace;font-size:1.2rem;font-weight:700;color:${col}">${v??'—'}</div><div style="font-size:.6rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-top:1px">${lbl}</div></div>`;
-  const sqBar=(sq,e,col)=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><div style="font-size:.7rem;color:var(--ink);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${sq}</div><div style="flex:2;height:5px;background:rgba(0,0,0,.08);border-radius:99px;overflow:hidden"><div style="width:${e?Math.round(parseFloat(e)/5*100):0}%;height:100%;background:${col};border-radius:99px"></div></div><div style="font-family:'Fira Code',monospace;font-size:.66rem;font-weight:600;color:${col};width:28px;text-align:right">${e??'—'}</div></div>`;
-  const reqDefs2=[{l:'Team Outings',icon:'🏖',kw:['trip','outing','tour']},{l:'Fun Friday',icon:'🎉',kw:['fun friday']},{l:'Hybrid/WFH',icon:'🏠',kw:['hybrid','wfh']},{l:'Hands-on',icon:'🛠',kw:['hands-on','practical']},{l:'Demos',icon:'🔄',kw:['demo','cross-team']},{l:'Lunches',icon:'🍽',kw:['lunch']}];
-  const reqList=(locRows,col)=>reqDefs2.map(r=>{const c=locRows.filter(t=>r.kw.some(k=>t.includes(k))).length;if(!c)return'';return`<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:1px solid rgba(0,0,0,.05)"><span style="font-size:.85rem">${r.icon}</span><span style="font-size:.74rem;flex:1">${r.l}</span><span style="font-family:'Fira Code',monospace;font-size:.68rem;font-weight:600;color:${col}">${c}</span></div>`;}).filter(Boolean).slice(0,4).join('')||'<div style="font-size:.72rem;color:var(--muted)">No requests detected.</div>';
-  ['Chennai','Pune'].forEach(loc=>{
-    const col=loc==='Chennai'?'var(--ch)':'var(--pu)';
-    const prefix=loc==='Chennai'?'ch':'pu';
-    const locSqs=byLoc[loc];
-    const locRows=locSqs.flatMap(([,d])=>d.requests||[]);
-    const engs=locSqs.flatMap(([,d])=>d.eng||[]),mgrs=locSqs.flatMap(([,d])=>d.mgr||[]),ovs=locSqs.flatMap(([,d])=>d.ov||[]);
-    const aE=ooAvg(engs),aM=ooAvg(mgrs),aO=ooAvg(ovs);
-    const n=locSqs.reduce((s,[,d])=>s+d.n,0);
-    const badge=document.getElementById(`${prefix}-eng-badge`);
-    const kpis=document.getElementById(`${prefix}-loc-kpis`);
-    const inf=document.getElementById(`${prefix}-loc-inference`);
-    const bars=document.getElementById(`${prefix}-sq-bars`);
-    const req=document.getElementById(`${prefix}-loc-req`);
-    if(badge)badge.textContent=`${n} respondents`;
-    if(kpis)kpis.innerHTML=locKpi(aE?.toFixed(1),'Engagement',col)+locKpi(aM?.toFixed(1),'Manager',col)+locKpi(aO?.toFixed(1),'Overall',col);
-    if(inf)inf.innerHTML=aE>=4.5?`✅ Strong health across ${loc} squads.`:aE>=4?`⚠ Healthy but below 4.5. Address top requests to sustain.`:aE?`🔴 Below 4.0 — ${loc} needs attention this cycle.`:'No engagement data for this location.';
-    if(bars)bars.innerHTML=locSqs.sort((a,b)=>ooAvg(b[1].eng)-ooAvg(a[1].eng)).map(([sq,d])=>sqBar(sq,ooAvg(d.eng)?.toFixed(1),col)).join('');
-    if(req)req.innerHTML=reqList(locRows,loc==='Chennai'?'#0ea5e9':'#7c3aed');
-  });
-  const chE=ooAvg(byLoc.Chennai.flatMap(([,d])=>d.eng)),chM=ooAvg(byLoc.Chennai.flatMap(([,d])=>d.mgr)),chO=ooAvg(byLoc.Chennai.flatMap(([,d])=>d.ov));
-  const puE=ooAvg(byLoc.Pune.flatMap(([,d])=>d.eng)),puM=ooAvg(byLoc.Pune.flatMap(([,d])=>d.mgr)),puO=ooAvg(byLoc.Pune.flatMap(([,d])=>d.ov));
-  const gap=Math.abs((chE||0)-(puE||0)).toFixed(1);
-  const inf2=document.getElementById('eng-loc-compare-inf');
-  if(inf2)inf2.innerHTML=`Chennai: <strong>${chE?.toFixed(1)||'—'}</strong> vs Pune: <strong>${puE?.toFixed(1)||'—'}</strong> · Gap: <strong>${gap} pts</strong>. ${+gap<0.3?'Both at parity.':+gap<0.8?'Small gap — monitor next cycle.':'Meaningful gap — investigate location-specific friction.'}`;
-  mkChart('ch-loc-compare','bar',{labels:['Engagement','Manager','Overall'],datasets:[{label:'Chennai',data:[chE,chM,chO].map(v=>v||0),backgroundColor:'rgba(14,165,233,.8)',borderRadius:6},{label:'Pune',data:[puE,puM,puO].map(v=>v||0),backgroundColor:'rgba(124,58,237,.8)',borderRadius:6}]});
-}
-
-function renderP3OOPulse(){
-  const sec=document.getElementById('p3-oo-pulse');
-  if(!sec)return;
-  sec.style.display='block';
-  const squads=Object.entries(OO_SQUAD_MAP).sort((a,b)=>b[1].n-a[1].n);
-  const pracMap={};
-  squads.forEach(([sq,d])=>{
-    const emp=EMP_DATA.filter(e=>e.ActiveFlag===1&&e.Squad===sq);
-    const pracs=[...new Set(emp.map(e=>(e.Practice||'').trim()).filter(Boolean))];
-    const key=pracs.length?pracs[0]:'General';
-    if(!pracMap[key])pracMap[key]={eng:[],mgr:[],ov:[],squads:[]};
-    pracMap[key].eng.push(...d.eng);pracMap[key].mgr.push(...d.mgr);pracMap[key].ov.push(...d.ov);pracMap[key].squads.push(sq);
-  });
-  const barRow2=(lbl,val,col)=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><div style="font-size:.72rem;color:var(--ink);width:80px">${lbl}</div><div style="flex:1;height:5px;background:var(--border2);border-radius:99px;overflow:hidden"><div style="width:${val?Math.round(parseFloat(val)/5*100):0}%;height:100%;background:${col};border-radius:99px"></div></div><div style="font-family:'Fira Code',monospace;font-size:.68rem;font-weight:600;color:${col};width:28px;text-align:right">${val||'—'}</div></div>`;
-  const el=document.getElementById('p3-prac-pulse');
-  if(el)el.innerHTML=Object.entries(pracMap).map(([prac,d])=>{const e=ooAvg(d.eng),m=ooAvg(d.mgr),o=ooAvg(d.ov);const col=ooEngColor(e);const lbl=ooEngLabel(e);return`<div class="card"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><div style="font-weight:700;font-size:.86rem">⚙ ${prac}</div><span style="background:${col}18;color:${col};font-size:.62rem;font-weight:700;padding:2px 8px;border-radius:20px;border:1px solid ${col}40">${lbl.text}</span></div>${barRow2('Engagement',e?.toFixed(1),col)}${barRow2('Manager',m?.toFixed(1),ooEngColor(m))}${barRow2('Overall',o?.toFixed(1),ooEngColor(o))}</div>`;}).join('');
-  const pracs=Object.keys(pracMap);
-  const inf=document.getElementById('p3-prac-inf');
-  if(inf)inf.innerHTML=`Engagement and manager rating by practice. ${pracs.length>1?'Compare to find which needs most support.':'Use squad filter for breakdown.'}`;
-  mkChart('ch-p3-prac','bar',{labels:pracs,datasets:[{label:'Engagement',data:pracs.map(p=>ooAvg(pracMap[p].eng)||0),backgroundColor:'rgba(22,163,74,.8)',borderRadius:4},{label:'Manager',data:pracs.map(p=>ooAvg(pracMap[p].mgr)||0),backgroundColor:'rgba(37,99,235,.8)',borderRadius:4},{label:'Overall',data:pracs.map(p=>ooAvg(pracMap[p].ov)||0),backgroundColor:'rgba(124,58,237,.8)',borderRadius:4}]});
-  const plLabels=[],plData=[];
-  Object.entries(pracMap).forEach(([p,d])=>['Chennai','Pune'].forEach(loc=>{const sqs=d.squads.filter(sq=>(OO_SQUAD_MAP[sq]||{}).loc===loc);if(!sqs.length)return;const e=ooAvg(sqs.flatMap(sq=>(OO_SQUAD_MAP[sq]||{}).eng||[]));if(e===null)return;plLabels.push(`${p}·${loc}`);plData.push(e||0);}));
-  const locInf=document.getElementById('p3-loc-inf');
-  if(locInf)locInf.innerHTML=plData.length?`Lowest: <strong>${plLabels[plData.indexOf(Math.min(...plData))]||'—'}</strong> at ${Math.min(...plData).toFixed(1)}/5.`:'No data.';
-  mkChart('ch-p3-loc','bar',{labels:plLabels,datasets:[{label:'Engagement',data:plData,backgroundColor:plLabels.map(l=>l.includes('Chennai')?'rgba(14,165,233,.8)':'rgba(124,58,237,.8)'),borderRadius:4}]},{plugins:{legend:{display:false}}});
-}
-
-function renderP7OOBrief(){
-  const sec=document.getElementById('p7-oo-brief');
-  if(!sec)return;
-  sec.style.display='block';
-  const squads=Object.entries(OO_SQUAD_MAP);
-  const allText=squads.flatMap(([,d])=>d.requests||[]).join(' ');
-  const chE=ooAvg(squads.filter(([,d])=>d.loc==='Chennai').flatMap(([,d])=>d.eng));
-  const puE=ooAvg(squads.filter(([,d])=>d.loc==='Pune').flatMap(([,d])=>d.eng));
-  const critSqs=squads.filter(([,d])=>ooAvg(d.eng)<3.5||ooAvg(d.mgr)<3.5).map(([sq,d])=>`${sq}(${d.loc||'?'})`);
-  const watchSqs=squads.filter(([,d])=>{const e=ooAvg(d.eng),m=ooAvg(d.mgr);return(e<4||m<4)&&(e===null||e>=3.5)&&(m===null||m>=3.5);});
-  const li=document.getElementById('p7-loc-intel');
-  if(li)li.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px"><div style="background:var(--ch-bg);border-radius:8px;padding:12px;border-left:4px solid var(--ch)"><div style="font-size:.78rem;font-weight:700;color:var(--ch);margin-bottom:3px">📍 Chennai · ${chE?.toFixed(1)||'—'}/5</div><div style="font-size:.72rem;color:#555">${chE>=4.5?'✅ Strong':chE>=4?'⚠ Watch':'🔴 Needs attention'}</div></div><div style="background:var(--pu-bg);border-radius:8px;padding:12px;border-left:4px solid var(--pu)"><div style="font-size:.78rem;font-weight:700;color:var(--pu);margin-bottom:3px">📍 Pune · ${puE?.toFixed(1)||'—'}/5</div><div style="font-size:.72rem;color:#555">${puE>=4.5?'✅ Strong':puE>=4?'⚠ Watch':'🔴 Needs attention'}</div></div></div>${critSqs.length?`<div style="padding:8px 12px;background:#fef2f2;border-radius:6px;font-size:.74rem;color:#dc2626;margin-bottom:6px">🔴 Critical: ${critSqs.join(', ')} — skip-level 1:1 required</div>`:''}${watchSqs.length?`<div style="padding:8px 12px;background:#fffbeb;border-radius:6px;font-size:.74rem;color:#d97706">⚠ Watch: ${watchSqs.map(([s])=>s).join(', ')} — career conversation needed</div>`:''}`;
-  const acts=[];
-  const u={red:'#dc2626',amber:'#d97706',blue:'#2563eb'};
-  if(allText.includes('spot')||allText.includes('award'))acts.push({e:'🏆',t:'Fix Spot Award equity',d:'Nominations not reaching all squads.',c:'red'});
-  if(allText.includes('outing')||allText.includes('trip'))acts.push({e:'🏖',t:'Book team outing — highest morale ROI',d:'Most-requested item across both locations.',c:'amber'});
-  if(allText.includes('fun friday'))acts.push({e:'🎉',t:'Announce Fun Friday',d:'Quick win — pick a date this week.',c:'amber'});
-  if(allText.includes('demo')||allText.includes('cross-team'))acts.push({e:'🔄',t:'Revive cross-squad demos',d:'30-min monthly. Zero budget.',c:'blue'});
-  if(allText.includes('udemy')||allText.includes('hands-on'))acts.push({e:'📚',t:'Link Udemy to project tasks',d:'Manager assigns one task per course. Zero cost.',c:'blue'});
-  const pa=document.getElementById('p7-oo-actions');
-  if(pa)pa.innerHTML=acts.map((a,i)=>`<div style="border:1px solid ${u[a.c]}30;border-radius:8px;margin-bottom:6px;overflow:hidden"><div onclick="const d=document.getElementById('p7a2-${i}-b');d.style.display=d.style.display==='none'?'block':'none'" style="display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;background:${u[a.c]}08"><span>${a.e}</span><span style="font-size:.78rem;font-weight:700;color:${u[a.c]};flex:1">${a.t}</span><span style="font-size:.7rem;color:var(--muted)">›</span></div><div id="p7a2-${i}-b" style="display:none;padding:8px 12px 10px;font-size:.74rem;color:#555;border-top:1px solid ${u[a.c]}20">${a.d}</div></div>`).join('')||'<div style="font-size:.76rem;color:var(--muted)">No 1:1 action items detected.</div>';
-  const of=document.getElementById('p7-opp-forecast');
-  if(of)of.innerHTML=`<div style="font-size:.76rem;color:var(--ink);line-height:1.7"><div style="padding:6px 10px;background:#eff6ff;border-radius:6px;margin-bottom:6px;border-left:3px solid #2563eb">🏖 Team outing — est. +0.2–0.3 engagement pts next cycle.</div><div style="padding:6px 10px;background:#f0fdf4;border-radius:6px;margin-bottom:6px;border-left:3px solid #16a34a">📚 Udemy-to-task link — ~40% better skill retention. Manager effort only.</div><div style="padding:6px 10px;background:#fdf4ff;border-radius:6px;border-left:3px solid #7c3aed">🔄 Cross-squad demos — reduces onboarding time within 60 days.</div></div>`;
-  const rf=document.getElementById('p7-risk-forecast');
-  if(rf)rf.innerHTML=`<div style="font-size:.76rem;color:var(--ink);line-height:1.7">${critSqs.length?`<div style="padding:6px 10px;background:#fef2f2;border-radius:6px;margin-bottom:6px;border-left:3px solid #dc2626">🔴 ${critSqs.join(', ')} — 1–2 exits likely within 90 days.</div>`:''}<div style="padding:6px 10px;background:#fffbeb;border-radius:6px;margin-bottom:6px;border-left:3px solid #d97706">⚠ Recognition inequity festers — high-performers reduce effort silently.</div><div style="padding:6px 10px;background:#fff7ed;border-radius:6px;border-left:3px solid #ea580c">📉 L&D ROI stays low until Udemy-to-practice gap is closed.</div></div>`;
-}
-
+// ── DATA HEALTH TAB (P12) ────────────────────────────────────
 function renderDataHealth(){
   const ROOT_ID='6KY000052'; // Booshan — intentionally no L1 Manager
   const active=EMP_DATA.filter(d=>d.ActiveFlag===1);
@@ -2461,31 +2028,17 @@ function toggleActDetail(id){
   }
 }
 
-function engTab(el,sid){
-  document.querySelectorAll('.inner-tab').forEach(t=>t.classList.remove('on'));
-  document.querySelectorAll('.eng-section').forEach(s=>s.classList.remove('active'));
-  el.classList.add('on');
-  const sec=document.getElementById(sid);
-  if(sec)sec.classList.add('active');
-  // Sync sidebar highlight
-  document.querySelectorAll('.sb-item').forEach(b=>b.classList.remove('on'));
-  const btn=document.getElementById(`sbi-${sid}`);
-  if(btn)btn.classList.add('on');
-}
-
 function goTab(el,pid){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
   document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
-  el.classList.add('on');
-  const pg=document.getElementById(pid);
-  if(pg)pg.classList.add('on');
+  el.classList.add('on'); document.getElementById(pid).classList.add('on');
   if((pid==='p9'||pid==='p10')&&EMP_DATA.length>0){
     const galaxies=document.getElementById('galaxy-trees');
-    if(galaxies&&galaxies.children.length===0)renderOrgChart();
+    if(galaxies&&galaxies.children.length===0) renderOrgChart();
   }
-  if(pid==='p8')renderMgrFilter();
-  if(pid==='p6')renderEngagementTab();
-  if(pid==='p12')renderDataHealth();
+  if(pid==='p8') renderMgrFilter();
+  if(pid==='p6') renderEngagementTab();
+  if(pid==='p12') renderDataHealth();
 }
 function toggleSquad2(sqId){
   const panel = document.getElementById(sqId+'-panel');
@@ -2630,7 +2183,6 @@ function resetFilters(){
 
 // ── RENDER ────────────────────────────────────────────────────
 function render(){
-  try{
   const D=filtered;
   const active  = D.filter(d=> d.Status==='Active'   || d.ActiveFlag===1);
   const inactive= D.filter(d=> d.Status==='Inactive' || d.ActiveFlag===0);
@@ -3579,10 +3131,7 @@ function render(){
   const redEmps=active.filter(d=>d['Rag Status']==='Red');
   const amberEmps=active.filter(d=>d['Rag Status']==='Amber');
   const notSetEmps=active.filter(d=>!d['Rag Status']||d['Rag Status']==='Not Set'||d['Rag Status']==='NA');
-  const perfYearNum=parseInt(PERF_COL_CURR.replace('Performance Rating ',''))||2025;
-  const _eligible=active.filter(d=>{if(String(d.Type||'').trim().toLowerCase()==='consultant')return false;if(String(d['Emp ID']||'').trim()==='6KY000052')return false;const sy=d['Start Year']?parseInt(d['Start Year']):null;if(sy&&sy>=perfYearNum)return false;return true;});
-  const unratedEmps=_eligible.filter(d=>!(d[PERF_COL_CURR]>=1&&d[PERF_COL_CURR]<=5));
-  const eligibleRatedPct=_eligible.length?Math.round((_eligible.length-unratedEmps.length)/_eligible.length*100):0;
+  const unratedEmps=active.filter(d=>!(d[PERF_COL_CURR]>=1&&d[PERF_COL_CURR]<=5));
   // Derive from EMP_DATA directly — inactAll is not in scope here
   const _inactAll=EMP_DATA.filter(d=>d.Status==='Inactive'||d.ActiveFlag===0);
   const actEarlyExitPct=Math.round(_inactAll.filter(d=>{
@@ -3634,7 +3183,7 @@ function render(){
             `${CURR_YEAR} exits: ${inact2026} · Projected full-year: ${projectedExits} · Voluntary (all-time): ${actVolPct}% · Early exits (within 1 year, all-time): ${actEarlyExitPct}%`,
             `Run a structured exit interview for every departure. Ask: manager, role clarity, growth, compensation. Patterns across 3+ exits = systemic issue.`,
             'red')}
-        ${eligibleRatedPct<80
+        ${ratedPct<80
           ? actItem('ins-appraisal',
               `Complete appraisals for <strong>${unratedEmps.length} unrated employees</strong> before pay/promo decisions`,
               `${unratedEmps.length} active employees have no ${PERF_COL_CURR} rating. Making pay or promotion decisions without ratings is a governance risk — and signals to rated employees that the process is inconsistent.`,
@@ -3645,7 +3194,7 @@ function render(){
               `✅ Appraisal coverage strong — ${ratedPct}% of employees rated`,
               `${r25.length} of ${active.length} active employees have a ${PERF_COL_CURR} rating. This is above the 80% healthy benchmark.`,
               `Rated: ${r25.length}/${active.length} (${ratedPct}%) · Avg rating: ${avg25}/5`,
-              `Review the remaining ${unratedEmps.length} unrated eligible employees and ensure they have goals set for the next cycle.`,
+              `Review the remaining ${unratedEmps.length} unrated employees and ensure they have goals set for the next cycle.`,
               'green')}
       </ul>
     </div>
@@ -3717,19 +3266,6 @@ function render(){
 
   // P3 Manager cards (at bottom of Squad Intelligence)
   renderMgrFilter();
-  } catch(renderErr) {
-    console.error('❌ render() crashed:', renderErr.message);
-    console.error('Stack:', renderErr.stack);
-    // Find the null element — scan all getElementById calls
-    const ids=['ins-p1','k1','city-cards','country-visual','emptype-visual','gender-visual',
-      'ins-p2','inf-trend','inf-trend2','inf-us','inf-india','ins-p3','inf-sq-rag',
-      'inf-sq-span','squad-tree','inf-attr','attr-kpis','inf-yr-exit','inf-cohort',
-      'sum-kpis','sum-sub','act-grid','cta-bar','inf-mgr','ins-p8'];
-    ids.forEach(id=>{
-      if(!document.getElementById(id)) console.error('  NULL element: #'+id);
-    });
-    throw renderErr; // re-throw so the error screen shows
-  }
 }
 
 // ── MANAGER SPAN LOGIC ────────────────────────────────────────
@@ -3768,9 +3304,8 @@ function renderManagerSpan(activeEmps){
   const lean=entries.filter(e=>e[1].reports.length===1).length;
   const healthy=entries.filter(e=>e[1].reports.length>=2&&e[1].reports.length<=7).length;
 
-  // Insights — only render if elements exist (P8 may be using different layout)
-  const insP8=document.getElementById('ins-p8');
-  if(insP8)insP8.innerHTML=`
+  // Insights
+  document.getElementById('ins-p8').innerHTML=`
     <div class="ins ${overloaded>0?'risk':'good'}">
       <div class="ins-head">⚠ Overloaded Managers</div>
       <div class="ins-val ${overloaded>0?'red':'green'}">${overloaded}</div>
@@ -3779,16 +3314,15 @@ function renderManagerSpan(activeEmps){
     <div class="ins signal">
       <div class="ins-head">📐 Avg Span of Control</div>
       <div class="ins-val amber">${avgSpan}</div>
-      <div class="ins-txt">Org-wide average is <strong>${avgSpan} direct reports per L1</strong>. Industry benchmark: <strong>5–7</strong>. ${avgSpan<4?'⚠ Org may be too top-heavy.':'Within range.'}</div>
+      <div class="ins-txt">Org-wide average is <strong>${avgSpan} direct reports per L1</strong>. Industry benchmark: <strong>5–7</strong>. ${avgSpan<4?'⚠ Org may be too top-heavy — review if all L1s are genuine people managers or SMEs.':'Within range.'}</div>
     </div>
     <div class="ins ${lean>5?'risk':'good'}">
       <div class="ins-head">🔍 Single-Report Managers</div>
       <div class="ins-val ${lean>5?'amber':'green'}">${lean}</div>
-      <div class="ins-txt"><strong>${lean} managers</strong> have only 1 direct report.</div>
+      <div class="ins-txt"><strong>${lean} managers</strong> have only 1 direct report. This may indicate role misclassification, org transitions, or bloated management layers. Review these roles for consolidation.</div>
     </div>`;
 
-  const infMgr=document.getElementById('inf-mgr');
-  if(infMgr)infMgr.innerHTML=`<strong>Span of Control:</strong> ${entries.length} L1 managers for ${activeEmps.length} active employees = <strong>1:${avgSpan} avg ratio</strong>. ${healthy} healthy (2–7) · ${overloaded} overloaded (&gt;7) · ${lean} single-report.`;
+  document.getElementById('inf-mgr').innerHTML=`<strong>Span of Control:</strong> ${entries.length} L1 managers for ${activeEmps.length} active employees = <strong>1:${avgSpan} avg ratio</strong>. ${healthy} healthy (2–7) · ${overloaded} overloaded (&gt;7) · ${lean} single-report. Industry best practice = <strong>1:5–7</strong>.`;
 
   // Squad-wise span chart
   const squadSpan={};
@@ -3843,12 +3377,9 @@ function renderManagerSpan(activeEmps){
 
 // ── ENGAGEMENT TAB (P6) — 1:1 Intelligence ────────────────────
 function renderEngagementTab(){
-  console.log('💬 renderEngagementTab — OO_SQUAD_MAP keys:', Object.keys(OO_SQUAD_MAP).length, Object.keys(OO_SQUAD_MAP).slice(0,5));
   const hasData=Object.keys(OO_SQUAD_MAP).length>0;
-  const ndata=document.getElementById('p6-ndata');
-  const pcontent=document.getElementById('p6-content');
-  if(ndata)ndata.style.display=hasData?'none':'block';
-  if(pcontent)pcontent.style.display=hasData?'block':'none';
+  document.getElementById('p6-ndata').style.display=hasData?'none':'block';
+  document.getElementById('p6-content').style.display=hasData?'block':'none';
   if(!hasData)return;
 
   const squads=Object.entries(OO_SQUAD_MAP).sort((a,b)=>b[1].n-a[1].n);
@@ -3872,37 +3403,6 @@ function renderEngagementTab(){
     kpi('Overall Experience',avgO??'—','work satisfaction',ooEngColor(avgO))+
     kpi('Needs Attention',watchSqs,'squads below 4.0',watchSqs>0?'#dc2626':'#15803d')+
     kpi('RAG Split',`${totalRag.G}G·${totalRag.A}A·${totalRag.R}R`,'from 1:1 responses',totalRag.R>0?'#dc2626':totalRag.A>0?'#d97706':'#15803d');
-
-  // ── Voice of Employee Cards ────────────────────────────────
-  const allRowsVoe=squads.flatMap(([,d])=>d.requests||[]);
-  const sentColor={negative:'#dc2626',positive:'#16a34a',mixed:'#d97706',neutral:'#2563eb'};
-  const locColor=l=>l==='Chennai'?'#0ea5e9':l==='Pune'?'#7c3aed':'#16a34a';
-
-  const voCards=VOE_THEMES.map(theme=>{
-    const cnt=allRowsVoe.filter(r=>theme.kw.some(k=>r.includes(k))).length;
-    if(cnt===0)return''; // hide themes with no mentions
-    // Per-location counts for this theme
-    const locTks=[];
-    ['Chennai','Pune','US'].forEach(loc=>{
-      const rows=Object.entries(OO_SQUAD_MAP)
-        .filter(([,d])=>loc==='US'?d.loc&&(d.loc.toLowerCase().includes('charlotte')||d.loc.toLowerCase().includes('usa')||d.loc.toLowerCase().includes('remote')):d.loc===loc)
-        .flatMap(([,d])=>d.requests||[]);
-      const lc=rows.filter(r=>theme.kw.some(k=>r.includes(k))).length;
-      if(lc>0) locTks.push(`<span class="voe-loc" style="background:${locColor(loc)}15;color:${locColor(loc)};border:1px solid ${locColor(loc)}40">${loc} ${lc}</span>`);
-    });
-    const sc=sentColor[theme.sentiment]||'#888';
-    return`<div class="voe-card ${theme.sentiment}" onclick="openThemePanel('${theme.id}')">
-      <div class="voe-icon">${theme.icon}</div>
-      <div class="voe-title">${theme.title}</div>
-      <div class="voe-count">${cnt} mention${cnt!==1?'s':''}</div>
-      <div class="voe-locs">${locTks.join('')}</div>
-      <div class="voe-sentiment">${theme.sentLabel}</div>
-      <div class="voe-arrow">tap to explore →</div>
-    </div>`;
-  }).filter(Boolean).join('');
-
-  const voeGrid=document.getElementById('eng-voe-grid');
-  if(voeGrid) voeGrid.innerHTML=voCards||'<div style="font-size:.76rem;color:var(--muted);grid-column:span 4">No theme data available yet.</div>';
 
   // Squad heatmap table — click row to see Red/Amber employees by name
   const th=(t,w)=>`<th style="padding:8px 10px;background:#1e3a5f;color:#fff;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:left;white-space:nowrap${w?';width:'+w:''}">${t}</th>`;
@@ -4052,34 +3552,8 @@ function renderEngagementTab(){
     ${th('Squad ↓ click Red/Amber rows to expand')+''+th('Engagement','90px')+th('Manager','80px')+th('Overall','80px')+th('RAG','120px')+th('Status','100px')}
   </tr></thead><tbody>${rows}</tbody>`;
 
-  // ── Build per-location row arrays for location tagging ─────
-  // City groups: Chennai, Pune, US (Charlotte + Remote-USA)
-  const rowsByLoc={
-    Chennai: squads.filter(([,d])=>d.loc==='Chennai').flatMap(([,d])=>d.requests),
-    Pune:    squads.filter(([,d])=>d.loc==='Pune'   ).flatMap(([,d])=>d.requests),
-    US:      squads.filter(([,d])=>d.loc&&(d.loc.toLowerCase().includes('charlotte')||d.loc.toLowerCase().includes('usa')||d.loc.toLowerCase().includes('remote'))).flatMap(([,d])=>d.requests),
-  };
-  // Also build from OO_SQUAD_MAP entries keyed by squad → city comes from d.loc
-  // For squads spanning multiple cities, collect all requests under each city
-  Object.entries(OO_SQUAD_MAP).forEach(([sq,d])=>{
-    const loc=d.loc||'';
-    if(loc==='Chennai'){}
-    else if(loc==='Pune'){}
-    else if(loc.toLowerCase().includes('charlotte')||loc.toLowerCase().includes('usa')||loc.toLowerCase().includes('remote')){}
-  });
-
-  const locTags=(kw)=>{
-    const tags=[];
-    const locs=[['Chennai','#0ea5e9'],['Pune','#7c3aed'],['US','#16a34a']];
-    locs.forEach(([name,col])=>{
-      const cnt=(rowsByLoc[name]||[]).filter(r=>kw.some(k=>r.includes(k))).length;
-      if(cnt>0) tags.push(`<span style="font-family:'Fira Code',monospace;font-size:.62rem;background:${col}15;color:${col};border:1px solid ${col}40;padding:1px 6px;border-radius:20px;margin-left:4px">${name} ${cnt}</span>`);
-    });
-    return tags.join('');
-  };
-
-  // Requests — with location tags
-  const allRows=squads.flatMap(([,d])=>d.requests);
+  // Requests aggregated across all 1:1 data
+  const allReqText=squads.flatMap(([,d])=>d.requests).join(' ');
   const reqDefs=[
     {l:'Team Outings & Trips',icon:'🏖',kw:['trip','outing','tour','travel']},
     {l:'Fun Friday',icon:'🎉',kw:['fun friday','fun-friday','movie']},
@@ -4091,70 +3565,42 @@ function renderEngagementTab(){
     {l:'Better Food / Canteen',icon:'🥗',kw:['food','canteen','snack','biscuit']},
     {l:'Holiday Calendar',icon:'📅',kw:['holiday','calendar','region','notif']},
   ];
+  const allRows=squads.flatMap(([,d])=>d.requests);
   const reqCounts=reqDefs.map(r=>({...r,c:allRows.filter(t=>r.kw.some(k=>t.includes(k))).length})).filter(r=>r.c>0).sort((a,b)=>b.c-a.c);
   const maxC=reqCounts[0]?.c||1;
   document.getElementById('eng-requests').innerHTML=reqCounts.length
-    ?reqCounts.map(r=>`
-      <div style="padding:7px 0;border-bottom:1px solid #f0ede8">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:3px">
-          <span style="font-size:1rem">${r.icon}</span>
-          <span style="font-size:.76rem;font-weight:600;flex:1">${r.l}</span>
-          <span style="font-family:'Fira Code',monospace;font-size:.7rem;font-weight:700;color:var(--accent)">${r.c} total</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px">
-          <div style="flex:1;height:5px;background:#f0ede8;border-radius:99px;overflow:hidden"><div style="width:${Math.round(r.c/maxC*100)}%;height:100%;background:var(--accent);border-radius:99px"></div></div>
-          <div style="display:flex;gap:3px">${locTags(r.kw)}</div>
-        </div>
+    ?reqCounts.map(r=>`<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid #f0ede8">
+        <span style="font-size:1.1rem">${r.icon}</span>
+        <span style="font-size:.76rem;flex:1">${r.l}</span>
+        <div style="flex:2;height:7px;background:#f0ede8;border-radius:99px;overflow:hidden"><div style="width:${Math.round(r.c/maxC*100)}%;height:100%;background:var(--accent);border-radius:99px"></div></div>
+        <span style="font-family:'Fira Code',monospace;font-size:.7rem;font-weight:700;color:var(--accent);min-width:28px;text-align:right">${r.c}</span>
       </div>`).join('')
     :'<div style="font-size:.76rem;color:var(--muted)">No specific requests detected.</div>';
 
-  // Signals — with location context
-  const allReqText=allRows.join(' ');
-  const critSqs=squads.filter(([,d])=>ooAvg(d.eng)<3.5||ooAvg(d.mgr)<3.5);
-  const watchSqList=squads.filter(([,d])=>{const e=ooAvg(d.eng),m=ooAvg(d.mgr);return(e<4||m<4)&&(e===null||e>=3.5)&&(m===null||m>=3.5);});
-
-  const sig=(color,title,body,locLine)=>`<div style="border-left:4px solid ${color};padding:10px 12px;background:${color}12;border-radius:0 8px 8px 0;margin-bottom:8px">
+  // Signals
+  const critSqs=squads.filter(([,d])=>ooAvg(d.eng)<3.5||ooAvg(d.mgr)<3.5).map(([sq])=>sq);
+  const watchSqList=squads.filter(([,d])=>{const e=ooAvg(d.eng),m=ooAvg(d.mgr);return(e<4||m<4)&&(e===null||e>=3.5)&&(m===null||m>=3.5);}).map(([sq])=>sq);
+  const sig=(color,title,body)=>`<div style="border-left:4px solid ${color};padding:10px 12px;background:${color}12;border-radius:0 8px 8px 0;margin-bottom:8px">
     <div style="font-size:.78rem;font-weight:700;color:${color};margin-bottom:4px">${title}</div>
-    <div style="font-size:.72rem;color:#333;line-height:1.5;margin-bottom:${locLine?'5px':'0'}">${body}</div>
-    ${locLine?`<div style="display:flex;gap:5px;flex-wrap:wrap">${locLine}</div>`:''}
+    <div style="font-size:.72rem;color:#333;line-height:1.5">${body}</div>
   </div>`;
-
-  const sqLocTags=(sqList)=>sqList.map(([sq,d])=>{
-    const col=d.loc==='Chennai'?'#0ea5e9':d.loc==='Pune'?'#7c3aed':'#16a34a';
-    return`<span style="font-family:'Fira Code',monospace;font-size:.62rem;background:${col}15;color:${col};border:1px solid ${col}40;padding:1px 7px;border-radius:20px">${sq} · ${d.loc||'?'}</span>`;
-  }).join('');
-
   let signals='';
-  if(critSqs.length) signals+=sig('#dc2626','🔴 Critical Squads — Immediate Action',
-    `Scores below 3.5/5. Risk of voluntary exit within 60–90 days. Schedule skip-level 1:1 this week.`,
-    sqLocTags(critSqs));
-  if(watchSqList.length) signals+=sig('#d97706','⚠ Watch List — Below 4.0',
-    `Trending below healthy threshold. Check in next 1:1 cycle within 2 weeks.`,
-    sqLocTags(watchSqList));
-  if(allReqText.includes('spot')||allReqText.includes('award')) signals+=sig('#ea580c','🏆 Recognition Gap',
-    `Spot Award nominations not reaching all squads. High performers in unrecognised squads silently reduce effort.`,
-    locTags(['spot','award','recogni']));
-  if(allReqText.includes('trip')||allReqText.includes('outing')) signals+=sig('#2563eb','🏖 Team Outing — Highest ROI Action',
-    `${reqCounts.find(r=>r.l.includes('Outing'))?.c||0} employees asked for team events. Highest morale-per-rupee action this quarter.`,
-    locTags(['trip','outing','tour']));
-  if(!signals) signals=sig('#15803d','✅ All Signals Healthy',`Engagement above 4.0 across all squads. Maintain current manager practices and 1:1 cadence.`,'');
+  if(critSqs.length)signals+=sig('#dc2626','🔴 Critical Squads — Immediate Action',`${critSqs.join(', ')} — scores below 3.5/5. Schedule skip-level 1:1 this week. Risk of voluntary exit within 60–90 days.`);
+  if(watchSqList.length)signals+=sig('#d97706','⚠ Watch List — Below 4.0',`${watchSqList.join(', ')} — trending below healthy threshold. Check in next 1:1 cycle within 2 weeks.`);
+  if(allReqText.includes('spot')||allReqText.includes('award'))signals+=sig('#ea580c','🏆 Recognition Gap',`Spot Award nominations not reaching all squads. Creates perceived inequity — high performers in unrecognised squads silently reduce effort.`);
+  if(allReqText.includes('trip')||allReqText.includes('outing'))signals+=sig('#2563eb','🏖 Team Outing — Highest ROI Action',`${reqCounts.find(r=>r.l.includes('Outing'))?.c||0} employees asked for team events. Highest morale-per-rupee action this quarter.`);
+  if(!signals)signals=sig('#15803d','✅ All Signals Healthy',`Engagement above 4.0 across all squads. Maintain current manager practices and 1:1 cadence.`);
   document.getElementById('eng-signals').innerHTML=signals;
 
-  // SSC — with location breakdown per theme
+  // SSC themes — using OO_ISSUE_DEFS comprehensive taxonomy
+  // allText captures ALL open-text fields per squad (not just SSC)
   const renderSSC=(defs,elId)=>{
     const found=defs
-      .map(d=>({l:d.l,kw:d.kw,cnt:allRows.filter(r=>d.kw.some(k=>r.includes(k))).length}))
+      .map(d=>({l:d.l,cnt:allRows.filter(r=>d.kw.some(k=>r.includes(k))).length}))
       .filter(d=>d.cnt>0)
       .sort((a,b)=>b.cnt-a.cnt);
     document.getElementById(elId).innerHTML=found.length
-      ?found.map(f=>`
-        <div style="padding:4px 0;border-bottom:1px solid rgba(0,0,0,.06)">
-          <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
-            <span style="font-size:.76rem;flex:1">→ ${f.l}</span>
-            <span style="font-family:'Fira Code',monospace;font-size:.62rem;opacity:.65">(${f.cnt})</span>
-            ${locTags(f.kw)}
-          </div>
-        </div>`).join('')
+      ?found.map(f=>`<div style="padding:3px 0;border-bottom:1px solid rgba(0,0,0,.06)">→ ${f.l} <span style="font-family:'Fira Code',monospace;font-size:.62rem;opacity:.65">(${f.cnt})</span></div>`).join('')
       :'<div style="opacity:.6;font-size:.74rem">None detected in current data.</div>';
   };
   renderSSC(OO_ISSUE_DEFS.fix,'eng-fix');
@@ -4615,7 +4061,6 @@ function renderOrgChart(){
 
   // ── SECTION 2: Galaxy Trees ───────────────────────────────
   const galaxyWrap=document.getElementById('galaxy-trees');
-  if(!galaxyWrap){console.warn('renderOrgChart: #galaxy-trees not found');return;}
   galaxyWrap.innerHTML='';
 
   const sorted=[...root.children].sort((a,b)=>subtreeCount(b)-subtreeCount(a));
@@ -5710,11 +5155,6 @@ function show(s){
 
 // ── INIT ──────────────────────────────────────────────────────
 window.onload=async function(){
-  // Hide welcome bar if previously dismissed
-  if(localStorage.getItem('wb_closed')==='1'){
-    const wb=document.getElementById('welcome-bar');
-    if(wb)wb.style.display='none';
-  }
   try{
     msalApp=new msal.PublicClientApplication(msalConfig);
     const resp=await msalApp.handleRedirectPromise();
@@ -5740,6 +5180,5 @@ window.onload=async function(){
   }
 };
 </script>
-</div><!-- /dash -->
 </body>
 </html>
