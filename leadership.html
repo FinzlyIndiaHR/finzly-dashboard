@@ -3579,15 +3579,8 @@ function render(){
   const redEmps=active.filter(d=>d['Rag Status']==='Red');
   const amberEmps=active.filter(d=>d['Rag Status']==='Amber');
   const notSetEmps=active.filter(d=>!d['Rag Status']||d['Rag Status']==='Not Set'||d['Rag Status']==='NA');
-  // Eligible for rating: FTEs only, not CEO, joined BEFORE the rating year
   const perfYearNum=parseInt(PERF_COL_CURR.replace('Performance Rating ',''))||2025;
-  const _eligible=active.filter(d=>{
-    if(String(d.Type||'').trim().toLowerCase()==='consultant') return false;
-    if(String(d['Emp ID']||'').trim()==='6KY000052') return false;
-    const sy=d['Start Year']?parseInt(d['Start Year']):null;
-    if(sy&&sy>=perfYearNum) return false;
-    return true;
-  });
+  const _eligible=active.filter(d=>{if(String(d.Type||'').trim().toLowerCase()==='consultant')return false;if(String(d['Emp ID']||'').trim()==='6KY000052')return false;const sy=d['Start Year']?parseInt(d['Start Year']):null;if(sy&&sy>=perfYearNum)return false;return true;});
   const unratedEmps=_eligible.filter(d=>!(d[PERF_COL_CURR]>=1&&d[PERF_COL_CURR]<=5));
   const eligibleRatedPct=_eligible.length?Math.round((_eligible.length-unratedEmps.length)/_eligible.length*100):0;
   // Derive from EMP_DATA directly — inactAll is not in scope here
@@ -3643,15 +3636,15 @@ function render(){
             'red')}
         ${eligibleRatedPct<80
           ? actItem('ins-appraisal',
-              `Complete appraisals for <strong>${unratedEmps.length} eligible unrated employees</strong> before pay/promo decisions`,
-              `${unratedEmps.length} FTE employees (excl. consultants, CEO, and ${perfYearNum}+ joiners who have no completed cycle) are missing ${PERF_COL_CURR}. Making pay or promotion decisions without ratings is a governance risk.`,
-              `Eligible: ${_eligible.length} FTEs · Rated: ${_eligible.length-unratedEmps.length} (${eligibleRatedPct}%) · Unrated: ${unratedEmps.length} · Coverage benchmark: ≥80%`,
+              `Complete appraisals for <strong>${unratedEmps.length} unrated employees</strong> before pay/promo decisions`,
+              `${unratedEmps.length} active employees have no ${PERF_COL_CURR} rating. Making pay or promotion decisions without ratings is a governance risk — and signals to rated employees that the process is inconsistent.`,
+              `Rated: ${r25.length}/${active.length} (${ratedPct}%) · Unrated: ${unratedEmps.length} · Coverage benchmark: ≥80%`,
               `Send managers a list of their unrated direct reports. Set a 2-week deadline before any pay review meeting.`,
               'amber')
           : actItem('ins-appraisal',
-              `✅ Appraisal coverage strong — ${eligibleRatedPct}% of eligible employees rated`,
-              `${_eligible.length-unratedEmps.length} of ${_eligible.length} eligible FTEs have a ${PERF_COL_CURR} rating. Excludes consultants, CEO, and employees who joined in ${perfYearNum} or later. Above the 80% healthy benchmark.`,
-              `Eligible: ${_eligible.length} · Rated: ${_eligible.length-unratedEmps.length} (${eligibleRatedPct}%) · Avg rating: ${avg25}/5`,
+              `✅ Appraisal coverage strong — ${ratedPct}% of employees rated`,
+              `${r25.length} of ${active.length} active employees have a ${PERF_COL_CURR} rating. This is above the 80% healthy benchmark.`,
+              `Rated: ${r25.length}/${active.length} (${ratedPct}%) · Avg rating: ${avg25}/5`,
               `Review the remaining ${unratedEmps.length} unrated eligible employees and ensure they have goals set for the next cycle.`,
               'green')}
       </ul>
