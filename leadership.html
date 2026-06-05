@@ -3131,7 +3131,10 @@ function render(){
   const redEmps=active.filter(d=>d['Rag Status']==='Red');
   const amberEmps=active.filter(d=>d['Rag Status']==='Amber');
   const notSetEmps=active.filter(d=>!d['Rag Status']||d['Rag Status']==='Not Set'||d['Rag Status']==='NA');
-  const unratedEmps=active.filter(d=>!(d[PERF_COL_CURR]>=1&&d[PERF_COL_CURR]<=5));
+  const perfYearNum=parseInt(PERF_COL_CURR.replace('Performance Rating ',''))||2025;
+  const _eligible=active.filter(d=>{if(String(d.Type||'').trim().toLowerCase()==='consultant')return false;if(String(d['Emp ID']||'').trim()==='6KY000052')return false;const sy=d['Start Year']?parseInt(d['Start Year']):null;if(sy&&sy>=perfYearNum)return false;return true;});
+  const unratedEmps=_eligible.filter(d=>!(d[PERF_COL_CURR]>=1&&d[PERF_COL_CURR]<=5));
+  const eligibleRatedPct=_eligible.length?Math.round((_eligible.length-unratedEmps.length)/_eligible.length*100):0;
   // Derive from EMP_DATA directly — inactAll is not in scope here
   const _inactAll=EMP_DATA.filter(d=>d.Status==='Inactive'||d.ActiveFlag===0);
   const actEarlyExitPct=Math.round(_inactAll.filter(d=>{
@@ -3183,7 +3186,7 @@ function render(){
             `${CURR_YEAR} exits: ${inact2026} · Projected full-year: ${projectedExits} · Voluntary (all-time): ${actVolPct}% · Early exits (within 1 year, all-time): ${actEarlyExitPct}%`,
             `Run a structured exit interview for every departure. Ask: manager, role clarity, growth, compensation. Patterns across 3+ exits = systemic issue.`,
             'red')}
-        ${ratedPct<80
+        ${eligibleRatedPct<80
           ? actItem('ins-appraisal',
               `Complete appraisals for <strong>${unratedEmps.length} unrated employees</strong> before pay/promo decisions`,
               `${unratedEmps.length} active employees have no ${PERF_COL_CURR} rating. Making pay or promotion decisions without ratings is a governance risk — and signals to rated employees that the process is inconsistent.`,
