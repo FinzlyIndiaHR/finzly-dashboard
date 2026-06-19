@@ -179,6 +179,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:linear-gradient(160deg,
 const HR_EMAIL      = "hr-india@finzly.com";
 const DASHBOARD_URL = "https://finzlyindiahr.github.io/finzly-dashboard/leadership.html";
 const WEBHOOK_URL   = ""; // ← paste Power Automate HTTP trigger URL here
+const PROXY_URL     = "https://ancient-wood-42c6.bharathkumar-m.workers.dev";
 const MAX_HIST      = 10;
 
 // ── SYSTEM PROMPT ────────────────────────────────────────────────────────────
@@ -422,10 +423,17 @@ async function callAPI(userText) {
   history.push({role:"user", content:userText});
   if (history.length > MAX_HIST) history = history.slice(-MAX_HIST);
 
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
+  // Use proxy if configured (required for GitHub Pages), otherwise direct (works in Claude artifacts)
+  const apiEndpoint = PROXY_URL
+    ? PROXY_URL
+    : "https://api.anthropic.com/v1/messages";
+
+  const reqBody = {model:"claude-sonnet-4-6", max_tokens:1000, system:SYS, messages:history};
+
+  const res = await fetch(apiEndpoint, {
     method: "POST",
     headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({model:"claude-sonnet-4-6", max_tokens:1000, system:SYS, messages:history})
+    body: JSON.stringify(reqBody)
   });
 
   const data = await res.json();
