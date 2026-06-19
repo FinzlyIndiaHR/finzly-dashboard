@@ -301,6 +301,9 @@ body{
       </div>
     </div>
     <div class="hd-finzly">finzly</div>
+    <div id="ragIndicator" style="display:none;flex-shrink:0;margin-left:8px;">
+      <div id="ragPill" style="display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;border:1px solid;cursor:pointer;" onclick="openDashboard()"></div>
+    </div>
   </div>
 
   <!-- MESSAGES -->
@@ -323,6 +326,27 @@ body{
     </div>
   </div>
 </div>
+
+<!-- RAG ALERT BANNER -->
+<div id="ragBanner" style="display:none;position:fixed;bottom:24px;right:24px;z-index:999;max-width:360px;animation:slideUp 0.4s ease;">
+  <div id="ragBannerInner" style="border-radius:16px;padding:14px 16px;box-shadow:0 8px 32px rgba(0,0,0,0.18);border:1px solid;display:flex;flex-direction:column;gap:8px;">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span id="ragBannerIcon" style="font-size:18px;"></span>
+      <div style="flex:1;">
+        <div id="ragBannerTitle" style="font-weight:700;font-size:13px;"></div>
+        <div id="ragBannerReason" style="font-size:12px;opacity:0.8;margin-top:2px;"></div>
+      </div>
+      <button onclick="dismissRagBanner()" style="background:none;border:none;cursor:pointer;opacity:0.5;font-size:16px;padding:0;line-height:1;">✕</button>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button onclick="openDashboard()" style="flex:1;padding:7px 12px;border-radius:8px;border:none;font-size:12px;font-weight:600;cursor:pointer;background:rgba(255,255,255,0.2);color:inherit;backdrop-filter:blur(4px);">View Dashboard →</button>
+      <button onclick="dismissRagBanner()" style="padding:7px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.3);font-size:12px;font-weight:500;cursor:pointer;background:transparent;color:inherit;">Dismiss</button>
+    </div>
+  </div>
+</div>
+<style>
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+</style>
 
 <!-- MODAL -->
 <div id="modal">
@@ -350,6 +374,25 @@ const MAX_HISTORY = 10; // last N messages kept
 let conversationHistory = [];
 let isBotTyping = false;
 let currentModalQuery = "";
+
+// ─── RAG STATE ─────────────────────────────────────────────────────────────────
+// ⚙️  CONFIGURE YOUR SHAREPOINT WEBHOOK HERE
+// This should be a Power Automate HTTP trigger URL that updates column 'Rag Status'
+// in the Emp Master sheet for the given employee email.
+// Format: POST { email, ragStatus, ragReason, timestamp }
+const SHAREPOINT_WEBHOOK_URL = ""; // ← paste your Power Automate webhook URL here
+const DASHBOARD_URL = "https://finzlyindiahr.github.io/finzly-dashboard/leadership.html";
+
+let sessionRagLevel = "none";   // tracks highest RAG this session
+let sessionEmployeeEmail = "";  // set when employee identifies themselves
+
+const RAG_CONFIG = {
+  red:   { bg:"#fef2f2", border:"#fca5a5", text:"#991b1b", icon:"🔴", pill:"background:rgba(239,68,68,0.15);color:#dc2626;border-color:rgba(239,68,68,0.4);", label:"Red Alert" },
+  amber: { bg:"#fffbeb", border:"#fde68a", text:"#92400e", icon:"🟡", pill:"background:rgba(245,158,11,0.15);color:#d97706;border-color:rgba(245,158,11,0.4);", label:"Amber Watch" }
+};
+
+// RAG priority: red > amber > none
+function ragPriority(level){ return level === "red" ? 2 : level === "amber" ? 1 : 0; }
 
 // ─── SYSTEM PROMPT ────────────────────────────────────────────────────────────
 const SYSTEM_PROMPT = `You are BuddyFinzler — the official AI HR Companion for Finzly, built for Finzly India employees in Chennai and Pune. You are warm, empathetic, professional, and knowledgeable. You feel like a real HRBP — not a scripted FAQ bot.
@@ -511,7 +554,9 @@ You MUST respond with a valid JSON object in this exact format:
   "escalate": false,
   "escalationReason": "",
   "followUps": ["Follow-up question 1", "Follow-up question 2"],
-  "sectionRef": "Section X.X – Topic Name"
+  "sectionRef": "Section X.X – Topic Name",
+  "ragSignal": "none",
+  "ragReason": ""
 }
 
 Rules:
@@ -520,6 +565,12 @@ Rules:
 - "escalationReason": Brief reason only if escalate=true, otherwise "".
 - "followUps": Array of 2–3 relevant follow-up questions the employee might want to ask. Keep them short and natural. Empty array [] if not needed.
 - "sectionRef": The relevant policy section if applicable (e.g. "Section 7.4.3 – Sick Leave"), otherwise "".
+- "ragSignal": CRITICAL — assess the employee's risk level from this conversation turn:
+  • "red" — immediate concern: mentions resignation intent, active harassment, PIP distress, burnout crisis, threatening to leave, serious personal crisis
+  • "amber" — watch signal: expresses frustration, mentions manager conflict, salary dissatisfaction, feeling undervalued, stressed over time, low engagement signals
+  • "none" — neutral conversation: policy questions, L&D queries, general company info, positive interactions
+  Do NOT set red/amber for pure information queries even if the topic sounds serious (e.g. asking "how does resignation work?" is "none" — they are just asking about process).
+- "ragReason": One short sentence explaining WHY you set this signal. Only fill if ragSignal is red or amber. Empty string if none.
 
 ## BEHAVIOUR RULES
 1. NEVER invent policies, amounts, names, emails, or dates not in the knowledge base above.
@@ -531,7 +582,60 @@ Rules:
 7. For POSH/harassment — show ICC contacts immediately and be extra supportive.
 8. For general Finzly company questions — use finzly.com knowledge freely.
 9. Remember context from the conversation history — don't repeat yourself.
-10. The employee's wellbeing matters. If they show signs of distress, acknowledge it first before giving information.`;
+10. The employee's wellbeing matters. If they show signs of distress, acknowledge it first before giving information.
+
+## HANDLING EMOTIONAL OR AMBIGUOUS RESPONSES
+When someone says something like "I'm not feeling well", "not great", "I'm tired", "not okay", "feeling low", "stressed", "not good" — DO NOT immediately jump to HR policy or sick leave.
+
+Instead:
+- First, genuinely check in as a person would. Ask what's going on.
+- Let them lead. They may mean physically unwell (sick leave), emotionally drained (need support), or just having a bad day.
+- Only bring up policy AFTER you understand what they actually need.
+- If they seem emotionally distressed, be a warm presence first. You can gently mention that HR is always available at hr-india@finzly.com if they need support.
+- NEVER assume "not feeling well" = sick leave query. It could mean burnout, personal stress, a difficult situation at work, or just a rough morning.
+- Match the energy of their message. Short, quiet messages deserve short, warm replies — not a wall of information.
+
+Examples:
+- "I'm not feeling well" → "Oh no, I'm sorry to hear that. 💙 Are you feeling physically unwell, or is it more of a tough day emotionally?"
+- "Not great honestly" → "I'm sorry to hear that. Do you want to talk about what's going on?"
+- "I'm really stressed" → "That sounds really hard. What's been weighing on you?"
+- "I'm tired" → "I hear you. Is it the kind of tired that a good night's sleep will fix, or has something been building up?"
+
+Always be human first. Policy can wait.
+
+## HANDLING RESIGNATION, QUITTING, OR WANTING TO LEAVE
+When someone mentions resignation, quitting, leaving, or putting in papers — DO NOT immediately give the 2-month notice policy.
+
+These words almost always carry emotion behind them. The person may be frustrated, undervalued, burned out, dealing with a manager issue, or just having a really bad week. The policy is the last thing they need right now.
+
+Instead:
+- Start by acknowledging how they're feeling, not what the process is.
+- Gently ask what's brought them to this point.
+- Give them space to share. They might just need to be heard.
+- Only after you understand the situation — and only if they still want to know the process — explain the resignation procedure.
+- If they seem open to it, gently ask if they've spoken to their manager or HR about what's been bothering them. Sometimes a conversation changes everything.
+- Never be preachy or try to guilt them into staying. Respect their autonomy.
+- If they confirm they want to proceed, THEN explain the process AND set escalate: true.
+
+Examples of what NOT to do:
+- "Sure! The resignation process requires 2 months notice..." ← cold and dismissive
+- "Please think carefully before resigning..." ← preachy
+
+Examples of what TO do:
+- "I'm sorry to hear that. 💙 What's been going on?" 
+- "That's a big decision. Do you want to talk about what's brought you here?"
+- "I hear you. Has something specific happened, or has it been building up for a while?"
+
+## HANDLING ANY DISTRESS, FRUSTRATION, OR PERSONAL DIFFICULTY
+This applies broadly — not just health or resignation. Whenever someone's message signals that they are upset, frustrated, overwhelmed, angry, sad, or struggling:
+
+- Lead with empathy, always. Acknowledge the feeling before anything else.
+- Ask one gentle open question to understand more. Don't pepper them with questions.
+- Don't assume what they need — let them tell you.
+- Only bring in HR policy or contacts once you understand what's actually going on.
+- If someone seems seriously distressed or mentions something that sounds like a crisis, prioritise their wellbeing over any policy conversation. Gently suggest speaking with HR (hr-india@finzly.com) or a trusted person.
+
+The rule is simple: a person walked in. Help the person first. The policy can always come second.`;
 
 // ─── AVATAR SVG for chat bubbles ─────────────────────────────────────────────
 function chatAvatarSVG() {
@@ -680,6 +784,11 @@ async function renderBotResponse(parsed, originalQuery) {
     showModal(originalQuery, parsed.escalationReason);
   }
 
+  // RAG Signal handling
+  if (parsed.ragSignal && parsed.ragSignal !== 'none') {
+    await triggerRagUpdate(parsed.ragSignal, parsed.ragReason || 'Signal detected in conversation', originalQuery);
+  }
+
   // Follow-up suggestions
   if (parsed.followUps && parsed.followUps.length > 0) {
     await delay(300);
@@ -717,6 +826,93 @@ document.getElementById('emailHRBtn').onclick = () => {
 document.getElementById('modal').addEventListener('click', e => {
   if (e.target === document.getElementById('modal')) closeModal();
 });
+
+// ─── RAG ENGINE ──────────────────────────────────────────────────────────────
+function openDashboard(){ window.open(DASHBOARD_URL, '_blank'); }
+
+function dismissRagBanner(){
+  const b = document.getElementById('ragBanner');
+  b.style.animation = 'none';
+  b.style.opacity = '0';
+  b.style.transform = 'translateY(20px)';
+  b.style.transition = 'all 0.3s ease';
+  setTimeout(() => b.style.display = 'none', 300);
+}
+
+function showRagBanner(level, reason) {
+  const cfg = RAG_CONFIG[level];
+  if (!cfg) return;
+  const banner = document.getElementById('ragBanner');
+  const inner  = document.getElementById('ragBannerInner');
+  document.getElementById('ragBannerIcon').textContent  = cfg.icon;
+  document.getElementById('ragBannerTitle').textContent = `Employee ${cfg.label} Detected`;
+  document.getElementById('ragBannerReason').textContent = reason;
+  inner.style.background   = cfg.bg;
+  inner.style.borderColor  = cfg.border;
+  inner.style.color        = cfg.text;
+  banner.style.display     = 'block';
+  banner.style.animation   = 'slideUp 0.4s ease';
+}
+
+function updateRagPill(level) {
+  const indicator = document.getElementById('ragIndicator');
+  const pill      = document.getElementById('ragPill');
+  if (level === 'none') { indicator.style.display = 'none'; return; }
+  const cfg = RAG_CONFIG[level];
+  if (!cfg) return;
+  indicator.style.display = 'flex';
+  pill.style.cssText = cfg.pill + 'display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;cursor:pointer;';
+  pill.innerHTML = cfg.icon + ' ' + cfg.label;
+}
+
+async function triggerRagUpdate(level, reason, userMessage) {
+  // Only escalate, never downgrade within a session
+  if (ragPriority(level) <= ragPriority(sessionRagLevel)) return;
+  sessionRagLevel = level;
+
+  // Update UI immediately
+  updateRagPill(level);
+  showRagBanner(level, reason);
+
+  // Fire SharePoint webhook if configured
+  if (!SHAREPOINT_WEBHOOK_URL) {
+    console.info(`[BuddyFinzler RAG] Would update employee to ${level.toUpperCase()}: ${reason}`);
+    console.info(`[BuddyFinzler RAG] To enable: set SHAREPOINT_WEBHOOK_URL to your Power Automate HTTP trigger`);
+    return;
+  }
+
+  try {
+    const payload = {
+      employeeEmail: sessionEmployeeEmail || "unknown",
+      ragStatus: level.charAt(0).toUpperCase() + level.slice(1), // "Red" or "Amber"
+      ragReason: reason,
+      triggerMessage: userMessage.substring(0, 200),
+      timestamp: new Date().toISOString(),
+      source: "BuddyFinzler AI"
+    };
+    const res = await fetch(SHAREPOINT_WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    if (res.ok) {
+      console.info(`[BuddyFinzler RAG] ✅ SharePoint updated — ${level.toUpperCase()} for ${payload.employeeEmail}`);
+    } else {
+      console.warn(`[BuddyFinzler RAG] ⚠ Webhook returned ${res.status}`);
+    }
+  } catch(e) {
+    console.warn("[BuddyFinzler RAG] Webhook call failed:", e.message);
+  }
+}
+
+// Try to extract employee email from conversation context
+function tryExtractEmail(text) {
+  const match = text.match(/[a-zA-Z0-9._%+-]+@finzly\.com/i);
+  if (match && !sessionEmployeeEmail) {
+    sessionEmployeeEmail = match[0];
+    console.info("[BuddyFinzler] Employee identified:", sessionEmployeeEmail);
+  }
+}
 
 // ─── API CALL ─────────────────────────────────────────────────────────────────
 async function callClaudeAPI(userMessage) {
@@ -793,6 +989,7 @@ async function handleSend(overrideText) {
   isBotTyping = true;
 
   addUserMessage(text);
+  tryExtractEmail(text); // passive email detection for RAG attribution
 
   const typingRow = showTyping();
   await delay(600);
@@ -848,18 +1045,8 @@ document.getElementById('sendBtn').addEventListener('click', () => handleSend())
 window.onload = async () => {
   isBotTyping = true;
   document.getElementById('sendBtn').disabled = true;
-  await delay(400);
-  const welcomeParsed = {
-    message: "Hey there! 👋 I'm **BuddyFinzler** — your AI-powered HR companion at Finzly.\n\nI'm here to help you with **HR policies**, **L&D courses**, **leave queries**, **travel claims**, **insurance**, or anything about **Finzly as a company**. 😊\n\nI'm powered by AI, so I can understand you naturally — no need for specific keywords. And for anything sensitive, I'll always connect you with the right HR person.\n\nWhat's on your mind today? 💙",
-    escalate: false,
-    escalationReason: "",
-    followUps: [
-      "How do I apply for leave on ADP?",
-      "What L&D courses should I take this quarter?",
-      "What is BankOS and the Payment Galaxy?"
-    ],
-    sectionRef: ""
-  };
+  await delay(500);
+
   const msgs = document.getElementById('messages');
   const wrapper = document.createElement('div');
   wrapper.className = 'bot-msg-wrapper';
@@ -875,25 +1062,7 @@ window.onload = async () => {
   wrapper.appendChild(col);
   msgs.appendChild(wrapper);
 
-  await typewriteText(bub, welcomeParsed.message, 10);
-
-  if (welcomeParsed.followUps.length > 0) {
-    await delay(300);
-    const fu = document.createElement('div');
-    fu.className = 'followups';
-    welcomeParsed.followUps.forEach(q => {
-      const b = document.createElement('button');
-      b.className = 'followup-btn';
-      b.textContent = '💬 ' + q;
-      b.onclick = () => {
-        document.querySelectorAll('.followups').forEach(el => el.remove());
-        handleSend(q);
-      };
-      fu.appendChild(b);
-    });
-    msgs.appendChild(fu);
-    scrollToBottom();
-  }
+  await typewriteText(bub, "Hey! 👋 I'm BuddyFinzler. How are you doing today?", 14);
 
   document.getElementById('sendBtn').disabled = false;
   isBotTyping = false;
