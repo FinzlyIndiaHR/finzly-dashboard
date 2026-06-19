@@ -1,1072 +1,682 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>BuddyFinzler – Finzly HR AI</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet"/>
-<style>
-:root{
-  --brand-purple:#7c3aed;
-  --brand-violet:#4f46e5;
-  --brand-gradient:linear-gradient(135deg,#7c3aed,#4f46e5);
-  --bg:#f8f8fc;
-  --surface:#ffffff;
-  --surface-2:#f3f4f8;
-  --border:#e5e7f0;
-  --border-mid:#d1d5e8;
-  --text-900:#0f0f1a;
-  --text-700:#374151;
-  --text-500:#6b7280;
-  --user-bg:linear-gradient(135deg,#1e1b4b,#312e81,#3730a3);
-  --r-2xl:28px;--r-xl:20px;--r-lg:16px;--r-md:12px;--r-sm:8px;
-  --font:'Inter',system-ui,sans-serif;
-  --font-brand:'Space Grotesk',sans-serif;
-}
-*{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;overflow:hidden}
-body{
-  font-family:var(--font);
-  background:linear-gradient(160deg,#f5f3ff 0%,#f8f8fc 40%,#eef2ff 100%);
-  display:flex;align-items:center;justify-content:center;
-  color:var(--text-900);
-}
-#app{
-  position:relative;z-index:1;
-  width:100%;max-width:800px;height:100vh;max-height:920px;
-  display:flex;flex-direction:column;
-  background:var(--surface);
-  border-radius:var(--r-2xl);overflow:hidden;
-  box-shadow:0 0 0 1px rgba(124,58,237,0.08),0 8px 32px rgba(15,15,26,0.08),0 32px 80px rgba(15,15,26,0.12);
-}
+import { useState, useRef, useEffect, useCallback } from "react";
 
-/* ── HEADER ── */
-.header{
-  flex-shrink:0;height:80px;padding:0 24px;
-  display:flex;align-items:center;gap:16px;
-  background:linear-gradient(135deg,#0a2540,#0d3060,#0a2540);
-  position:relative;
-}
-.header::after{
-  content:'';position:absolute;bottom:0;left:0;right:0;height:2px;
-  background:linear-gradient(90deg,#7c3aed,#4f46e5,#06b6d4,transparent);
-}
-
-/* ── AVATAR SVG robot face ── */
-.av-shell{position:relative;flex-shrink:0}
-.av-bg{
-  width:54px;height:54px;border-radius:16px;
-  background:linear-gradient(135deg,#1e3a5f,#0a2540);
-  border:1.5px solid rgba(124,58,237,0.5);
-  display:flex;align-items:center;justify-content:center;
-  box-shadow:0 0 20px rgba(124,58,237,0.3),0 4px 12px rgba(0,0,0,0.3);
-  overflow:hidden;
-  position:relative;
-}
-.av-bg::before{
-  content:'';position:absolute;inset:0;
-  background:linear-gradient(135deg,rgba(124,58,237,0.15),transparent 60%);
-  border-radius:inherit;
-}
-.av-dot{
-  position:absolute;bottom:-1px;right:-1px;
-  width:14px;height:14px;border-radius:50%;
-  background:#22c55e;border:2.5px solid #0a2540;
-  box-shadow:0 0 8px rgba(34,197,94,0.7);
-  animation:pulse-dot 2.5s ease-in-out infinite;
-}
-@keyframes pulse-dot{0%,100%{box-shadow:0 0 8px rgba(34,197,94,0.6)}50%{box-shadow:0 0 18px rgba(34,197,94,1),0 0 30px rgba(34,197,94,0.3)}}
-
-.hd-text{flex:1}
-.hd-name{font-family:var(--font-brand);font-size:18px;font-weight:800;color:#ffffff;letter-spacing:-0.3px;
-  background:linear-gradient(90deg,#fff,#c4b5fd);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-}
-.hd-row{display:flex;align-items:center;gap:8px;margin-top:3px}
-.hd-badge{
-  font-size:9.5px;font-weight:700;letter-spacing:0.7px;
-  padding:2px 9px;border-radius:20px;
-  color:#4ade80;background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.3);
-  display:flex;align-items:center;gap:4px;text-transform:uppercase;
-}
-.hd-badge::before{content:'';width:5px;height:5px;border-radius:50%;background:#4ade80;animation:pulse-dot 2s infinite}
-.hd-sub{font-size:11px;color:rgba(255,255,255,0.4);font-weight:400}
-.ai-chip{
-  display:flex;align-items:center;gap:5px;
-  background:rgba(124,58,237,0.2);border:1px solid rgba(124,58,237,0.4);
-  border-radius:20px;padding:3px 10px;
-  font-size:9.5px;font-weight:700;color:#c4b5fd;letter-spacing:0.5px;text-transform:uppercase;
-}
-.ai-chip svg{width:10px;height:10px}
-.hd-finzly{font-family:var(--font-brand);font-size:20px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;opacity:0.9}
-
-/* ── MESSAGES ── */
-#messages{
-  flex:1;overflow-y:auto;
-  padding:24px 24px 12px;
-  display:flex;flex-direction:column;gap:8px;
-  background:var(--bg);
-  background-image:radial-gradient(circle,rgba(124,58,237,0.04) 1px,transparent 1px);
-  background-size:24px 24px;
-  color:var(--text-900);
-}
-#messages::-webkit-scrollbar{width:3px}
-#messages::-webkit-scrollbar-thumb{background:var(--border-mid);border-radius:3px}
-
-/* bot */
-.bot-msg-wrapper{display:flex;align-items:flex-end;gap:10px;animation:msgIn 0.28s cubic-bezier(0.34,1.56,0.64,1)}
-.bot-bubbles{display:flex;flex-direction:column;gap:5px;max-width:78%}
-.chat-av{
-  width:34px;height:34px;border-radius:10px;flex-shrink:0;align-self:flex-end;
-  background:linear-gradient(135deg,#1e3a5f,#0a2540);
-  border:1px solid rgba(124,58,237,0.35);
-  display:flex;align-items:center;justify-content:center;overflow:hidden;
-  box-shadow:0 2px 8px rgba(124,58,237,0.2);
-}
-.bubble{padding:11px 15px;font-size:13.5px;line-height:1.72;display:inline-block;font-weight:400}
-.bubble.bot{
-  background:#ffffff;border:1px solid var(--border);
-  border-radius:4px 18px 18px 18px;
-  color:#111827;
-  box-shadow:0 1px 4px rgba(0,0,0,0.06),0 2px 12px rgba(0,0,0,0.04);
-  max-width:100%;white-space:pre-wrap;word-wrap:break-word;
-}
-.bubble.bot strong{color:#0a2540;font-weight:700}
-.bubble.bot ul{margin:6px 0 4px 18px}
-.bubble.bot li{margin-bottom:4px;color:#374151}
-.bubble.bot a{color:#7c3aed;font-weight:600;text-decoration:none}
-.bubble.bot a:hover{text-decoration:underline}
-.bubble.bot code{background:#f3f4f8;border-radius:4px;padding:1px 5px;font-size:12px;color:#5b21b6}
-
-/* user */
-.msg-row{display:flex;justify-content:flex-end;animation:msgIn 0.22s cubic-bezier(0.34,1.56,0.64,1)}
-.bubble.user{
-  background:var(--user-bg);
-  border-radius:18px 4px 18px 18px;
-  color:#ffffff;max-width:72%;font-weight:500;
-  box-shadow:0 4px 14px rgba(49,46,129,0.3);
-}
-@keyframes msgIn{from{opacity:0;transform:translateY(10px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}
-
-/* typing */
-.typing-row{display:flex;align-items:flex-end;gap:10px;animation:msgIn 0.2s ease}
-.typing-bub{
-  background:#ffffff;border:1px solid var(--border);
-  border-radius:4px 18px 18px 18px;
-  padding:14px 18px;display:flex;gap:5px;align-items:center;
-  box-shadow:0 1px 4px rgba(0,0,0,0.06);
-}
-.typing-bub span{width:7px;height:7px;border-radius:50%;background:var(--brand-purple);opacity:0.4;animation:tdot 1.3s ease-in-out infinite}
-.typing-bub span:nth-child(2){animation-delay:0.18s}
-.typing-bub span:nth-child(3){animation-delay:0.36s}
-@keyframes tdot{0%,60%,100%{transform:translateY(0);opacity:0.35}30%{transform:translateY(-6px);opacity:1}}
-
-/* cursor */
-.cursor{display:inline-block;width:2px;height:13px;background:var(--brand-purple);margin-left:1px;vertical-align:middle;border-radius:1px;animation:cblink 0.75s ease-in-out infinite}
-@keyframes cblink{0%,44%{opacity:1}55%,100%{opacity:0}}
-
-/* tags */
-.section-tag{
-  margin-top:6px;display:inline-flex;align-items:center;gap:5px;
-  background:#f5f3ff;border:1px solid #ddd6fe;border-radius:6px;
-  padding:4px 10px;font-size:10.5px;font-weight:600;color:#5b21b6;
-}
-.escalation-tag{
-  margin-top:8px;padding:9px 13px;background:#fffbeb;border:1px solid #fde68a;
-  border-radius:8px;font-size:11.5px;font-weight:500;color:#92400e;
-  display:flex;align-items:center;gap:7px;
-}
-.escalation-tag::before{content:'⚡';font-size:13px}
-
-/* error tag */
-.error-tag{
-  margin-top:6px;padding:8px 12px;background:#fef2f2;border:1px solid #fca5a5;
-  border-radius:8px;font-size:11.5px;color:#991b1b;
-}
-
-/* follow-ups */
-.followups{display:flex;flex-direction:column;gap:6px;margin-top:6px;margin-left:44px;animation:fuIn 0.3s ease}
-@keyframes fuIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
-.followup-btn{
-  background:#ffffff;border:1.5px solid var(--border);border-radius:8px;color:#374151;
-  font-size:12.5px;font-weight:500;padding:8px 13px;cursor:pointer;text-align:left;font-family:var(--font);
-  transition:all 0.15s;display:flex;align-items:center;gap:8px;box-shadow:0 1px 3px rgba(0,0,0,0.04);
-}
-.followup-btn::before{content:'→';color:var(--brand-purple);font-weight:700;transition:transform 0.15s}
-.followup-btn:hover{border-color:var(--brand-purple);background:#f5f3ff;color:#1e1b4b;transform:translateX(3px)}
-.followup-btn:hover::before{transform:translateX(3px)}
-
-/* INPUT */
-.input-area{flex-shrink:0;padding:14px 20px 18px;background:#ffffff;border-top:1px solid var(--border)}
-.input-wrap{
-  display:flex;align-items:flex-end;gap:10px;
-  background:var(--surface-2);border:1.5px solid var(--border-mid);
-  border-radius:var(--r-lg);padding:10px 10px 10px 16px;
-  transition:border-color 0.2s,box-shadow 0.2s,background 0.2s;
-}
-.input-wrap:focus-within{border-color:var(--brand-purple);box-shadow:0 0 0 3px rgba(124,58,237,0.1);background:#ffffff}
-#userInput{flex:1;background:transparent;border:none;outline:none;color:#111827;font-size:14px;line-height:1.6;resize:none;font-family:var(--font);max-height:120px;min-height:22px}
-#userInput::placeholder{color:#9ca3af}
-#sendBtn{
-  width:42px;height:42px;border-radius:12px;background:var(--brand-gradient);
-  border:none;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;
-  box-shadow:0 4px 14px rgba(124,58,237,0.38);transition:all 0.18s;
-}
-#sendBtn:hover{transform:scale(1.07) translateY(-1px);box-shadow:0 6px 20px rgba(124,58,237,0.48)}
-#sendBtn:active{transform:scale(0.95)}
-#sendBtn:disabled{opacity:0.5;cursor:not-allowed;transform:none}
-.input-footer{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:9px}
-.footer-dot{width:3px;height:3px;border-radius:50%;background:#d1d5db}
-.footer-txt{color:#9ca3af;font-size:10.5px}
-.footer-lnk{color:var(--brand-purple);font-size:10.5px;font-weight:600;text-decoration:none;opacity:0.8}
-.footer-lnk:hover{opacity:1}
-
-/* MODAL */
-#modal{display:none;position:fixed;inset:0;background:rgba(10,37,64,0.55);backdrop-filter:blur(14px);align-items:center;justify-content:center;z-index:1000;padding:20px}
-#modal.show{display:flex;animation:mIn 0.25s ease}
-@keyframes mIn{from{opacity:0;transform:scale(0.93)}to{opacity:1;transform:scale(1)}}
-.modal-box{
-  background:#ffffff;border-radius:24px;padding:32px;max-width:440px;width:100%;
-  box-shadow:0 20px 60px rgba(0,0,0,0.2);border:1px solid var(--border);
-  position:relative;overflow:hidden;
-}
-.modal-box::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--brand-gradient)}
-.modal-icon{width:52px;height:52px;border-radius:14px;margin:0 auto 16px;background:#f5f3ff;border:1px solid #ddd6fe;display:flex;align-items:center;justify-content:center;font-size:24px}
-.modal-title{color:#111827;text-align:center;margin:0 0 6px;font-family:var(--font-brand);font-size:18px;font-weight:700}
-.modal-sub{color:#6b7280;text-align:center;font-size:13px;margin:0 0 20px;line-height:1.5}
-.modal-card{border-radius:12px;padding:12px 15px;margin-bottom:10px}
-.card-query{background:#f9fafb;border:1px solid var(--border)}
-.card-query p{color:#374151;font-size:13px;margin:0;font-style:italic;line-height:1.5}
-.card-reason{background:#fffbeb;border:1px solid #fde68a}
-.card-reason p{color:#92400e;font-size:13px;margin:0;line-height:1.5}
-.card-label{color:#9ca3af;font-size:9.5px;margin:0 0 5px;text-transform:uppercase;letter-spacing:1px;font-weight:600}
-.modal-btn-primary{width:100%;padding:13px;background:var(--brand-gradient);border:none;border-radius:12px;color:#ffffff;font-weight:700;font-size:14px;cursor:pointer;margin-bottom:10px;font-family:var(--font);box-shadow:0 4px 14px rgba(124,58,237,0.3);transition:all 0.18s}
-.modal-btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(124,58,237,0.4)}
-.modal-btn-secondary{width:100%;padding:11px;background:transparent;border:1.5px solid #d1d5db;border-radius:12px;color:#6b7280;font-size:13px;cursor:pointer;font-family:var(--font);transition:all 0.18s}
-.modal-btn-secondary:hover{background:#f9fafb;color:#374151}
-</style>
-</head>
-<body>
-<div id="app">
-
-  <!-- HEADER -->
-  <div class="header">
-    <div class="av-shell">
-      <div class="av-bg">
-        <!-- BuddyFinzler Robot Avatar SVG -->
-        <svg width="38" height="38" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <!-- Body/Head -->
-          <rect x="7" y="12" width="24" height="18" rx="5" fill="url(#avatarGrad)"/>
-          <!-- Antenna -->
-          <line x1="19" y1="12" x2="19" y2="7" stroke="#7c3aed" stroke-width="1.5" stroke-linecap="round"/>
-          <circle cx="19" cy="6" r="2" fill="#a78bfa"/>
-          <circle cx="19" cy="6" r="1" fill="#7c3aed"/>
-          <!-- Eyes -->
-          <rect x="11" y="17" width="5" height="4" rx="1.5" fill="#0a2540"/>
-          <rect x="22" y="17" width="5" height="4" rx="1.5" fill="#0a2540"/>
-          <!-- Eye glow -->
-          <rect x="11.5" y="17.5" width="4" height="3" rx="1" fill="url(#eyeGrad)"/>
-          <rect x="22.5" y="17.5" width="4" height="3" rx="1" fill="url(#eyeGrad)"/>
-          <!-- Mouth -->
-          <rect x="13" y="24" width="12" height="2.5" rx="1.25" fill="#0a2540"/>
-          <rect x="14" y="24.2" width="4" height="2" rx="1" fill="#22c55e" opacity="0.8"/>
-          <rect x="20" y="24.2" width="4" height="2" rx="1" fill="#22c55e" opacity="0.8"/>
-          <!-- Ears -->
-          <rect x="3" y="17" width="4" height="6" rx="2" fill="url(#avatarGrad)" opacity="0.8"/>
-          <rect x="31" y="17" width="4" height="6" rx="2" fill="url(#avatarGrad)" opacity="0.8"/>
-          <!-- Collar line -->
-          <line x1="7" y1="28" x2="31" y2="28" stroke="rgba(124,58,237,0.4)" stroke-width="0.75"/>
-          <defs>
-            <linearGradient id="avatarGrad" x1="7" y1="12" x2="31" y2="30" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stop-color="#1e4080"/>
-              <stop offset="100%" stop-color="#0d2a50"/>
-            </linearGradient>
-            <linearGradient id="eyeGrad" x1="0" y1="0" x2="0" y2="4" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stop-color="#7c3aed"/>
-              <stop offset="100%" stop-color="#4f46e5"/>
-            </linearGradient>
-          </defs>
-        </svg>
-      </div>
-      <div class="av-dot"></div>
-    </div>
-    <div class="hd-text">
-      <div class="hd-name">BuddyFinzler</div>
-      <div class="hd-row">
-        <span class="hd-badge">ONLINE</span>
-        <span class="ai-chip">
-          <svg viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="#c4b5fd" stroke-width="1"/><path d="M4 6h4M6 4v4" stroke="#c4b5fd" stroke-width="1.2" stroke-linecap="round"/></svg>
-          AI Powered
-        </span>
-        <span class="hd-sub">Your Finzly HR Companion</span>
-      </div>
-    </div>
-    <div class="hd-finzly">finzly</div>
-    <div id="ragIndicator" style="display:none;flex-shrink:0;margin-left:8px;">
-      <div id="ragPill" style="display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;border:1px solid;cursor:pointer;" onclick="openDashboard()"></div>
-    </div>
-  </div>
-
-  <!-- MESSAGES -->
-  <div id="messages"></div>
-
-  <!-- INPUT -->
-  <div class="input-area">
-    <div class="input-wrap">
-      <textarea id="userInput" rows="1" placeholder="Ask me about HR policies, L&D, or anything about Finzly…"></textarea>
-      <button id="sendBtn" title="Send">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
-          <path d="M22 2L11 13M22 2L15 22L11 13M11 13L2 9L22 2" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
-    </div>
-    <div class="input-footer">
-      <span class="footer-txt">hr-india@finzly.com</span>
-      <div class="footer-dot"></div>
-      <a class="footer-lnk" href="https://www.finzly.com" target="_blank">www.finzly.com</a>
-    </div>
-  </div>
-</div>
-
-<!-- RAG ALERT BANNER -->
-<div id="ragBanner" style="display:none;position:fixed;bottom:24px;right:24px;z-index:999;max-width:360px;animation:slideUp 0.4s ease;">
-  <div id="ragBannerInner" style="border-radius:16px;padding:14px 16px;box-shadow:0 8px 32px rgba(0,0,0,0.18);border:1px solid;display:flex;flex-direction:column;gap:8px;">
-    <div style="display:flex;align-items:center;gap:8px;">
-      <span id="ragBannerIcon" style="font-size:18px;"></span>
-      <div style="flex:1;">
-        <div id="ragBannerTitle" style="font-weight:700;font-size:13px;"></div>
-        <div id="ragBannerReason" style="font-size:12px;opacity:0.8;margin-top:2px;"></div>
-      </div>
-      <button onclick="dismissRagBanner()" style="background:none;border:none;cursor:pointer;opacity:0.5;font-size:16px;padding:0;line-height:1;">✕</button>
-    </div>
-    <div style="display:flex;gap:8px;">
-      <button onclick="openDashboard()" style="flex:1;padding:7px 12px;border-radius:8px;border:none;font-size:12px;font-weight:600;cursor:pointer;background:rgba(255,255,255,0.2);color:inherit;backdrop-filter:blur(4px);">View Dashboard →</button>
-      <button onclick="dismissRagBanner()" style="padding:7px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.3);font-size:12px;font-weight:500;cursor:pointer;background:transparent;color:inherit;">Dismiss</button>
-    </div>
-  </div>
-</div>
-<style>
-@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-</style>
-
-<!-- MODAL -->
-<div id="modal">
-  <div class="modal-box">
-    <div class="modal-icon">📨</div>
-    <div class="modal-title">Connect with HR India</div>
-    <div class="modal-sub">This query needs personal attention from our HR team.</div>
-    <div class="modal-card card-query">
-      <div class="card-label">Your Query</div>
-      <p id="modalQuery"></p>
-    </div>
-    <div class="modal-card card-reason">
-      <div class="card-label">Why HR Needs to Help</div>
-      <p id="modalReason"></p>
-    </div>
-    <button class="modal-btn-primary" id="emailHRBtn">📧 Email HR India — hr-india@finzly.com</button>
-    <button class="modal-btn-secondary" onclick="closeModal()">Maybe later</button>
-  </div>
-</div>
-
-<script>
-// ─── CONSTANTS ───────────────────────────────────────────────────────────────
+// ─── CONFIGURATION ────────────────────────────────────────────────────────────
 const HR_EMAIL = "hr-india@finzly.com";
-const MAX_HISTORY = 10; // last N messages kept
-let conversationHistory = [];
-let isBotTyping = false;
-let currentModalQuery = "";
-
-// ─── RAG STATE ─────────────────────────────────────────────────────────────────
-// ⚙️  CONFIGURE YOUR SHAREPOINT WEBHOOK HERE
-// This should be a Power Automate HTTP trigger URL that updates column 'Rag Status'
-// in the Emp Master sheet for the given employee email.
-// Format: POST { email, ragStatus, ragReason, timestamp }
-const SHAREPOINT_WEBHOOK_URL = ""; // ← paste your Power Automate webhook URL here
 const DASHBOARD_URL = "https://finzlyindiahr.github.io/finzly-dashboard/leadership.html";
-
-let sessionRagLevel = "none";   // tracks highest RAG this session
-let sessionEmployeeEmail = "";  // set when employee identifies themselves
-
-const RAG_CONFIG = {
-  red:   { bg:"#fef2f2", border:"#fca5a5", text:"#991b1b", icon:"🔴", pill:"background:rgba(239,68,68,0.15);color:#dc2626;border-color:rgba(239,68,68,0.4);", label:"Red Alert" },
-  amber: { bg:"#fffbeb", border:"#fde68a", text:"#92400e", icon:"🟡", pill:"background:rgba(245,158,11,0.15);color:#d97706;border-color:rgba(245,158,11,0.4);", label:"Amber Watch" }
-};
-
-// RAG priority: red > amber > none
-function ragPriority(level){ return level === "red" ? 2 : level === "amber" ? 1 : 0; }
+const SHAREPOINT_WEBHOOK_URL = ""; // ← paste your Power Automate HTTP trigger URL here
+const MAX_HISTORY = 10;
 
 // ─── SYSTEM PROMPT ────────────────────────────────────────────────────────────
-const SYSTEM_PROMPT = `You are BuddyFinzler — the official AI HR Companion for Finzly, built for Finzly India employees in Chennai and Pune. You are warm, empathetic, professional, and knowledgeable. You feel like a real HRBP — not a scripted FAQ bot.
+const SYSTEM_PROMPT = `You are BuddyFinzler — the official AI HR Companion for Finzly India employees (Chennai and Pune). You are warm, empathetic, and knowledgeable. You feel like a real HRBP — not a scripted FAQ bot.
 
-## YOUR KNOWLEDGE SOURCES (answer ONLY from these — do not hallucinate)
+## KNOWLEDGE SOURCES (answer ONLY from these)
 
-### COMPANY KNOWLEDGE (from finzly.com)
-Finzly is a leading fintech company founded in 2012 by Booshan Rengachari (former Wells Fargo International Banking). HQ: Charlotte NC. India offices: Chennai and Pune.
-Product: Finzly BankOS — cloud-native bank operating system with Galaxies:
-- Payment Galaxy: ACH, Fedwire, RTP, FedNow, SWIFT (ISO 20022 certified). Finzly was one of the first API connections to FedNow.
-- Accounts Galaxy: Virtual accounts, multi-currency ledgers, real-time reconciliation
-- Open Galaxy: Embedded banking APIs for fintechs (BaaS)
-- Trade Galaxy: Foreign exchange and trade finance
-- Token Galaxy (2025): Tokenised assets, stablecoins, tokenised deposits
-- Agentic Galaxy (Oct 2025): AI agents embedded directly inside payment workflows
-Live on AWS Marketplace. Clients: Frost Bank, Metropolitan Commercial Bank (ACH Cloud Migration Feb 2026), PCBB.
-Funding: $10M Series A (TZP Group). Revenue nearly doubled in 2023.
-Awards: Best and Brightest Companies to Work For 2022 & 2023; Great Companies in NC 2024; Best Parallel Core Tech (NACHA 2023); Innovation in Payments (ePayConnect 2024).
-CEO Booshan: Computer Science + ML (Stanford) + Accounting (Wharton). Presented to US Faster Payments Task Force 2016. Board of US Faster Payments Council.
-Website: www.finzly.com | HR: hr-india@finzly.com
+### COMPANY (finzly.com)
+Finzly founded 2012 by Booshan Rengachari (former Wells Fargo). HQ: Charlotte NC. India: Chennai & Pune.
+BankOS Galaxies: Payment (ACH/Fedwire/RTP/FedNow/SWIFT), Accounts (virtual accounts/ledgers), Open (BaaS APIs), Trade (FX/trade finance), Token (stablecoins 2025), Agentic (AI in payments Oct 2025). AWS Marketplace. Clients: Frost Bank, Metropolitan Commercial Bank. $10M Series A (TZP Group). Awards: Best & Brightest 2022-2023, NACHA 2023, ePayConnect 2024. CEO Booshan: CS + ML Stanford + Accounting Wharton. www.finzly.com | hr-india@finzly.com
 
-### HR POLICIES (Employee Handbook v2.1, reviewed May 2026)
-**Leave Policies:**
-- Earned Leave (EL): 10 days/year, accrued 0.8 days/month, carry forward max 30 days (above lapses), apply 2 days in advance via ADP HRMS, encashed at basic salary on resignation
-- Management Leave (ML): 5 days/year, accrued 0.4 days/month, onshore approval mandatory, all lapses year-end
-- Sick Leave (SL): 5 days/year, medical certificate >2 days, beyond 5 days → EL then LOP, lapses year-end
-- Comp Off: For weekend/holiday work, avail within 90 days, manager approval, cannot encash
-- Maternity Leave: 26 weeks paid (>4 months service), notify HR 15 weeks before due date. After 26 weeks: WFH → EL → LOP (up to 2 months). Miscarriage: 6 weeks paid with proof.
-- Paternity Leave: 5 days, min 3 months service, inform 2 weeks in advance, avail within 1 month of birth
-- Bereavement Leave: Up to 2 days, immediate family, inform manager and HR
-- Leave Without Pay (LOP): After exhausting all leaves, prior manager approval. Probation/notice = LOP.
-- Intern/Probation Leave: 1 day/month after 1 month service (0.5 sick + 0.5 casual), lapses at period end
-- Leave Procedure: Apply via ADP HRMS, not updated before 15th of next month = marked absent, sandwich rule applies
+### HR POLICIES (Handbook v2.1, May 2026)
+Earned Leave: 10 days/yr, 0.8/month, carry-forward max 30, 2 days advance via ADP, encashed on resignation.
+Management Leave: 5 days/yr, 0.4/month, onshore approval, lapses year-end.
+Sick Leave: 5 days/yr, medical cert >2 days, beyond 5 → EL then LOP, lapses year-end.
+Comp Off: weekend/holiday work, avail within 90 days, no encashment.
+Maternity: 26 weeks paid (>4 months service), notify HR 15 weeks before. After: WFH→EL→LOP (2 months). Miscarriage: 6 weeks paid.
+Paternity: 5 days, min 3 months service, 2 weeks notice, avail within 1 month of birth.
+Bereavement: 2 days, immediate family.
+LOP: after all leaves exhausted, manager approval. Probation/notice = LOP.
+ADP portal: https://online.apac.adp.com/signin/v1/?APPID=ADPVISTA-IN&productId=ff803a24-0ee0-47fc-e053-f282530bfabe&returnURL=https://www.vista.adp.com/in/
+Chennai ADP: Abirami R (abirami.r@finzly.com) | Pune ADP: Vishwata Mayekar (vishwata.mayekar@finzly.com)
+Work: Mon-Fri 45hrs/week incl lunch, min 6hrs/day in office, login by 9:30AM. Dress: Business Casual Mon-Thu, Casual Fri.
+Probation: per offer letter, all leaves=LOP, BGV needed for intl travel.
+Salary: last working day to 3rd of next month. ADP Pay section for payslips.
+Performance: quarterly reviews, annual Nov-Dec, revision effective Jan. Joined after Oct 31 = not eligible. PIP: max 1 month, manager+HR, interim review at 2 weeks.
+Mediclaim: Rs 5L/yr, employee+spouse+2 children, accidental included, Day 1 enrollment, 24hr hospitalization for claim, inform HR within 2 days, discharge summary mandatory, premium from salary.
+Term Insurance: Rs 35L, employee only, company-paid.
+Domestic Travel: 3 days notice. Hotel: Type1 Rs5K (Mumbai/Delhi/Chennai/Kolkata/Pune/Bangalore/Hyderabad), Type2 Rs4K, Others Rs3K. Food: Type1 Rs600, Type2 Rs500, Others Rs400. 2-wheeler Rs5/km, 4-wheeler Rs8/km+toll. Air:Economy, Train:AC2/3.
+International/USA: Company pays visa/flights/lodging. Per diem USD80/day.
+Referral: Dev 3-5yr Rs20K/5-10yr Rs30K/10+yr Rs35K. QA/DevOps 3-5yr Rs15K/5-10yr Rs20K/10+yr Rs30K. Immediate joiners Rs50K. Center Head approval.
+Late night: beyond 8hrs weekdays dinner Rs250+cab. Weekends Rs250/meal. Prior manager approval needed.
+Resignation: 2 months written notice to Practice Lead→HR+Country Head. No leaves during notice. Bonus returned if <1yr. EL encashed. Relieving letter after dues.
+POSH/ICC Chennai: Divya Moorthy (divya.moorthy@finzly.com), Bharathkumar M (Bharathkumar.m@finzly.com), Abirami R (abirami.r@finzly.com)
+POSH/ICC Pune: Vishwata Mayekar (vishwata.mayekar@finzly.com), Andleeb Sohail (andleeb.sohail@finzly.com), Prashant Choudhary (prashant@finzly.com)
+File POSH within 15 days. Confidential. Zero retaliation. She-Box registered. 90-day enquiry.
+Open Door: Manager→HR→Senior Mgmt. No retaliation.
+BGV: employment/address/identity/criminal. Retirement: 60 years. Holidays: 10/year.
+Job abandonment: 5 days absent = absconded, 2 reminders, no re-induction.
 
-**ADP HRMS Portal:**
-Login: https://online.apac.adp.com/signin/v1/?APPID=ADPVISTA-IN&productId=ff803a24-0ee0-47fc-e053-f282530bfabe&returnURL=https://www.vista.adp.com/in/&callingAppId=ADPVISTA&TARGET=-SM-https://www.vista.adp.com/IN
-Chennai ADP support: Abirami R (abirami.r@finzly.com)
-Pune ADP support: Vishwata Mayekar (vishwata.mayekar@finzly.com)
+### L&D (Handbook v11.0, 2026)
+~1hr/day learning. 1-2 courses/quarter. Platform: finzly.udemy.com (login with Finzly email).
+Common Core (all): Introduction to Payments, Cross Border Payments, Mastering ISO 20022, Generative AI for Beginners, Communication Skills, Complete Prompt Engineering Bootcamp.
+Payment Galaxy: ACH/NACHA, Cloud Engineer, Financial Analyst, ISO 20022 Beginner+Advanced, Prompt Engineering 2026.
+Trade Galaxy: Forex Treasury, Intl Trade Finance, Letter of Credit UCP600, SWIFT MT/MX, Global Treasury Masterclass, Interest Rate Swaps, Advanced ISO 20022 SWIFT MX.
+Digital Galaxy: AI Coding (Cursor), GenAI for QA, OpenAPI/Swagger, JMeter Load Testing, System Design, Java Multithreading, AWS AI Practitioner, LangChain, Digital Banking, UX Fundamentals.
+Account Galaxy: Virtual Accounts & Cash Mgmt, Escrow Operations, Bank Deposits & Reconciliation, Accounting for Financial Services, Treasury & Liquidity Mgmt.
+Actual course links assigned by manager/HR via Learning Architecture Excel. Contact manager or hr-india@finzly.com for your specific assignments.
 
-**Work Timings:** Mon–Fri, 45 hrs/week incl. 1hr lunch, min 40 hrs/week (excl. lunch), min 6 hrs in office/day, log in by 9:30 AM. WFH: log in/out via ADP.
-
-**Dress Code:** Mon–Thu: Business Casual. Fri: Casual (no slippers/shorts). Prohibited: miniskirts, tank/tube tops, transparent tops, torn jeans, flip-flops.
-
-**Probation:** Period per Offer Letter. During probation: all leaves = LOP. International travel requires positive BGV. Unsatisfactory = extended 1 month or terminated with 1 month notice.
-
-**Compensation:** Salary credited last working day to 3rd of next month. Financial year Apr–Mar. Deductions: PF + statutory. For discrepancies: Finance Department. Payslips via ADP → Pay section.
-
-**Performance Management:** Quarterly formal reviews. Annual appraisal Nov–Dec, salary revision effective January. Joined after 31st Oct = not eligible that cycle. PIP: max 1 month, manager + HR, mutually agreed objectives, interim review at 2 weeks.
-
-**Mediclaim Insurance:** Rs 5 Lakhs/year. Covers employee + spouse + 2 children. Includes Accidental Insurance. Enrolled on Day 1. Minimum 24hr hospitalization for claim. Inform HR within 2 days of admission. Claims not settled without discharge summary. Premium deducted from salary (age-based). To opt out: email hr-india@finzly.com.
-Insurance contacts → Chennai: Abirami R | Pune: Vishwata Mayekar
-
-**Term Insurance:** Rs 35 Lakhs. Employee only. Company-paid.
-
-**Travel Policy – Domestic:** 3 days advance notice. Air: Economy. Train: AC 2/3 Tier. Hotel: Type 1 cities (Mumbai/Delhi/Chennai/Kolkata/Pune/Bangalore/Hyderabad) Rs 5,000/night; Type 2 cities Rs 4,000; Others Rs 3,000. Food: Type 1 Rs 600/day; Type 2 Rs 500; Others Rs 400. Per-km: 2-wheeler Rs 5/km, 4-wheeler Rs 8/km + toll. Non-reimbursable: alcohol, cigarettes, clothing, personal entertainment.
-
-**Travel Policy – International/USA:** Company pays visa, flights, insurance, lodging. Per diem: USD 80/day (food + incidentals, no bills). Additional official expenses at actuals with PM approval.
-
-**Referral Bonus:** Dev (Java/Angular/Spring Boot): 3–5yr Rs 20K; 5–10yr Rs 30K; 10+ Rs 35K. QA/DevOps/Support: 3–5yr Rs 15K; 5–10yr Rs 20K; 10+ Rs 30K. Immediate joiners (5–10 days): Rs 50,000. Not for freshers. Paid post FTE joining. Center Head approval required.
-
-**Late Night Dinner & Cab:** Beyond 8 hrs weekdays: dinner Rs 250 cap + cab at actuals. Weekends/holidays working: lunch OR dinner Rs 250 each. Prior email approval from Practice Head/Lead/Manager required.
-
-**Resignation:** Minimum 2 months written notice. Submit to Practice Lead → HR + Country Head. No leaves during notice (if taken, notice extends). Variable/joining bonus returned if <1 year. EL encashed at basic salary. Relieving letter after dues cleared. Insurance ends on separation date.
-
-**POSH / ICC:** Zero tolerance for sexual harassment.
-Chennai ICC: Divya Moorthy (divya.moorthy@finzly.com), Bharathkumar M (Bharathkumar.m@finzly.com), Abirami R (abirami.r@finzly.com)
-Pune ICC: Vishwata Mayekar (vishwata.mayekar@finzly.com), Andleeb Sohail (andleeb.sohail@finzly.com), Prashant Choudhary (prashant@finzly.com)
-File complaint within 15 days. Strictly confidential. Zero retaliation. She-Box registered. Enquiry within 90 days.
-
-**Open Door Policy:** 1) Direct manager → 2) HR → 3) Senior Management. No retaliation. Topics: salary, performance, environment, discrimination, harassment.
-
-**EEO:** No discrimination on any basis. Report to manager or HR. No retaliation.
-
-**NDA:** All employees sign on Day 1. Confidentiality obligations continue post-employment.
-
-**Retirement Age:** 60 years.
-
-**Holidays:** 10 public holidays/year declared by HR at year start.
-
-**BGV:** Employment, address, identity, criminal check. Positive BGV required for international travel.
-
-**Job Abandonment:** 5 consecutive absent days without notice = absconded. 2 registered post reminders. No re-induction.
-
-**Exit Interview:** Conducted on last day. Relieving letter after all dues settled.
-
-**Rewards & Recognition:** Monthly recognition programme. Managed by HR.
-
-**One-on-One Discussions:** Every 1–3 months with manager, in addition to quarterly reviews.
-
-**Office Contacts:**
-- General HR: hr-india@finzly.com
-- Chennai HR: Abirami R (abirami.r@finzly.com), Bharathkumar M (Bharathkumar.m@finzly.com)
-- Pune HR: Vishwata Mayekar (vishwata.mayekar@finzly.com), Andleeb Sohail (andleeb.sohail@finzly.com)
-- Udemy Business: finzly.udemy.com (login with Finzly work email)
-
-### L&D POLICY (L&D Handbook v11.0, 2026)
-**Framework:** Build (fintech knowledge) → Improve (performance) → Apply (in work) → Grow (habit)
-**Commitment:** ~1 hour/day learning, complete all assigned courses each quarter, 1–2 courses per quarter minimum
-**Training types:**
-- Mandatory (Common Core) — assigned by HR, applies to all employees
-- Functional (Galaxy-specific) — assigned by managers
-- Optional (self-driven) — with manager's discussion first
-**Platform:** Udemy Business at finzly.udemy.com
-**Process:** HR shares Learning Architecture Excel at quarter start → managers assign 1–2 functional courses → employees execute → quarterly KPA review includes learning
-**AI Expectation:** All employees must actively experiment with AI tools daily (coding, testing, docs, analysis)
-**Manager duties:** Assign courses, protect learning time, evaluate on application not just completion, include learning in KPA
-
-**Learning Architecture (course titles — actual links managed by HR/manager in Udemy Business):**
-COMMON CORE (all employees, mandatory):
-- Introduction to Payments
-- Introduction to Cross Border Payments
-- Mastering ISO 20022: The Complete Payments Course
-- Generative AI for Beginners
-- Communication Skills for Professionals
-- Complete Prompt Engineering Bootcamp
-
-PAYMENT GALAXY (payment team):
-- Recurring Digital Payment, PayPal, ACH (NACHA/Direct Debit)
-- Cloud Engineer Career Accelerator
-- The Complete Financial Analyst Course 2026
-- Beginner & Advanced Guide to ISO 20022
-- Presentation Skills: Master Confident Presentations
-- The Complete Prompt Engineering for AI Bootcamp (2026)
-
-TRADE GALAXY (trade team):
-- Forex Treasury Management & Operations
-- International Trade Finance — An Overview
-- International Trade Finance — Letter of Credit & UCP 600
-- Beginner's Guide — SWIFT Message Types MT and MX ISO 20022
-- Global Treasury and Payments Masterclass
-- Interest Rate Swaps: Structure, Pricing & Risk Management
-- Advanced Guide — ISO 20022 SWIFT MX Messages
-
-DIGITAL GALAXY (digital/engineering/QA team):
-- Complete AI Coding Course 2025 (Cursor AI)
-- GenAI and Software Testing Tools for QA
-- OpenAPI Specification Swagger Tools — Zero to Master
-- Learn JMeter From Scratch — Performance Load Testing
-- System Design & Software Architecture
-- Java Multithreading & Concurrency
-- AWS AI Practitioner
-- ChatGPT-powered Applications with LangChain
-- Retail & Digital Banking, Green Banking
-- UX Fundamentals for User Testing
-
-ACCOUNT GALAXY (account team):
-- Virtual Accounts & Cash Management Fundamentals
-- Escrow Accounts — Structure & Operations
-- Bank Deposits & Reconciliation Fundamentals
-- Accounting for Financial Services
-- Treasury & Liquidity Management
-
-Note: Actual Udemy course links are managed by HR and assigned per employee via the Learning Architecture Excel. For specific links, direct employees to their manager or hr-india@finzly.com.
-
-## RESPONSE FORMAT
-You MUST respond with a valid JSON object in this exact format:
+## RESPONSE FORMAT — MUST return valid JSON only:
 {
-  "message": "Your conversational response here. Use **bold** for emphasis. Use \\n for line breaks. Use • for bullet points.",
+  "message": "Response text. Use **bold** sparingly. Use \\n\\n for paragraphs. Use • for bullets.",
   "escalate": false,
   "escalationReason": "",
-  "followUps": ["Follow-up question 1", "Follow-up question 2"],
-  "sectionRef": "Section X.X – Topic Name",
+  "followUps": [],
+  "sectionRef": "",
   "ragSignal": "none",
   "ragReason": ""
 }
 
-Rules:
-- "message": Always present. Your full response. Be warm, empathetic, specific. Use **bold** sparingly. Use \\n\\n for paragraph breaks. Use • for bullets (not markdown -). Include relevant links, emails, or contacts from the knowledge base.
-- "escalate": true ONLY when the topic is: resignation process, active harassment/POSH complaint, PIP concern, salary dispute, unresolved workplace conflict, mediclaim claim initiation, maternity/paternity planning, BGV issues. Do NOT escalate for general information queries.
-- "escalationReason": Brief reason only if escalate=true, otherwise "".
-- "followUps": Array of 2–3 relevant follow-up questions the employee might want to ask. Keep them short and natural. Empty array [] if not needed.
-- "sectionRef": The relevant policy section if applicable (e.g. "Section 7.4.3 – Sick Leave"), otherwise "".
-- "ragSignal": CRITICAL — assess the employee's risk level from this conversation turn:
-  • "red" — immediate concern: mentions resignation intent, active harassment, PIP distress, burnout crisis, threatening to leave, serious personal crisis
-  • "amber" — watch signal: expresses frustration, mentions manager conflict, salary dissatisfaction, feeling undervalued, stressed over time, low engagement signals
-  • "none" — neutral conversation: policy questions, L&D queries, general company info, positive interactions
-  Do NOT set red/amber for pure information queries even if the topic sounds serious (e.g. asking "how does resignation work?" is "none" — they are just asking about process).
-- "ragReason": One short sentence explaining WHY you set this signal. Only fill if ragSignal is red or amber. Empty string if none.
+ragSignal values:
+- "red": resignation intent confirmed, active harassment, PIP distress, burnout crisis, threatening to leave
+- "amber": frustration expressed, manager conflict, salary dissatisfaction, feeling undervalued, disengaged
+- "none": policy questions, L&D queries, company info, positive chat, someone just ASKING about resignation process
 
-## BEHAVIOUR RULES
-1. NEVER invent policies, amounts, names, emails, or dates not in the knowledge base above.
-2. If you don't know something, say so honestly and direct to hr-india@finzly.com.
-3. Be empathetic first, especially on emotional topics (resignation intent, harassment, burnout, PIP).
-4. Always include relevant contact details or links from the knowledge base when useful.
-5. For Udemy course links: say courses are hosted at finzly.udemy.com and actual assignment is managed by the employee's manager or HR.
-6. Keep responses conversational and concise — not wall-of-text.
-7. For POSH/harassment — show ICC contacts immediately and be extra supportive.
-8. For general Finzly company questions — use finzly.com knowledge freely.
-9. Remember context from the conversation history — don't repeat yourself.
-10. The employee's wellbeing matters. If they show signs of distress, acknowledge it first before giving information.
+## HUMAN-FIRST RULES
+1. NEVER hallucinate. If unsure → direct to hr-india@finzly.com.
+2. When someone says "not feeling well", "stressed", "tired", "not okay" → check in warmly first. Ask what's going on. Do NOT jump to sick leave policy.
+3. When someone mentions resignation/quitting → ask what's brought them here first. Never open with the 2-month notice rule. Only give process if they confirm they want it.
+4. Lead with empathy always. Policy can wait.
+5. Short quiet messages deserve short warm replies — not walls of text.
+6. "Why should I work at Finzly?" → give a genuine, specific answer based on what Finzly actually is — real clients, real product, real awards. Not generic fluff.`;
 
-## HANDLING EMOTIONAL OR AMBIGUOUS RESPONSES
-When someone says something like "I'm not feeling well", "not great", "I'm tired", "not okay", "feeling low", "stressed", "not good" — DO NOT immediately jump to HR policy or sick leave.
+// ─── RAG CONFIG ───────────────────────────────────────────────────────────────
+const RAG_CONFIG = {
+  red:   { bg:"#fef2f2", border:"#fca5a5", textColor:"#991b1b", icon:"🔴", label:"Red Alert",   pillBg:"rgba(239,68,68,0.15)",   pillColor:"#dc2626", pillBorder:"rgba(239,68,68,0.5)" },
+  amber: { bg:"#fffbeb", border:"#fde68a", textColor:"#92400e", icon:"🟡", label:"Amber Watch", pillBg:"rgba(245,158,11,0.15)",  pillColor:"#d97706", pillBorder:"rgba(245,158,11,0.5)" },
+};
+const ragPriority = (l) => l === "red" ? 2 : l === "amber" ? 1 : 0;
 
-Instead:
-- First, genuinely check in as a person would. Ask what's going on.
-- Let them lead. They may mean physically unwell (sick leave), emotionally drained (need support), or just having a bad day.
-- Only bring up policy AFTER you understand what they actually need.
-- If they seem emotionally distressed, be a warm presence first. You can gently mention that HR is always available at hr-india@finzly.com if they need support.
-- NEVER assume "not feeling well" = sick leave query. It could mean burnout, personal stress, a difficult situation at work, or just a rough morning.
-- Match the energy of their message. Short, quiet messages deserve short, warm replies — not a wall of information.
-
-Examples:
-- "I'm not feeling well" → "Oh no, I'm sorry to hear that. 💙 Are you feeling physically unwell, or is it more of a tough day emotionally?"
-- "Not great honestly" → "I'm sorry to hear that. Do you want to talk about what's going on?"
-- "I'm really stressed" → "That sounds really hard. What's been weighing on you?"
-- "I'm tired" → "I hear you. Is it the kind of tired that a good night's sleep will fix, or has something been building up?"
-
-Always be human first. Policy can wait.
-
-## HANDLING RESIGNATION, QUITTING, OR WANTING TO LEAVE
-When someone mentions resignation, quitting, leaving, or putting in papers — DO NOT immediately give the 2-month notice policy.
-
-These words almost always carry emotion behind them. The person may be frustrated, undervalued, burned out, dealing with a manager issue, or just having a really bad week. The policy is the last thing they need right now.
-
-Instead:
-- Start by acknowledging how they're feeling, not what the process is.
-- Gently ask what's brought them to this point.
-- Give them space to share. They might just need to be heard.
-- Only after you understand the situation — and only if they still want to know the process — explain the resignation procedure.
-- If they seem open to it, gently ask if they've spoken to their manager or HR about what's been bothering them. Sometimes a conversation changes everything.
-- Never be preachy or try to guilt them into staying. Respect their autonomy.
-- If they confirm they want to proceed, THEN explain the process AND set escalate: true.
-
-Examples of what NOT to do:
-- "Sure! The resignation process requires 2 months notice..." ← cold and dismissive
-- "Please think carefully before resigning..." ← preachy
-
-Examples of what TO do:
-- "I'm sorry to hear that. 💙 What's been going on?" 
-- "That's a big decision. Do you want to talk about what's brought you here?"
-- "I hear you. Has something specific happened, or has it been building up for a while?"
-
-## HANDLING ANY DISTRESS, FRUSTRATION, OR PERSONAL DIFFICULTY
-This applies broadly — not just health or resignation. Whenever someone's message signals that they are upset, frustrated, overwhelmed, angry, sad, or struggling:
-
-- Lead with empathy, always. Acknowledge the feeling before anything else.
-- Ask one gentle open question to understand more. Don't pepper them with questions.
-- Don't assume what they need — let them tell you.
-- Only bring in HR policy or contacts once you understand what's actually going on.
-- If someone seems seriously distressed or mentions something that sounds like a crisis, prioritise their wellbeing over any policy conversation. Gently suggest speaking with HR (hr-india@finzly.com) or a trusted person.
-
-The rule is simple: a person walked in. Help the person first. The policy can always come second.`;
-
-// ─── AVATAR SVG for chat bubbles ─────────────────────────────────────────────
-function chatAvatarSVG() {
-  return `<svg width="22" height="22" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect x="7" y="12" width="24" height="18" rx="5" fill="url(#cg1)"/>
-    <line x1="19" y1="12" x2="19" y2="7" stroke="#7c3aed" stroke-width="1.5" stroke-linecap="round"/>
-    <circle cx="19" cy="6" r="2" fill="#a78bfa"/>
-    <rect x="11" y="17" width="5" height="4" rx="1.5" fill="#0a2540"/>
-    <rect x="22" y="17" width="5" height="4" rx="1.5" fill="#0a2540"/>
-    <rect x="11.5" y="17.5" width="4" height="3" rx="1" fill="url(#cg2)"/>
-    <rect x="22.5" y="17.5" width="4" height="3" rx="1" fill="url(#cg2)"/>
-    <rect x="13" y="24" width="12" height="2.5" rx="1.25" fill="#0a2540"/>
-    <rect x="14" y="24.2" width="4" height="2" rx="1" fill="#22c55e" opacity="0.8"/>
-    <rect x="20" y="24.2" width="4" height="2" rx="1" fill="#22c55e" opacity="0.8"/>
-    <rect x="3" y="17" width="4" height="6" rx="2" fill="url(#cg1)" opacity="0.7"/>
-    <rect x="31" y="17" width="4" height="6" rx="2" fill="url(#cg1)" opacity="0.7"/>
-    <defs>
-      <linearGradient id="cg1" x1="7" y1="12" x2="31" y2="30" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stop-color="#1e4080"/><stop offset="100%" stop-color="#0d2a50"/>
-      </linearGradient>
-      <linearGradient id="cg2" x1="0" y1="0" x2="0" y2="4" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stop-color="#7c3aed"/><stop offset="100%" stop-color="#4f46e5"/>
-      </linearGradient>
-    </defs>
-  </svg>`;
+// ─── AVATAR ───────────────────────────────────────────────────────────────────
+function BotAvatar({ size = 34 }) {
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: 10, flexShrink: 0, alignSelf: "flex-end",
+      background: "linear-gradient(135deg,#1e3a5f,#0a2540)",
+      border: "1px solid rgba(124,58,237,0.4)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      boxShadow: "0 2px 8px rgba(124,58,237,0.2)", overflow: "hidden"
+    }}>
+      <svg width={size * 0.7} height={size * 0.7} viewBox="0 0 38 38" fill="none">
+        <rect x="7" y="12" width="24" height="18" rx="5" fill="url(#ag1)"/>
+        <line x1="19" y1="12" x2="19" y2="7" stroke="#7c3aed" strokeWidth="1.5" strokeLinecap="round"/>
+        <circle cx="19" cy="6" r="2" fill="#a78bfa"/>
+        <rect x="11" y="17" width="5" height="4" rx="1.5" fill="#0a2540"/>
+        <rect x="22" y="17" width="5" height="4" rx="1.5" fill="#0a2540"/>
+        <rect x="11.5" y="17.5" width="4" height="3" rx="1" fill="url(#ag2)"/>
+        <rect x="22.5" y="17.5" width="4" height="3" rx="1" fill="url(#ag2)"/>
+        <rect x="13" y="24" width="12" height="2.5" rx="1.25" fill="#0a2540"/>
+        <rect x="14" y="24.2" width="4" height="2" rx="1" fill="#22c55e" opacity="0.8"/>
+        <rect x="20" y="24.2" width="4" height="2" rx="1" fill="#22c55e" opacity="0.8"/>
+        <rect x="3" y="17" width="4" height="6" rx="2" fill="url(#ag1)" opacity="0.7"/>
+        <rect x="31" y="17" width="4" height="6" rx="2" fill="url(#ag1)" opacity="0.7"/>
+        <defs>
+          <linearGradient id="ag1" x1="7" y1="12" x2="31" y2="30" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#1e4080"/><stop offset="100%" stopColor="#0d2a50"/>
+          </linearGradient>
+          <linearGradient id="ag2" x1="0" y1="0" x2="0" y2="4" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#7c3aed"/><stop offset="100%" stopColor="#4f46e5"/>
+          </linearGradient>
+        </defs>
+      </svg>
+    </div>
+  );
 }
 
-// ─── UTILITIES ────────────────────────────────────────────────────────────────
-function scrollToBottom() {
-  const m = document.getElementById('messages');
-  m.scrollTop = m.scrollHeight;
+// ─── MARKDOWN RENDERER ───────────────────────────────────────────────────────
+function MsgContent({ text }) {
+  const html = text
+    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+    .replace(/`(.*?)`/g, "<code style='background:#f3f4f8;border-radius:4px;padding:1px 5px;font-size:12px;color:#5b21b6'>$1</code>")
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, "<a href='$2' target='_blank' style='color:#7c3aed;font-weight:600;'>$1</a>")
+    .replace(/•\s(.+)/g, "<li style='margin-bottom:4px;color:#374151'>$1</li>")
+    .replace(/(<li[^>]*>.*?<\/li>\n?)+/g, m => `<ul style='margin:6px 0 4px 18px'>${m}</ul>`)
+    .replace(/\n\n/g, "<br/><br/>")
+    .replace(/\n/g, "<br/>");
+  return <div dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
-function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-function renderMarkdown(text) {
-  if (!text) return '';
-  return text
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/`(.*?)`/g, '<code>$1</code>')
-    .replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
-    .replace(/•\s(.+)/g, (_, item) => `<li>${item}</li>`)
-    .replace(/(<li>.*<\/li>(\n|$))+/g, match => `<ul>${match}</ul>`)
-    .replace(/\n\n/g, '<br><br>')
-    .replace(/\n/g, '<br>');
+// ─── TYPING DOTS ──────────────────────────────────────────────────────────────
+function TypingDots() {
+  return (
+    <div style={{ display:"flex", alignItems:"flex-end", gap:10, animation:"msgIn 0.2s ease" }}>
+      <BotAvatar />
+      <div style={{
+        background:"#fff", border:"1px solid #e5e7f0", borderRadius:"4px 18px 18px 18px",
+        padding:"14px 18px", display:"flex", gap:5, alignItems:"center",
+        boxShadow:"0 1px 4px rgba(0,0,0,0.06)"
+      }}>
+        {[0,1,2].map(i => (
+          <span key={i} style={{
+            width:7, height:7, borderRadius:"50%", background:"#7c3aed",
+            display:"inline-block",
+            animation:`tdot 1.3s ease-in-out infinite`,
+            animationDelay:`${i*0.18}s`, opacity:0.4
+          }}/>
+        ))}
+      </div>
+    </div>
+  );
 }
 
-function addUserMessage(text) {
-  const msgs = document.getElementById('messages');
-  const row = document.createElement('div');
-  row.className = 'msg-row';
-  const bub = document.createElement('div');
-  bub.className = 'bubble user';
-  bub.textContent = text;
-  row.appendChild(bub);
-  msgs.appendChild(row);
-  scrollToBottom();
-}
+// ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
+export default function BuddyFinzler() {
+  const [messages, setMessages]       = useState([]);
+  const [input, setInput]             = useState("");
+  const [isTyping, setIsTyping]       = useState(false);
+  const [history, setHistory]         = useState([]);
+  const [sessionRag, setSessionRag]   = useState("none");
+  const [ragBanner, setRagBanner]     = useState(null); // {level, reason}
+  const [modal, setModal]             = useState(null); // {query, reason}
+  const [showBanner, setShowBanner]   = useState(false);
+  const messagesEndRef = useRef(null);
+  const textareaRef    = useRef(null);
 
-function showTyping() {
-  const msgs = document.getElementById('messages');
-  const row = document.createElement('div');
-  row.className = 'typing-row';
-  row.id = 'typingRow';
-  const av = document.createElement('div');
-  av.className = 'chat-av';
-  av.innerHTML = chatAvatarSVG();
-  const bub = document.createElement('div');
-  bub.className = 'typing-bub';
-  bub.innerHTML = '<span></span><span></span><span></span>';
-  row.appendChild(av);
-  row.appendChild(bub);
-  msgs.appendChild(row);
-  scrollToBottom();
-  return row;
-}
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isTyping]);
 
-async function typewriteText(el, text, speed = 12) {
-  return new Promise(resolve => {
-    const cursor = document.createElement('span');
-    cursor.className = 'cursor';
-    el.appendChild(cursor);
-    const chars = [...text];
-    let i = 0, raw = '';
-    function tick() {
-      if (i >= chars.length) {
-        cursor.remove();
-        el.innerHTML = renderMarkdown(raw);
-        resolve();
-        return;
+  // Welcome message on mount
+  useEffect(() => {
+    setTimeout(() => {
+      setMessages([{
+        role: "bot",
+        text: "Hey! 👋 I'm BuddyFinzler. How are you doing today?",
+        id: Date.now()
+      }]);
+    }, 500);
+  }, []);
+
+  const handleRagUpdate = useCallback(async (level, reason, userMsg) => {
+    if (ragPriority(level) <= ragPriority(sessionRag)) return;
+    setSessionRag(level);
+    setRagBanner({ level, reason });
+    setShowBanner(true);
+
+    if (!SHAREPOINT_WEBHOOK_URL) {
+      console.info(`[BuddyFinzler RAG] ${level.toUpperCase()}: ${reason}`);
+      console.info("[BuddyFinzler RAG] Set SHAREPOINT_WEBHOOK_URL to enable live SharePoint update");
+      return;
+    }
+    try {
+      await fetch(SHAREPOINT_WEBHOOK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ragStatus: level.charAt(0).toUpperCase() + level.slice(1),
+          ragReason: reason,
+          triggerMessage: userMsg.substring(0, 200),
+          timestamp: new Date().toISOString(),
+          source: "BuddyFinzler AI"
+        })
+      });
+    } catch(e) {
+      console.warn("[BuddyFinzler RAG] Webhook failed:", e.message);
+    }
+  }, [sessionRag]);
+
+  const sendMessage = useCallback(async (text) => {
+    if (!text.trim() || isTyping) return;
+    const userText = text.trim();
+    setInput("");
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+    }
+
+    const userMsg = { role: "user", text: userText, id: Date.now() };
+    setMessages(prev => [...prev, userMsg]);
+    setIsTyping(true);
+
+    const newHistory = [...history, { role: "user", content: userText }];
+    const trimmedHistory = newHistory.slice(-MAX_HISTORY);
+
+    try {
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          max_tokens: 1000,
+          system: SYSTEM_PROMPT,
+          messages: trimmedHistory
+        })
+      });
+
+      const data = await response.json();
+      const rawText = data.content?.[0]?.text || "";
+
+      // Parse JSON response
+      let parsed;
+      try {
+        const match = rawText.match(/\{[\s\S]*\}/);
+        parsed = match ? JSON.parse(match[0]) : null;
+      } catch(e) { parsed = null; }
+
+      if (!parsed) {
+        parsed = { message: rawText || "Sorry, I had trouble with that. Please try again.", escalate: false, escalationReason: "", followUps: [], sectionRef: "", ragSignal: "none", ragReason: "" };
       }
-      raw += chars[i++];
-      el.innerHTML = '';
-      const s = document.createElement('span');
-      s.textContent = raw;
-      el.appendChild(s);
-      el.appendChild(cursor);
-      scrollToBottom();
-      setTimeout(tick, speed);
-    }
-    tick();
-  });
-}
 
-// ─── RENDER BOT RESPONSE ──────────────────────────────────────────────────────
-async function renderBotResponse(parsed, originalQuery) {
-  const msgs = document.getElementById('messages');
+      // Ensure defaults
+      parsed.message         = parsed.message         || "Sorry, something went wrong.";
+      parsed.escalate        = parsed.escalate        || false;
+      parsed.escalationReason= parsed.escalationReason|| "";
+      parsed.followUps       = Array.isArray(parsed.followUps) ? parsed.followUps : [];
+      parsed.sectionRef      = parsed.sectionRef      || "";
+      parsed.ragSignal       = parsed.ragSignal       || "none";
+      parsed.ragReason       = parsed.ragReason       || "";
 
-  const wrapper = document.createElement('div');
-  wrapper.className = 'bot-msg-wrapper';
-  const av = document.createElement('div');
-  av.className = 'chat-av';
-  av.innerHTML = chatAvatarSVG();
-  const col = document.createElement('div');
-  col.className = 'bot-bubbles';
-  wrapper.appendChild(av);
-  wrapper.appendChild(col);
-  msgs.appendChild(wrapper);
+      const updatedHistory = [...trimmedHistory, { role: "assistant", content: rawText }].slice(-MAX_HISTORY);
+      setHistory(updatedHistory);
 
-  // Main bubble with typewriter
-  const bub = document.createElement('div');
-  bub.className = 'bubble bot';
-  col.appendChild(bub);
-  scrollToBottom();
-  await typewriteText(bub, parsed.message, 11);
-
-  // Section tag
-  if (parsed.sectionRef) {
-    await delay(150);
-    const tag = document.createElement('div');
-    tag.className = 'section-tag';
-    tag.textContent = '📖 ' + parsed.sectionRef;
-    col.appendChild(tag);
-    scrollToBottom();
-  }
-
-  // Escalation tag + modal
-  if (parsed.escalate && parsed.escalationReason) {
-    await delay(150);
-    const et = document.createElement('div');
-    et.className = 'escalation-tag';
-    et.textContent = 'This needs personal HR attention — ' + parsed.escalationReason;
-    col.appendChild(et);
-    scrollToBottom();
-    await delay(500);
-    showModal(originalQuery, parsed.escalationReason);
-  }
-
-  // RAG Signal handling
-  if (parsed.ragSignal && parsed.ragSignal !== 'none') {
-    await triggerRagUpdate(parsed.ragSignal, parsed.ragReason || 'Signal detected in conversation', originalQuery);
-  }
-
-  // Follow-up suggestions
-  if (parsed.followUps && parsed.followUps.length > 0) {
-    await delay(300);
-    const fu = document.createElement('div');
-    fu.className = 'followups';
-    parsed.followUps.forEach(q => {
-      const b = document.createElement('button');
-      b.className = 'followup-btn';
-      b.textContent = '💬 ' + q;
-      b.onclick = () => {
-        document.querySelectorAll('.followups').forEach(el => el.remove());
-        handleSend(q);
+      const botMsg = {
+        role: "bot",
+        text: parsed.message,
+        sectionRef: parsed.sectionRef,
+        escalate: parsed.escalate,
+        escalationReason: parsed.escalationReason,
+        followUps: parsed.followUps,
+        id: Date.now() + 1
       };
-      fu.appendChild(b);
-    });
-    msgs.appendChild(fu);
-    scrollToBottom();
-  }
-}
+      setMessages(prev => [...prev, botMsg]);
 
-// ─── MODAL ────────────────────────────────────────────────────────────────────
-function showModal(query, reason) {
-  currentModalQuery = query;
-  document.getElementById('modalQuery').textContent = '"' + query + '"';
-  document.getElementById('modalReason').textContent = reason || 'Needs HR attention';
-  document.getElementById('modal').classList.add('show');
-}
-function closeModal() {
-  document.getElementById('modal').classList.remove('show');
-}
-document.getElementById('emailHRBtn').onclick = () => {
-  window.open('mailto:' + HR_EMAIL + '?subject=HR Query via BuddyFinzler&body=' + encodeURIComponent(currentModalQuery));
-  closeModal();
-};
-document.getElementById('modal').addEventListener('click', e => {
-  if (e.target === document.getElementById('modal')) closeModal();
-});
+      // RAG handling
+      if (parsed.ragSignal && parsed.ragSignal !== "none") {
+        handleRagUpdate(parsed.ragSignal, parsed.ragReason, userText);
+      }
 
-// ─── RAG ENGINE ──────────────────────────────────────────────────────────────
-function openDashboard(){ window.open(DASHBOARD_URL, '_blank'); }
+      // Escalation modal
+      if (parsed.escalate && parsed.escalationReason) {
+        setTimeout(() => setModal({ query: userText, reason: parsed.escalationReason }), 600);
+      }
 
-function dismissRagBanner(){
-  const b = document.getElementById('ragBanner');
-  b.style.animation = 'none';
-  b.style.opacity = '0';
-  b.style.transform = 'translateY(20px)';
-  b.style.transition = 'all 0.3s ease';
-  setTimeout(() => b.style.display = 'none', 300);
-}
-
-function showRagBanner(level, reason) {
-  const cfg = RAG_CONFIG[level];
-  if (!cfg) return;
-  const banner = document.getElementById('ragBanner');
-  const inner  = document.getElementById('ragBannerInner');
-  document.getElementById('ragBannerIcon').textContent  = cfg.icon;
-  document.getElementById('ragBannerTitle').textContent = `Employee ${cfg.label} Detected`;
-  document.getElementById('ragBannerReason').textContent = reason;
-  inner.style.background   = cfg.bg;
-  inner.style.borderColor  = cfg.border;
-  inner.style.color        = cfg.text;
-  banner.style.display     = 'block';
-  banner.style.animation   = 'slideUp 0.4s ease';
-}
-
-function updateRagPill(level) {
-  const indicator = document.getElementById('ragIndicator');
-  const pill      = document.getElementById('ragPill');
-  if (level === 'none') { indicator.style.display = 'none'; return; }
-  const cfg = RAG_CONFIG[level];
-  if (!cfg) return;
-  indicator.style.display = 'flex';
-  pill.style.cssText = cfg.pill + 'display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;cursor:pointer;';
-  pill.innerHTML = cfg.icon + ' ' + cfg.label;
-}
-
-async function triggerRagUpdate(level, reason, userMessage) {
-  // Only escalate, never downgrade within a session
-  if (ragPriority(level) <= ragPriority(sessionRagLevel)) return;
-  sessionRagLevel = level;
-
-  // Update UI immediately
-  updateRagPill(level);
-  showRagBanner(level, reason);
-
-  // Fire SharePoint webhook if configured
-  if (!SHAREPOINT_WEBHOOK_URL) {
-    console.info(`[BuddyFinzler RAG] Would update employee to ${level.toUpperCase()}: ${reason}`);
-    console.info(`[BuddyFinzler RAG] To enable: set SHAREPOINT_WEBHOOK_URL to your Power Automate HTTP trigger`);
-    return;
-  }
-
-  try {
-    const payload = {
-      employeeEmail: sessionEmployeeEmail || "unknown",
-      ragStatus: level.charAt(0).toUpperCase() + level.slice(1), // "Red" or "Amber"
-      ragReason: reason,
-      triggerMessage: userMessage.substring(0, 200),
-      timestamp: new Date().toISOString(),
-      source: "BuddyFinzler AI"
-    };
-    const res = await fetch(SHAREPOINT_WEBHOOK_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-    if (res.ok) {
-      console.info(`[BuddyFinzler RAG] ✅ SharePoint updated — ${level.toUpperCase()} for ${payload.employeeEmail}`);
-    } else {
-      console.warn(`[BuddyFinzler RAG] ⚠ Webhook returned ${res.status}`);
+    } catch(err) {
+      setMessages(prev => [...prev, {
+        role: "bot", isError: true,
+        text: "I'm having a little trouble connecting right now. Please try again, or reach out to **hr-india@finzly.com** for urgent queries. 💙",
+        id: Date.now() + 1
+      }]);
     }
-  } catch(e) {
-    console.warn("[BuddyFinzler RAG] Webhook call failed:", e.message);
-  }
+    setIsTyping(false);
+  }, [isTyping, history, handleRagUpdate]);
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage(input);
+    }
+  };
+
+  const ragCfg = sessionRag !== "none" ? RAG_CONFIG[sessionRag] : null;
+  const bannerCfg = ragBanner ? RAG_CONFIG[ragBanner.level] : null;
+
+  return (
+    <div style={{
+      fontFamily: "'Inter',system-ui,sans-serif",
+      background: "linear-gradient(160deg,#f5f3ff 0%,#f8f8fc 40%,#eef2ff 100%)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      height: "100vh", overflow: "hidden"
+    }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700;800&display=swap');
+        @keyframes msgIn { from{opacity:0;transform:translateY(10px) scale(0.97)} to{opacity:1;transform:translateY(0) scale(1)} }
+        @keyframes tdot  { 0%,60%,100%{transform:translateY(0);opacity:0.35} 30%{transform:translateY(-6px);opacity:1} }
+        @keyframes pulse { 0%,100%{box-shadow:0 0 8px rgba(34,197,94,0.6)} 50%{box-shadow:0 0 18px rgba(34,197,94,1)} }
+        @keyframes slideUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes bannerIn { from{opacity:0;transform:translateX(20px)} to{opacity:1;transform:translateX(0)} }
+        .msg-row-bot  { display:flex; align-items:flex-end; gap:10px; animation:msgIn 0.28s cubic-bezier(0.34,1.56,0.64,1); }
+        .msg-row-user { display:flex; justify-content:flex-end; animation:msgIn 0.22s cubic-bezier(0.34,1.56,0.64,1); }
+        .followup-btn:hover { border-color:#7c3aed !important; background:#f5f3ff !important; color:#1e1b4b !important; transform:translateX(3px); }
+        .send-btn:hover { transform:scale(1.07) translateY(-1px); box-shadow:0 6px 20px rgba(124,58,237,0.48) !important; }
+        .send-btn:active { transform:scale(0.95); }
+        .msgs-scroll::-webkit-scrollbar { width:3px; }
+        .msgs-scroll::-webkit-scrollbar-thumb { background:#d1d5e8; border-radius:3px; }
+      `}</style>
+
+      <div style={{
+        width:"100%", maxWidth:800, height:"100vh", maxHeight:920,
+        display:"flex", flexDirection:"column",
+        background:"#fff", borderRadius:28, overflow:"hidden",
+        boxShadow:"0 0 0 1px rgba(124,58,237,0.08),0 8px 32px rgba(15,15,26,0.08),0 32px 80px rgba(15,15,26,0.12)",
+        position:"relative"
+      }}>
+
+        {/* ── HEADER ── */}
+        <div style={{
+          flexShrink:0, height:80, padding:"0 24px",
+          display:"flex", alignItems:"center", gap:16,
+          background:"linear-gradient(135deg,#0a2540,#0d3060,#0a2540)",
+          position:"relative"
+        }}>
+          <div style={{ position:"absolute", bottom:0, left:0, right:0, height:2,
+            background:"linear-gradient(90deg,#7c3aed,#4f46e5,#06b6d4,transparent)" }}/>
+
+          {/* Avatar */}
+          <div style={{ position:"relative", flexShrink:0 }}>
+            <div style={{
+              width:54, height:54, borderRadius:16,
+              background:"linear-gradient(135deg,#1e3a5f,#0a2540)",
+              border:"1.5px solid rgba(124,58,237,0.5)",
+              display:"flex", alignItems:"center", justifyContent:"center",
+              boxShadow:"0 0 20px rgba(124,58,237,0.3),0 4px 12px rgba(0,0,0,0.3)"
+            }}>
+              <BotAvatar size={48} />
+            </div>
+            <div style={{
+              position:"absolute", bottom:-1, right:-1,
+              width:14, height:14, borderRadius:"50%",
+              background:"#22c55e", border:"2.5px solid #0a2540",
+              animation:"pulse 2.5s ease-in-out infinite"
+            }}/>
+          </div>
+
+          {/* Text */}
+          <div style={{ flex:1 }}>
+            <div style={{
+              fontFamily:"'Space Grotesk',sans-serif", fontSize:18, fontWeight:800,
+              background:"linear-gradient(90deg,#fff,#c4b5fd)",
+              WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent"
+            }}>BuddyFinzler</div>
+            <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:3 }}>
+              <span style={{
+                fontSize:"9.5px", fontWeight:700, letterSpacing:"0.7px",
+                padding:"2px 9px", borderRadius:20, textTransform:"uppercase",
+                color:"#4ade80", background:"rgba(34,197,94,0.12)", border:"1px solid rgba(34,197,94,0.3)",
+                display:"flex", alignItems:"center", gap:4
+              }}>
+                <span style={{ width:5, height:5, borderRadius:"50%", background:"#4ade80",
+                  display:"inline-block", animation:"pulse 2s infinite" }}/>
+                Online
+              </span>
+              <span style={{
+                fontSize:"9.5px", fontWeight:700, letterSpacing:"0.5px", textTransform:"uppercase",
+                padding:"2px 9px", borderRadius:20, color:"#c4b5fd",
+                background:"rgba(124,58,237,0.2)", border:"1px solid rgba(124,58,237,0.4)",
+                display:"flex", alignItems:"center", gap:4
+              }}>
+                ✦ AI Powered
+              </span>
+              <span style={{ fontSize:11, color:"rgba(255,255,255,0.4)" }}>Your HR Companion</span>
+            </div>
+          </div>
+
+          {/* RAG pill */}
+          {ragCfg && (
+            <div
+              onClick={() => window.open(DASHBOARD_URL, "_blank")}
+              style={{
+                display:"flex", alignItems:"center", gap:5, padding:"4px 12px",
+                borderRadius:20, cursor:"pointer", flexShrink:0,
+                fontSize:"10px", fontWeight:700, letterSpacing:"0.5px", textTransform:"uppercase",
+                background:ragCfg.pillBg, color:ragCfg.pillColor, border:`1px solid ${ragCfg.pillBorder}`,
+                animation:"slideUp 0.4s ease"
+              }}
+            >
+              {ragCfg.icon} {ragCfg.label}
+            </div>
+          )}
+
+          <div style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:20, fontWeight:800, color:"#fff", opacity:0.9 }}>
+            finzly
+          </div>
+        </div>
+
+        {/* ── MESSAGES ── */}
+        <div className="msgs-scroll" style={{
+          flex:1, overflowY:"auto", padding:"24px 24px 12px",
+          display:"flex", flexDirection:"column", gap:8,
+          background:"#f8f8fc",
+          backgroundImage:"radial-gradient(circle,rgba(124,58,237,0.04) 1px,transparent 1px)",
+          backgroundSize:"24px 24px"
+        }}>
+          {messages.map(msg => (
+            <div key={msg.id}>
+              {msg.role === "user" ? (
+                <div className="msg-row-user">
+                  <div style={{
+                    padding:"11px 15px", fontSize:"13.5px", lineHeight:1.72, fontWeight:500,
+                    background:"linear-gradient(135deg,#1e1b4b,#312e81,#3730a3)",
+                    borderRadius:"18px 4px 18px 18px", color:"#fff", maxWidth:"72%",
+                    boxShadow:"0 4px 14px rgba(49,46,129,0.3)"
+                  }}>
+                    {msg.text}
+                  </div>
+                </div>
+              ) : (
+                <div className="msg-row-bot">
+                  <BotAvatar />
+                  <div style={{ display:"flex", flexDirection:"column", gap:5, maxWidth:"78%" }}>
+                    <div style={{
+                      padding:"11px 15px", fontSize:"13.5px", lineHeight:1.72,
+                      background:"#fff", border:"1px solid #e5e7f0",
+                      borderRadius:"4px 18px 18px 18px", color:"#111827",
+                      boxShadow:"0 1px 4px rgba(0,0,0,0.06)"
+                    }}>
+                      <MsgContent text={msg.text} />
+                    </div>
+
+                    {/* Section tag */}
+                    {msg.sectionRef && (
+                      <div style={{
+                        display:"inline-flex", alignItems:"center", gap:5,
+                        background:"#f5f3ff", border:"1px solid #ddd6fe", borderRadius:6,
+                        padding:"4px 10px", fontSize:"10.5px", fontWeight:600, color:"#5b21b6"
+                      }}>
+                        📖 {msg.sectionRef}
+                      </div>
+                    )}
+
+                    {/* Escalation tag */}
+                    {msg.escalate && msg.escalationReason && (
+                      <div style={{
+                        padding:"9px 13px", background:"#fffbeb", border:"1px solid #fde68a",
+                        borderRadius:8, fontSize:"11.5px", fontWeight:500, color:"#92400e",
+                        display:"flex", alignItems:"center", gap:7
+                      }}>
+                        ⚡ This needs personal HR attention — {msg.escalationReason}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Follow-up buttons — render after bot message */}
+              {msg.role === "bot" && msg.followUps && msg.followUps.length > 0 && (
+                <div style={{
+                  display:"flex", flexDirection:"column", gap:6,
+                  marginTop:6, marginLeft:44, animation:"msgIn 0.3s ease"
+                }}>
+                  {msg.followUps.map((q, i) => (
+                    <button key={i} className="followup-btn"
+                      onClick={() => {
+                        // Clear follow-ups from this message
+                        setMessages(prev => prev.map(m =>
+                          m.id === msg.id ? { ...m, followUps: [] } : m
+                        ));
+                        sendMessage(q);
+                      }}
+                      style={{
+                        background:"#fff", border:"1.5px solid #e5e7f0", borderRadius:8,
+                        color:"#374151", fontSize:"12.5px", fontWeight:500,
+                        padding:"8px 13px", cursor:"pointer", textAlign:"left",
+                        fontFamily:"inherit", transition:"all 0.15s",
+                        display:"flex", alignItems:"center", gap:8,
+                        boxShadow:"0 1px 3px rgba(0,0,0,0.04)"
+                      }}
+                    >
+                      <span style={{ color:"#7c3aed", fontWeight:700 }}>→</span>
+                      💬 {q}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+
+          {isTyping && <TypingDots />}
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* ── INPUT ── */}
+        <div style={{ flexShrink:0, padding:"14px 20px 18px", background:"#fff", borderTop:"1px solid #e5e7f0" }}>
+          <div style={{
+            display:"flex", alignItems:"flex-end", gap:10,
+            background:"#f3f4f8", border:"1.5px solid #d1d5e8", borderRadius:16,
+            padding:"10px 10px 10px 16px", transition:"all 0.2s"
+          }}
+            onFocus={e => { e.currentTarget.style.borderColor="#7c3aed"; e.currentTarget.style.boxShadow="0 0 0 3px rgba(124,58,237,0.1)"; e.currentTarget.style.background="#fff"; }}
+            onBlur={e => { e.currentTarget.style.borderColor="#d1d5e8"; e.currentTarget.style.boxShadow="none"; e.currentTarget.style.background="#f3f4f8"; }}
+          >
+            <textarea
+              ref={textareaRef}
+              value={input}
+              onChange={e => {
+                setInput(e.target.value);
+                e.target.style.height = "auto";
+                e.target.style.height = Math.min(e.target.scrollHeight, 100) + "px";
+              }}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask me about HR policies, L&D, or anything about Finzly…"
+              rows={1}
+              style={{
+                flex:1, background:"transparent", border:"none", outline:"none",
+                color:"#111827", fontSize:14, lineHeight:1.6, resize:"none",
+                fontFamily:"inherit", maxHeight:100, minHeight:22
+              }}
+            />
+            <button
+              className="send-btn"
+              onClick={() => sendMessage(input)}
+              disabled={isTyping || !input.trim()}
+              style={{
+                width:42, height:42, borderRadius:12,
+                background: (isTyping || !input.trim()) ? "#c4b5fd" : "linear-gradient(135deg,#7c3aed,#4f46e5)",
+                border:"none", cursor: (isTyping || !input.trim()) ? "not-allowed" : "pointer",
+                flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center",
+                boxShadow:"0 4px 14px rgba(124,58,237,0.38)", transition:"all 0.18s"
+              }}
+            >
+              <svg width={17} height={17} viewBox="0 0 24 24" fill="none">
+                <path d="M22 2L11 13M22 2L15 22L11 13M11 13L2 9L22 2" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+          </div>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8, marginTop:9 }}>
+            <span style={{ color:"#9ca3af", fontSize:"10.5px" }}>hr-india@finzly.com</span>
+            <div style={{ width:3, height:3, borderRadius:"50%", background:"#d1d5db" }}/>
+            <a href="https://www.finzly.com" target="_blank" rel="noreferrer"
+              style={{ color:"#7c3aed", fontSize:"10.5px", fontWeight:600, textDecoration:"none" }}>
+              www.finzly.com
+            </a>
+          </div>
+        </div>
+      </div>
+
+      {/* ── RAG ALERT BANNER ── */}
+      {showBanner && bannerCfg && (
+        <div style={{
+          position:"fixed", bottom:24, right:24, zIndex:999,
+          maxWidth:360, animation:"bannerIn 0.4s ease"
+        }}>
+          <div style={{
+            background:bannerCfg.bg, border:`1px solid ${bannerCfg.border}`,
+            borderRadius:16, padding:"14px 16px", color:bannerCfg.textColor,
+            boxShadow:"0 8px 32px rgba(0,0,0,0.18)",
+            display:"flex", flexDirection:"column", gap:10
+          }}>
+            <div style={{ display:"flex", alignItems:"flex-start", gap:10 }}>
+              <span style={{ fontSize:20, flexShrink:0 }}>{bannerCfg.icon}</span>
+              <div style={{ flex:1 }}>
+                <div style={{ fontWeight:700, fontSize:13 }}>
+                  Employee {bannerCfg.label} Detected
+                </div>
+                <div style={{ fontSize:12, opacity:0.85, marginTop:3, lineHeight:1.4 }}>
+                  {ragBanner.reason}
+                </div>
+              </div>
+              <button onClick={() => setShowBanner(false)}
+                style={{ background:"none", border:"none", cursor:"pointer", opacity:0.5, fontSize:16, padding:0, lineHeight:1, color:bannerCfg.textColor }}>
+                ✕
+              </button>
+            </div>
+            <div style={{ display:"flex", gap:8 }}>
+              <button
+                onClick={() => window.open(DASHBOARD_URL, "_blank")}
+                style={{
+                  flex:1, padding:"7px 12px", borderRadius:8, border:"none",
+                  fontSize:12, fontWeight:600, cursor:"pointer",
+                  background:`rgba(0,0,0,0.08)`, color:bannerCfg.textColor
+                }}>
+                View Dashboard →
+              </button>
+              <button
+                onClick={() => setShowBanner(false)}
+                style={{
+                  padding:"7px 12px", borderRadius:8, border:`1px solid ${bannerCfg.border}`,
+                  fontSize:12, fontWeight:500, cursor:"pointer",
+                  background:"transparent", color:bannerCfg.textColor
+                }}>
+                Dismiss
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── ESCALATION MODAL ── */}
+      {modal && (
+        <div
+          onClick={(e) => { if (e.target === e.currentTarget) setModal(null); }}
+          style={{
+            position:"fixed", inset:0, background:"rgba(10,37,64,0.55)",
+            backdropFilter:"blur(14px)", display:"flex", alignItems:"center", justifyContent:"center",
+            zIndex:1000, padding:20, animation:"msgIn 0.25s ease"
+          }}
+        >
+          <div style={{
+            background:"#fff", borderRadius:24, padding:32, maxWidth:440, width:"100%",
+            boxShadow:"0 20px 60px rgba(0,0,0,0.2)", border:"1px solid #e5e7f0",
+            position:"relative", overflow:"hidden"
+          }}>
+            <div style={{ position:"absolute", top:0, left:0, right:0, height:3,
+              background:"linear-gradient(135deg,#7c3aed,#4f46e5)" }}/>
+            <div style={{ width:52, height:52, borderRadius:14, margin:"0 auto 16px",
+              background:"#f5f3ff", border:"1px solid #ddd6fe",
+              display:"flex", alignItems:"center", justifyContent:"center", fontSize:24 }}>📨</div>
+            <div style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:18, fontWeight:700,
+              textAlign:"center", color:"#111827", marginBottom:6 }}>Connect with HR India</div>
+            <div style={{ color:"#6b7280", textAlign:"center", fontSize:13, marginBottom:20, lineHeight:1.5 }}>
+              This query needs personal attention from our HR team.
+            </div>
+            <div style={{ background:"#f9fafb", border:"1px solid #e5e7f0", borderRadius:12, padding:"12px 15px", marginBottom:10 }}>
+              <div style={{ color:"#9ca3af", fontSize:"9.5px", textTransform:"uppercase", letterSpacing:1, fontWeight:600, marginBottom:5 }}>Your Query</div>
+              <p style={{ color:"#374151", fontSize:13, fontStyle:"italic", lineHeight:1.5, margin:0 }}>"{modal.query}"</p>
+            </div>
+            <div style={{ background:"#fffbeb", border:"1px solid #fde68a", borderRadius:12, padding:"12px 15px", marginBottom:20 }}>
+              <div style={{ color:"#9ca3af", fontSize:"9.5px", textTransform:"uppercase", letterSpacing:1, fontWeight:600, marginBottom:5 }}>Why HR Needs to Help</div>
+              <p style={{ color:"#92400e", fontSize:13, lineHeight:1.5, margin:0 }}>{modal.reason}</p>
+            </div>
+            <button
+              onClick={() => {
+                window.open(`mailto:${HR_EMAIL}?subject=HR Query via BuddyFinzler&body=${encodeURIComponent(modal.query)}`);
+                setModal(null);
+              }}
+              style={{
+                width:"100%", padding:13, background:"linear-gradient(135deg,#7c3aed,#4f46e5)",
+                border:"none", borderRadius:12, color:"#fff", fontWeight:700, fontSize:14,
+                cursor:"pointer", marginBottom:10, fontFamily:"inherit",
+                boxShadow:"0 4px 14px rgba(124,58,237,0.3)"
+              }}>
+              📧 Email HR India — hr-india@finzly.com
+            </button>
+            <button
+              onClick={() => setModal(null)}
+              style={{
+                width:"100%", padding:11, background:"transparent",
+                border:"1.5px solid #d1d5db", borderRadius:12, color:"#6b7280",
+                fontSize:13, cursor:"pointer", fontFamily:"inherit"
+              }}>
+              Maybe later
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
-
-// Try to extract employee email from conversation context
-function tryExtractEmail(text) {
-  const match = text.match(/[a-zA-Z0-9._%+-]+@finzly\.com/i);
-  if (match && !sessionEmployeeEmail) {
-    sessionEmployeeEmail = match[0];
-    console.info("[BuddyFinzler] Employee identified:", sessionEmployeeEmail);
-  }
-}
-
-// ─── API CALL ─────────────────────────────────────────────────────────────────
-async function callClaudeAPI(userMessage) {
-  // Maintain last 10 messages
-  conversationHistory.push({ role: "user", content: userMessage });
-  if (conversationHistory.length > MAX_HISTORY) {
-    conversationHistory = conversationHistory.slice(-MAX_HISTORY);
-  }
-
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-6",
-      max_tokens: 1000,
-      system: SYSTEM_PROMPT,
-      messages: conversationHistory
-    })
-  });
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err.error?.message || `HTTP ${response.status}`);
-  }
-
-  const data = await response.json();
-  const rawText = data.content?.[0]?.text || '';
-
-  // Add assistant response to history
-  conversationHistory.push({ role: "assistant", content: rawText });
-  if (conversationHistory.length > MAX_HISTORY) {
-    conversationHistory = conversationHistory.slice(-MAX_HISTORY);
-  }
-
-  // Parse JSON from response
-  let parsed;
-  try {
-    // Extract JSON even if there's surrounding text
-    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('No JSON found');
-    parsed = JSON.parse(jsonMatch[0]);
-  } catch (e) {
-    // Fallback: treat raw text as message
-    parsed = {
-      message: rawText || "I'm having trouble formulating a response. Please try again or email hr-india@finzly.com.",
-      escalate: false,
-      escalationReason: "",
-      followUps: [],
-      sectionRef: ""
-    };
-  }
-
-  // Validate structure
-  if (!parsed.message) parsed.message = "Sorry, I couldn't generate a response. Please contact hr-india@finzly.com.";
-  if (typeof parsed.escalate !== 'boolean') parsed.escalate = false;
-  if (!Array.isArray(parsed.followUps)) parsed.followUps = [];
-  if (typeof parsed.sectionRef !== 'string') parsed.sectionRef = '';
-  if (typeof parsed.escalationReason !== 'string') parsed.escalationReason = '';
-
-  return parsed;
-}
-
-// ─── MAIN SEND HANDLER ────────────────────────────────────────────────────────
-async function handleSend(overrideText) {
-  if (isBotTyping) return;
-
-  const inputEl = document.getElementById('userInput');
-  const text = (overrideText || inputEl.value).trim();
-  if (!text) return;
-
-  inputEl.value = '';
-  inputEl.style.height = 'auto';
-  document.getElementById('sendBtn').disabled = true;
-  isBotTyping = true;
-
-  addUserMessage(text);
-  tryExtractEmail(text); // passive email detection for RAG attribution
-
-  const typingRow = showTyping();
-  await delay(600);
-
-  try {
-    const parsed = await callClaudeAPI(text);
-    typingRow.remove();
-    await renderBotResponse(parsed, text);
-  } catch (err) {
-    typingRow.remove();
-    const msgs = document.getElementById('messages');
-    const wrapper = document.createElement('div');
-    wrapper.className = 'bot-msg-wrapper';
-    const av = document.createElement('div');
-    av.className = 'chat-av';
-    av.innerHTML = chatAvatarSVG();
-    const col = document.createElement('div');
-    col.className = 'bot-bubbles';
-    const bub = document.createElement('div');
-    bub.className = 'bubble bot';
-    bub.innerHTML = "I'm having a little trouble connecting right now. Please try again in a moment, or reach out directly to <a href='mailto:hr-india@finzly.com'>hr-india@finzly.com</a> for urgent queries. 💙";
-    const errTag = document.createElement('div');
-    errTag.className = 'error-tag';
-    errTag.textContent = '⚠ ' + (err.message || 'Connection error');
-    col.appendChild(bub);
-    col.appendChild(errTag);
-    wrapper.appendChild(av);
-    wrapper.appendChild(col);
-    msgs.appendChild(wrapper);
-    scrollToBottom();
-    console.error('API Error:', err);
-  }
-
-  document.getElementById('sendBtn').disabled = false;
-  isBotTyping = false;
-}
-
-// ─── INPUT HANDLERS ───────────────────────────────────────────────────────────
-const inputEl = document.getElementById('userInput');
-inputEl.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    handleSend();
-  }
-});
-inputEl.addEventListener('input', function () {
-  this.style.height = 'auto';
-  this.style.height = Math.min(this.scrollHeight, 100) + 'px';
-});
-document.getElementById('sendBtn').addEventListener('click', () => handleSend());
-
-// ─── WELCOME MESSAGE ──────────────────────────────────────────────────────────
-window.onload = async () => {
-  isBotTyping = true;
-  document.getElementById('sendBtn').disabled = true;
-  await delay(500);
-
-  const msgs = document.getElementById('messages');
-  const wrapper = document.createElement('div');
-  wrapper.className = 'bot-msg-wrapper';
-  const av = document.createElement('div');
-  av.className = 'chat-av';
-  av.innerHTML = chatAvatarSVG();
-  const col = document.createElement('div');
-  col.className = 'bot-bubbles';
-  const bub = document.createElement('div');
-  bub.className = 'bubble bot';
-  col.appendChild(bub);
-  wrapper.appendChild(av);
-  wrapper.appendChild(col);
-  msgs.appendChild(wrapper);
-
-  await typewriteText(bub, "Hey! 👋 I'm BuddyFinzler. How are you doing today?", 14);
-
-  document.getElementById('sendBtn').disabled = false;
-  isBotTyping = false;
-};
-</script>
-</body>
-</html>
