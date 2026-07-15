@@ -4203,9 +4203,47 @@ function renderGalaxyBody(body, section){
 
 // Build a horizontal org tree (same visual as leadership strip, recursive)
 // Build children-only HTML (no root box repeated — fixes the duplicate node bug)
+// Depth counting: leader=0(L1) -> children=1(L2) -> grandchildren=2(L3, shown individually)
+// Anyone below an L3 manager (L4 and beyond) is rolled into ONE summary box.
+const ORG_CHART_MAX_BOX_DEPTH = 2;
+
+function collectDescendants(node){
+  const out=[];
+  node.children.forEach(c=>{ out.push(c); out.push(...collectDescendants(c)); });
+  return out;
+}
+
+function buildRollupBox(node){
+  const all = collectDescendants(node);
+  const total = all.length;
+  const ind = all.filter(e=>e.Country==='India').length;
+  const con = all.filter(e=>e.Type==='Consultant').length;
+  const names = all.slice(0,15).map(e=>`${e['First Name']||''} ${e['Last Name']||''}`.trim()).join(', ');
+  const more = total>15 ? ` +${total-15} more` : '';
+  return `<div style="display:flex;flex-direction:column;align-items:center;padding-top:6px">
+    <div class="ls-hbar" style="width:60%"></div>
+    <div class="ls-child" style="max-width:560px">
+      <div class="ls-child-vbar"></div>
+      <div class="ls-card" style="background:#6B7A8B;max-width:560px;text-align:left;padding:10px 14px">
+        <div class="ls-card-name" style="text-align:center;margin-bottom:4px">${total} Report${total!==1?'s':''} · L4 and below (rolled up)</div>
+        <div class="ls-badges" style="justify-content:center;margin-bottom:6px">
+          <span class="ls-badge" style="background:rgba(255,255,255,.2)">${ind} 🔵 India</span>
+          <span class="ls-badge" style="background:rgba(255,255,255,.2)">${total-ind} 🟣 USA</span>
+          ${con>0?`<span class="ls-badge con">${con} CON</span>`:''}
+        </div>
+        <div style="font-size:.62rem;color:#eee;line-height:1.5">${names}${more}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
 function buildChildrenHtml(node, depth){
   const kids=[...node.children].sort((a,b)=>subtreeCount(b)-subtreeCount(a));
   if(kids.length===0)return '';
+  // node itself is an L3 manager (depth===2) -> collapse everything under it (L4+) into one box
+  if(depth>=ORG_CHART_MAX_BOX_DEPTH){
+    return buildRollupBox(node);
+  }
   return `<div style="display:flex;flex-direction:column;align-items:center;padding-top:6px">
     <div class="ls-hbar" style="width:90%"></div>
     <div class="ls-children-row">${kids.map(child=>{
@@ -4797,14 +4835,18 @@ async function addOrgChartSlides(pres, active){
       topY+=0.33;
     }
 
-    // Full tree using leaf-count proportional layout
-    function leafCount(node){
-      return !node.children||node.children.length===0?1:
-        node.children.reduce((s,c)=>s+leafCount(c),0);
+    // Level counting: leader=0 (L1) -> children=1 (L2) -> grandchildren=2 (L3, shown individually)
+    // Anyone at level>=2 has THEIR children (L4+) collapsed into one rollup box.
+    const PPT_ORG_MAX_BOX_LEVEL = 2;
+    function leafCount(node, level=0){
+      if(!node.children||node.children.length===0) return 1;
+      if(level>=PPT_ORG_MAX_BOX_LEVEL) return 1;
+      return node.children.reduce((s,c)=>s+leafCount(c, level+1),0);
     }
-    function maxDepth(node,d=0){
-      return !node.children||node.children.length===0?d:
-        Math.max(...node.children.map(c=>maxDepth(c,d+1)));
+    function maxDepth(node, level=0){
+      if(!node.children||node.children.length===0) return level;
+      if(level>=PPT_ORG_MAX_BOX_LEVEL) return level+1;
+      return Math.max(...node.children.map(c=>maxDepth(c, level+1)));
     }
 
     const treeX=0.1, treeY=topY;
@@ -4817,17 +4859,27 @@ async function addOrgChartSlides(pres, active){
     const minW=0.45;
 
     const placements=[];
+    const rollups=[];
     function place(nd,leftLeaves,level){
-      const leaves=leafCount(nd);
+      const leaves=leafCount(nd, level);
       const bw=Math.max(minW,unitW*leaves-0.06);
       const bx=treeX+leftLeaves*unitW+(unitW*leaves-bw)/2;
       const by=treeY+level*levelH+(levelH-boxH)/2;
       const cx=treeX+leftLeaves*unitW+unitW*leaves/2;
       placements.push({nd,bx,by,bw,bh:boxH,cx});
+      if(level>=PPT_ORG_MAX_BOX_LEVEL && nd.children && nd.children.length>0){
+        const descendants=gatherSubtree(nd).slice(1);
+        const total=descendants.length;
+        const dInd=descendants.filter(e=>e.Country==='India').length;
+        const dCon=descendants.filter(e=>e.Type==='Consultant').length;
+        const rby=treeY+(level+1)*levelH+(levelH-boxH)/2;
+        rollups.push({parentCx:cx,parentBy:by,parentBh:boxH,bx,by:rby,bw,bh:boxH,total,ind:dInd,con:dCon,cx});
+        return;
+      }
       let cl=leftLeaves;
       if(nd.children)
-        [...nd.children].sort((a,b)=>leafCount(b)-leafCount(a))
-          .forEach(c=>{place(c,cl,level+1);cl+=leafCount(c);});
+        [...nd.children].sort((a,b)=>leafCount(b,level+1)-leafCount(a,level+1))
+          .forEach(c=>{place(c,cl,level+1);cl+=leafCount(c,level+1);});
     }
     place(leader,0,0);
 
@@ -4839,6 +4891,12 @@ async function addOrgChartSlides(pres, active){
       if(par) drawLine(s,par.cx,par.by+par.bh,p.cx,p.by);
     });
     placements.forEach(p=>drawBox(s,p.nd,p.bx,p.by,p.bw,p.bh));
+    rollups.forEach(r=>{
+      drawLine(s,r.parentCx,r.parentBy+r.parentBh,r.cx,r.by);
+      s.addShape('rect',{x:r.bx,y:r.by,w:r.bw,h:r.bh,fill:{color:'6B7A8B'},line:{color:'6B7A8B',pt:0}});
+      s.addText(`${r.total} below (L4+)`,{x:r.bx+0.04,y:r.by+0.03,w:r.bw-0.08,h:r.bh*0.5,fontSize:Math.max(5,Math.min(8,r.bw*5)),bold:true,color:'FFFFFF',fontFace:'Calibri',align:'center',margin:0,fit:'shrink'});
+      s.addText(`${r.ind} India · ${r.total-r.ind} USA${r.con>0?` · ${r.con} Con`:''}`,{x:r.bx+0.04,y:r.by+r.bh*0.52,w:r.bw-0.08,h:r.bh*0.44,fontSize:Math.max(4,Math.min(7,r.bw*4)),color:'DDDDDD',fontFace:'Calibri',align:'center',margin:0,fit:'shrink'});
+    });
 
     s.addText(
       `${leaderFull} · ${totalBelow} people · ${ind} 🔵 India · ${totalBelow-ind} 🟣 USA${con>0?` · ${con} contractors`:''}`,
