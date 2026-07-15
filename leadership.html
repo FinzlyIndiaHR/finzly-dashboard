@@ -464,6 +464,11 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;min-h
         <div id="gender-visual" style="padding:8px 4px"></div>
       </div>
     </div>
+    <!-- Full Time vs Contractor — split by India / USA -->
+    <div class="card" id="card-ft-con-country">
+      <div class="c-title"><div class="c-title-l">Full Time vs Contractor · India / USA</div></div>
+      <div id="ft-con-country-visual" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px"></div>
+    </div>
     <div class="ch-box"><div class="ch-title">Active Headcount by Squad</div><div class="ch-wrap" style="height:420px"><canvas id="ch-sq-snap"></canvas></div></div>
   </div>
 
@@ -2486,6 +2491,23 @@ function render(){
       </div>
       <div style="font-size:.62rem;color:var(--muted);text-align:center">${femPct2<GENDER_BENCH_LOW?`⚠ ${femPct2}% female — tech avg 28–35%. Room to improve.`:femPct2<=40?`✅ ${femPct2}% female — strong diversity for fintech.`:`🌟 ${femPct2}% female — above industry average.`}</div>
     </div>`;
+
+  // ── FULL TIME vs CONTRACTOR — split by India / USA ────────
+  const indiaFT  = india.filter(d=>d.Type==='Full Time').length;
+  const indiaCon = india.filter(d=>d.Type==='Consultant').length;
+  const usaFT    = usa.filter(d=>d.Type==='Full Time').length;
+  const usaCon   = usa.filter(d=>d.Type==='Consultant').length;
+  const fcCard=(flag,label,val,pctBase,col,bg)=>`
+    <div style="background:${bg};border-radius:10px;padding:12px;text-align:center">
+      <div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:${col};margin-bottom:4px">${flag} ${label}</div>
+      <div style="font-family:'Fira Code',monospace;font-size:1.7rem;font-weight:800;color:${col};line-height:1">${val}</div>
+      <div style="font-size:.62rem;color:var(--muted);margin-top:3px">${pctBase?Math.round(val/pctBase*100):0}% of ${pctBase?'group':'—'}</div>
+    </div>`;
+  document.getElementById('ft-con-country-visual').innerHTML=
+    fcCard('🇮🇳','India · Full Time',indiaFT,india.length,'#0369a1','#eff6ff')+
+    fcCard('🇮🇳','India · Contractor',indiaCon,india.length,'#d97706','#fffbeb')+
+    fcCard('🇺🇸','USA · Full Time',usaFT,usa.length,'#1d4ed8','#eff6ff')+
+    fcCard('🇺🇸','USA · Contractor',usaCon,usa.length,'#d97706','#fffbeb');
 
   // Squad breakdown
   const sqMap={};active.forEach(d=>{const s=d.Squad||'?';sqMap[s]=(sqMap[s]||0)+1;});
