@@ -4225,10 +4225,11 @@ function renderGalaxyBody(body, section){
 
 // Build a horizontal org tree (same visual as leadership strip, recursive)
 // Build children-only HTML (no root box repeated — fixes the duplicate node bug)
-// Depth counting: leader=0(L1) -> children=1(L2, the direct-report managers, shown as cards).
-// Click a manager's card to reveal ONE clean box holding their ENTIRE team below —
-// every level from L3 downward — instead of a nested tree of individual cards.
-const ORG_CHART_MAX_BOX_DEPTH = 1;
+// Depth counting: leader=0(L1) -> children=1(L2) -> grandchildren=2(L3) ->
+// great-grandchildren=3(L4). L1 through L4 are ALL shown as individual cards.
+// Only once you click into an L4 manager's card do you see ONE clean box
+// holding their entire downstream team (L5 and below) — not a nested tree.
+const ORG_CHART_MAX_BOX_DEPTH = 3;
 
 function collectDescendants(node){
   const out=[];
@@ -4880,9 +4881,11 @@ async function addOrgChartSlides(pres, active){
       topY+=0.33;
     }
 
-    // Level counting: leader=0 (L1) -> children=1 (L2) -> grandchildren=2 (L3, shown individually)
-    // Anyone at level>=2 has THEIR children (L4+) collapsed into one rollup box.
-    const PPT_ORG_MAX_BOX_LEVEL = 2;
+    // Level counting: leader=0 (L1) -> children=1 (L2) -> grandchildren=2 (L3) ->
+    // great-grandchildren=3 (L4). L1 through L4 are ALL drawn as individual boxes.
+    // Anyone at level>=3 (an L4 manager) has THEIR children (L5+) collapsed into
+    // one rollup box underneath them.
+    const PPT_ORG_MAX_BOX_LEVEL = 3;
     function leafCount(node, level=0){
       if(!node.children||node.children.length===0) return 1;
       if(level>=PPT_ORG_MAX_BOX_LEVEL) return 1;
@@ -5020,19 +5023,13 @@ async function addOrgChartSlides(pres, active){
   // ── SLIDE 1: Leadership Team (President + L1 galaxy heads) ─────────────
   makeTwoLevelSlide(root, null, null);
 
-  // ── FOR EACH GALAXY: one overview slide (leader + their direct reports
-  // as cards), then a SEPARATE dedicated slide for every one of those
-  // direct reports who themselves leads a team — a "galaxy head" the way
-  // Karuna's direct reports are each their own galaxy heads. ─────────────
+  // ── ONE DEDICATED SLIDE PER GALAXY HEAD (e.g. Karuna, Sajeesh, Vijay) ──
+  // Each slide draws L1 (the galaxy head) through L4 as individual, connected
+  // boxes. Anyone below L4 (L5 and beyond) is collapsed into one small
+  // summary box sitting under their respective L4 manager.
   const galaxyHeads=[...root.children].sort((a,b)=>subtreeCount(b)-subtreeCount(a));
   galaxyHeads.forEach(galaxy=>{
-    makeTwoLevelSlide(galaxy, root, null);
-    const subLeads=[...galaxy.children]
-      .filter(c=>c.children && c.children.length>0)
-      .sort((a,b)=>subtreeCount(b)-subtreeCount(a));
-    subLeads.forEach(sub=>{
-      makeManagerRollupSlide(sub, galaxy);
-    });
+    makeFullTreeSlide(galaxy, root, null);
   });
 }
 
