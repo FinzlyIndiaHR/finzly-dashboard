@@ -4203,9 +4203,10 @@ function renderGalaxyBody(body, section){
 
 // Build a horizontal org tree (same visual as leadership strip, recursive)
 // Build children-only HTML (no root box repeated — fixes the duplicate node bug)
-// Depth counting: leader=0(L1) -> children=1(L2) -> grandchildren=2(L3, shown individually)
-// Anyone below an L3 manager (L4 and beyond) is rolled into ONE summary box.
-const ORG_CHART_MAX_BOX_DEPTH = 2;
+// Depth counting: leader=0(L1) -> children=1(L2, the direct-report managers, shown as cards).
+// Click a manager's card to reveal ONE clean box holding their ENTIRE team below —
+// every level from L3 downward — instead of a nested tree of individual cards.
+const ORG_CHART_MAX_BOX_DEPTH = 1;
 
 function collectDescendants(node){
   const out=[];
@@ -4217,21 +4218,43 @@ function buildRollupBox(node){
   const all = collectDescendants(node);
   const total = all.length;
   const ind = all.filter(e=>e.Country==='India').length;
+  const usa = total-ind;
   const con = all.filter(e=>e.Type==='Consultant').length;
-  const names = all.slice(0,15).map(e=>`${e['First Name']||''} ${e['Last Name']||''}`.trim()).join(', ');
-  const more = total>15 ? ` +${total-15} more` : '';
+  const nodeFull = `${node['First Name']||''} ${node['Last Name']||''}`.trim();
+  const names = all
+    .sort((a,b)=>(a['First Name']||'').localeCompare(b['First Name']||''))
+    .map(e=>{
+      const isCon=e.Type==='Consultant';
+      const flag=e.Country==='India'?'🔵':'🟣';
+      return `<span style="display:inline-flex;align-items:center;gap:3px;background:var(--bg);border:1px solid var(--border2);border-radius:20px;padding:3px 10px 3px 8px;margin:0 5px 5px 0;font-size:.68rem;color:var(--ink);white-space:nowrap">${flag} ${e['First Name']||''} ${e['Last Name']||''}${isCon?' <span style="color:var(--amber);font-weight:700">·C</span>':''}</span>`;
+    }).join('');
   return `<div style="display:flex;flex-direction:column;align-items:center;padding-top:6px">
-    <div class="ls-hbar" style="width:60%"></div>
-    <div class="ls-child" style="max-width:560px">
-      <div class="ls-child-vbar"></div>
-      <div class="ls-card" style="background:#6B7A8B;max-width:560px;text-align:left;padding:10px 14px">
-        <div class="ls-card-name" style="text-align:center;margin-bottom:4px">${total} Report${total!==1?'s':''} · L4 and below (rolled up)</div>
-        <div class="ls-badges" style="justify-content:center;margin-bottom:6px">
-          <span class="ls-badge" style="background:rgba(255,255,255,.2)">${ind} 🔵 India</span>
-          <span class="ls-badge" style="background:rgba(255,255,255,.2)">${total-ind} 🟣 USA</span>
-          ${con>0?`<span class="ls-badge con">${con} CON</span>`:''}
+    <div class="ls-hbar" style="width:50%"></div>
+    <div class="ls-child-vbar"></div>
+    <div style="background:#fff;border:1px solid var(--border);border-radius:12px;max-width:680px;width:100%;overflow:hidden;box-shadow:0 3px 10px rgba(0,0,0,.07)">
+      <div style="background:#48566b;color:#fff;padding:9px 16px;font-size:.74rem;font-weight:700;display:flex;align-items:center;gap:6px">
+        👥 ${nodeFull}'s Full Team — ${total} ${total===1?'person':'people'} (all levels below)
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);background:var(--border2)">
+        <div style="background:#fff;padding:9px 6px;text-align:center">
+          <div style="font-family:'Fira Code',monospace;font-size:1.15rem;font-weight:800;color:#374151">${total}</div>
+          <div style="font-size:.55rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Total</div>
         </div>
-        <div style="font-size:.62rem;color:#eee;line-height:1.5">${names}${more}</div>
+        <div style="background:#fff;padding:9px 6px;text-align:center">
+          <div style="font-family:'Fira Code',monospace;font-size:1.15rem;font-weight:800;color:#0369a1">${ind}</div>
+          <div style="font-size:.55rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">🔵 India</div>
+        </div>
+        <div style="background:#fff;padding:9px 6px;text-align:center">
+          <div style="font-family:'Fira Code',monospace;font-size:1.15rem;font-weight:800;color:#1d4ed8">${usa}</div>
+          <div style="font-size:.55rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">🟣 USA</div>
+        </div>
+        <div style="background:#fff;padding:9px 6px;text-align:center">
+          <div style="font-family:'Fira Code',monospace;font-size:1.15rem;font-weight:800;color:${con>0?'#d97706':'#9ca3af'}">${con}</div>
+          <div style="font-size:.55rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Contractors</div>
+        </div>
+      </div>
+      <div style="padding:12px 14px;max-height:220px;overflow-y:auto;border-top:1px solid var(--border2)">
+        ${names || '<span style="font-size:.7rem;color:var(--muted)">No further reports.</span>'}
       </div>
     </div>
   </div>`;
@@ -4240,7 +4263,7 @@ function buildRollupBox(node){
 function buildChildrenHtml(node, depth){
   const kids=[...node.children].sort((a,b)=>subtreeCount(b)-subtreeCount(a));
   if(kids.length===0)return '';
-  // node itself is an L3 manager (depth===2) -> collapse everything under it (L4+) into one box
+  // node is a direct-report manager (depth===1) -> collapse their WHOLE downstream team into one box
   if(depth>=ORG_CHART_MAX_BOX_DEPTH){
     return buildRollupBox(node);
   }
@@ -4903,15 +4926,91 @@ async function addOrgChartSlides(pres, active){
       {x:0.3,y:7.18,w:12.7,h:0.22,fontSize:7.5,color:'AAAAAA',align:'center',fontFace:'Calibri'});
   }
 
-  // ── SLIDE 1: Leadership Team (Booshan + L1 direct reports, 2 levels) ─────
+  // ── ONE dedicated slide per manager who leads their own team — ────────
+  // shows their box at the top and their ENTIRE downstream team (any depth)
+  // rolled into one clean summary box below, instead of a crowded tree.
+  function makeManagerRollupSlide(manager, parentGalaxy){
+    if(!manager.children||manager.children.length===0) return;
+
+    const s=makeSlide(pres,slideNum++);
+    addLegend(s);
+
+    const managerFull=`${manager['First Name']} ${manager['Last Name']}`;
+    const galaxyFull=`${parentGalaxy['First Name']} ${parentGalaxy['Last Name']}`;
+    const totalBelow=subtreeCount(manager)-1;
+    const all=gatherSubtree(manager).slice(1); // exclude manager themselves
+    const ind=all.filter(e=>e.Country==='India').length;
+    const usa=totalBelow-ind;
+    const con=all.filter(e=>e.Type==='Consultant').length;
+
+    slideTitle(s, managerFull,
+      `${manager['Corporate Title']||manager.Squad||''} · ${totalBelow} people total in team`);
+
+    // Breadcrumb — which galaxy this manager belongs to
+    let topY=0.88;
+    s.addShape('rect',{x:0.3,y:topY,w:W-0.6,h:0.26,fill:{color:'F0F4F8'},line:{color:'CCCCCC',pt:0.5}});
+    s.addText(`▲ Part of ${galaxyFull}'s Galaxy`,{x:0.5,y:topY+0.04,w:W-1.0,h:0.18,fontSize:8,color:'555555',fontFace:'Calibri',margin:0,italic:true,fit:'shrink'});
+    topY+=0.4;
+
+    // Manager box, centred
+    const mW=2.3,mH=0.85,mX=(W-mW)/2,mY=topY;
+    drawBox(s,manager,mX,mY,mW,mH);
+    s.addShape('rect',{x:mX+mW/2-0.006,y:mY+mH,w:0.012,h:0.3,fill:{color:'AAAAAA'},line:{color:'AAAAAA',pt:0}});
+
+    // One consolidated team box below — KPI row + full name list
+    const boxY=mY+mH+0.3;
+    const boxX=0.6, boxW=W-1.2, boxH=Math.max(1.8,7.05-boxY);
+    s.addShape('rect',{x:boxX,y:boxY,w:boxW,h:boxH,fill:{color:'F7F7F7'},line:{color:'D8D8D8',pt:0.8},
+      shadow:{type:'outer',color:'000000',opacity:0.06,blur:5,offset:2,angle:135}});
+    s.addShape('rect',{x:boxX,y:boxY,w:boxW,h:0.06,fill:{color:'48566B'},line:{color:'48566B',pt:0}});
+
+    // KPI row
+    const kpiY=boxY+0.24;
+    const kpiW=(boxW-0.6)/4;
+    const kpiData=[
+      ['Total Team', totalBelow, '374151'],
+      ['India', ind, '156082'],
+      ['USA', usa, '0E2841'],
+      ['Contractors', con, con>0?'D97706':'888888'],
+    ];
+    kpiData.forEach((k,i)=>{
+      const kx=boxX+0.3+i*kpiW;
+      s.addText(k[0].toUpperCase(),{x:kx,y:kpiY,w:kpiW-0.15,h:0.2,fontSize:7,bold:true,color:'888888',fontFace:'Calibri',margin:0,align:'center'});
+      s.addText(String(k[1]),{x:kx,y:kpiY+0.2,w:kpiW-0.15,h:0.42,fontSize:22,bold:true,color:k[2],fontFace:'Calibri',margin:0,align:'center'});
+    });
+
+    // Divider
+    s.addShape('rect',{x:boxX+0.3,y:kpiY+0.7,w:boxW-0.6,h:0.012,fill:{color:'E0E0E0'},line:{color:'E0E0E0',pt:0}});
+
+    // Full name list, wrapped
+    const names=all
+      .sort((a,b)=>(a['First Name']||'').localeCompare(b['First Name']||''))
+      .map(e=>`${e.Country==='India'?'🔵':'🟣'} ${e['First Name']||''} ${e['Last Name']||''}${e.Type==='Consultant'?' (C)':''}`)
+      .join('   •   ');
+    s.addText(names||'No further reports.',
+      {x:boxX+0.3,y:kpiY+0.86,w:boxW-0.6,h:boxH-1.5,fontSize:9,color:'333333',fontFace:'Calibri',margin:0,valign:'top',fit:'shrink'});
+
+    s.addText(
+      `${managerFull} · ${totalBelow} people · ${ind} 🔵 India · ${usa} 🟣 USA${con>0?` · ${con} contractors`:''}`,
+      {x:0.3,y:7.18,w:12.7,h:0.22,fontSize:7.5,color:'AAAAAA',align:'center',fontFace:'Calibri'});
+  }
+
+  // ── SLIDE 1: Leadership Team (President + L1 galaxy heads) ─────────────
   makeTwoLevelSlide(root, null, null);
 
-  // ── ONE SLIDE PER GALAXY — complete full tree on one slide ─────────────
-  // Sajeesh (Digital), Vijay (Payment), Dharmesh (PS) etc.
-  // Everyone in the galaxy shown on ONE slide — no separate sub-lead slides
+  // ── FOR EACH GALAXY: one overview slide (leader + their direct reports
+  // as cards), then a SEPARATE dedicated slide for every one of those
+  // direct reports who themselves leads a team — a "galaxy head" the way
+  // Karuna's direct reports are each their own galaxy heads. ─────────────
   const galaxyHeads=[...root.children].sort((a,b)=>subtreeCount(b)-subtreeCount(a));
   galaxyHeads.forEach(galaxy=>{
-    makeFullTreeSlide(galaxy, root, null);
+    makeTwoLevelSlide(galaxy, root, null);
+    const subLeads=[...galaxy.children]
+      .filter(c=>c.children && c.children.length>0)
+      .sort((a,b)=>subtreeCount(b)-subtreeCount(a));
+    subLeads.forEach(sub=>{
+      makeManagerRollupSlide(sub, galaxy);
+    });
   });
 }
 
