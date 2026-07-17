@@ -5036,17 +5036,102 @@ async function addOrgChartSlides(pres, active){
       {x:0.3,y:7.18,w:12.7,h:0.22,fontSize:7.5,color:'AAAAAA',align:'center',fontFace:'Calibri'});
   }
 
+  // ── FULL-DEPTH GALAXY TREE (to leaf level) as an indented tree ─────────
+  // A top-down boxed tree cannot reach leaf level without overlapping once a
+  // galaxy grows (horizontal space per leaf → 0). An indented tree shows
+  // EVERY level down to the leaf, one person per row, and flows onto extra
+  // "(cont.)" slides when a slide fills — so it never overlaps at any size.
+  function drawChip(s,p,x,y,h,isLeader){
+    const isIndia=p.Country==='India', isCon=p.Type==='Consultant';
+    const bg=isLeader?'0B1F33':(isIndia?'156082':'0E2841');
+    const name=`${p['First Name']||''} ${p['Last Name']||''}`.trim();
+    const title=(p['Corporate Title']||p.Squad||'').slice(0,44);
+    const w=Math.min(7.4, W-0.5-x);
+    s.addShape('roundRect',{x,y,w,h,rectRadius:0.035,fill:{color:bg},
+      line:{color:isCon?'FBAE40':(isLeader?'FBAE40':bg),pt:isCon?1.5:(isLeader?1.5:0)}});
+    s.addText([
+      {text:name+(title?'   ':''),options:{bold:true,color:'FFFFFF',fontSize:isLeader?10:9}},
+      {text:title,options:{color:'CFE0F0',fontSize:8,italic:true}}
+    ],{x:x+0.12,y,w:w-0.85,h,align:'left',valign:'middle',fontFace:'Calibri',margin:0,fit:'shrink'});
+    s.addText(`${isIndia?'🔵':'🟣'}${isCon?' C':''}`,
+      {x:x+w-0.72,y,w:0.64,h,align:'right',valign:'middle',fontSize:8,color:'FFFFFF',fontFace:'Calibri',margin:0});
+  }
+
+  function makeGalaxyTreeSlides(leader, parentNode){
+    if(!leader.children||leader.children.length===0) return;
+
+    const leaderFull=`${leader['First Name']} ${leader['Last Name']}`;
+    const totalBelow=subtreeCount(leader)-1;
+    const all=gatherSubtree(leader);
+    const ind=all.filter(e=>e.Country==='India').length;
+    const con=all.filter(e=>e.Type==='Consultant').length;
+
+    // Flatten the whole subtree (pre-order DFS) with per-row connector info.
+    // nlPath[k] = "path node at depth k+1 is NOT its parent's last child"
+    // (used to know when an ancestor's vertical trunk keeps going).
+    const rows=[];
+    (function walk(node,depth,nlPath){
+      rows.push({node,depth,nlPath:nlPath.slice()});
+      const kids=[...node.children].sort((a,b)=>subtreeCount(b)-subtreeCount(a));
+      kids.forEach((c,i)=>walk(c,depth+1,nlPath.concat(i<kids.length-1)));
+    })(leader,0,[]);
+
+    const rowH=0.28, indent=0.32, xBase=0.5;
+    const bottom=6.95, lineCol='C4CDD6';
+    let s=null, y=0;
+
+    function footer(sl){
+      sl.addText(
+        `${leaderFull} · ${totalBelow} people · ${ind} 🔵 India · ${totalBelow-ind} 🟣 USA${con>0?` · ${con} contractors`:''}`,
+        {x:0.3,y:7.18,w:12.7,h:0.22,fontSize:7.5,color:'AAAAAA',align:'center',fontFace:'Calibri'});
+    }
+    function newSlide(cont){
+      s=makeSlide(pres,slideNum++); addLegend(s);
+      slideTitle(s, leaderFull+(cont?'  (cont.)':''),
+        `${leader['Corporate Title']||leader.Squad||''} · ${totalBelow} people total in team · full team to leaf level`);
+      if(!cont && parentNode){
+        const parentFull=`${parentNode['First Name']} ${parentNode['Last Name']}`;
+        s.addShape('rect',{x:0.3,y:0.88,w:W-0.6,h:0.28,fill:{color:'F0F4F8'},line:{color:'CCCCCC',pt:0.5}});
+        s.addText(`▲ Reports to: ${parentFull}  (${parentNode['Corporate Title']||''})`,
+          {x:0.5,y:0.92,w:W-1.0,h:0.2,fontSize:8,color:'555555',fontFace:'Calibri',margin:0,italic:true,fit:'shrink'});
+        y=1.34;
+      } else { y=1.04; }
+      footer(s);
+    }
+
+    function drawRow(r){
+      const d=r.depth, mid=y+rowH/2;
+      for(let g=0; g<d; g++){
+        const gx=xBase+g*indent+0.10;
+        if(g<d-1){
+          if(r.nlPath[g])
+            s.addShape('rect',{x:gx,y,w:0.014,h:rowH,fill:{color:lineCol},line:{color:lineCol,pt:0}});
+        } else {
+          const vH=r.nlPath[d-1]?rowH:(mid-y);              // ├ (more siblings) vs └ (last)
+          s.addShape('rect',{x:gx,y,w:0.014,h:vH,fill:{color:lineCol},line:{color:lineCol,pt:0}});
+          s.addShape('rect',{x:gx,y:mid-0.007,w:indent-0.10,h:0.014,fill:{color:lineCol},line:{color:lineCol,pt:0}});
+        }
+      }
+      drawChip(s, r.node, xBase+d*indent, y+0.02, rowH-0.05, d===0);
+      y+=rowH;
+    }
+
+    newSlide(false);
+    rows.forEach(r=>{
+      if(y+rowH>bottom) newSlide(true);
+      drawRow(r);
+    });
+  }
+
   // ── SLIDE 1: Leadership Team (President + L1 galaxy heads) ─────────────
   makeTwoLevelSlide(root, null, null);
 
-  // ── ONE DEDICATED SLIDE PER GALAXY HEAD (e.g. Karuna, Sajeesh, Vijay) ──
-  // Each slide shows the galaxy head (Level 1) plus their direct reports
-  // (Level 2) using the adaptive grid, so slides stay clean and never
-  // overlap however large the galaxy is. Galaxy heads with no direct
-  // reports are skipped by makeTwoLevelSlide.
+  // ── ONE OR MORE SLIDES PER GALAXY HEAD (Karuna, Sajeesh, Vijay, …) ─────
+  // Each galaxy is rendered as a full-depth indented tree down to the leaf,
+  // paginating onto "(cont.)" slides as needed — never overlapping.
   const galaxyHeads=[...root.children].sort((a,b)=>subtreeCount(b)-subtreeCount(a));
   galaxyHeads.forEach(galaxy=>{
-    makeTwoLevelSlide(galaxy, root, null);
+    makeGalaxyTreeSlides(galaxy, root);
   });
 }
 
