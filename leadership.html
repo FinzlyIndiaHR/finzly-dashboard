@@ -4807,45 +4807,61 @@ async function addOrgChartSlides(pres, active){
     drawBox(s,leader,lX,lY,lW,lH);
     s.addShape('rect',{x:lX+lW/2-0.006,y:lY+lH,w:0.012,h:0.28,fill:{color:'AAAAAA'},line:{color:'AAAAAA',pt:0}});
 
-    // ── Direct reports row ──────────────────────────────────
+    // ── Direct reports — adaptive grid that ALWAYS fits (no overlap) ──
+    // The grid grows columns and shrinks boxes to fit however many direct
+    // reports a leader has, so slides never overflow or overlap regardless
+    // of how large a galaxy is. Every direct report is shown — none dropped.
     const kids=[...leader.children].sort((a,b)=>subtreeCount(b)-subtreeCount(a));
-    const maxPerRow=Math.min(kids.length,10);
-    const cW=Math.min(1.55,(W-0.3)/maxPerRow-0.1);
-    const cGap=(W-0.3-maxPerRow*cW)/Math.max(maxPerRow-1,1);
-    const cStartX=0.15;
-    const cY=lY+lH+0.52;
-    const midY=lY+lH+0.28;
+    const n=kids.length;
 
-    // Horizontal bar
-    if(kids.length>1){
-      const barL=cStartX+cW/2,barR=cStartX+(maxPerRow-1)*(cW+cGap)+cW/2;
-      s.addShape('rect',{x:barL,y:midY-0.006,w:barR-barL,h:0.012,fill:{color:'AAAAAA'},line:{color:'AAAAAA',pt:0}});
+    const gridX0=0.2, gridW=W-0.4;      // usable horizontal band
+    const gridTop=lY+lH+0.5;            // just below leader + connector
+    const gridBottom=6.95;              // keep clear of the footer
+    const gridH=Math.max(1.0,gridBottom-gridTop);
+    const gap=0.14;                     // gap between boxes
+    const capH=0.18;                    // "+N below" caption strip
+
+    // Pick columns: aim for ≤10 across, but add columns when that would make
+    // rows too short to fit vertically (i.e. a very wide team). Cap boxes at
+    // a readable width and centre each row.
+    let cols=Math.min(n,10);
+    let rows=Math.max(1,Math.ceil(n/cols));
+    let rowPitch=gridH/rows;
+    while(rows>1 && rowPitch<0.66 && cols<Math.min(n,16)){
+      cols++; rows=Math.ceil(n/cols); rowPitch=gridH/rows;
+    }
+    const cW=Math.min(1.7,(gridW-(cols-1)*gap)/cols);
+    const boxH=Math.max(0.5,Math.min(0.78,rowPitch-capH-0.12));
+
+    // Centre-start X for a given row (last row may be partially filled)
+    const rowStartX=r=>{
+      const cnt=Math.min(cols,n-r*cols);
+      const rowW=cnt*cW+(cnt-1)*gap;
+      return gridX0+(gridW-rowW)/2;
+    };
+
+    // Connector: horizontal bus under the leader + vertical drops to row 1
+    const busY=lY+lH+0.3;
+    if(n>0){
+      const x0=rowStartX(0);
+      const firstRow=Math.min(cols,n);
+      const busL=x0+cW/2, busR=x0+(firstRow-1)*(cW+gap)+cW/2;
+      if(firstRow>1)
+        s.addShape('rect',{x:busL,y:busY-0.006,w:busR-busL,h:0.012,fill:{color:'AAAAAA'},line:{color:'AAAAAA',pt:0}});
     }
 
-    kids.slice(0,maxPerRow).forEach((child,i)=>{
-      const cx=cStartX+i*(cW+cGap);
-      s.addShape('rect',{x:cx+cW/2-0.006,y:midY,w:0.012,h:0.28,fill:{color:'AAAAAA'},line:{color:'AAAAAA',pt:0}});
-      drawBox(s,child,cx,cY,cW,0.78);
-      const n=subtreeCount(child)-1;
-      if(n>0)
-        s.addText(`+ ${n} below ↓`,
-          {x:cx,y:cY+0.81,w:cW,h:0.18,fontSize:6.5,color:'888888',align:'center',fontFace:'Calibri',margin:0});
+    kids.forEach((child,i)=>{
+      const r=Math.floor(i/cols), c=i%cols;
+      const cx=rowStartX(r)+c*(cW+gap);
+      const cy=gridTop+r*rowPitch;
+      if(r===0)
+        s.addShape('rect',{x:cx+cW/2-0.006,y:busY,w:0.012,h:Math.max(0,cy-busY),fill:{color:'AAAAAA'},line:{color:'AAAAAA',pt:0}});
+      drawBox(s,child,cx,cy,cW,boxH);
+      const nb=subtreeCount(child)-1;
+      if(nb>0)
+        s.addText(`+ ${nb} below ↓`,
+          {x:cx,y:cy+boxH+0.01,w:cW,h:capH,fontSize:6.5,color:'888888',align:'center',fontFace:'Calibri',margin:0});
     });
-
-    // Second row if > 10 direct reports
-    if(kids.length>maxPerRow){
-      const row2=kids.slice(maxPerRow,maxPerRow+10);
-      const r2W=Math.min(1.55,(W-0.3)/row2.length-0.1);
-      const r2G=(W-0.3-row2.length*r2W)/Math.max(row2.length-1,1);
-      const r2Y=cY+1.05;
-      row2.forEach((child,i)=>{
-        drawBox(s,child,0.15+i*(r2W+r2G),r2Y,r2W,0.78);
-        const n=subtreeCount(child)-1;
-        if(n>0)
-          s.addText(`+ ${n} below ↓`,
-            {x:0.15+i*(r2W+r2G),y:r2Y+0.81,w:r2W,h:0.18,fontSize:6.5,color:'888888',align:'center',fontFace:'Calibri',margin:0});
-      });
-    }
 
     // Footer
     s.addText(
@@ -5024,12 +5040,13 @@ async function addOrgChartSlides(pres, active){
   makeTwoLevelSlide(root, null, null);
 
   // ── ONE DEDICATED SLIDE PER GALAXY HEAD (e.g. Karuna, Sajeesh, Vijay) ──
-  // Each slide draws L1 (the galaxy head) through L4 as individual, connected
-  // boxes. Anyone below L4 (L5 and beyond) is collapsed into one small
-  // summary box sitting under their respective L4 manager.
+  // Each slide shows the galaxy head (Level 1) plus their direct reports
+  // (Level 2) using the adaptive grid, so slides stay clean and never
+  // overlap however large the galaxy is. Galaxy heads with no direct
+  // reports are skipped by makeTwoLevelSlide.
   const galaxyHeads=[...root.children].sort((a,b)=>subtreeCount(b)-subtreeCount(a));
   galaxyHeads.forEach(galaxy=>{
-    makeFullTreeSlide(galaxy, root, null);
+    makeTwoLevelSlide(galaxy, root, null);
   });
 }
 
